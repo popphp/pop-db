@@ -1,0 +1,34 @@
+{
+    "name": "popphp/pop-db",
+    "description": "Pop Db Component for Pop PHP Framework 2",
+    "keywords": [
+        "database",
+        "mysql",
+        "postgresql",
+        "sqlite",
+        "oracle",
+        "sqlsrv",
+        "pdo",
+        "php",
+        "pop",
+        "pop php",
+        "pop php 2"
+    ],
+    "homepage": "http://www.popphp.org/",
+    "license": "New BSD",
+    "authors": [
+        {
+            "name": "Nick Sagona",
+            "email": "dev@nolainteractive.com",
+            "homepage": "http://www.nolainteractive.com/"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pop\\": "src/"
+        }
+    }
+}
