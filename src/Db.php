@@ -29,12 +29,29 @@ class Db
 {
 
     /**
+     * Factory to create database adapter object and connect to the database
+     *
+     * @param  string $adapter
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return Adapter\AbstractAdapter
+     */
+    public static function connect($adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
+    {
+        $class = $prefix . ucfirst(strtolower($adapter));
+        if (!class_exists($class)) {
+            throw new Exception('Error: The database adapter ' . $class . ' is not valid.');
+        }
+        return new $class($options);
+    }
+
+    /**
      * Check the database
      *
      * @param  array  $db
      * @param  string $adapter
      * @param  string $prefix
-     * @throws Exception
      * @return string
      */
     public static function check($db, $adapter, $prefix = '\Pop\Db\Adapter\\')
