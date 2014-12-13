@@ -598,7 +598,7 @@ class Record
      */
     protected static function parseTableName($class)
     {
-        if (!static::$parsed) {
+        if ((!static::$parsed) && ($class != 'Pop\Db\Record')) {
             if (null === static::$table) {
                 if (strpos($class, '_') !== false) {
                     $cls = substr($class, (strrpos($class, '_') + 1));
