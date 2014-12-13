@@ -53,12 +53,6 @@ class Record
     protected static $prefix = null;
 
     /**
-     * Table parsed flag
-     * @var boolean
-     */
-    protected static $parsed = false;
-
-    /**
      * Result rows (an array of arrays)
      * @var array
      */
@@ -598,7 +592,7 @@ class Record
      */
     protected static function parseTableName($class)
     {
-        if ((!static::$parsed) && ($class != 'Pop\Db\Record')) {
+        if ($class != 'Pop\Db\Record') {
             if (null === static::$table) {
                 if (strpos($class, '_') !== false) {
                     $cls = substr($class, (strrpos($class, '_') + 1));
@@ -611,7 +605,6 @@ class Record
             } else {
                 static::$table = static::$prefix . static::$table;
             }
-            static::$parsed = true;
         }
     }
 
