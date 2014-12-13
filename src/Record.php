@@ -602,7 +602,7 @@ class Record
                     $cls = $class;
                 }
                 static::$table = static::$prefix . static::camelCaseToUnderscore($cls);
-            } else {
+            } else if (static::$prefix . static::$table != static::$table) {
                 static::$table = static::$prefix . static::$table;
             }
         }
