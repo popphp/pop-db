@@ -53,6 +53,12 @@ class Record
     protected static $prefix = null;
 
     /**
+     * Table parsed flag
+     * @var boolean
+     */
+    protected static $parsed = false;
+
+    /**
      * Result rows (an array of arrays)
      * @var array
      */
@@ -113,12 +119,7 @@ class Record
         }
 
         // Set the table name from the class name
-        if (strpos($class, '_') !== false) {
-            $class = substr($class, (strrpos($class, '_') + 1));
-        } else if (strpos($class, '\\') !== false) {
-            $class = substr($class, (strrpos($class, '\\') + 1));
-        }
-        static::$table = static::$prefix . static::camelCaseToUnderscore($class);
+        static::parseTableName(get_called_class());
 
         $this->rowGateway   = new Gateway\Row(static::getSql(), $this->primaryKeys, static::$table);
         $this->tableGateway = new Gateway\Table(static::getSql(), static::$table);
@@ -597,17 +598,20 @@ class Record
      */
     protected static function parseTableName($class)
     {
-        if (null === static::$table) {
-            if (strpos($class, '_') !== false) {
-                $cls = substr($class, (strrpos($class, '_') + 1));
-            } else if (strpos($class, '\\') !== false) {
-                $cls = substr($class, (strrpos($class, '\\') + 1));
+        if (!static::$parsed) {
+            if (null === static::$table) {
+                if (strpos($class, '_') !== false) {
+                    $cls = substr($class, (strrpos($class, '_') + 1));
+                } else if (strpos($class, '\\') !== false) {
+                    $cls = substr($class, (strrpos($class, '\\') + 1));
+                } else {
+                    $cls = $class;
+                }
+                static::$table = static::$prefix . static::camelCaseToUnderscore($cls);
             } else {
-                $cls = $class;
+                static::$table = static::$prefix . static::$table;
             }
-            static::$table = static::$prefix . static::camelCaseToUnderscore($cls);
-        } else {
-            static::$table = static::$prefix . static::$table;
+            static::$parsed = true;
         }
     }
 
