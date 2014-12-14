@@ -53,12 +53,6 @@ class Record
     protected static $prefix = null;
 
     /**
-     * Table parsed flag
-     * @var boolean
-     */
-    protected static $parsed = false;
-
-    /**
      * Result rows (an array of arrays)
      * @var array
      */
@@ -598,20 +592,18 @@ class Record
      */
     protected static function parseTableName($class)
     {
-        if (($class != 'Pop\Db\Record') && (!static::$parsed)) {
-            if (null === static::$table) {
-                if (strpos($class, '_') !== false) {
-                    $cls = substr($class, (strrpos($class, '_') + 1));
-                } else if (strpos($class, '\\') !== false) {
-                    $cls = substr($class, (strrpos($class, '\\') + 1));
-                } else {
-                    $cls = $class;
-                }
-                static::$table = static::$prefix . static::camelCaseToUnderscore($cls);
-            } else  {
-                static::$table = static::$prefix . static::$table;
+        if ($class != 'Pop\Db\Record') {
+            if (strpos($class, '_') !== false) {
+                $cls = substr($class, (strrpos($class, '_') + 1));
+            } else if (strpos($class, '\\') !== false) {
+                $cls = substr($class, (strrpos($class, '\\') + 1));
+            } else {
+                $cls = $class;
             }
-            static::$parsed = true;
+            $cls = static::camelCaseToUnderscore($cls);
+            if (static::$prefix . $cls != static::$table) {
+                static::$table = static::$prefix . $cls;
+            }
         }
     }
 
