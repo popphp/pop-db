@@ -114,6 +114,7 @@ class Record
 
         // Set the table name from the class name
         static::parseTableName(get_called_class());
+        static::$sql->setTable(static::$table);
 
         $this->rowGateway   = new Gateway\Row(static::getSql(), $this->primaryKeys, static::$table);
         $this->tableGateway = new Gateway\Table(static::getSql(), static::$table);
