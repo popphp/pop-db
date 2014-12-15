@@ -206,6 +206,8 @@ class Record
      */
     public static function getSql()
     {
+        static::parseTableName(get_called_class());
+        static::$sql->setTable(static::$table);
         return static::$sql;
     }
 
@@ -216,7 +218,7 @@ class Record
      */
     public static function sql()
     {
-        return static::$sql;
+        return static::getSql();
     }
 
     /**
