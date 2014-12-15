@@ -497,6 +497,9 @@ class Sql
 
         $this->sql = $this->clause->render();
 
+        // Reset clause
+        $this->clause = null;
+
         if ($ret) {
             return $this->sql;
         } else {
