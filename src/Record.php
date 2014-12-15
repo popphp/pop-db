@@ -529,6 +529,9 @@ class Record
     {
         // Delete the record
         if (null === $columns) {
+            if ((count($this->columns) > 0) && (count($this->rg()->getColumns()) == 0)) {
+                $this->rg()->setColumns($this->columns);
+            }
             $this->rg()->delete();
         // Delete multiple rows
         } else {

@@ -78,6 +78,13 @@ class Row extends AbstractGateway
     public function setColumns(array $columns = [])
     {
         $this->columns = $columns;
+        if (count($this->primaryValues) == 0) {
+            foreach ($this->primaryKeys as $key) {
+                if (isset($this->columns[$key])) {
+                    $this->primaryValues[] = $this->columns[$key];
+                }
+            }
+        }
         return $this;
     }
 
