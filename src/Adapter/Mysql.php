@@ -198,7 +198,7 @@ class Mysql extends AbstractAdapter
      */
     public function fetch()
     {
-        if (null !== $this->statement) {
+        if ((null !== $this->statement) && (null !== $this->statement->fetch())) {
             return $this->statement->fetch();
         } else {
             if (!isset($this->result)) {
