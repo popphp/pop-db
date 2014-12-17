@@ -312,8 +312,8 @@ class Select extends AbstractSql
                     $foreignTables[] = (string)$join['foreignTables'];
                 }
 
-                $sql .= ' ' . $join['typeOfJoin'] . ' (' .
-                    implode(', ', $foreignTables) . ') ON (' . implode(' AND ', $cols) . ')';
+                $sql .= ' ' . $join['typeOfJoin'] . ' ' .
+                    implode(', ', $foreignTables) . ' ON (' . implode(' AND ', $cols) . ')';
             }
         }
 
