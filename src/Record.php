@@ -25,7 +25,7 @@ namespace Pop\Db;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    2.0.0a
  */
-class Record
+class Record implements \ArrayAccess
 {
 
     /**
@@ -482,11 +482,12 @@ class Record
     /**
      * Get the rows (alias method)
      *
+     * @param  boolean $asObjects
      * @return array
      */
-    public function rows()
+    public function rows($asObjects = true)
     {
-        return $this->rows;
+        return ($asObjects) ? $this->rowObjects : $this->rows;
     }
 
     /**
@@ -793,6 +794,53 @@ class Record
         if (isset($this->columns[$name])) {
             unset($this->columns[$name]);
         }
+    }
+
+    /**
+     * ArrayAccess offsetExists
+     *
+     * @param  mixed $offset
+     * @return boolean
+     */
+    public function offsetExists($offset)
+    {
+        return $this->__isset($offset);
+    }
+
+    /**
+     * ArrayAccess offsetGet
+     *
+     * @param  mixed $offset
+     * @return mixed
+     */
+    public function offsetGet($offset)
+    {
+        return $this->__get($offset);
+    }
+
+    /**
+     * ArrayAccess offsetSet
+     *
+     * @param  mixed $offset
+     * @param  mixed $value
+     * @throws Exception
+     * @return void
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->__set($offset, $value);
+    }
+
+    /**
+     * ArrayAccess offsetUnset
+     *
+     * @param  mixed $offset
+     * @throws Exception
+     * @return void
+     */
+    public function offsetUnset($offset)
+    {
+        $this->__unset($offset);
     }
 
 }
