@@ -79,34 +79,26 @@ class Select extends AbstractSql
     /**
      * Set the JOIN clause
      *
-     * @param  mixed  $foreignTables
+     * @param  string  $foreignTable
      * @param  array  $columns
      * @param  string $typeOfJoin
      * @return Select
      */
-    public function join($foreignTables, array $columns, $typeOfJoin = 'LEFT JOIN')
+    public function join($foreignTable, array $columns, $typeOfJoin = 'LEFT JOIN')
     {
         $join = (in_array(strtoupper($typeOfJoin), self::$allowedJoins)) ? strtoupper($typeOfJoin) : 'LEFT JOIN';
 
-        if ($foreignTables instanceof \Pop\Db\Sql) {
-            $subSelectAlias = ($foreignTables->hasAlias()) ? $foreignTables->getAlias() : $foreignTables->getTable();
-            $table = '(' . $foreignTables . ') AS ' . $this->sql->quoteId($subSelectAlias);
+        if ($foreignTable instanceof \Pop\Db\Sql) {
+            $subSelectAlias = ($foreignTable->hasAlias()) ? $foreignTable->getAlias() : $foreignTable->getTable();
+            $table = '(' . $foreignTable . ') AS ' . $this->sql->quoteId($subSelectAlias);
         } else {
-            if (is_array($foreignTables)) {
-                $tables = [];
-                foreach ($foreignTables as $foreignTable) {
-                    $tables[] = $this->sql->quoteId($foreignTable);
-                }
-                $table = implode(', ', $tables);
-            } else {
-                $table = $this->sql->quoteId($foreignTables);
-            }
+            $table = $this->sql->quoteId($foreignTable);
         }
 
         $this->joins[] = [
-            'foreignTables' => $table,
-            'columns'       => $columns,
-            'typeOfJoin'    => $join
+            'foreignTable' => $table,
+            'columns'      => $columns,
+            'typeOfJoin'   => $join
         ];
 
         return $this;
@@ -303,17 +295,7 @@ class Select extends AbstractSql
                     }
                 }
 
-                $foreignTables = [];
-                if (is_array($join['foreignTables'])) {
-                    foreach ($join['foreignTables'] as $foreignTable) {
-                        $foreignTables[] = (string)$foreignTable;
-                    }
-                } else {
-                    $foreignTables[] = (string)$join['foreignTables'];
-                }
-
-                $sql .= ' ' . $join['typeOfJoin'] . ' ' .
-                    implode(', ', $foreignTables) . ' ON (' . implode(' AND ', $cols) . ')';
+                $sql .= ' ' . $join['typeOfJoin'] . ' ' . (string)$join['foreignTable'] . ' ON (' . implode(' AND ', $cols) . ')';
             }
         }
 
