@@ -1,5 +1,3 @@
 Pop DB Component
 ================
 
-Test
-
