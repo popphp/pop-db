@@ -153,8 +153,7 @@ class Row extends AbstractGateway
 
         $columns = [];
         $params  = [];
-
-        $exists = true;
+        $exists  = true;
 
         foreach ($this->primaryKeys as $k) {
             if (!isset($this->columns[$k])) {
@@ -172,7 +171,7 @@ class Row extends AbstractGateway
                     if ($placeholder == ':') {
                         $placeholder .= $column;
                     } else if ($placeholder == '$') {
-                        $placeholder .= ($i + 1);
+                        $placeholder .= $i;
                     }
                     $columns[$column] = $placeholder;
                     $params[$column]  = $value;
@@ -192,9 +191,18 @@ class Row extends AbstractGateway
                 }
                 $this->sql->update()->where->equalTo($primaryKey, $placeholder);
                 if (isset($this->primaryValues[$key])) {
-                    $params[$key] = $this->primaryValues[$key];
+                    if (substr($placeholder, 0 , 1) == ':') {
+                        $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
+                    } else {
+                        $params[$key] = $this->primaryValues[$key];
+                    }
                 } else if (isset($this->columns[$this->primaryKeys[$key]])) {
-                    $params[$key] = $this->columns[$this->primaryKeys[$key]];
+                    if (substr($placeholder, 0 , 1) == ':') {
+                        $params[$this->primaryKeys[$key]] = $this->columns[$this->primaryKeys[$key]];
+                    } else {
+                        $params[$key] = $this->columns[$this->primaryKeys[$key]];
+                    }
+
                 } else {
                     throw new Exception('Error: The value of \'' . $key . '\' is not set');
                 }
