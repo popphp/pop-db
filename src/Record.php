@@ -89,6 +89,12 @@ class Record implements \ArrayAccess
     protected $primaryKeys = ['id'];
 
     /**
+     * Is new record flag
+     * @var boolean
+     */
+    protected $isNew = false;
+
+    /**
      * Constructor
      *
      * Instantiate the database record object.
@@ -109,6 +115,7 @@ class Record implements \ArrayAccess
             throw new Exception('Error: A database connection has not been set for this record class.');
         }
         if (null !== $columns) {
+            $this->isNew = true;
             $this->setColumns($columns);
         }
 
@@ -511,7 +518,7 @@ class Record implements \ArrayAccess
         // Save or update the record
         if (null === $columns) {
             $this->rg()->setColumns($this->columns);
-            $this->rg()->save();
+            $this->rg()->save($this->isNew);
             $this->setRows([$this->rg()->getColumns()]);
         // Else, save multiple rows
         } else {

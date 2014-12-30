@@ -142,10 +142,11 @@ class Row extends AbstractGateway
     /**
      * Save (insert new or update existing) row in the table
      *
+     * @param  boolean $new
      * @throws Exception
      * @return Row
      */
-    public function save()
+    public function save($new = false)
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
@@ -153,16 +154,9 @@ class Row extends AbstractGateway
 
         $columns = [];
         $params  = [];
-        $exists  = true;
-
-        foreach ($this->primaryKeys as $k) {
-            if (!isset($this->columns[$k])) {
-                $exists = false;
-            }
-        }
 
         // If the row was found and exists, then update
-        if ($exists) {
+        if (!$new) {
             $i = 1;
             foreach ($this->columns as $column => $value) {
                 if (!in_array($column, $this->primaryKeys)) {
