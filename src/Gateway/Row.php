@@ -270,8 +270,6 @@ class Row extends AbstractGateway
             $params[$primaryKey] = $this->primaryValues[$i];
         }
 
-        $this->sql->delete()->limit(1);
-
         $this->sql->db()->prepare((string)$this->sql)
                         ->bindParams($params)
                         ->execute();
