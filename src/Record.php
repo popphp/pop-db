@@ -332,7 +332,7 @@ class Record implements \ArrayAccess
         $record = new static();
         $rows = $db->fetchResult();
         foreach ($rows as $i => $row) {
-            $rows[$i] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
+            $rows[$i] = $row;
         }
         $record->setRows($rows);
 
@@ -354,7 +354,7 @@ class Record implements \ArrayAccess
 
         $rows = [];
         while (($row = $db->fetch())) {
-            $rows[] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
+            $rows[] = $row;
         }
         $record->setRows($rows);
 
@@ -404,8 +404,9 @@ class Record implements \ArrayAccess
             $this->rows[0] = $columns;
         // Else, if an array, set the columns.
         } else if (is_array($columns)) {
-            $this->columns = $columns;
-            $this->rows[0] = new \ArrayObject($columns, \ArrayObject::ARRAY_AS_PROPS);
+            $this->columns       = $columns;
+            $this->rows[0]       = $columns;
+            $this->rowObjects[0] = new \ArrayObject($columns, \ArrayObject::ARRAY_AS_PROPS);
         // Else, throw an exception.
         } else {
             throw new Exception('The parameter passed must be either an array or null.');
