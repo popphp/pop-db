@@ -182,6 +182,16 @@ class Sql
 
         if ($this->db->isPdo()) {
             $this->placeholder = ':';
+            if ($this->db->getDbtype() == 'sqlite') {
+                $this->dbType      = self::SQLITE;
+                $this->quoteIdType = self::DOUBLE_QUOTE;
+            } else if ($this->db->getDbtype() == 'pgsql') {
+                $this->dbType      = self::PGSQL;
+                $this->quoteIdType = self::DOUBLE_QUOTE;
+            } else if ($this->db->getDbtype() == 'mysql') {
+                $this->dbType      = self::MYSQL;
+                $this->quoteIdType = self::BACKTICK;
+            }
         }
 
         return $this;
