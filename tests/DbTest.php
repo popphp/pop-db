@@ -56,9 +56,6 @@ class DbTest extends \PHPUnit_Framework_TestCase
     {
         $db = Db::connect('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']);
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', $db);
-        if (file_exists(__DIR__  . '/tmp/db.sqlite')) {
-            unlink(__DIR__  . '/tmp/db.sqlite');
-        }
     }
 
 }

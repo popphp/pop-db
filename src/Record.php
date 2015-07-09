@@ -330,11 +330,13 @@ class Record implements \ArrayAccess
            ->execute();
 
         $record = new static();
-        $rows = $db->fetchResult();
-        foreach ($rows as $i => $row) {
-            $rows[$i] = $row;
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = $db->fetchResult();
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $row;
+            }
+            $record->setRows($rows);
         }
-        $record->setRows($rows);
 
         return $record;
     }
@@ -351,12 +353,13 @@ class Record implements \ArrayAccess
         $db->query($sql);
 
         $record = new static();
-
-        $rows = [];
-        while (($row = $db->fetch())) {
-            $rows[] = $row;
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = [];
+            while (($row = $db->fetch())) {
+                $rows[] = $row;
+            }
+            $record->setRows($rows);
         }
-        $record->setRows($rows);
 
         return $record;
     }
