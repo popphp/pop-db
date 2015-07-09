@@ -75,8 +75,8 @@ class SqliteTest extends \PHPUnit_Framework_TestCase
     {
         $db = new Sqlite(['database' => __DIR__  . '/../tmp/db.sqlite']);
         $db->prepare('UPDATE ph_users SET email = :email WHERE id > :id1 AND id < :id2')
-            ->bindParams(['id' => [0, 10000]])
-            ->execute();
+           ->bindParams(['id' => [0, 10000]])
+           ->execute();
 
         $this->assertFalse($db->hasResult());
         $this->assertNotNull($db->getResult());
