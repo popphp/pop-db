@@ -2,8 +2,9 @@
 
 namespace Pop\Db\Test\Adapter;
 
-use Pop\Db\Db;
+use Pop\Db\Sql;
 use Pop\Db\Adapter\Mysql;
+use Pop\Db\Adapter\Pdo;
 
 class MysqlTest extends \PHPUnit_Framework_TestCase
 {
@@ -93,6 +94,17 @@ TABLE;
         $this->assertContains('ph_users', $db->getTables());
     }
 
+    public function testLoadTablesFromPdo()
+    {
+        $db = new Pdo([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password,
+            'type'     => 'mysql'
+        ]);
+        $this->assertContains('ph_users', $db->getTables());
+    }
+
     public function testBindParams()
     {
         $db = new Mysql([
@@ -100,10 +112,12 @@ TABLE;
             'username' => 'root',
             'password' => $this->password
         ]);
-        $db->prepare('INSERT INTO ph_users (`username`, `email`) VALUES (?, ?)')
-           ->bindParams(['testuser', $db->escape('test@test.com')])
+        $db->prepare('INSERT INTO ph_users (`username`, `password`, `email`) VALUES (?, ?, ?)')
+           ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
            ->execute();
 
+        $sql = new Sql($db, 'ph_users');
+        $this->assertEquals(Sql::MYSQL, $sql->getDbType());
 
         $this->assertFalse($db->hasResult());
         $this->assertNull($db->getResult());
@@ -111,6 +125,29 @@ TABLE;
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(0, $db->numberOfRows());
         $this->assertEquals(0, $db->numberOfFields());
+    }
+
+    public function testBindParamsWithPdo()
+    {
+        $db = new Pdo([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password,
+            'type'     => 'mysql'
+        ]);
+
+        $sql = new Sql($db, 'ph_users');
+        $this->assertEquals('`value`', $sql->quoteId('value'));
+        $this->assertEquals(Sql::MYSQL, $sql->getDbType());
+
+        $db->prepare('INSERT INTO ph_users (`username`, `password`, `email`) VALUES (?, ?, ?)')
+            ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
+            ->execute();
+
+        $this->assertFalse($db->hasResult());
+        $this->assertNotNull($db->getResult());
+        $this->assertNotNull($db->lastId());
+        $this->assertNotNull($db->getConnection());
     }
 
     public function testFetch()
@@ -127,11 +164,9 @@ TABLE;
         while (($row = $db->fetch())) {
             $rows[] = $row;
         }
-        $this->assertEquals(1, count($rows));
-        $this->assertEquals(1, $db->numberOfRows());
+        $this->assertEquals(2, count($rows));
+        $this->assertEquals(2, $db->numberOfRows());
         $this->assertEquals(6, $db->numberOfFields());
-
-        $db->disconnect();
     }
 
     public function testFetchResults()
@@ -146,8 +181,8 @@ TABLE;
            ->execute();
 
         $rows = $db->fetchResult();
-        $this->assertEquals(1, count($rows));
-        $this->assertEquals(1, $db->numberOfRows());
+        $this->assertEquals(2, count($rows));
+        $this->assertEquals(2, $db->numberOfRows());
         $this->assertEquals(6, $db->numberOfFields());
 
         $db->disconnect();
