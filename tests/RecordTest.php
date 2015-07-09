@@ -8,6 +8,12 @@ use Pop\Db\Record;
 class RecordTest extends \PHPUnit_Framework_TestCase
 {
 
+    public function testConstructorException()
+    {
+        $this->setExpectedException('Pop\Db\Exception');
+        $user = new TestAsset\Users();
+    }
+
     public function testSetDbException()
     {
         $this->setExpectedException('Pop\Db\Exception');
@@ -30,6 +36,13 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::db());
         $this->assertInstanceOf('Pop\Db\Sql', TestAsset\Users::getSql());
         $this->assertInstanceOf('Pop\Db\Sql', TestAsset\Users::sql());
+    }
+
+    public function testConstructorSetDb()
+    {
+        $db = Db::connect('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']);
+        $user = new TestAsset\Users(null, $db);
+        $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::db());
     }
 
     public function testGetPrefix()
@@ -75,12 +88,19 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
         $user->save();
         $this->assertNotNull($user->id);
+        $this->assertTrue(isset($user->id));
+        $this->assertTrue(isset($user['id']));
         $id = $user->id;
+        $id = $user['id'];
 
         $u = TestAsset\Users::findById($id);
         $this->assertEquals('testuser', $u->username);
-        $u->username = 'testuser1';
+        $u->username   = 'testuser1';
+        $u['username'] = 'testuser1';
         $u->save();
+
+        unset($u->id);
+        unset($u['id']);
 
         $u = TestAsset\Users::findBy(['username' => 'testuser1']);
         $this->assertEquals($id, $u->id);
@@ -94,6 +114,21 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $users = TestAsset\Users::findAll();
         $this->assertEquals(1, $users->count());
 
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id >=' => 0]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id >' => 0]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id <=' => 10000]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id <' => 10000]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id !=' => 10000]));
+        $this->assertEquals(0, TestAsset\Users::getTotal(['username' => null]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['username-' => null]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id' => [1001, 1002]]));
+        $this->assertEquals(0, TestAsset\Users::getTotal(['id-' => [1001, 1002]]));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['id' => '(1000, 1002)']));
+        $this->assertEquals(0, TestAsset\Users::getTotal(['id-' => '(1000, 1002)']));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['username' => 'test%']));
+        $this->assertEquals(0, TestAsset\Users::getTotal(['username' => 'test%-']));
+        $this->assertEquals(1, TestAsset\Users::getTotal(['username' => '%user1']));
+        $this->assertEquals(0, TestAsset\Users::getTotal(['username' => '-%user1']));
         $this->assertEquals(1, TestAsset\Users::getTotal(['username' => 'testuser1']));
 
         $u->delete();
@@ -138,10 +173,6 @@ class RecordTest extends \PHPUnit_Framework_TestCase
     {
         $users = TestAsset\Users::query('SELECT * FROM ph_users');
         $this->assertEquals(1, $users->count());
-
-        if (file_exists(__DIR__  . '/tmp/db.sqlite')) {
-            unlink(__DIR__  . '/tmp/db.sqlite');
-        }
     }
 
 }

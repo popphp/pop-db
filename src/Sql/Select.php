@@ -290,8 +290,7 @@ class Select extends AbstractSql
                                 ((strpos($c, '.') !== false) ? $this->sql->quoteId($c) : $c);
                         }
                     } else {
-                        $cols[] = ((strpos($col1, '.') !== false) ? $this->sql->quoteId($col1) : $col1) . ' = ' .
-                            ((strpos($col2, '.') !== false) ? $this->sql->quoteId($col2) : $col2);
+                        $cols[] = $this->sql->quoteId($col1) . ' = ' . $this->sql->quoteId($col2);
                     }
                 }
 

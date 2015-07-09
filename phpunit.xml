@@ -8,6 +8,10 @@
     <filter>
         <whitelist addUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">src</directory>
+            <exclude>
+                <file>src/Adapter/Oracle.php</file>
+                <file>src/Adapter/Sqlsrv.php</file>
+            </exclude>
         </whitelist>
     </filter>
     <logging>
