@@ -105,13 +105,11 @@ $sql->select();
 echo $sql;
 ```
 
-The above example produces:
-
 ```sql
 SELECT * FROM `users`
 ```
 
-Here's an INSERT example:
+INSERT example:
 
 ```php
 $sql->insert([
@@ -121,32 +119,28 @@ $sql->insert([
 echo $sql;
 ```
 
-The above example produces:
-
 ```sql
 INSERT INTO `users` (`username`, `password`) VALUES (?, ?)
 ```
 
-If the database adapter was PostgreSQL, it would have instead produced:
+If the database adapter was PostgreSQL instead of MySQL, it would have instead produced:
 
 ```sql
 INSERT INTO "users" ("username", "password") VALUES ($1, $2)
 ```
 
-Here's an DELETE example:
+DELETE example:
 
 ```php
 $sql->delete()->where('id = :id');
 echo $sql;
 ```
 
-The above example produces:
-
 ```sql
 DELETE FROM `users` WHERE (`id` = ?)
 ```
 
-Here's an UPDATE example:
+UPDATE example:
 
 ```php
 $sql->update([
@@ -155,8 +149,6 @@ $sql->update([
 ])->where('id = :id');
 echo $sql;
 ```
-
-The above example produces:
 
 ```sql
 UPDATE `users` SET `username` = ?, `password` = ? WHERE (`id` = ?)
@@ -171,8 +163,6 @@ $sql->select(['id', 'username', 'email'])
     ->orderBy('id', 'DESC');
 echo $sql;
 ```
-
-The above example produces:
 
 ```sql
 SELECT `id`, `username`, `email` FROM `users`
