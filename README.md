@@ -109,15 +109,48 @@ The above example produces:
 SELECT * FROM `users`
 ```
 
+Here's a slightly more complex example, using a JOIN and a parameter for a prepared statement:  
+
 ```php
-$sql->select(['id', 'username'])->where('id < :id')->orderBy('id', 'DESC');;
+$sql->select(['id', 'username', 'email'])
+    ->join('user_info', ['users.id' => 'user_info.user_id'])
+    ->where('id < :id')
+    ->orderBy('id', 'DESC');
 echo $sql;
 ```
 
 The above example produces:
 
 ```sql
-SELECT `id`, `username` FROM `users` WHERE (`id` < ?) ORDER BY `id` DESC
+SELECT `id`, `username`, `email` FROM `users`
+LEFT JOIN `user_info` ON (`users`.`id` = `user_info`.`user_id`)
+WHERE (`id` < ?) ORDER BY `id` DESC
+```
+
+##### Executing the query with the adapter
+
+For the simple example above (standard query without a parameter), you can use the `query()` method:
+
+```php
+$db->query((string)$sql);
+
+while (($row = $db->fetch())) {
+    print_r($row);
+}
+```
+
+For the prepared statement example, you would use the `execute()` method:
+
+```php
+$db->prepare((string)$sql)
+   ->bindParams(['id' => 1000])
+   ->execute();
+
+$rows = $db->fetchResult();
+
+foreach ($rows as $row) {
+    print_r($row);
+}
 ```
 
 [Top](#basic-usage)
