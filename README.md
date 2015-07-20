@@ -100,7 +100,7 @@ $db = Db::connect('mysql', [
 $sql = new Sql($db, 'users');
 
 $sql->select();
-echo $sql;  
+echo $sql;
 ```
 
 The above example produces:
@@ -109,7 +109,52 @@ The above example produces:
 SELECT * FROM `users`
 ```
 
-Here's a slightly more complex example, using a JOIN and a parameter for a prepared statement:  
+Here's an INSERT example:
+
+```php
+$sql->insert([
+    'username' => ':username',
+    'password' => ':password'
+]);
+echo $sql;
+```
+
+The above example produces:
+
+```sql
+INSERT INTO `users` (`username`, `password`) VALUES (?, ?)
+```
+
+Here's an DELETE example:
+
+```php
+$sql->delete()->where('id = :id');
+echo $sql;
+```
+
+The above example produces:
+
+```sql
+DELETE FROM `users` WHERE (`id` = ?)
+```
+
+Here's an UPDATE example:
+
+```php
+$sql->update([
+    'username' => ':username',
+    'password' => ':password'
+])->where('id = :id');
+echo $sql;
+```
+
+The above example produces:
+
+```sql
+UPDATE `users` SET `username` = ?, `password` = ? WHERE (`id` = ?)
+```
+
+Here's a slightly more complex SELECT example, using a JOIN:  
 
 ```php
 $sql->select(['id', 'username', 'email'])
@@ -157,6 +202,94 @@ foreach ($rows as $row) {
 
 ### Using active record
 
+The implementation of the Active Record pattern is actually a bit of a hybrid between
+a Row Gateway and a Table Gateway pattern. It does follow the concept of select and modifying
+a single row entry, but also expands to allow you to select multiple rows at a time.
+There are a few helper methods to allow you a quick way to execute some common queries.
 
+The main idea behind this particular implement of Active Record is that you would have a
+class that represents a table, and the class name is the table name (unless otherwise specified.)
+The table class would extend the `Pop\Db\Record` class. By default, the primary key is set to 'id',
+but that can be changed as well.
+
+```php
+namespace MyApp\Table;
+
+use Pop\Db\Record;
+
+class Users extends Record {
+
+}
+```
+
+At some point at the beginning of the life-cycle of your application, you would need to set the
+database adapter object for the application to use:
+
+```php
+Pop\Db\Record::setDb(Db::connect('mysql', [
+    'database' => 'mysql_database',
+    'username' => 'mysql_username',
+    'password' => 'mysql_password',
+    'host'     => 'localhost'
+]));
+```
+
+Then from there simple queries are possible with the helper methods:
+
+```php
+use MyApp\Table\Users;
+
+$user = Users::findById(1001);
+if (isset($user->id)) {
+    echo $user->username;            
+}
+```
+
+```php
+use MyApp\Table\Users;
+
+$users = Users::findBy(['active' => 1]);
+if ($users->hasRows()) {
+    foreach ($users->rows() as $user) {
+        echo $user->username;            
+    }
+}
+```
+
+```php
+use MyApp\Table\Users;
+
+$users = Users::findAll();
+if ($users->hasRows()) {
+    foreach ($users->rows() as $user) {
+        echo $user->username;            
+    }
+}
+```
+
+The examples above are basic SELECT examples. Let's look at some INSERT and UPDATE examples:
+
+```php
+use MyApp\Table\Users;
+
+$user = new Users([
+    'username' => 'testuser',
+    'password' => '12test34',
+    'email'    => 'test@test.com'
+]);
+$user->save();
+
+echo $user->id; // Echoes the newly assigned ID of that newly inserted user record.
+```
+
+```php
+use MyApp\Table\Users;
+
+$user = Users::findById(1001);
+if (isset($user->id)) {
+    $user->email = 'new_email@test.com';
+    $user->save();
+}
+```
 
 [Top](#basic-usage)
