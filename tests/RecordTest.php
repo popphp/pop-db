@@ -113,6 +113,7 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
         $users = TestAsset\Users::findAll();
         $this->assertEquals(1, $users->count());
+        $this->assertTrue($users->hasRows());
 
         $this->assertEquals(1, TestAsset\Users::getTotal(['id >=' => 0]));
         $this->assertEquals(1, TestAsset\Users::getTotal(['id >' => 0]));

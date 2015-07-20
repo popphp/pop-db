@@ -2,9 +2,7 @@
 /**
  * Pop PHP Framework (http://www.popphp.org/)
  *
- * @link       https://github.com/popphp/popphp
- * @category   Pop
- * @package    Pop_Db
+ * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2015 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
@@ -509,6 +507,16 @@ class Record implements \ArrayAccess
     public function count()
     {
         return count($this->rows);
+    }
+
+    /**
+     * Determine if the result has rows
+     *
+     * @return boolean
+     */
+    public function hasRows()
+    {
+        return (count($this->rows) > 0);
     }
 
     /**
