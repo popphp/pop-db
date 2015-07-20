@@ -109,7 +109,7 @@ echo $sql;
 SELECT * FROM `users`
 ```
 
-INSERT example:
+##### INSERT example:
 
 ```php
 $sql->insert([
@@ -129,7 +129,7 @@ If the database adapter was PostgreSQL instead of MySQL, it would have instead p
 INSERT INTO "users" ("username", "password") VALUES ($1, $2)
 ```
 
-DELETE example:
+##### DELETE example:
 
 ```php
 $sql->delete()->where('id = :id');
@@ -140,7 +140,7 @@ echo $sql;
 DELETE FROM `users` WHERE (`id` = ?)
 ```
 
-UPDATE example:
+##### UPDATE example:
 
 ```php
 $sql->update([
@@ -154,7 +154,7 @@ echo $sql;
 UPDATE `users` SET `username` = ?, `password` = ? WHERE (`id` = ?)
 ```
 
-Here's a slightly more complex SELECT example, using a JOIN:  
+##### A more complex SELECT example, using JOIN:  
 
 ```php
 $sql->select(['id', 'username', 'email'])
