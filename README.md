@@ -123,7 +123,7 @@ echo $sql;
 INSERT INTO `users` (`username`, `password`) VALUES (?, ?)
 ```
 
-If the database adapter was PostgreSQL instead of MySQL, it would have instead produced:
+If the database adapter was PostgreSQL instead of MySQL, it would have produced:
 
 ```sql
 INSERT INTO "users" ("username", "password") VALUES ($1, $2)
@@ -201,11 +201,12 @@ foreach ($rows as $row) {
 ### Using active record
 
 The implementation of the Active Record pattern is actually a bit of a hybrid between
-a Row Gateway and a Table Gateway pattern. It does follow the concept of select and modifying
-a single row entry, but also expands to allow you to select multiple rows at a time.
-There are a few helper methods to allow you a quick way to execute some common queries.
+a Row Gateway and a Table Gateway pattern. It does follow the concept of selecting and
+modifying a single row entry, but also expands to allow you to select multiple rows
+at a time. There are a few helper methods to allow you a quick way to execute some
+common queries.
 
-The main idea behind this particular implement of Active Record is that you would have a
+The main idea behind this particular implementation of Active Record is that you would have a
 class that represents a table, and the class name is the table name (unless otherwise specified.)
 The table class would extend the `Pop\Db\Record` class. By default, the primary key is set to 'id',
 but that can be changed as well.
@@ -237,6 +238,7 @@ Then from there simple queries are possible with the helper methods:
 ```php
 use MyApp\Table\Users;
 
+// Find the user with id = 1001
 $user = Users::findById(1001);
 if (isset($user->id)) {
     echo $user->username;            
@@ -246,6 +248,7 @@ if (isset($user->id)) {
 ```php
 use MyApp\Table\Users;
 
+// Find all active users
 $users = Users::findBy(['active' => 1]);
 if ($users->hasRows()) {
     foreach ($users->rows() as $user) {
@@ -257,6 +260,7 @@ if ($users->hasRows()) {
 ```php
 use MyApp\Table\Users;
 
+// Find all users
 $users = Users::findAll();
 if ($users->hasRows()) {
     foreach ($users->rows() as $user) {
@@ -273,11 +277,15 @@ use MyApp\Table\Users;
 $user = new Users([
     'username' => 'testuser',
     'password' => '12test34',
-    'email'    => 'test@test.com'
+    'email'    => 'test@test.com',
+    'active'   => 1
 ]);
+
+// Perform an INSERT statement to save the new user record
 $user->save();
 
-echo $user->id; // Echoes the newly assigned ID of that newly inserted user record.
+// Echoes the newly assigned ID of that newly inserted user record
+echo $user->id;
 ```
 
 ```php
@@ -286,7 +294,20 @@ use MyApp\Table\Users;
 $user = Users::findById(1001);
 if (isset($user->id)) {
     $user->email = 'new_email@test.com';
+    
+    // Perform an UPDATE statement to modify the existing user record
     $user->save();
+}
+```
+
+And here's an example of deleting a record:
+
+```php
+use MyApp\Table\Users;
+
+$user = Users::findById(1001);
+if (isset($user->id)) {
+    $user->delete();  // Performs a DELETE statement to delete the user record
 }
 ```
 
