@@ -32,7 +32,7 @@ Install `pop-db` using Composer.
 
 * [Connect to a database](#connect-to-a-database)
 * [Using the SQL query builder](#using-the-sql-query-builder)
-* [Using Active Record](#using-active-record)  
+* [Using active record](#using-active-record)  
 
 ### Connect to a database
 
@@ -106,7 +106,7 @@ echo $sql;
 The above example produces:
 
 ```sql
-SELECT * FROM \`users\`
+SELECT * FROM `users`
 ```
 
 ```php
@@ -117,13 +117,12 @@ echo $sql;
 The above example produces:
 
 ```sql
-SELECT \`id\`, \`username\` FROM \`users\` WHERE (\`id\` < ?) ORDER BY \`id\` DESC
+SELECT `id`, `username` FROM `users` WHERE (`id` < ?) ORDER BY `id` DESC
 ```
-
 
 [Top](#basic-usage)
 
-### Using Active Record
+### Using active record
 
 
 
