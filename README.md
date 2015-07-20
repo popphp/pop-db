@@ -6,8 +6,8 @@ pop-db
 
 OVERVIEW
 --------
-`pop-db` is a robust database component that provides multiple sets of features and functionality
-to easily interface with databases. Features include:
+`pop-db` is a robust database component that provides a variety of features and functionality
+to easily interface with databases. Those features include:
 
 * Database Adapters
     + MySQL
@@ -16,8 +16,8 @@ to easily interface with databases. Features include:
     + PDO
     + SQL Server
     + Oracle
-* Active Record Implementation
 * SQL Query Builder
+* An Active Record Implementation
 
 `pop-db`is a component of the [Pop PHP Framework](http://www.popphp.org/).
 
@@ -83,7 +83,9 @@ $mysql = new Adapter\Mysql([
 
 Once you have a database adapter object ready to go, you can utilize the
 SQL query builder to help you build queries with the correct syntax for
-that particular database.
+that particular database. The beauty of this is that it takes the burden
+off of you, the user, from remembering all of the slight differences
+between the different database platforms.
 
 ```php
 use Pop\Db\Db;
@@ -123,6 +125,12 @@ The above example produces:
 
 ```sql
 INSERT INTO `users` (`username`, `password`) VALUES (?, ?)
+```
+
+If the database adapter was PostgreSQL, it would have instead produced:
+
+```sql
+INSERT INTO "users" ("username", "password") VALUES ($1, $2)
 ```
 
 Here's an DELETE example:
