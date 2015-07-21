@@ -431,7 +431,7 @@ class Sql
     /**
      * Create a insert statement
      *
-     * @param  mixed$columns
+     * @param  mixed $columns
      * @throws Exception
      * @return Sql\Insert
      */
@@ -453,7 +453,7 @@ class Sql
     /**
      * Create a update statement
      *
-     * @param  $columns
+     * @param  mixed $columns
      * @throws Exception
      * @return Sql\Update
      */
@@ -475,6 +475,7 @@ class Sql
     /**
      * Create a delete statement
      *
+     * @param  mixed $delete
      * @param  Sql\Delete
      * @return Sql\Update
      */
