@@ -105,11 +105,23 @@ class Db
 
         // Remove comments, execute queries
         if (count($lines) > 0) {
+            $insideComment = false;
             foreach ($lines as $i => $line) {
-                if (substr($line, 0, 1) == '-') {
+                if ($insideComment) {
+                    if (substr($line, 0, 2) == '*/') {
+                        $insideComment = false;
+                    }
                     unset($lines[$i]);
+                } else {
+                    if ((substr($line, 0, 1) == '-') || (substr($line, 0, 1) == '#')) {
+                        unset($lines[$i]);
+                    } else if (substr($line, 0, 2) == '/*') {
+                        $insideComment = true;
+                        unset($lines[$i]);
+                    }
                 }
             }
+
             $sqlString  = trim(implode('', $lines));
             $newLine    = (strpos($sqlString, ";\r\n") !== false) ? ";\r\n" : ";\n";
             $statements = explode($newLine, $sqlString);
