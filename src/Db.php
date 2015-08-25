@@ -100,18 +100,29 @@ class Db
             }
         }
 
-        $conn       = new $class($db);
-        $sql        = trim(file_get_contents($sql));
-        $statements = (strpos($sql, ";\r\n") !== false) ? ";\r\n" : ";\n";
-        $statements = explode($statements, $sql);
+        $conn  = new $class($db);
+        $lines = file($sql);
 
-        foreach ($statements as $statement) {
-            if (!empty($statement)) {
-                if (isset($db['prefix'])) {
-                    $statement = str_replace('[{prefix}]', $db['prefix'], trim($statement));
+        // Remove comments, execute queries
+        if (count($lines) > 0) {
+            foreach ($lines as $i => $line) {
+                if (substr($line, 0, 1) == '-') {
+                    unset($lines[$i]);
                 }
-                $conn->query($statement);
+            }
+            $sqlString  = trim(implode('', $lines));
+            $newLine    = (strpos($sqlString, ";\r\n") !== false) ? ";\r\n" : ";\n";
+            $statements = explode($newLine, $sqlString);
+
+            foreach ($statements as $statement) {
+                if (!empty($statement)) {
+                    if (isset($db['prefix'])) {
+                        $statement = str_replace('[{prefix}]', $db['prefix'], trim($statement));
+                    }
+                    $conn->query($statement);
+                }
             }
         }
     }
+
 }
