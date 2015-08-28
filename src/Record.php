@@ -118,11 +118,16 @@ class Record implements \ArrayAccess
         }
 
         // Set the table name from the class name
-        static::parseTableName(get_called_class());
+        if (null === static::$table) {
+            static::parseTableName(get_called_class());
+        } else if ((null !== static::$prefix) && (substr(static::$table, 0, strlen(static::$prefix)) !== static::$prefix)) {
+            static::$table = static::$prefix . static::$table;
+        }
+
         static::$sql->setTable(static::$table);
 
-        $this->rowGateway   = new Gateway\Row(static::getSql(), $this->primaryKeys, static::$table);
-        $this->tableGateway = new Gateway\Table(static::getSql(), static::$table);
+        $this->rowGateway   = new Gateway\Row(static::$sql, $this->primaryKeys, static::$table);
+        $this->tableGateway = new Gateway\Table(static::$sql, static::$table);
     }
 
     /**
@@ -211,8 +216,10 @@ class Record implements \ArrayAccess
      */
     public static function getSql()
     {
-        static::parseTableName(get_called_class());
-        static::$sql->setTable(static::$table);
+        if (null === static::$sql->getTable()) {
+            static::parseTableName(get_called_class());
+            static::$sql->setTable(static::$table);
+        }
         return static::$sql;
     }
 
@@ -626,7 +633,9 @@ class Record implements \ArrayAccess
             } else {
                 $cls = $class;
             }
+
             $cls = static::camelCaseToUnderscore($cls);
+
             if (static::$prefix . $cls != static::$table) {
                 static::$table = static::$prefix . $cls;
             }
