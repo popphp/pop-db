@@ -36,19 +36,19 @@ class Record implements \ArrayAccess
      * SQL Object
      * @var Sql
      */
-    protected static $sql = null;
+    protected $sql = null;
 
     /**
      * Table name
      * @var string
      */
-    protected static $table = null;
+    protected $table = null;
 
     /**
      * Table prefix
      * @var string
      */
-    protected static $prefix = null;
+    protected $prefix = null;
 
     /**
      * Result rows (an array of arrays)
@@ -98,36 +98,39 @@ class Record implements \ArrayAccess
      * Instantiate the database record object.
      *
      * @param  array $columns
-     * @param  Adapter\AbstractAdapter $db
      * @throws Exception
      * @return Record
      */
-    public function __construct(array $columns = null, Adapter\AbstractAdapter $db = null)
+    public function __construct(array $columns = null)
     {
-        $class = get_class($this);
-
-        if (null !== $db) {
-            $class::setDb($db);
-        }
         if (!static::hasDb()) {
             throw new Exception('Error: A database connection has not been set for this record class.');
         }
+
         if (null !== $columns) {
             $this->isNew = true;
             $this->setColumns($columns);
         }
 
         // Set the table name from the class name
-        if (null === static::$table) {
-            static::parseTableName(get_called_class());
-        } else if ((null !== static::$prefix) && (substr(static::$table, 0, strlen(static::$prefix)) !== static::$prefix)) {
-            static::$table = static::$prefix . static::$table;
+        if (null === $this->table) {
+            $class = get_class($this);
+            if (strpos($class, '_') !== false) {
+                $cls = substr($class, (strrpos($class, '_') + 1));
+            } else if (strpos($class, '\\') !== false) {
+                $cls = substr($class, (strrpos($class, '\\') + 1));
+            } else {
+                $cls = $class;
+            }
+            $this->table = static::camelCaseToUnderscore($cls);
         }
 
-        static::$sql->setTable(static::$table);
+        if (null === $this->sql) {
+            $this->setSql(new Sql(static::db(), $this->getFullTable()));
+        }
 
-        $this->rowGateway   = new Gateway\Row(static::$sql, $this->primaryKeys, static::$table);
-        $this->tableGateway = new Gateway\Table(static::$sql, static::$table);
+        $this->rowGateway   = new Gateway\Row($this->sql, $this->primaryKeys, $this->getFullTable());
+        $this->tableGateway = new Gateway\Table($this->sql, $this->getFullTable());
     }
 
     /**
@@ -145,29 +148,34 @@ class Record implements \ArrayAccess
         if (($isDefault) || ($class === __CLASS__)) {
             static::$db['default'] = $db;
         }
-
-        static::setSql($db);
     }
 
     /**
-     * Set SQL object
+     * Check is the class has a DB adapter
      *
-     * @param  Adapter\AbstractAdapter $db
-     * @return void
+     * @return boolean
      */
-    public static function setSql(Adapter\AbstractAdapter $db)
+    public static function hasDb()
     {
-        static::parseTableName(get_called_class());
-        static::$sql = new Sql(static::getDb(), static::$table);
+        $result = false;
+        $class  = get_called_class();
+
+        if (isset(static::$db[$class])) {
+            $result = true;
+        } else if (isset(static::$db['default'])) {
+            $result = true;
+        }
+
+        return $result;
     }
 
     /**
-     * Get DB connection
+     * Get DB adapter
      *
      * @throws Exception
      * @return Adapter\AbstractAdapter
      */
-    public static function getDb()
+    public static function db()
     {
         $class = get_called_class();
 
@@ -181,86 +189,25 @@ class Record implements \ArrayAccess
     }
 
     /**
-     * Get DB connection (alias method)
+     * Set the SQL object
      *
-     * @throws Exception
-     * @return Adapter\AbstractAdapter
+     * @param  Sql $sql
+     * @return Record
      */
-    public static function db()
+    public function setSql(Sql $sql)
     {
-        return static::getDb();
+        $this->sql = $sql;
+        return $this;
     }
 
     /**
-     * Check is the class has any DB connections set
-     *
-     * @return boolean
-     */
-    public static function hasDb()
-    {
-        $result = false;
-
-        if (isset(static::$db[get_called_class()])) {
-            $result = true;
-        } else if (isset(static::$db['default'])) {
-            $result = true;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get SQL object
+     * Get the SQL object
      *
      * @return Sql
      */
-    public static function getSql()
+    public function sql()
     {
-        if (null === static::$sql->getTable()) {
-            static::parseTableName(get_called_class());
-            static::$sql->setTable(static::$table);
-        }
-        return static::$sql;
-    }
-
-    /**
-     * Get SQL object (alias method)
-     *
-     * @return Sql
-     */
-    public static function sql()
-    {
-        return static::getSql();
-    }
-
-    /**
-     * Get the table prefix
-     *
-     * @return string
-     */
-    public static function getPrefix()
-    {
-        return static::$prefix;
-    }
-
-    /**
-     * Get the table name
-     *
-     * @return string
-     */
-    public static function getTable()
-    {
-        return static::$table;
-    }
-
-    /**
-     * Get table info anf return as an array.
-     *
-     * @return array
-     */
-    public static function getTableInfo()
-    {
-        return (new static())->rg()->getTableInfo();
+        return $this->sql;
     }
 
     /**
@@ -282,11 +229,10 @@ class Record implements \ArrayAccess
      * Find by method
      *
      * @param  array $columns
-     * @param  array $set
      * @param  array $options
      * @return Record
      */
-    public static function findBy(array $columns = null, array $set = null, array $options = [])
+    public static function findBy(array $columns = null, array $options = [])
     {
         $record = new static();
         $params = null;
@@ -298,7 +244,7 @@ class Record implements \ArrayAccess
             $where  = $parsedColumns['where'];
         }
 
-        $record->tg()->select($set, $where, $params, $options);
+        $record->tg()->select(null, $where, $params, $options);
         $record->setRows($record->tg()->rows());
 
         return $record;
@@ -307,29 +253,31 @@ class Record implements \ArrayAccess
     /**
      * Find all method
      *
-     * @param  array $set
      * @param  array $options
      * @return Record
      */
-    public static function findAll(array $set = null, array $options = [])
+    public static function findAll(array $options = [])
     {
-        return static::findBy(null, $set, $options);
+        return static::findBy(null, $options);
     }
 
     /**
      * Execute a custom prepared SQL query.
      *
-     * @param  string $sql
+     * @param  mixed  $sql
      * @param  mixed  $params
      * @return Record
      */
     public static function execute($sql, $params)
     {
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
         if (!is_array($params)) {
             $params = [$params];
         }
 
-        $db = static::getDb();
+        $db = static::db();
         $db->prepare($sql)
            ->bindParams($params)
            ->execute();
@@ -349,12 +297,16 @@ class Record implements \ArrayAccess
     /**
      * Execute a custom SQL query.
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Record
      */
     public static function query($sql)
     {
-        $db = static::getDb();
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+
+        $db = static::db();
         $db->query($sql);
 
         $record = new static();
@@ -446,6 +398,46 @@ class Record implements \ArrayAccess
     }
 
     /**
+     * Get the table prefix
+     *
+     * @return string
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
+     * Get the table
+     *
+     * @return string
+     */
+    public function getTable()
+    {
+        return $this->table;
+    }
+
+    /**
+     * Get the full table name (prefix + table)
+     *
+     * @return string
+     */
+    public function getFullTable()
+    {
+        return $this->prefix . $this->table;
+    }
+
+    /**
+     * Get table info and return as an array.
+     *
+     * @return array
+     */
+    public function getTableInfo()
+    {
+        return $this->rg()->getTableInfo();
+    }
+
+    /**
      * Get the primary keys
      *
      * @return array
@@ -471,6 +463,26 @@ class Record implements \ArrayAccess
      * @return \ArrayObject
      */
     public function getColumnsAsObject()
+    {
+        return new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
+    }
+
+    /**
+     * Alias for getColumns
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return $this->columns;
+    }
+
+    /**
+     * Alias to getColumnsAsObject
+     *
+     * @return \ArrayObject
+     */
+    public function toArrayObject()
     {
         return new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
     }
@@ -560,10 +572,18 @@ class Record implements \ArrayAccess
                 $this->rg()->setColumns($this->columns);
             }
             $this->rg()->delete();
+            $this->setColumns();
+            if (isset($this->rows[0])) {
+                unset($this->rows[0]);
+            }
+            if (isset($this->rowObjects[0])) {
+                unset($this->rowObjects[0]);
+            }
         // Delete multiple rows
         } else {
             $parsedColumns = static::parseColumns($columns, $this->sql()->getPlaceholder());
             $this->tg()->delete($parsedColumns['where'], $parsedColumns['params']);
+            $this->setRows();
         }
     }
 
@@ -617,30 +637,6 @@ class Record implements \ArrayAccess
         return ['column' => $column, 'op' => $op];
     }
 
-    /**
-     * Method to parse the table name from the class name
-     *
-     * @param string $class
-     * @return string
-     */
-    protected static function parseTableName($class)
-    {
-        if ($class != 'Pop\Db\Record') {
-            if (strpos($class, '_') !== false) {
-                $cls = substr($class, (strrpos($class, '_') + 1));
-            } else if (strpos($class, '\\') !== false) {
-                $cls = substr($class, (strrpos($class, '\\') + 1));
-            } else {
-                $cls = $class;
-            }
-
-            $cls = static::camelCaseToUnderscore($cls);
-
-            if (static::$prefix . $cls != static::$table) {
-                static::$table = static::$prefix . $cls;
-            }
-        }
-    }
 
     /**
      * Method to parse the columns to create $where and $param arrays

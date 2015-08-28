@@ -6,5 +6,5 @@ use Pop\Db\Record;
 
 class Users extends Record
 {
-    protected static $prefix = 'ph_';
+    protected $prefix = 'ph_';
 }

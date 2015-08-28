@@ -17,7 +17,7 @@ class RecordTest extends \PHPUnit_Framework_TestCase
     public function testSetDbException()
     {
         $this->setExpectedException('Pop\Db\Exception');
-        $db = TestAsset\Users::getDb();
+        $db = TestAsset\Users::db();
     }
 
     public function testSetDb()
@@ -25,7 +25,7 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $db = Db::connect('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']);
         Record::setDb($db, true);
         $this->assertTrue(TestAsset\Users::hasDb());
-        $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::getDb());
+        $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::db());
     }
 
     public function testSetDbChildClass()
@@ -34,8 +34,7 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         TestAsset\Users::setDb($db, true);
         $this->assertTrue(TestAsset\Users::hasDb());
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::db());
-        $this->assertInstanceOf('Pop\Db\Sql', TestAsset\Users::getSql());
-        $this->assertInstanceOf('Pop\Db\Sql', TestAsset\Users::sql());
+        $this->assertInstanceOf('Pop\Db\Sql', (new TestAsset\Users())->sql());
     }
 
     public function testConstructorSetDb()
@@ -47,17 +46,22 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
     public function testGetPrefix()
     {
-        $this->assertEquals('ph_', TestAsset\Users::getPrefix());
+        $this->assertEquals('ph_', (new TestAsset\Users())->getPrefix());
     }
 
     public function testGetTable()
     {
-        $this->assertEquals('ph_users', TestAsset\Users::getTable());
+        $this->assertEquals('users', (new TestAsset\Users())->getTable());
+    }
+
+    public function testGetFullTable()
+    {
+        $this->assertEquals('ph_users', (new TestAsset\Users())->getFullTable());
     }
 
     public function testGetTableInfo()
     {
-        $info = TestAsset\Users::getTableInfo();
+        $info = (new TestAsset\Users())->getTableInfo();
         $this->assertEquals('ph_users', $info['tableName']);
         $this->assertEquals('id', $info['primaryId'][0]);
         $this->assertEquals(6, count($info['columns']));
@@ -168,11 +172,25 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
         $users = TestAsset\Users::execute('SELECT * FROM "ph_users" WHERE "username" = :username', ['username' => 'testuser']);
         $this->assertEquals(1, $users->count());
+
+        $sql = (new TestAsset\Users())->sql();
+        $sql->select()->where(['username' => ':username']);
+
+        $users = TestAsset\Users::execute($sql, ['username' => 'testuser']);
+        $this->assertEquals(1, $users->count());
+        $this->assertTrue(is_array($users->toArray()));
+        $this->assertTrue($users->toArrayObject() instanceof \ArrayObject);
     }
 
     public function testQuery()
     {
         $users = TestAsset\Users::query('SELECT * FROM ph_users');
+        $this->assertEquals(1, $users->count());
+
+        $sql = (new TestAsset\Users())->sql();
+        $sql->select();
+
+        $users = TestAsset\Users::query($sql);
         $this->assertEquals(1, $users->count());
     }
 

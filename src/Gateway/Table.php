@@ -65,20 +65,20 @@ class Table extends AbstractGateway
     /**
      * Select rows from the table
      *
-     * @param  array $set
+     * @param  array $columns
      * @param  mixed $where
      * @param  array $params
      * @param  array $options
      * @throws Exception
      * @return Table
      */
-    public function select($set = null, $where = null, array $params = null, array $options = [])
+    public function select(array $columns = null, $where = null, array $params = null, array $options = [])
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
         }
 
-        $this->sql->from($this->table)->select(new \Pop\Db\Sql\Select($this->sql, $set));
+        $this->sql->from($this->table)->select(new \Pop\Db\Sql\Select($this->sql, $columns));
 
         if (null !== $where) {
             $this->sql->select()->where((new \Pop\Db\Sql\Where($this->sql))->add($where));
@@ -111,25 +111,25 @@ class Table extends AbstractGateway
     /**
      * Insert rows into the table
      *
-     * @param  array $set
+     * @param  array $columns
      * @throws Exception
      * @return Table
      */
-    public function insert(array $set)
+    public function insert(array $columns)
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
         }
 
         // If an array of rows of values, else, make it an array of rows of values
-        $rowSets = (isset($set[0]) && is_array($set[0])) ? $set : [$set];
+        $rowSets = (isset($columns[0]) && is_array($columns[0])) ? $columns : [$columns];
 
-        foreach ($rowSets as $set) {
-            $columns = [];
-            $params  = [];
+        foreach ($rowSets as $columns) {
+            $cols   = [];
+            $params = [];
 
             $i = 1;
-            foreach ($set as $column => $value) {
+            foreach ($columns as $column => $value) {
                 $placeholder = $this->sql->getPlaceholder();
 
                 if ($placeholder == ':') {
@@ -137,12 +137,12 @@ class Table extends AbstractGateway
                 } else if ($placeholder == '$') {
                     $placeholder .= $i;
                 }
-                $columns[$column] = $placeholder;
-                $params[]  = $value;
+                $cols[$column] = $placeholder;
+                $params[]      = $value;
                 $i++;
             }
 
-            $this->sql->into($this->table)->insert(new \Pop\Db\Sql\Insert($this->sql, $columns));
+            $this->sql->into($this->table)->insert(new \Pop\Db\Sql\Insert($this->sql, $cols));
             $this->sql->db()->prepare((string)$this->sql)
                             ->bindParams($params)
                             ->execute();
@@ -154,23 +154,23 @@ class Table extends AbstractGateway
     /**
      * Update rows in the table
      *
-     * @param  array $set
+     * @param  array $columns
      * @param  mixed $where
      * @param  array $pars
      * @throws Exception
      * @return Table
      */
-    public function update(array $set, $where = null, array $pars = [])
+    public function update(array $columns, $where = null, array $pars = [])
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
         }
 
-        $columns = [];
-        $params  = [];
+        $cols   = [];
+        $params = [];
 
         $i = 1;
-        foreach ($set as $column => $value) {
+        foreach ($columns as $column => $value) {
             $placeholder = $this->sql->getPlaceholder();
 
             if ($placeholder == ':') {
@@ -178,12 +178,12 @@ class Table extends AbstractGateway
             } else if ($placeholder == '$') {
                 $placeholder .= ($i + 1);
             }
-            $columns[$column] = $placeholder;
+            $cols[$column] = $placeholder;
             $params[$column]  = $value;
             $i++;
         }
 
-        $this->sql->setTable($this->table)->update(new \Pop\Db\Sql\Update($this->sql, $columns));
+        $this->sql->setTable($this->table)->update(new \Pop\Db\Sql\Update($this->sql, $cols));
 
         if (null !== $where) {
             $this->sql->update()->where((new \Pop\Db\Sql\Where($this->sql))->add($where));
