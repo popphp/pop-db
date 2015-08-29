@@ -21,7 +21,7 @@ namespace Pop\Db;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2015 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    2.0.0
+ * @version    2.0.1
  */
 class Record implements \ArrayAccess
 {
@@ -104,7 +104,7 @@ class Record implements \ArrayAccess
     public function __construct(array $columns = null)
     {
         if (!static::hasDb()) {
-            throw new Exception('Error: A database connection has not been set for this record class.');
+            throw new Exception('Error: A database connection has not been set.');
         }
 
         if (null !== $columns) {
@@ -189,6 +189,17 @@ class Record implements \ArrayAccess
     }
 
     /**
+     * Get the SQL object
+     *
+     * @throws Exception
+     * @return Adapter\AbstractAdapter
+     */
+    public static function sql()
+    {
+        return (new static())->getSql();
+    }
+
+    /**
      * Set the SQL object
      *
      * @param  Sql $sql
@@ -205,7 +216,7 @@ class Record implements \ArrayAccess
      *
      * @return Sql
      */
-    public function sql()
+    public function getSql()
     {
         return $this->sql;
     }
@@ -239,7 +250,7 @@ class Record implements \ArrayAccess
         $where  = null;
 
         if (null !== $columns) {
-            $parsedColumns = static::parseColumns($columns, $record->sql()->getPlaceholder());
+            $parsedColumns = static::parseColumns($columns, $record->getSql()->getPlaceholder());
             $params = $parsedColumns['params'];
             $where  = $parsedColumns['where'];
         }
@@ -334,7 +345,7 @@ class Record implements \ArrayAccess
         $where  = null;
 
         if (null !== $columns) {
-            $parsedColumns = static::parseColumns($columns, $record->sql()->getPlaceholder());
+            $parsedColumns = static::parseColumns($columns, $record->getSql()->getPlaceholder());
             $params = $parsedColumns['params'];
             $where  = $parsedColumns['where'];
         }
@@ -581,7 +592,7 @@ class Record implements \ArrayAccess
             }
         // Delete multiple rows
         } else {
-            $parsedColumns = static::parseColumns($columns, $this->sql()->getPlaceholder());
+            $parsedColumns = static::parseColumns($columns, $this->getSql()->getPlaceholder());
             $this->tg()->delete($parsedColumns['where'], $parsedColumns['params']);
             $this->setRows();
         }
