@@ -243,7 +243,7 @@ class Record implements \ArrayAccess
      * @param  array $options
      * @return Record
      */
-    public static function findBy(array $columns = null, array $options = [])
+    public static function findBy(array $columns = null, array $options = null)
     {
         $record = new static();
         $params = null;
@@ -267,7 +267,7 @@ class Record implements \ArrayAccess
      * @param  array $options
      * @return Record
      */
-    public static function findAll(array $options = [])
+    public static function findAll(array $options = null)
     {
         return static::findBy(null, $options);
     }

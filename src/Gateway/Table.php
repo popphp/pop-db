@@ -72,7 +72,7 @@ class Table extends AbstractGateway
      * @throws Exception
      * @return Table
      */
-    public function select(array $columns = null, $where = null, array $params = null, array $options = [])
+    public function select(array $columns = null, $where = null, array $params = null, array $options = null)
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
@@ -160,7 +160,7 @@ class Table extends AbstractGateway
      * @throws Exception
      * @return Table
      */
-    public function update(array $columns, $where = null, array $pars = [])
+    public function update(array $columns, $where = null, array $pars = null)
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
@@ -210,7 +210,7 @@ class Table extends AbstractGateway
      * @throws Exception
      * @return Table
      */
-    public function delete($where = null, array $pars = [])
+    public function delete($where = null, array $pars = null)
     {
         if (null === $this->table) {
             throw new Exception('Error: The table has not been set');
