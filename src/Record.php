@@ -192,7 +192,7 @@ class Record implements \ArrayAccess
      * Get the SQL object
      *
      * @throws Exception
-     * @return Adapter\AbstractAdapter
+     * @return Sql
      */
     public static function sql()
     {
