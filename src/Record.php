@@ -97,12 +97,18 @@ class Record implements \ArrayAccess
      *
      * Instantiate the database record object.
      *
-     * @param  array $columns
+     * @param  array                   $columns
+     * @param  Adapter\AbstractAdapter $db
      * @throws Exception
      * @return Record
      */
-    public function __construct(array $columns = null)
+    public function __construct(array $columns = null, Adapter\AbstractAdapter $db = null)
     {
+        if (null !== $db) {
+            $class = get_class($this);
+            $class::setDb($db);
+        }
+
         if (!static::hasDb()) {
             throw new Exception('Error: A database connection has not been set.');
         }
