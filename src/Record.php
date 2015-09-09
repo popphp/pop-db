@@ -137,14 +137,19 @@ class Record implements \ArrayAccess
      * Set DB connection
      *
      * @param  Adapter\AbstractAdapter $db
+     * @param  string                  $prefix
      * @param  boolean                 $isDefault
      * @return void
      */
-    public static function setDb(Adapter\AbstractAdapter $db, $isDefault = false)
+    public static function setDb(Adapter\AbstractAdapter $db, $prefix = null, $isDefault = false)
     {
-        $class = get_called_class();
+        if (null !== $prefix) {
+            static::$db[$prefix] = $db;
+        }
 
+        $class = get_called_class();
         static::$db[$class] = $db;
+
         if (($isDefault) || ($class === __CLASS__)) {
             static::$db['default'] = $db;
         }
@@ -164,6 +169,12 @@ class Record implements \ArrayAccess
             $result = true;
         } else if (isset(static::$db['default'])) {
             $result = true;
+        } else {
+            foreach (static::$db as $prefix => $adapter) {
+                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                    $result = true;
+                }
+            }
         }
 
         return $result;
@@ -184,7 +195,17 @@ class Record implements \ArrayAccess
         } else if (isset(static::$db['default'])) {
             return static::$db['default'];
         } else {
-            throw new Exception('No database adapter was found.');
+            $dbAdapter = null;
+            foreach (static::$db as $prefix => $adapter) {
+                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                    $dbAdapter = $adapter;
+                }
+            }
+            if (null !== $dbAdapter) {
+                return $dbAdapter;
+            } else {
+                throw new Exception('No database adapter was found.');
+            }
         }
     }
 
