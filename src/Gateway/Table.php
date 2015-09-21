@@ -55,7 +55,7 @@ class Table extends AbstractGateway
     /**
      * Get the result rows (alias method)
      *
-     * @return \Pop\Db\Sql
+     * @return array
      */
     public function rows()
     {

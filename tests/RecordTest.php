@@ -40,13 +40,16 @@ class RecordTest extends \PHPUnit_Framework_TestCase
     public function testConstructorSetDb()
     {
         $db = Db::connect('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']);
-        $user = new TestAsset\Users(null, $db);
+        $user = new TestAsset\Users(null, null, $db);
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::db());
     }
 
     public function testGetPrefix()
     {
-        $this->assertEquals('ph_', (new TestAsset\Users())->getPrefix());
+        $users = new TestAsset\Users();
+        $this->assertEquals('ph_', $users->getPrefix());
+        $users->setPrefix('test_');
+        $this->assertEquals('test_', $users->getPrefix());
     }
 
     public function testGetTable()
@@ -71,6 +74,8 @@ class RecordTest extends \PHPUnit_Framework_TestCase
     {
         $user = new TestAsset\Users();
         $this->assertEquals('id', $user->getPrimaryKeys()[0]);
+        $user->setPrimaryKeys(['test']);
+        $this->assertEquals('test', $user->getPrimaryKeys()[0]);
     }
 
     public function testSetColumnsException()
@@ -118,6 +123,15 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $users = TestAsset\Users::findAll();
         $this->assertEquals(1, $users->count());
         $this->assertTrue($users->hasRows());
+
+
+        $users2 = new TestAsset\Users();
+        $users2->findAllRecords();
+        $this->assertEquals(1, $users2->count());
+        $this->assertTrue($users2->hasRows());
+
+        $users3 = new TestAsset\Users();
+        $this->assertEquals(1, $users3->getTotalRecords(['id >=' => 0]));
 
         $this->assertEquals(1, TestAsset\Users::getTotal(['id >=' => 0]));
         $this->assertEquals(1, TestAsset\Users::getTotal(['id >' => 0]));

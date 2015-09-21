@@ -98,11 +98,12 @@ class Record implements \ArrayAccess
      * Instantiate the database record object.
      *
      * @param  array                   $columns
+     * @param  string                  $table
      * @param  Adapter\AbstractAdapter $db
      * @throws Exception
      * @return Record
      */
-    public function __construct(array $columns = null, Adapter\AbstractAdapter $db = null)
+    public function __construct(array $columns = null, $table = null, Adapter\AbstractAdapter $db = null)
     {
         if (null !== $db) {
             $class = get_class($this);
@@ -118,25 +119,14 @@ class Record implements \ArrayAccess
             $this->setColumns($columns);
         }
 
+        if (null !== $table) {
+            $this->setTable($table);
+        }
+
         // Set the table name from the class name
         if (null === $this->table) {
-            $class = get_class($this);
-            if (strpos($class, '_') !== false) {
-                $cls = substr($class, (strrpos($class, '_') + 1));
-            } else if (strpos($class, '\\') !== false) {
-                $cls = substr($class, (strrpos($class, '\\') + 1));
-            } else {
-                $cls = $class;
-            }
-            $this->table = static::camelCaseToUnderscore($cls);
+            $this->setTableFromClassName(get_class($this));
         }
-
-        if (null === $this->sql) {
-            $this->setSql(new Sql(static::db(), $this->getFullTable()));
-        }
-
-        $this->rowGateway   = new Gateway\Row($this->sql, $this->primaryKeys, $this->getFullTable());
-        $this->tableGateway = new Gateway\Table($this->sql, $this->getFullTable());
     }
 
     /**
@@ -249,22 +239,18 @@ class Record implements \ArrayAccess
     }
 
     /**
-     * Find by ID method
+     * Find by ID static method
      *
      * @param  mixed $id
      * @return Record
      */
     public static function findById($id)
     {
-        $record = new static();
-        $record->rg()->find($id);
-        $record->setColumns($record->rg()->getColumns());
-
-        return $record;
+        return (new static())->findRecordById($id);
     }
 
     /**
-     * Find by method
+     * Find by static method
      *
      * @param  array $columns
      * @param  array $options
@@ -272,24 +258,11 @@ class Record implements \ArrayAccess
      */
     public static function findBy(array $columns = null, array $options = null)
     {
-        $record = new static();
-        $params = null;
-        $where  = null;
-
-        if (null !== $columns) {
-            $parsedColumns = static::parseColumns($columns, $record->getSql()->getPlaceholder());
-            $params = $parsedColumns['params'];
-            $where  = $parsedColumns['where'];
-        }
-
-        $record->tg()->select(null, $where, $params, $options);
-        $record->setRows($record->tg()->rows());
-
-        return $record;
+        return (new static())->findRecordsBy($columns, $options);
     }
 
     /**
-     * Find all method
+     * Find all static method
      *
      * @param  array $options
      * @return Record
@@ -300,7 +273,7 @@ class Record implements \ArrayAccess
     }
 
     /**
-     * Execute a custom prepared SQL query.
+     * Static method to execute a custom prepared SQL statement.
      *
      * @param  mixed  $sql
      * @param  mixed  $params
@@ -308,59 +281,22 @@ class Record implements \ArrayAccess
      */
     public static function execute($sql, $params)
     {
-        if ($sql instanceof Sql) {
-            $sql = (string)$sql;
-        }
-        if (!is_array($params)) {
-            $params = [$params];
-        }
-
-        $db = static::db();
-        $db->prepare($sql)
-           ->bindParams($params)
-           ->execute();
-
-        $record = new static();
-        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
-            $rows = $db->fetchResult();
-            foreach ($rows as $i => $row) {
-                $rows[$i] = $row;
-            }
-            $record->setRows($rows);
-        }
-
-        return $record;
+        return (new static())->executeStatement($sql, $params);
     }
 
     /**
-     * Execute a custom SQL query.
+     * Static method to execute a custom SQL query.
      *
      * @param  mixed $sql
      * @return Record
      */
     public static function query($sql)
     {
-        if ($sql instanceof Sql) {
-            $sql = (string)$sql;
-        }
-
-        $db = static::db();
-        $db->query($sql);
-
-        $record = new static();
-        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
-            $rows = [];
-            while (($row = $db->fetch())) {
-                $rows[] = $row;
-            }
-            $record->setRows($rows);
-        }
-
-        return $record;
+        return (new static())->executeQuery($sql);
     }
 
     /**
-     * Get the total count of a set from the DB table
+     * Static method to get the total count of a set from the DB table
      *
      * @param  array $columns
      * @return int
@@ -381,6 +317,136 @@ class Record implements \ArrayAccess
         $record->setRows($record->tg()->rows());
 
         return (int)$record->total_count;
+    }
+
+    /**
+     * Find record by ID method
+     *
+     * @param  mixed $id
+     * @return Record
+     */
+    public function findRecordById($id)
+    {
+        $this->rg()->find($id);
+        $this->setColumns($this->rg()->getColumns());
+
+        return $this;
+    }
+
+    /**
+     * Find records by method
+     *
+     * @param  array $columns
+     * @param  array $options
+     * @return Record
+     */
+    public function findRecordsBy(array $columns = null, array $options = null)
+    {
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $parsedColumns = static::parseColumns($columns, $this->getSql()->getPlaceholder());
+            $params = $parsedColumns['params'];
+            $where  = $parsedColumns['where'];
+        }
+
+        $this->tg()->select(null, $where, $params, $options);
+        $this->setRows($this->tg()->rows());
+
+        return $this;
+    }
+
+    /**
+     * Find all records method
+     *
+     * @param  array $options
+     * @return Record
+     */
+    public function findAllRecords(array $options = null)
+    {
+        return $this->findRecordsBy(null, $options);
+    }
+
+    /**
+     * Method to execute a custom prepared SQL statement.
+     *
+     * @param  mixed  $sql
+     * @param  mixed  $params
+     * @return Record
+     */
+    public function executeStatement($sql, $params)
+    {
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+        if (!is_array($params)) {
+            $params = [$params];
+        }
+
+        $db = static::db();
+        $db->prepare($sql)
+           ->bindParams($params)
+           ->execute();
+
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = $db->fetchResult();
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $row;
+            }
+            $this->setRows($rows);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Method to execute a custom SQL query.
+     *
+     * @param  mixed $sql
+     * @return Record
+     */
+    public function executeQuery($sql)
+    {
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+
+        $db = static::db();
+        $db->query($sql);
+
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = [];
+            while (($row = $db->fetch())) {
+                $rows[] = $row;
+            }
+            $this->setRows($rows);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Method to get the total count of a set from the DB table
+     *
+     * @param  array $columns
+     * @return int
+     */
+    public function getTotalRecords(array $columns = null)
+    {
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $parsedColumns = static::parseColumns($columns, $this->getSql()->getPlaceholder());
+            $params = $parsedColumns['params'];
+            $where  = $parsedColumns['where'];
+        }
+
+        $this->tg()->select(['total_count' => 'COUNT(1)'], $where, $params);
+        $this->setRows($this->tg()->rows());
+
+        return (int)$this->total_count;
     }
 
     /**
@@ -433,6 +499,65 @@ class Record implements \ArrayAccess
                 $this->rowObjects[] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
             }
         }
+    }
+
+    /**
+     * Set the table prefix
+     *
+     * @param  string $prefix
+     * @return Record
+     */
+    public function setPrefix($prefix)
+    {
+        $this->prefix = $prefix;
+        return $this;
+    }
+
+    /**
+     * Set the table
+     *
+     * @param  string $table
+     * @return Record
+     */
+    public function setTable($table)
+    {
+        $this->table = $table;
+
+        $this->setSql(new Sql(static::db(), $this->getFullTable()));
+        $this->rowGateway   = new Gateway\Row($this->sql, $this->primaryKeys, $this->getFullTable());
+        $this->tableGateway = new Gateway\Table($this->sql, $this->getFullTable());
+
+        return $this;
+    }
+
+    /**
+     * Set the table from a class name
+     *
+     * @param  string $class
+     * @return Record
+     */
+    public function setTableFromClassName($class)
+    {
+        if (strpos($class, '_') !== false) {
+            $cls = substr($class, (strrpos($class, '_') + 1));
+        } else if (strpos($class, '\\') !== false) {
+            $cls = substr($class, (strrpos($class, '\\') + 1));
+        } else {
+            $cls = $class;
+        }
+        return $this->setTable(static::camelCaseToUnderscore($cls));
+    }
+
+    /**
+     * Set the primary keys
+     *
+     * @param  array $keys
+     * @return Record
+     */
+    public function setPrimaryKeys(array $keys)
+    {
+        $this->primaryKeys = $keys;
+        return $this;
     }
 
     /**
