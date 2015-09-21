@@ -126,6 +126,10 @@ class Record implements \ArrayAccess
         // Set the table name from the class name
         if (null === $this->table) {
             $this->setTableFromClassName(get_class($this));
+        } else {
+            $this->setSql(new Sql(static::db(), $this->getFullTable()));
+            $this->rowGateway   = new Gateway\Row($this->sql, $this->primaryKeys, $this->getFullTable());
+            $this->tableGateway = new Gateway\Table($this->sql, $this->getFullTable());
         }
     }
 
