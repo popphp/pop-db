@@ -385,11 +385,11 @@ class Sql
         if (strpos($value, '.') !== false) {
             $valueAry = explode('.', $value);
             foreach ($valueAry as $key => $val) {
-                $valueAry[$key] = $startQuote . $val . $endQuote;
+                $valueAry[$key] = ($val != '*') ? $startQuote . $val . $endQuote : $val;
             }
             $quotedValue = implode('.', $valueAry);
         } else {
-            $quotedValue = $startQuote . $value . $endQuote;
+            $quotedValue = ($value != '*') ? $startQuote . $value . $endQuote : $value;
         }
 
         return $quotedValue;
