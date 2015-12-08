@@ -819,7 +819,7 @@ class Record implements \ArrayAccess
 
         $i = 1;
         foreach ($columns as $column => $value) {
-            if (substr($value, -3) == ' OR') {
+            if (!is_array($value) && (substr($value, -3) == ' OR')) {
                 $value   = substr($value, 0, -3);
                 $combine = ' OR';
             } else {

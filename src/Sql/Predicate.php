@@ -594,7 +594,7 @@ class Predicate
                     $value = explode(',', $value);
                 }
 
-                if (substr($value, -3) == ' OR') {
+                if (!is_array($value) && (substr($value, -3) == ' OR')) {
                     $value   = substr($value, 0, -3);
                     $combine = 'OR';
                 } else {
