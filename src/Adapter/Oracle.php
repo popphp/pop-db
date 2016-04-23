@@ -112,6 +112,22 @@ class Oracle extends AbstractAdapter
     }
 
     /**
+     * Fetch and return a row.
+     *
+     * @return mixed
+     */
+    public function fetchRow()
+    {
+        $row = false;
+
+        if (($r = $this->fetch()) != false) {
+            $row = $r;
+        }
+
+        return $row;
+    }
+
+    /**
      * Fetch and return the values.
      *
      * @return array

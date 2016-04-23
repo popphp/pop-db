@@ -128,6 +128,38 @@ class Mysql extends AbstractAdapter
     }
 
     /**
+     * Bind result values to variables and fetch and return the a row.
+     *
+     * @return mixed
+     */
+    public function fetchRow()
+    {
+        $params     = [];
+        $bindParams = [];
+        $row        = false;
+
+        $metaData = $this->statement->result_metadata();
+        if ($metaData !== false) {
+            foreach ($metaData->fetch_fields() as $col) {
+                ${$col->name} = null;
+                $bindParams[] = &${$col->name};
+                $params[]     = $col->name;
+            }
+
+            call_user_func_array([$this->statement, 'bind_result'], $bindParams);
+
+            if (($r = $this->statement->fetch()) != false) {
+                $row = [];
+                foreach ($bindParams as $dbColumnName => $dbColumnValue) {
+                    $row[$params[$dbColumnName]] = $dbColumnValue;
+                }
+            }
+        }
+
+        return $row;
+    }
+
+    /**
      * Bind result values to variables and fetch and return the values.
      *
      * @return array
@@ -196,13 +228,12 @@ class Mysql extends AbstractAdapter
      */
     public function fetch()
     {
-        if ((null !== $this->statement) && (null !== $this->statement->fetch())) {
-            return $this->statement->fetch();
+        if (null !== $this->statement) {
+            return $this->fetchRow();
         } else {
             if (!isset($this->result)) {
                 throw new Exception('Error: The database result resource is not currently set.');
             }
-
             return $this->result->fetch_array(MYSQLI_ASSOC);
         }
     }
