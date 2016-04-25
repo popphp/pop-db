@@ -27,6 +27,12 @@ class Mysql extends AbstractAdapter
 {
 
     /**
+     * Prepared statement success
+     * @var boolean
+     */
+    protected $statementSuccess = false;
+
+    /**
      * Constructor
      *
      * Instantiate the Mysql database connection object using mysqli
@@ -204,7 +210,7 @@ class Mysql extends AbstractAdapter
             throw new Exception('Error: The database statement resource is not currently set.');
         }
 
-        $this->statement->execute();
+        $this->statementSuccess = $this->statement->execute();
     }
 
     /**
@@ -215,6 +221,9 @@ class Mysql extends AbstractAdapter
      */
     public function query($sql)
     {
+        $this->statement        = null;
+        $this->statementSuccess = false;
+
         if (!($this->result = $this->connection->query($sql))) {
             $this->showError();
         }
@@ -228,7 +237,7 @@ class Mysql extends AbstractAdapter
      */
     public function fetch()
     {
-        if (null !== $this->statement) {
+        if ((null !== $this->statement) && ($this->statementSuccess !== false)) {
             return $this->fetchRow();
         } else {
             if (!isset($this->result)) {

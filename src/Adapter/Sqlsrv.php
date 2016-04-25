@@ -39,6 +39,12 @@ class Sqlsrv extends AbstractAdapter
     protected $sql = null;
 
     /**
+     * Prepared statement success
+     * @var boolean
+     */
+    protected $statementSuccess = false;
+
+    /**
      * Constructor
      *
      * Instantiate the SQLSrv database connection object.
@@ -201,7 +207,7 @@ class Sqlsrv extends AbstractAdapter
             throw new Exception('Error: The database statement resource is not currently set.');
         }
 
-        sqlsrv_execute($this->statement);
+        $this->statementSuccess = sqlsrv_execute($this->statement);
     }
 
     /**
@@ -212,6 +218,9 @@ class Sqlsrv extends AbstractAdapter
      */
     public function query($sql)
     {
+        $this->statement        = null;
+        $this->statementSuccess = false;
+
         if (!($this->result = sqlsrv_query($this->connection, $sql))) {
             $this->showError();
         }
@@ -225,7 +234,7 @@ class Sqlsrv extends AbstractAdapter
      */
     public function fetch()
     {
-        if (null !== $this->statement) {
+        if ((null !== $this->statement) && ($this->statementSuccess !== false)) {
             return sqlsrv_fetch_array($this->statement, SQLSRV_FETCH_ASSOC);
         } else {
             if (!isset($this->result)) {
