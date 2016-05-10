@@ -2,7 +2,7 @@ pop-db
 ======
 
 [![Build Status](https://travis-ci.org/popphp/pop-db.svg?branch=master)](https://travis-ci.org/popphp/pop-db)
-[![Coverage Status](http://www.popphp.org/cc/coverage.php?comp=pop-db)](http://www.popphp.org/cc/pop-db/)
+[![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-db)](http://cc.popphp.org/pop-db/)
 
 OVERVIEW
 --------
@@ -32,7 +32,7 @@ Install `pop-db` using Composer.
 
 * [Connect to a database](#connect-to-a-database)
 * [Using the SQL query builder](#using-the-sql-query-builder)
-* [Using active record](#using-active-record)  
+* [Using active record](#using-active-record)
 
 ### Connect to a database
 
@@ -154,7 +154,7 @@ echo $sql;
 UPDATE `users` SET `username` = ?, `password` = ? WHERE (`id` = ?)
 ```
 
-##### A more complex SELECT example, using JOIN:  
+##### A more complex SELECT example, using JOIN:
 
 ```php
 $sql->select(['id', 'username', 'email'])
@@ -241,7 +241,7 @@ use MyApp\Table\Users;
 // Find the user with id = 1001
 $user = Users::findById(1001);
 if (isset($user->id)) {
-    echo $user->username;            
+    echo $user->username;
 }
 ```
 
@@ -252,7 +252,7 @@ use MyApp\Table\Users;
 $users = Users::findBy(['active' => 1]);
 if ($users->hasRows()) {
     foreach ($users->rows() as $user) {
-        echo $user->username;            
+        echo $user->username;
     }
 }
 ```
@@ -264,7 +264,7 @@ use MyApp\Table\Users;
 $users = Users::findAll();
 if ($users->hasRows()) {
     foreach ($users->rows() as $user) {
-        echo $user->username;            
+        echo $user->username;
     }
 }
 ```
@@ -294,7 +294,7 @@ use MyApp\Table\Users;
 $user = Users::findById(1001);
 if (isset($user->id)) {
     $user->email = 'new_email@test.com';
-    
+
     // Perform an UPDATE statement to modify the existing user record
     $user->save();
 }
