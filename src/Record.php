@@ -21,7 +21,7 @@ namespace Pop\Db;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    2.0.1
+ * @version    2.1.0
  */
 class Record implements \ArrayAccess
 {
@@ -55,12 +55,6 @@ class Record implements \ArrayAccess
      * @var array
      */
     protected $rows = [];
-
-    /**
-     * Result rows as objects (an array of ArrayObjects)
-     * @var array
-     */
-    protected $rowObjects = [];
 
     /**
      * Columns of the first result row
@@ -97,14 +91,29 @@ class Record implements \ArrayAccess
      *
      * Instantiate the database record object.
      *
-     * @param  array                   $columns
-     * @param  string                  $table
-     * @param  Adapter\AbstractAdapter $db
+     * Optional parameters are an array of values, db adapter,
+     * or a table name
+     *
      * @throws Exception
      * @return Record
      */
-    public function __construct(array $columns = null, $table = null, Adapter\AbstractAdapter $db = null)
+    public function __construct()
     {
+        $args    = func_get_args();
+        $columns = null;
+        $table   = null;
+        $db      = null;
+
+        foreach ($args as $arg) {
+            if (is_array($arg) || ($arg instanceof \ArrayAccess) || ($arg instanceof \ArrayObject)) {
+                $columns = $arg;
+            } else if ($arg instanceof Adapter\AbstractAdapter) {
+                $db = $arg;
+            } else if (is_string($arg)) {
+                $table = $arg;
+            }
+        }
+
         if (null !== $db) {
             $class = get_class($this);
             $class::setDb($db);
@@ -112,11 +121,6 @@ class Record implements \ArrayAccess
 
         if (!static::hasDb()) {
             throw new Exception('Error: A database connection has not been set.');
-        }
-
-        if (null !== $columns) {
-            $this->isNew = true;
-            $this->setColumns($columns);
         }
 
         if (null !== $table) {
@@ -130,6 +134,11 @@ class Record implements \ArrayAccess
             $this->setSql(new Sql(static::db(), $this->getFullTable()));
             $this->rowGateway   = new Gateway\Row($this->sql, $this->primaryKeys, $this->getFullTable());
             $this->tableGateway = new Gateway\Table($this->sql, $this->getFullTable());
+        }
+
+        if (null !== $columns) {
+            $this->isNew = true;
+            $this->setColumns($columns);
         }
     }
 
@@ -469,12 +478,11 @@ class Record implements \ArrayAccess
         // Else, if an array, set the columns.
         } else if ($columns instanceof \ArrayObject) {
             $this->columns = (array)$columns;
-            $this->rows[0] = $columns;
+            $this->rows[0] = $this;
         // Else, if an array, set the columns.
         } else if (is_array($columns)) {
-            $this->columns       = $columns;
-            $this->rows[0]       = $columns;
-            $this->rowObjects[0] = new \ArrayObject($columns, \ArrayObject::ARRAY_AS_PROPS);
+            $this->columns = $columns;
+            $this->rows[0] = $this;
         // Else, throw an exception.
         } else {
             throw new Exception('The parameter passed must be either an array or null.');
@@ -495,12 +503,12 @@ class Record implements \ArrayAccess
         if (null === $rows) {
             $this->columns    = [];
             $this->rows       = [];
-            $this->rowObjects = [];
         } else {
             $this->columns = (isset($rows[0])) ? (array)$rows[0] : [];
-            $this->rows    = $rows;
-            foreach ($this->rows as $row) {
-                $this->rowObjects[] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
+            foreach ($rows as $row) {
+                $r = new static();
+                $r->setColumns((array)$row);
+                $this->rows[] = $r;
             }
         }
     }
@@ -665,24 +673,23 @@ class Record implements \ArrayAccess
     }
 
     /**
-     * Get the rows as an array of array objects
+     * Get the rows - left in for BC
      *
      * @return array
      */
     public function getRowObjects()
     {
-        return $this->rowObjects;
+        return $this->rows;
     }
 
     /**
      * Get the rows (alias method)
      *
-     * @param  boolean $asObjects
      * @return array
      */
-    public function rows($asObjects = true)
+    public function rows()
     {
-        return ($asObjects) ? $this->rowObjects : $this->rows;
+        return $this->rows;
     }
 
     /**
