@@ -21,10 +21,18 @@ namespace Pop\Db;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    2.1.0
+ * @version    2.1.1
  */
 class Record implements \ArrayAccess
 {
+
+    /**
+     * Data set result constants
+     * @var string
+     */
+    const ROW_AS_ARRAY       = 'ROW_AS_ARRAY';
+    const ROW_AS_ARRAYOBJECT = 'ROW_AS_ARRAYOBJECT';
+    const ROW_AS_RECORD      = 'ROW_AS_RECORD';
 
     /**
      * Database connection(s)
@@ -254,35 +262,38 @@ class Record implements \ArrayAccess
     /**
      * Find by ID static method
      *
-     * @param  mixed $id
+     * @param  mixed  $id
+     * @param  string $resultsAs
      * @return Record
      */
-    public static function findById($id)
+    public static function findById($id, $resultsAs = 'ROW_AS_RECORD')
     {
-        return (new static())->findRecordById($id);
+        return (new static())->findRecordById($id, $resultsAs);
     }
 
     /**
      * Find by static method
      *
-     * @param  array $columns
-     * @param  array $options
+     * @param  array  $columns
+     * @param  array  $options
+     * @param  string $resultsAs
      * @return Record
      */
-    public static function findBy(array $columns = null, array $options = null)
+    public static function findBy(array $columns = null, array $options = null, $resultsAs = 'ROW_AS_RECORD')
     {
-        return (new static())->findRecordsBy($columns, $options);
+        return (new static())->findRecordsBy($columns, $options, $resultsAs);
     }
 
     /**
      * Find all static method
      *
-     * @param  array $options
+     * @param  array  $options
+     * @param  string $resultsAs
      * @return Record
      */
-    public static function findAll(array $options = null)
+    public static function findAll(array $options = null, $resultsAs = 'ROW_AS_RECORD')
     {
-        return static::findBy(null, $options);
+        return static::findBy(null, $options, $resultsAs);
     }
 
     /**
@@ -290,31 +301,34 @@ class Record implements \ArrayAccess
      *
      * @param  mixed  $sql
      * @param  mixed  $params
+     * @param  string $resultsAs
      * @return Record
      */
-    public static function execute($sql, $params)
+    public static function execute($sql, $params, $resultsAs = 'ROW_AS_RECORD')
     {
-        return (new static())->executeStatement($sql, $params);
+        return (new static())->executeStatement($sql, $params, $resultsAs);
     }
 
     /**
      * Static method to execute a custom SQL query.
      *
-     * @param  mixed $sql
+     * @param  mixed  $sql
+     * @param  string $resultsAs
      * @return Record
      */
-    public static function query($sql)
+    public static function query($sql, $resultsAs = 'ROW_AS_RECORD')
     {
-        return (new static())->executeQuery($sql);
+        return (new static())->executeQuery($sql, $resultsAs);
     }
 
     /**
      * Static method to get the total count of a set from the DB table
      *
-     * @param  array $columns
+     * @param  array  $columns
+     * @param  string $resultsAs
      * @return int
      */
-    public static function getTotal(array $columns = null)
+    public static function getTotal(array $columns = null, $resultsAs = 'ROW_AS_RECORD')
     {
         $record = new static();
         $params = null;
@@ -327,7 +341,7 @@ class Record implements \ArrayAccess
         }
 
         $record->tg()->select(['total_count' => 'COUNT(1)'], $where, $params);
-        $record->setRows($record->tg()->rows());
+        $record->setRows($record->tg()->rows(), $resultsAs);
 
         return (int)$record->total_count;
     }
@@ -335,13 +349,14 @@ class Record implements \ArrayAccess
     /**
      * Find record by ID method
      *
-     * @param  mixed $id
+     * @param  mixed  $id
+     * @param  string $resultsAs
      * @return Record
      */
-    public function findRecordById($id)
+    public function findRecordById($id, $resultsAs = 'ROW_AS_RECORD')
     {
         $this->rg()->find($id);
-        $this->setColumns($this->rg()->getColumns());
+        $this->setColumns($this->rg()->getColumns(), $resultsAs);
 
         return $this;
     }
@@ -349,11 +364,12 @@ class Record implements \ArrayAccess
     /**
      * Find records by method
      *
-     * @param  array $columns
-     * @param  array $options
+     * @param  array  $columns
+     * @param  array  $options
+     * @param  string $resultsAs
      * @return Record
      */
-    public function findRecordsBy(array $columns = null, array $options = null)
+    public function findRecordsBy(array $columns = null, array $options = null, $resultsAs = 'ROW_AS_RECORD')
     {
         $params = null;
         $where  = null;
@@ -365,7 +381,7 @@ class Record implements \ArrayAccess
         }
 
         $this->tg()->select(null, $where, $params, $options);
-        $this->setRows($this->tg()->rows());
+        $this->setRows($this->tg()->rows(), $resultsAs);
 
         return $this;
     }
@@ -373,12 +389,13 @@ class Record implements \ArrayAccess
     /**
      * Find all records method
      *
-     * @param  array $options
+     * @param  array  $options
+     * @param  string $resultsAs
      * @return Record
      */
-    public function findAllRecords(array $options = null)
+    public function findAllRecords(array $options = null, $resultsAs = 'ROW_AS_RECORD')
     {
-        return $this->findRecordsBy(null, $options);
+        return $this->findRecordsBy(null, $options, $resultsAs);
     }
 
     /**
@@ -386,9 +403,10 @@ class Record implements \ArrayAccess
      *
      * @param  mixed  $sql
      * @param  mixed  $params
+     * @param  string $resultsAs
      * @return Record
      */
-    public function executeStatement($sql, $params)
+    public function executeStatement($sql, $params, $resultsAs = 'ROW_AS_RECORD')
     {
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
@@ -407,7 +425,7 @@ class Record implements \ArrayAccess
             foreach ($rows as $i => $row) {
                 $rows[$i] = $row;
             }
-            $this->setRows($rows);
+            $this->setRows($rows, $resultsAs);
         }
 
         return $this;
@@ -416,10 +434,11 @@ class Record implements \ArrayAccess
     /**
      * Method to execute a custom SQL query.
      *
-     * @param  mixed $sql
+     * @param  mixed  $sql
+     * @param  string $resultsAs
      * @return Record
      */
-    public function executeQuery($sql)
+    public function executeQuery($sql, $resultsAs = 'ROW_AS_RECORD')
     {
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
@@ -433,7 +452,7 @@ class Record implements \ArrayAccess
             while (($row = $db->fetch())) {
                 $rows[] = $row;
             }
-            $this->setRows($rows);
+            $this->setRows($rows, $resultsAs);
         }
 
         return $this;
@@ -442,10 +461,11 @@ class Record implements \ArrayAccess
     /**
      * Method to get the total count of a set from the DB table
      *
-     * @param  array $columns
+     * @param  array  $columns
+     * @param  string $resultsAs
      * @return int
      */
-    public function getTotalRecords(array $columns = null)
+    public function getTotalRecords(array $columns = null, $resultsAs = 'ROW_AS_RECORD')
     {
         $params = null;
         $where  = null;
@@ -457,7 +477,7 @@ class Record implements \ArrayAccess
         }
 
         $this->tg()->select(['total_count' => 'COUNT(1)'], $where, $params);
-        $this->setRows($this->tg()->rows());
+        $this->setRows($this->tg()->rows(), $resultsAs);
 
         return (int)$this->total_count;
     }
@@ -465,25 +485,30 @@ class Record implements \ArrayAccess
     /**
      * Set all the table column values at once.
      *
-     * @param  mixed $columns
+     * @param  mixed  $columns
+     * @param  string $resultsAs
      * @throws Exception
      * @return Record
      */
-    public function setColumns($columns = null)
+    public function setColumns($columns = null, $resultsAs = 'ROW_AS_RECORD')
     {
         // If null, clear the columns.
         if (null === $columns) {
             $this->columns = [];
             $this->rows    = [];
         // Else, if an array, set the columns.
-        } else if ($columns instanceof \ArrayObject) {
+        } else if (is_array($columns) || ($columns instanceof \ArrayObject)) {
             $this->columns = (array)$columns;
-            $this->rows[0] = $this;
-        // Else, if an array, set the columns.
-        } else if (is_array($columns)) {
-            $this->columns = $columns;
-            $this->rows[0] = $this;
-        // Else, throw an exception.
+            switch ($resultsAs) {
+                case self::ROW_AS_ARRAY:
+                    $this->rows[0] = $this->columns;
+                    break;
+                case self::ROW_AS_ARRAYOBJECT:
+                    $this->rows[0] = new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
+                    break;
+                default:
+                    $this->rows[0] = $this;
+            }
         } else {
             throw new Exception('The parameter passed must be either an array or null.');
         }
@@ -494,10 +519,11 @@ class Record implements \ArrayAccess
     /**
      * Set all the table rows at once
      *
-     * @param  array $rows
+     * @param  array  $rows
+     * @param  string $resultsAs
      * @return Record
      */
-    public function setRows(array $rows = null)
+    public function setRows(array $rows = null, $resultsAs = 'ROW_AS_RECORD')
     {
         // If null, clear the rows.
         if (null === $rows) {
@@ -507,7 +533,7 @@ class Record implements \ArrayAccess
             $this->columns = (isset($rows[0])) ? (array)$rows[0] : [];
             foreach ($rows as $row) {
                 $r = new static();
-                $r->setColumns((array)$row);
+                $r->setColumns((array)$row, $resultsAs);
                 $this->rows[] = $r;
             }
         }
@@ -715,27 +741,28 @@ class Record implements \ArrayAccess
     /**
      * Save the record
      *
-     * @param  array $columns
+     * @param  array  $columns
+     * @param  string $resultsAs
      * @return void
      */
-    public function save(array $columns = null)
+    public function save(array $columns = null, $resultsAs = 'ROW_AS_RECORD')
     {
         // Save or update the record
         if (null === $columns) {
             $this->rg()->setColumns($this->columns);
             $this->rg()->save($this->isNew);
-            $this->setRows([$this->rg()->getColumns()]);
+            $this->setRows([$this->rg()->getColumns()], $resultsAs);
         // Else, save multiple rows
         } else {
             $this->tg()->insert($columns);
-            $this->setRows($this->tg()->getRows());
+            $this->setRows($this->tg()->getRows(), $resultsAs);
         }
     }
 
     /**
      * Delete the record or rows of records
      *
-     * @param  array $columns
+     * @param  array  $columns
      * @return void
      */
     public function delete(array $columns = null)

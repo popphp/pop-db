@@ -21,44 +21,44 @@ namespace Pop\Db;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    2.1.0
+ * @version    2.1.1
  */
 class Sql
 {
 
     /**
      * Constant for MYSQL database type
-     * @var int
+     * @var string
      */
     const MYSQL = 'MYSQL';
 
     /**
      * Constant for Oracle database type
-     * @var int
+     * @var string
      */
     const ORACLE = 'ORACLE';
 
     /**
      * Constant for PGSQL database type
-     * @var int
+     * @var string
      */
     const PGSQL = 'PGSQL';
 
     /**
      * Constant for SQLITE database type
-     * @var int
+     * @var string
      */
     const SQLITE = 'SQLITE';
 
     /**
      * Constant for SQLSRV database type
-     * @var int
+     * @var string
      */
     const SQLSRV = 'SQLSRV';
 
     /**
      * Constant for backtick quote id type
-     * @var int
+     * @var string
      */
     const BACKTICK = 'BACKTICK';
 
