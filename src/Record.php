@@ -532,9 +532,18 @@ class Record implements \ArrayAccess
         } else {
             $this->columns = (isset($rows[0])) ? (array)$rows[0] : [];
             foreach ($rows as $row) {
-                $r = new static();
-                $r->setColumns((array)$row, $resultsAs);
-                $this->rows[] = $r;
+                switch ($resultsAs) {
+                    case self::ROW_AS_ARRAY:
+                        $this->rows[] = (array)$row;
+                        break;
+                    case self::ROW_AS_ARRAYOBJECT:
+                        $this->rows[] = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
+                        break;
+                    default:
+                        $r = new static();
+                        $r->setColumns((array)$row, $resultsAs);
+                        $this->rows[] = $r;
+                }
             }
         }
     }
