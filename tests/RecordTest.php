@@ -8,12 +8,6 @@ use Pop\Db\Record;
 class RecordTest extends \PHPUnit_Framework_TestCase
 {
 
-    public function testConstructorException()
-    {
-        $this->setExpectedException('Pop\Db\Exception');
-        $user = new TestAsset\Users();
-    }
-/*
     public function testSetDbException()
     {
         $this->setExpectedException('Pop\Db\Exception');
@@ -64,7 +58,7 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
     public function testGetTableInfo()
     {
-        $info = (new TestAsset\Users())->getTableInfo();
+        $info = (new TestAsset\Users())->getResult()->getTableInfo();
         $this->assertEquals('ph_users', $info['tableName']);
         $this->assertEquals('id', $info['primaryId'][0]);
         $this->assertEquals(6, count($info['columns']));
@@ -76,13 +70,6 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('id', $user->getPrimaryKeys()[0]);
         $user->setPrimaryKeys(['test']);
         $this->assertEquals('test', $user->getPrimaryKeys()[0]);
-    }
-
-    public function testSetColumnsException()
-    {
-        $this->setExpectedException('Pop\Db\Exception');
-        $user = new TestAsset\Users();
-        $user->setColumns('bad');
     }
 
     public function testSaveFindAndDelete()
@@ -118,20 +105,10 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(1, count($u->rows()));
         $this->assertEquals(1, count($u->getRows()));
-        $this->assertEquals(1, count($u->getRowObjects()));
 
         $users = TestAsset\Users::findAll();
         $this->assertEquals(1, $users->count());
         $this->assertTrue($users->hasRows());
-
-
-        $users2 = new TestAsset\Users();
-        $users2->findAllRecords();
-        $this->assertEquals(1, $users2->count());
-        $this->assertTrue($users2->hasRows());
-
-        $users3 = new TestAsset\Users();
-        $this->assertEquals(1, $users3->getTotalRecords(['id >=' => 0]));
 
         $this->assertEquals(1, TestAsset\Users::getTotal(['id >=' => 0]));
         $this->assertEquals(1, TestAsset\Users::getTotal(['id >' => 0]));
@@ -207,5 +184,5 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $users = TestAsset\Users::query($sql);
         $this->assertEquals(1, $users->count());
     }
-*/
+
 }

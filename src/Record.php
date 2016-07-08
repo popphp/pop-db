@@ -25,7 +25,7 @@ use Pop\Db\Parser;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    3.0.0
  */
-class Record
+class Record implements \ArrayAccess
 {
 
     /**
@@ -34,7 +34,7 @@ class Record
      */
     const ROW_AS_ARRAY       = 'ROW_AS_ARRAY';
     const ROW_AS_ARRAYOBJECT = 'ROW_AS_ARRAYOBJECT';
-    const ROW_AS_RECORD      = 'ROW_AS_RECORD';
+    const ROW_AS_RESULT      = 'ROW_AS_RESULT';
 
     /**
      * Database connection(s)
@@ -113,9 +113,6 @@ class Record
         }
 
         $this->result = new Record\Result(static::db(), $this->getFullTable(), $this->getPrimaryKeys(), $columns);
-        if (null !== $columns) {
-            $this->result->setColumns($columns);
-        }
     }
 
     /**
@@ -241,7 +238,7 @@ class Record
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function findById($id, $resultsAs = Record::ROW_AS_RECORD)
+    public static function findById($id, $resultsAs = Record::ROW_AS_RESULT)
     {
         return (new static())->getResult()->findById($id, $resultsAs);
     }
@@ -254,7 +251,7 @@ class Record
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function findBy(array $columns = null, array $options = null, $resultsAs = Record::ROW_AS_RECORD)
+    public static function findBy(array $columns = null, array $options = null, $resultsAs = Record::ROW_AS_RESULT)
     {
         return (new static())->getResult()->findBy($columns, $options, $resultsAs);
     }
@@ -266,7 +263,7 @@ class Record
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function findAll(array $options = null, $resultsAs = Record::ROW_AS_RECORD)
+    public static function findAll(array $options = null, $resultsAs = Record::ROW_AS_RESULT)
     {
         return (new static())->getResult()->findBy(null, $options, $resultsAs);
     }
@@ -279,7 +276,7 @@ class Record
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function execute($sql, $params, $resultsAs = Record::ROW_AS_RECORD)
+    public static function execute($sql, $params, $resultsAs = Record::ROW_AS_RESULT)
     {
         return (new static())->getResult()->execute($sql, $params, $resultsAs);
     }
@@ -291,7 +288,7 @@ class Record
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function query($sql, $resultsAs = Record::ROW_AS_RECORD)
+    public static function query($sql, $resultsAs = Record::ROW_AS_RESULT)
     {
         return (new static())->getResult()->query($sql, $resultsAs);
     }
@@ -303,7 +300,7 @@ class Record
      * @param  string $resultsAs
      * @return int
      */
-    public static function getTotal(array $columns = null, $resultsAs = Record::ROW_AS_RECORD)
+    public static function getTotal(array $columns = null, $resultsAs = Record::ROW_AS_RESULT)
     {
         return (new static())->getResult()->getTotal($columns, $resultsAs);
     }
@@ -411,5 +408,179 @@ class Record
     {
         return $this->primaryKeys;
     }
+
+    /**
+     * Get the columns
+     *
+     * @return array
+     */
+    public function getColumns()
+    {
+        return (null !== $this->result) ? $this->result->getColumns() : [];
+    }
+
+    /**
+     * Get the rows
+     *
+     * @return array
+     */
+    public function getRows()
+    {
+        return (null !== $this->result) ? $this->result->getRows() : [];
+    }
+
+    /**
+     * Get the rows (alias method)
+     *
+     * @return array
+     */
+    public function rows()
+    {
+        return $this->getRows();
+    }
+
+    /**
+     * Get the count of rows returned in the result
+     *
+     * @return int
+     */
+    public function count()
+    {
+        return (null !== $this->result) ? $this->result->count() : 0;
+    }
+
+    /**
+     * Determine if the result has rows
+     *
+     * @return boolean
+     */
+    public function hasRows()
+    {
+        return (null !== $this->result) ? $this->result->hasRows() : false;
+    }
+
+    /**
+     * Save the result
+     *
+     * @param  array  $columns
+     * @param  string $resultsAs
+     * @return void
+     */
+    public function save(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
+    {
+        if (null !== $this->result) {
+            $this->result->save($columns, $resultsAs);
+        }
+    }
+
+    /**
+     * Delete the result records or rows of result records
+     *
+     * @param  array  $columns
+     * @return void
+     */
+    public function delete(array $columns = null)
+    {
+        if (null !== $this->result) {
+            $this->result->delete($columns);
+        }
+    }
+
+    /**
+     * Magic method to set the property to the value of $this->columns[$name].
+     *
+     * @param  string $name
+     * @param  mixed $value
+     * @return void
+     */
+    public function __set($name, $value)
+    {
+        if (null !== $this->result) {
+            $this->result[$name] = $value;
+        }
+    }
+
+    /**
+     * Magic method to return the value of $this->columns[$name].
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        return ((null !== $this->result) && isset($this->result[$name])) ? $this->result[$name] : null;
+    }
+
+    /**
+     * Magic method to return the isset value of $this->columns[$name].
+     *
+     * @param  string $name
+     * @return boolean
+     */
+    public function __isset($name)
+    {
+        return isset($this->result[$name]);
+    }
+
+    /**
+     * Magic method to unset $this->columns[$name].
+     *
+     * @param  string $name
+     * @return void
+     */
+    public function __unset($name)
+    {
+        if (isset($this->result[$name])) {
+            unset($this->result[$name]);
+        }
+    }
+
+    /**
+     * ArrayAccess offsetExists
+     *
+     * @param  mixed $offset
+     * @return boolean
+     */
+    public function offsetExists($offset)
+    {
+        return $this->__isset($offset);
+    }
+
+    /**
+     * ArrayAccess offsetGet
+     *
+     * @param  mixed $offset
+     * @return mixed
+     */
+    public function offsetGet($offset)
+    {
+        return $this->__get($offset);
+    }
+
+    /**
+     * ArrayAccess offsetSet
+     *
+     * @param  mixed $offset
+     * @param  mixed $value
+     * @throws Exception
+     * @return void
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->__set($offset, $value);
+    }
+
+    /**
+     * ArrayAccess offsetUnset
+     *
+     * @param  mixed $offset
+     * @throws Exception
+     * @return void
+     */
+    public function offsetUnset($offset)
+    {
+        $this->__unset($offset);
+    }
+
 
 }

@@ -91,7 +91,7 @@ class Row extends AbstractGateway
      *
      * @param  mixed $values
      * @throws Exception
-     * @return void
+     * @return array
      */
     public function find($values)
     {
@@ -135,6 +135,8 @@ class Row extends AbstractGateway
         if (isset($rows[0])) {
             $this->columns = $rows[0];
         }
+
+        return $this->columns;
     }
 
     /**

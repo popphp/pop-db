@@ -9,7 +9,7 @@ use Pop\Db\Adapter\Pdo;
 class MysqlTest extends \PHPUnit_Framework_TestCase
 {
 
-    protected $password = '';
+    protected $password = '12root34';
 
     public function testConstructorException()
     {

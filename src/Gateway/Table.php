@@ -70,7 +70,7 @@ class Table extends AbstractGateway
      * @param  array $params
      * @param  array $options
      * @throws Exception
-     * @return Table
+     * @return array
      */
     public function select(array $columns = null, $where = null, array $params = null, array $options = null)
     {
@@ -105,7 +105,7 @@ class Table extends AbstractGateway
 
         $this->rows = $this->sql->db()->fetchResult();
 
-        return $this;
+        return $this->rows;
     }
 
     /**

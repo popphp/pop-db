@@ -208,11 +208,9 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function findById($id, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function findById($id, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
-        $this->rg()->find($id);
-        $this->setColumns($this->rg()->getColumns(), $resultsAs);
-
+        $this->setColumns($this->rg()->find($id), $resultsAs);
         return $this;
     }
 
@@ -224,7 +222,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function findBy(array $columns = null, array $options = null, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function findBy(array $columns = null, array $options = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         $params = null;
         $where  = null;
@@ -235,8 +233,7 @@ class Result implements \ArrayAccess
             $where  = $parsedColumns['where'];
         }
 
-        $this->tg()->select(null, $where, $params, $options);
-        $this->setRows($this->tg()->rows(), $resultsAs);
+        $this->setRows($this->tg()->select(null, $where, $params, $options), $resultsAs);
 
         return $this;
     }
@@ -248,7 +245,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function findAll(array $options = null, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function findAll(array $options = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         return $this->findBy(null, $options, $resultsAs);
     }
@@ -261,7 +258,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function execute($sql, $params, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function execute($sql, $params, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
@@ -293,7 +290,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function query($sql, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function query($sql, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
@@ -320,7 +317,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return int
      */
-    public function getTotal(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function getTotal(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         $params = null;
         $where  = null;
@@ -331,8 +328,7 @@ class Result implements \ArrayAccess
             $where  = $parsedColumns['where'];
         }
 
-        $this->tg()->select(['total_count' => 'COUNT(1)'], $where, $params);
-        $this->setRows($this->tg()->rows(), $resultsAs);
+        $this->setRows($this->tg()->select(['total_count' => 'COUNT(1)'], $where, $params), $resultsAs);
 
         return (int)$this->total_count;
     }
@@ -345,7 +341,7 @@ class Result implements \ArrayAccess
      * @throws Exception
      * @return Result
      */
-    public function setColumns($columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function setColumns($columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         // If null, clear the columns.
         if (null === $columns) {
@@ -378,7 +374,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function setRows(array $rows = null, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function setRows(array $rows = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         // If null, clear the rows.
         if (null === $rows) {
@@ -547,7 +543,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return void
      */
-    public function save(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RECORD)
+    public function save(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
         // Save or update the record
         if (null === $columns) {

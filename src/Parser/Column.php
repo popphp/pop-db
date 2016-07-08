@@ -109,7 +109,7 @@ class Column
                 } else {
                     $params[$column] = $value;
                 }
-                // Standard operators
+            // Standard operators
             } else {
                 $column  = $operator['column'];
                 $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
