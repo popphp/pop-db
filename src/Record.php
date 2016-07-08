@@ -119,28 +119,6 @@ class Record
     }
 
     /**
-     * Set DB connection
-     *
-     * @param  Adapter\AbstractAdapter $db
-     * @param  string                  $prefix
-     * @param  boolean                 $isDefault
-     * @return void
-     */
-    public static function setDb(Adapter\AbstractAdapter $db, $prefix = null, $isDefault = false)
-    {
-        if (null !== $prefix) {
-            static::$db[$prefix] = $db;
-        }
-
-        $class = get_called_class();
-        static::$db[$class] = $db;
-
-        if (($isDefault) || ($class === __CLASS__)) {
-            static::$db['default'] = $db;
-        }
-    }
-
-    /**
      * Check is the class has a DB adapter
      *
      * @return boolean
@@ -166,12 +144,34 @@ class Record
     }
 
     /**
+     * Set DB connection
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @param  string                  $prefix
+     * @param  boolean                 $isDefault
+     * @return void
+     */
+    public static function setDb(Adapter\AbstractAdapter $db, $prefix = null, $isDefault = false)
+    {
+        if (null !== $prefix) {
+            static::$db[$prefix] = $db;
+        }
+
+        $class = get_called_class();
+        static::$db[$class] = $db;
+
+        if (($isDefault) || ($class === __CLASS__)) {
+            static::$db['default'] = $db;
+        }
+    }
+
+    /**
      * Get DB adapter
      *
      * @throws Exception
      * @return Adapter\AbstractAdapter
      */
-    public static function db()
+    public static function getDb()
     {
         $class = get_called_class();
 
@@ -192,6 +192,46 @@ class Record
                 throw new Exception('No database adapter was found.');
             }
         }
+    }
+
+    /**
+     * Get DB adapter (alias)
+     *
+     * @return Adapter\AbstractAdapter
+     */
+    public static function db()
+    {
+        return static::getDb();
+    }
+
+    /**
+     * Determine if there is a Sql object
+     *
+     * @return boolean
+     */
+    public static function hasSql()
+    {
+        return (new static())->getResult()->hasSql();
+    }
+
+    /**
+     * Get Sql object
+     *
+     * @return Sql
+     */
+    public static function getSql()
+    {
+        return (new static())->getResult()->getSql();
+    }
+
+    /**
+     * Get Sql object (alias)
+     *
+     * @return Sql
+     */
+    public static function sql()
+    {
+        return static::getSql();
     }
 
     /**
