@@ -13,7 +13,7 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException('Pop\Db\Exception');
         $user = new TestAsset\Users();
     }
-
+/*
     public function testSetDbException()
     {
         $this->setExpectedException('Pop\Db\Exception');
@@ -207,5 +207,5 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $users = TestAsset\Users::query($sql);
         $this->assertEquals(1, $users->count());
     }
-
+*/
 }

@@ -64,7 +64,7 @@ class Column
                 } else {
                     $where[] = $column . ' IS NULL' . $combine;
                 }
-                // IN or NOT IN
+            // IN or NOT IN
             } else if (is_array($value)) {
                 if (substr($column, -1) == '-') {
                     $column  = substr($column, 0, -1);
@@ -72,7 +72,7 @@ class Column
                 } else {
                     $where[] = $column . ' IN (' . implode(', ', $value) . ')' . $combine;
                 }
-                // BETWEEN or NOT BETWEEN
+            // BETWEEN or NOT BETWEEN
             } else if ((substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
                 (strpos($value, ',') !== false)) {
                 if (substr($column, -1) == '-') {
@@ -81,7 +81,7 @@ class Column
                 } else {
                     $where[] = $column . ' BETWEEN ' . $value . $combine;
                 }
-                // LIKE or NOT LIKE
+            // LIKE or NOT LIKE
             } else if ((substr($value, 0, 2) == '-%') || (substr($value, -2) == '%-') ||
                 (substr($value, 0, 1) == '%') || (substr($value, -1) == '%')) {
                 $op = ((substr($value, 0, 2) == '-%') || (substr($value, -2) == '%-')) ? 'NOT LIKE' : 'LIKE';
