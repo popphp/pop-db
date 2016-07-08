@@ -11,10 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Adapter;
+namespace Pop\Db\Parser;
 
 /**
- * Db adapter exception class
+ * Db parser exception class
  *
  * @category   Pop
  * @package    Pop_Db

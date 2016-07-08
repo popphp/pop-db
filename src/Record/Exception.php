@@ -11,10 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Adapter;
+namespace Pop\Db\Record;
 
 /**
- * Db adapter exception class
+ * Db record exception class
  *
  * @category   Pop
  * @package    Pop_Db
