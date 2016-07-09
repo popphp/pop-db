@@ -9,7 +9,7 @@ use Pop\Db\Adapter\Pdo;
 class PgsqlTest extends \PHPUnit_Framework_TestCase
 {
 
-    protected $password = '12post34';
+    protected $password = '';
 
     public function testConstructorException()
     {
