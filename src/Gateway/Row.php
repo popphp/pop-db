@@ -23,7 +23,7 @@ namespace Pop\Db\Gateway;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    3.0.0
  */
-class Row extends AbstractGateway
+class Row extends AbstractGateway implements \ArrayAccess
 {
 
     /**
@@ -325,6 +325,53 @@ class Row extends AbstractGateway
         if (isset($this->columns[$name])) {
             unset($this->columns[$name]);
         }
+    }
+
+    /**
+     * ArrayAccess offsetExists
+     *
+     * @param  mixed $offset
+     * @return boolean
+     */
+    public function offsetExists($offset)
+    {
+        return $this->__isset($offset);
+    }
+
+    /**
+     * ArrayAccess offsetGet
+     *
+     * @param  mixed $offset
+     * @return mixed
+     */
+    public function offsetGet($offset)
+    {
+        return $this->__get($offset);
+    }
+
+    /**
+     * ArrayAccess offsetSet
+     *
+     * @param  mixed $offset
+     * @param  mixed $value
+     * @throws Exception
+     * @return void
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->__set($offset, $value);
+    }
+
+    /**
+     * ArrayAccess offsetUnset
+     *
+     * @param  mixed $offset
+     * @throws Exception
+     * @return void
+     */
+    public function offsetUnset($offset)
+    {
+        $this->__unset($offset);
     }
 
 }

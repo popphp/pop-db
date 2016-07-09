@@ -354,7 +354,7 @@ class Result implements \ArrayAccess
                 case \Pop\Db\Record::ROW_AS_ARRAY:
                     $this->rows[0] = $this->columns;
                     break;
-                case \Pop\Db\Record::ROW_AS_ARRAYOBJECT:
+                case \Pop\Db\Record::ROW_AS_OBJECT:
                     $this->rows[0] = new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
                     break;
                 default:
@@ -387,7 +387,7 @@ class Result implements \ArrayAccess
                     case \Pop\Db\Record::ROW_AS_ARRAY:
                         $this->rows[] = (array)$row;
                         break;
-                    case \Pop\Db\Record::ROW_AS_ARRAYOBJECT:
+                    case \Pop\Db\Record::ROW_AS_OBJECT:
                         $this->rows[] = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
                         break;
                     default:

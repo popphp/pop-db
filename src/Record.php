@@ -32,9 +32,9 @@ class Record implements \ArrayAccess
      * Data set result constants
      * @var string
      */
-    const ROW_AS_ARRAY       = 'ROW_AS_ARRAY';
-    const ROW_AS_ARRAYOBJECT = 'ROW_AS_ARRAYOBJECT';
-    const ROW_AS_RESULT      = 'ROW_AS_RESULT';
+    const ROW_AS_ARRAY  = 'ROW_AS_ARRAY';
+    const ROW_AS_OBJECT = 'ROW_AS_OBJECT';
+    const ROW_AS_RESULT = 'ROW_AS_RESULT';
 
     /**
      * Database connection(s)
@@ -581,6 +581,5 @@ class Record implements \ArrayAccess
     {
         $this->__unset($offset);
     }
-
 
 }
