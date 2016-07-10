@@ -306,6 +306,16 @@ class Record implements \ArrayAccess
     }
 
     /**
+     * Static method to get the total count of a set from the DB table
+     *
+     * @return array
+     */
+    public static function getTableInfo()
+    {
+        return (new static())->getResult()->getTableInfo();
+    }
+
+    /**
      * Set the table prefix
      *
      * @param  string $prefix

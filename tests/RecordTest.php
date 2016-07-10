@@ -58,10 +58,14 @@ class RecordTest extends \PHPUnit_Framework_TestCase
 
     public function testGetTableInfo()
     {
-        $info = (new TestAsset\Users())->getResult()->getTableInfo();
-        $this->assertEquals('ph_users', $info['tableName']);
-        $this->assertEquals('id', $info['primaryId'][0]);
-        $this->assertEquals(6, count($info['columns']));
+        $info1 = (new TestAsset\Users())->getResult()->getTableInfo();
+        $info2 = TestAsset\Users::getTableInfo();
+        $this->assertEquals('ph_users', $info1['tableName']);
+        $this->assertEquals('id', $info1['primaryId'][0]);
+        $this->assertEquals(6, count($info1['columns']));
+        $this->assertEquals('ph_users', $info2['tableName']);
+        $this->assertEquals('id', $info2['primaryId'][0]);
+        $this->assertEquals(6, count($info2['columns']));
     }
 
     public function testGetPrimaryKeys()
