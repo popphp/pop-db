@@ -47,23 +47,23 @@ class Db
     /**
      * Check the database
      *
-     * @param  array  $db
      * @param  string $adapter
+     * @param  array  $options
      * @param  string $prefix
      * @return string
      */
-    public static function check($db, $adapter, $prefix = '\Pop\Db\Adapter\\')
+    public static function check($adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
     {
         $error = ini_get('error_reporting');
         error_reporting(E_ERROR);
 
         try {
             // Test the db connection
-            $class = $prefix . $adapter;
+            $class = $prefix . ucfirst(strtolower($adapter));
             if (!class_exists($class)) {
                 return 'The database adapter ' . $class . ' is not valid.';
             } else {
-                $conn = new $class($db);
+                $conn = new $class($options);
             }
             error_reporting($error);
             return null;

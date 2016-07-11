@@ -25,25 +25,25 @@ class DbTest extends \PHPUnit_Framework_TestCase
 
     public function testCheck()
     {
-        $this->assertNull(Db::check(['database' => __DIR__  . '/tmp/db.sqlite'], 'Sqlite'));
+        $this->assertNull(Db::check('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']));
     }
 
     public function testCheckBadAdapter()
     {
-        $this->assertNotNull(Db::check([
+        $this->assertNotNull(Db::check('badadapter', [
             'database' => 'baddb',
             'username' => 'root',
             'password' => '12root34'
-        ], 'badadapter'));
+        ]));
     }
 
     public function testCheckBadDb()
     {
-        $this->assertNotNull(Db::check([
+        $this->assertNotNull(Db::check('mysql', [
             'database' => 'baddb',
             'username' => 'root',
             'password' => '12root34'
-        ], 'Mysql'));
+        ]));
     }
 
     public function testConnectException()
