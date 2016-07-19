@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Gateway;
 
+use Pop\Db\Parser;
+
 /**
  * Table gateway class
  *
@@ -21,7 +23,7 @@ namespace Pop\Db\Gateway;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    3.0.0
+ * @version    3.0.1
  */
 class Table extends AbstractGateway
 {
@@ -93,7 +95,7 @@ class Table extends AbstractGateway
         }
 
         if (isset($options['order'])) {
-            $ord = $this->getOrder($options['order']);
+            $ord = Parser\Order::parse($options['order']);
             $this->sql->select()->orderBy($ord['by'], $this->sql->db()->escape($ord['order']));
         }
 

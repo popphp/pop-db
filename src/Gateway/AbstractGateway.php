@@ -21,7 +21,7 @@ namespace Pop\Db\Gateway;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    3.0.0
+ * @version    3.0.1
  */
 abstract class AbstractGateway
 {
@@ -194,39 +194,6 @@ abstract class AbstractGateway
         }
 
         return $info;
-    }
-
-    /**
-     * Get the order by values
-     *
-     * @param  string $order
-     * @return array
-     */
-    protected function getOrder($order)
-    {
-        $by  = null;
-        $ord = null;
-
-        if (stripos($order, 'ASC') !== false) {
-            $by  = trim(str_replace('ASC', '', $order));
-            $ord = 'ASC';
-        } else if (stripos($order, 'DESC') !== false) {
-            $by  = trim(str_replace('DESC', '', $order));
-            $ord = 'DESC';
-        } else if (stripos($order, 'RAND()') !== false) {
-            $by  = trim(str_replace('RAND()', '', $order));
-            $ord = 'RAND()';
-        } else {
-            $by  = $order;
-            $ord = null;
-        }
-
-        if (strpos($by, ',') !== false) {
-            $by = str_replace(', ', ',', $by);
-            $by = explode(',', $by);
-        }
-
-        return ['by' => $by, 'order' => $ord];
     }
 
 }
