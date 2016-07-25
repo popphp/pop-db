@@ -21,7 +21,7 @@ namespace Pop\Db\Sql;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    3.0.1
+ * @version    3.0.2
  */
 class Predicate
 {
@@ -555,7 +555,7 @@ class Predicate
         foreach ($this->operators as $op) {
             // If operator IS NULL or IS NOT NULL
             if ((strpos($op, 'NULL') !== false) && (strpos($predicate, $op) !== false)) {
-                $combine = (substr($op, -3) == ' OR') ? 'OR' : 'AND';
+                $combine = (substr($predicate, -3) == ' OR') ? 'OR' : 'AND';
                 $value   = null;
                 $column  = trim(substr($predicate, 0, strpos($predicate, ' ')));
                 // Remove any quotes from the column
