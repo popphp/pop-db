@@ -238,7 +238,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function findById($id, $resultsAs = Record::ROW_AS_RESULT)
+    public static function findById($id, $resultsAs = Record::ROW_AS_OBJECT)
     {
         return (new static())->getResult()->findById($id, $resultsAs);
     }
@@ -251,7 +251,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function findBy(array $columns = null, array $options = null, $resultsAs = Record::ROW_AS_RESULT)
+    public static function findBy(array $columns = null, array $options = null, $resultsAs = Record::ROW_AS_OBJECT)
     {
         return (new static())->getResult()->findBy($columns, $options, $resultsAs);
     }
@@ -263,7 +263,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function findAll(array $options = null, $resultsAs = Record::ROW_AS_RESULT)
+    public static function findAll(array $options = null, $resultsAs = Record::ROW_AS_OBJECT)
     {
         return (new static())->getResult()->findBy(null, $options, $resultsAs);
     }
@@ -276,7 +276,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function execute($sql, $params, $resultsAs = Record::ROW_AS_RESULT)
+    public static function execute($sql, $params, $resultsAs = Record::ROW_AS_OBJECT)
     {
         return (new static())->getResult()->execute($sql, $params, $resultsAs);
     }
@@ -288,7 +288,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return Record\Result
      */
-    public static function query($sql, $resultsAs = Record::ROW_AS_RESULT)
+    public static function query($sql, $resultsAs = Record::ROW_AS_OBJECT)
     {
         return (new static())->getResult()->query($sql, $resultsAs);
     }
@@ -300,7 +300,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return int
      */
-    public static function getTotal(array $columns = null, $resultsAs = Record::ROW_AS_RESULT)
+    public static function getTotal(array $columns = null, $resultsAs = Record::ROW_AS_OBJECT)
     {
         return (new static())->getResult()->getTotal($columns, $resultsAs);
     }
@@ -476,7 +476,7 @@ class Record implements \ArrayAccess
      * @param  string $resultsAs
      * @return void
      */
-    public function save(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
+    public function save(array $columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_OBJECT)
     {
         if (null !== $this->result) {
             $this->result->save($columns, $resultsAs);

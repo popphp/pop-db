@@ -343,25 +343,25 @@ class Result implements \ArrayAccess
      */
     public function setColumns($columns = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
-        // If null, clear the columns.
-        if (null === $columns) {
-            $this->columns = [];
-            $this->rows    = [];
-            // Else, if an array, set the columns.
-        } else if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-            $this->columns = (array)$columns;
-            switch ($resultsAs) {
-                case \Pop\Db\Record::ROW_AS_ARRAY:
-                    $this->rows[0] = $this->columns;
-                    break;
-                case \Pop\Db\Record::ROW_AS_OBJECT:
-                    $this->rows[0] = new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
-                    break;
-                default:
-                    $this->rows[0] = $this;
+        $this->columns = [];
+        $this->rows    = [];
+
+        if (null !== $columns) {
+            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
+                $this->columns = (array)$columns;
+                switch ($resultsAs) {
+                    case \Pop\Db\Record::ROW_AS_ARRAY:
+                        $this->rows[0] = $this->columns;
+                        break;
+                    case \Pop\Db\Record::ROW_AS_OBJECT:
+                        $this->rows[0] = new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
+                        break;
+                    default:
+                        $this->rows[0] = $this;
+                }
+            } else {
+                throw new Exception('The parameter passed must be either an array, an array object or null.');
             }
-        } else {
-            throw new Exception('The parameter passed must be either an array or null.');
         }
 
         return $this;
@@ -376,11 +376,10 @@ class Result implements \ArrayAccess
      */
     public function setRows(array $rows = null, $resultsAs = \Pop\Db\Record::ROW_AS_RESULT)
     {
-        // If null, clear the rows.
-        if (null === $rows) {
-            $this->columns    = [];
-            $this->rows       = [];
-        } else {
+        $this->columns = [];
+        $this->rows    = [];
+
+        if (null !== $rows) {
             $this->columns = (isset($rows[0])) ? (array)$rows[0] : [];
             foreach ($rows as $row) {
                 switch ($resultsAs) {
