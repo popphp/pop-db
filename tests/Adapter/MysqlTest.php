@@ -20,6 +20,18 @@ class MysqlTest extends \PHPUnit_Framework_TestCase
         ]);
     }
 
+    public function testPdoMysql()
+    {
+        $db = new Pdo([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password,
+            'type'     => 'mysql',
+            'options'  => [\PDO::ATTR_PERSISTENT => false]
+        ]);
+        $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
+    }
+
     public function testConstructor()
     {
         $db = new Mysql([

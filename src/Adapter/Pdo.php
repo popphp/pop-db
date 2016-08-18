@@ -75,7 +75,11 @@ class Pdo extends AbstractAdapter
             $this->dbtype = strtolower($options['type']);
             if ($this->dbtype == 'sqlite') {
                 $this->dsn = $this->dbtype . ':' . $options['database'];
-                $this->connection = new \PDO($this->dsn);
+                if (isset($options['options']) && is_array($options['options'])) {
+                    $this->connection = new \PDO($this->dsn, null, null, $options['options']);
+                } else {
+                    $this->connection = new \PDO($this->dsn);
+                }
             } else {
                 if (!isset($options['host']) || !isset($options['username']) || !isset($options['password'])) {
                     throw new Exception('Error: The proper database credentials were not passed.');
@@ -87,7 +91,11 @@ class Pdo extends AbstractAdapter
                     $this->dsn = $this->dbtype . ':host=' . $options['host'] . ';dbname=' . $options['database'];
                 }
 
-                $this->connection = new \PDO($this->dsn, $options['username'], $options['password']);
+                if (isset($options['options']) && is_array($options['options'])) {
+                    $this->connection = new \PDO($this->dsn, $options['username'], $options['password'], $options['options']);
+                } else {
+                    $this->connection = new \PDO($this->dsn, $options['username'], $options['password']);
+                }
             }
         } catch (\PDOException $e) {
             throw new Exception('Error: Could not connect to database. ' . $e->getMessage());

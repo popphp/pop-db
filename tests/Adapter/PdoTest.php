@@ -22,7 +22,7 @@ class PdoTest extends \PHPUnit_Framework_TestCase
             'type'     => 'sqlite'
         ], 'Pdo');
 
-        $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite']);
+        $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite', 'options' => [\PDO::ATTR_PERSISTENT => false]]);
         $adapters = $db->getAvailableAdapters();
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
         $this->assertContains('sqlite:', $db->getDsn());
