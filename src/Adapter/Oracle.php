@@ -92,7 +92,7 @@ class Oracle extends AbstractAdapter
      * @param  array  $params
      * @return Oracle
      */
-    public function bindParams($params)
+    public function bindParams(array $params)
     {
         foreach ($params as $dbColumnName => $dbColumnValue) {
             if (is_array($dbColumnValue)) {

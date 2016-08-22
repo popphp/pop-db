@@ -126,7 +126,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  mixed  $options
      * @return Sqlsrv
      */
-    public function bindParams($params, $options = null)
+    public function bindParams(array $params, $options = null)
     {
         $bindParams = [];
         foreach ($params as $dbColumnName => $dbColumnValue) {

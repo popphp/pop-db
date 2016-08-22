@@ -116,23 +116,19 @@ class Pgsql extends AbstractAdapter
     /**
      * Bind parameters to for a prepared SQL query.
      *
-     * @param  string|array  $params
+     * @param  array  $params
      * @return Pgsql
      */
-    public function bindParams($params)
+    public function bindParams(array $params)
     {
-        if (!is_array($params)) {
-            $this->parameters = [$params];
-        } else {
-            $this->parameters = [];
-            foreach ($params as $param) {
-                if (is_array($param)) {
-                    foreach ($param as $par) {
-                        $this->parameters[] = $par;
-                    }
-                } else {
-                    $this->parameters[] = $param;
+        $this->parameters = [];
+        foreach ($params as $param) {
+            if (is_array($param)) {
+                foreach ($param as $par) {
+                    $this->parameters[] = $par;
                 }
+            } else {
+                $this->parameters[] = $param;
             }
         }
 

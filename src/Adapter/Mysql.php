@@ -100,7 +100,7 @@ class Mysql extends AbstractAdapter
      * @param  array  $params
      * @return Mysql
      */
-    public function bindParams($params)
+    public function bindParams(array $params)
     {
         $bindParams = [''];
 

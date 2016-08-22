@@ -98,7 +98,7 @@ class Sqlite extends AbstractAdapter
      * @param  array  $params
      * @return Sqlite
      */
-    public function bindParams($params)
+    public function bindParams(array $params)
     {
         foreach ($params as $dbColumnName => $dbColumnValue) {
             if (is_array($dbColumnValue)) {

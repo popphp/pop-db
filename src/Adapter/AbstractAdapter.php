@@ -150,7 +150,7 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  array $params
      * @return AbstractAdapter
      */
-    abstract public function bindParams($params);
+    abstract public function bindParams(array $params);
 
     /**
      * Execute the prepared SQL query.

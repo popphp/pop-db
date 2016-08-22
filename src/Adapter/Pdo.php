@@ -202,7 +202,7 @@ class Pdo extends AbstractAdapter
      * @param  array  $params
      * @return Pdo
      */
-    public function bindParams($params)
+    public function bindParams(array $params)
     {
         if ($this->placeholder == '?') {
             $i = 1;
@@ -231,6 +231,44 @@ class Pdo extends AbstractAdapter
                 } else {
                     ${$dbColumnName} = $dbColumnValue;
                     $this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName});
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Bind parameters to for a prepared SQL query.
+     *
+     * @param  array  $params
+     * @return Pdo
+     */
+    public function bindValues(array $params)
+    {
+        if ($this->placeholder == '?') {
+            $i = 1;
+            foreach ($params as $dbColumnName => $dbColumnValue) {
+                if (is_array($dbColumnValue)) {
+                    foreach ($dbColumnValue as $dbColumnVal) {
+                        $this->statement->bindValue($i, $dbColumnVal);
+                        $i++;
+                    }
+                } else {
+                    $this->statement->bindValue($i, $dbColumnValue);
+                    $i++;
+                }
+            }
+        } else if ($this->placeholder == ':') {
+            foreach ($params as $dbColumnName => $dbColumnValue) {
+                if (is_array($dbColumnValue)) {
+                    $i = 1;
+                    foreach ($dbColumnValue as $dbColumnVal) {
+                        $this->statement->bindValue(':' . $dbColumnName . $i, $dbColumnVal);
+                        $i++;
+                    }
+                } else {
+                    $this->statement->bindValue(':' . $dbColumnName, $dbColumnValue);
                 }
             }
         }
