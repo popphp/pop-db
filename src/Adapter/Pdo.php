@@ -239,40 +239,32 @@ class Pdo extends AbstractAdapter
     }
 
     /**
-     * Bind parameters to for a prepared SQL query.
+     * Bind a value for a prepared SQL query.
      *
-     * @param  array  $params
+     * @param  mixed $param
+     * @param  mixed $value
+     * @param  int   $dataType
+     * @param  int   $length
+     * @param  mixed $options
      * @return Pdo
      */
-    public function bindValues(array $params)
+    public function bindParam($param, &$value, $dataType = \PDO::PARAM_STR, $length = null, $options = null)
     {
-        if ($this->placeholder == '?') {
-            $i = 1;
-            foreach ($params as $dbColumnName => $dbColumnValue) {
-                if (is_array($dbColumnValue)) {
-                    foreach ($dbColumnValue as $dbColumnVal) {
-                        $this->statement->bindValue($i, $dbColumnVal);
-                        $i++;
-                    }
-                } else {
-                    $this->statement->bindValue($i, $dbColumnValue);
-                    $i++;
-                }
-            }
-        } else if ($this->placeholder == ':') {
-            foreach ($params as $dbColumnName => $dbColumnValue) {
-                if (is_array($dbColumnValue)) {
-                    $i = 1;
-                    foreach ($dbColumnValue as $dbColumnVal) {
-                        $this->statement->bindValue(':' . $dbColumnName . $i, $dbColumnVal);
-                        $i++;
-                    }
-                } else {
-                    $this->statement->bindValue(':' . $dbColumnName, $dbColumnValue);
-                }
-            }
-        }
+        $this->statement->bindParam($param, $value, $dataType, $length, $options);
+        return $this;
+    }
 
+    /**
+     * Bind a parameter for a prepared SQL query.
+     *
+     * @param  mixed $param
+     * @param  mixed $value
+     * @param  int   $dataType
+     * @return Pdo
+     */
+    public function bindValue($param, $value, $dataType = \PDO::PARAM_STR)
+    {
+        $this->statement->bindValue($param, $value, $dataType);
         return $this;
     }
 
