@@ -96,7 +96,6 @@ class PdoTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($db->hasResult());
         $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getConnection());
-
     }
 
     public function testQuery()
