@@ -82,6 +82,13 @@ interface AdapterInterface
     public function numberOfFields();
 
     /**
+     * Get the statement resource
+     *
+     * @return resource
+     */
+    public function getStatement();
+
+    /**
      * Determine whether or not an result resource exists
      *
      * @return boolean

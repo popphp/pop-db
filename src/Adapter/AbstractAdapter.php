@@ -208,6 +208,16 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function numberOfFields();
 
     /**
+     * Get the statement resource
+     *
+     * @return resource
+     */
+    public function getStatement()
+    {
+        return $this->statement;
+    }
+
+    /**
      * Determine whether or not an result resource exists
      *
      * @return boolean
