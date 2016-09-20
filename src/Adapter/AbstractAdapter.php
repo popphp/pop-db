@@ -1,0 +1,181 @@
+<?php
+/**
+ * Pop PHP Framework (http://www.popphp.org/)
+ *
+ * @link       https://github.com/popphp/popphp-framework
+ * @author     Nick Sagona, III <dev@nolainteractive.com>
+ * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @license    http://www.popphp.org/license     New BSD License
+ */
+
+/**
+ * @namespace
+ */
+namespace Pop\Db\Adapter;
+
+/**
+ * Db abstract adapter class
+ *
+ * @category   Pop
+ * @package    Pop_Db
+ * @author     Nick Sagona, III <dev@nolainteractive.com>
+ * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @license    http://www.popphp.org/license     New BSD License
+ * @version    4.0.0
+ */
+abstract class AbstractAdapter implements AdapterInterface
+{
+
+    /**
+     * Database connection object/resource
+     * @var mixed
+     */
+    protected $connection = null;
+
+    /**
+     * Statement object/resource
+     * @var mixed
+     */
+    protected $statement = null;
+
+    /**
+     * Result object/resource
+     * @var mixed
+     */
+    protected $result = null;
+
+    /**
+     * Error string/object/resource
+     * @var mixed
+     */
+    protected $error = null;
+
+    /**
+     * Constructor
+     *
+     * Instantiate the database adapter object
+     *
+     * @param  array $options
+     * @return AbstractAdapter
+     */
+    abstract public function __construct(array $options);
+
+    /**
+     * Determine whether or not connected
+     *
+     * @return boolean
+     */
+    public function isConnected()
+    {
+        return (null !== $this->connection);
+    }
+
+    /**
+     * Get the connection object/resource
+     *
+     * @return mixed
+     */
+    public function getConnection()
+    {
+        return $this->connection;
+    }
+
+    /**
+     * Determine whether or not a statement resource exists
+     *
+     * @return boolean
+     */
+    public function hasStatement()
+    {
+        return (null !== $this->statement);
+    }
+
+    /**
+     * Get the statement object/resource
+     *
+     * @return mixed
+     */
+    public function getStatement()
+    {
+        return $this->statement;
+    }
+
+    /**
+     * Determine whether or not a result resource exists
+     *
+     * @return boolean
+     */
+    public function hasResult()
+    {
+        return (null !== $this->result);
+    }
+
+    /**
+     * Get the result object/resource
+     *
+     * @return mixed
+     */
+    public function getResult()
+    {
+        return $this->result;
+    }
+
+    /**
+     * Determine whether or not there is an error
+     *
+     * @return boolean
+     */
+    public function hasError()
+    {
+        return (null !== $this->error);
+    }
+
+    /**
+     * Get the error
+     *
+     * @return mixed
+     */
+    public function getError()
+    {
+        return $this->error;
+    }
+
+    /**
+     * Throw a database error exception
+     *
+     * @throws Exception
+     * @return void
+     */
+    public function throwError()
+    {
+        if (null !== $this->error) {
+            throw new Exception($this->error);
+        }
+    }
+
+    /**
+     * Disconnect from the database
+     *
+     * @return void
+     */
+    public function disconnect()
+    {
+        unset($this->connection);
+        unset($this->statement);
+        unset($this->result);
+        unset($this->error);
+
+        $this->connection = null;
+        $this->result     = null;
+        $this->statement  = null;
+        $this->error      = null;
+    }
+
+    /**
+     * Return the database version.
+     *
+     * @return string
+     */
+    abstract public function getVersion();
+
+}
