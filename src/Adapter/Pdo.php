@@ -33,7 +33,7 @@ class Pdo extends AbstractAdapter
     protected $dsn = null;
 
     /**
-     * PDO database type
+     * PDO type
      * @var string
      */
     protected $type = null;
@@ -88,6 +88,26 @@ class Pdo extends AbstractAdapter
         } catch (\PDOException $e) {
             $this->throwError('PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')');
         }
+    }
+
+    /**
+     * Return the DSN
+     *
+     * @return string
+     */
+    public function getDsn()
+    {
+        return $this->dsn;
+    }
+
+    /**
+     * Return the type
+     *
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
     }
 
     /**
@@ -225,16 +245,6 @@ class Pdo extends AbstractAdapter
     public function fetchAll()
     {
         return $this->statement->fetchAll(\PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Return the DSN
-     *
-     * @return string
-     */
-    public function getDsn()
-    {
-        return $this->dsn;
     }
 
     /**
