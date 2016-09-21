@@ -38,8 +38,6 @@ class Mysql extends AbstractAdapter
      * Instantiate the MySQL database connection object using mysqli
      *
      * @param  array $options
-     * @throws Exception
-     * @return Mysql
      */
     public function __construct(array $options)
     {
@@ -54,8 +52,7 @@ class Mysql extends AbstractAdapter
         }
 
         if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
-            $this->setError('Error: The proper database credentials were not passed.')
-                 ->throwError();
+            $this->throwError('Error: The proper database credentials were not passed.');
         }
 
         $this->connection = new \mysqli(
@@ -64,9 +61,7 @@ class Mysql extends AbstractAdapter
         );
 
         if ($this->connection->connect_error != '') {
-            $this->setError('MySQL Connection Error: ' . $this->connection->connect_error .
-                ' (#' . $this->connection->connect_errno . ')')
-                 ->throwError();
+            $this->throwError('MySQL Connection Error: ' . $this->connection->connect_error . ' (#' . $this->connection->connect_errno . ')');
         }
     }
 
@@ -82,8 +77,7 @@ class Mysql extends AbstractAdapter
         $this->statementResult = false;
 
         if (!($this->result = $this->connection->query($sql))) {
-            $this->setError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error . '.')
-                 ->throwError();
+            $this->throwError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error);
         }
         return $this;
     }
@@ -145,8 +139,7 @@ class Mysql extends AbstractAdapter
     public function execute()
     {
         if (null === $this->statement) {
-            $this->setError('Error: The database statement resource is not currently set.')
-                 ->throwError();
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         $this->statementResult = $this->statement->execute();
@@ -187,8 +180,7 @@ class Mysql extends AbstractAdapter
             return $row;
         } else {
             if (null === $this->result) {
-                $this->setError('Error: The database result resource is not currently set.')
-                     ->throwError();
+                $this->throwError('Error: The database result resource is not currently set.');
             }
             return $this->result->fetch_array(MYSQLI_ASSOC);
         }
@@ -229,14 +221,13 @@ class Mysql extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (isset($this->statement)) {
+        if (null !== $this->statement) {
             $this->statement->store_result();
             return $this->statement->num_rows;
-        } else if (isset($this->result)) {
+        } else if (null !== $this->result) {
             return $this->result->num_rows;
         } else {
-            $this->setError('Error: The database result resource is not currently set.')
-                 ->throwError();
+            $this->throwError('Error: The database result resource is not currently set.');
         }
     }
 

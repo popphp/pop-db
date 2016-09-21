@@ -44,19 +44,17 @@ class Sqlite extends AbstractAdapter
      * Instantiate the SQLite database connection object using SQLite3
      *
      * @param  array $options
-     * @throws Exception
-     * @return Sqlite
      */
     public function __construct(array $options)
     {
         if (!isset($options['database'])) {
-            throw new Exception('Error: The database file was not passed.');
+            $this->throwError('Error: The database file was not passed.');
         } else if (!file_exists($options['database'])) {
-            throw new Exception('Error: The database file does not exists.');
+            $this->throwError('Error: The database file does not exists.');
         }
 
         $flags = (isset($options['flags'])) ? $options['flags'] : SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE;
-        $key   = (isset($options['key']))   ? $options['key'] : null;
+        $key   = (isset($options['key']))   ? $options['key']   : null;
 
         $this->connection = new \SQLite3($options['database'], $flags, $key);
     }
@@ -72,8 +70,7 @@ class Sqlite extends AbstractAdapter
         $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
 
         if (!($this->result = $this->connection->query($sql))) {
-            $this->setError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg())
-                 ->throwError();
+            $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         }
         return $this;
     }
@@ -106,6 +103,34 @@ class Sqlite extends AbstractAdapter
     }
 
     /**
+     * Bind a parameter for a prepared SQL query
+     *
+     * @param  mixed $param
+     * @param  mixed $value
+     * @param  int   $type
+     * @return Sqlite
+     */
+    public function bindParam($param, $value, $type = SQLITE3_BLOB)
+    {
+        $this->statement->bindParam($param, $value, $type);
+        return $this;
+    }
+
+    /**
+     * Bind a value for a prepared SQL query
+     *
+     * @param  mixed $param
+     * @param  mixed $value
+     * @param  int   $type
+     * @return Sqlite
+     */
+    public function bindValue($param, $value, $type = SQLITE3_BLOB)
+    {
+        $this->statement->bindValue($param, $value, $type);
+        return $this;
+    }
+
+    /**
      * Execute a prepared SQL query
      *
      * @return Sqlite
@@ -113,8 +138,7 @@ class Sqlite extends AbstractAdapter
     public function execute()
     {
         if (null === $this->statement) {
-            $this->setError('Error: The database statement resource is not currently set.')
-                 ->throwError();
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         $this->result = $this->statement->execute();
@@ -128,9 +152,8 @@ class Sqlite extends AbstractAdapter
      */
     public function fetch()
     {
-        if (!isset($this->result)) {
-            $this->setError('Error: The database result resource is not currently set.')
-                 ->throwError();
+        if (null === $this->result) {
+            $this->throwError('Error: The database result resource is not currently set.');
         }
 
         return $this->result->fetchArray(SQLITE3_ASSOC);
@@ -177,8 +200,7 @@ class Sqlite extends AbstractAdapter
             return $this->connection->changes();
         } else {
             if (!($this->lastResult = $this->connection->query($this->lastSql))) {
-                $this->setError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg())
-                     ->throwError();
+                $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
             } else {
                 $num = 0;
                 while (($row = $this->lastResult->fetcharray(SQLITE3_ASSOC)) != false) {

@@ -57,17 +57,16 @@ class Db
     public static function check($adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
     {
         $result = null;
+        $class  = $prefix . ucfirst(strtolower($adapter));
         $error  = ini_get('error_reporting');
 
         error_reporting(E_ERROR);
 
         try {
-            $class = $prefix . ucfirst(strtolower($adapter));
-
             if (!class_exists($class)) {
                 $result = 'Error: The database adapter ' . $class . ' does not exist.';
             } else {
-                $connection = new $class($options);
+                $db     = new $class($options);
             }
         } catch (\Exception $e) {
             $result = $e->getMessage();
@@ -89,7 +88,59 @@ class Db
      */
     public static function install($sql, $adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
     {
+        $adapter = ucfirst(strtolower($adapter));
+        $class   = $prefix . $adapter;
 
+        if (!class_exists($class)) {
+            throw new Exception('Error: The database adapter ' . $class . ' does not exist.');
+        }
+
+        // If Sqlite
+        if (($adapter == 'Sqlite') || (($adapter == 'Pdo') && isset($options['type'])) && (strtolower($options['type']) == 'sqlite')) {
+            if (!file_exists($options['database'])) {
+                touch($options['database']);
+                chmod($options['database'], 0777);
+            }
+            if (!file_exists($options['database'])) {
+                throw new Exception('Error: Could not create the database file.');
+            }
+        }
+
+        $db    = new $class($options);
+        $lines = file($sql);
+
+        // Remove comments, execute queries
+        if (count($lines) > 0) {
+            $insideComment = false;
+            foreach ($lines as $i => $line) {
+                if ($insideComment) {
+                    if (substr($line, 0, 2) == '*/') {
+                        $insideComment = false;
+                    }
+                    unset($lines[$i]);
+                } else {
+                    if ((substr($line, 0, 1) == '-') || (substr($line, 0, 1) == '#')) {
+                        unset($lines[$i]);
+                    } else if (substr($line, 0, 2) == '/*') {
+                        $insideComment = true;
+                        unset($lines[$i]);
+                    }
+                }
+            }
+
+            $sqlString  = trim(implode('', $lines));
+            $newLine    = (strpos($sqlString, ";\r\n") !== false) ? ";\r\n" : ";\n";
+            $statements = explode($newLine, $sqlString);
+
+            foreach ($statements as $statement) {
+                if (!empty($statement)) {
+                    if (isset($options['prefix'])) {
+                        $statement = str_replace('[{prefix}]', $options['prefix'], trim($statement));
+                    }
+                    $db->query($statement);
+                }
+            }
+        }
     }
 
     /**

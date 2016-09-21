@@ -56,8 +56,6 @@ class Pgsql extends AbstractAdapter
      * Instantiate the PostgreSQL database connection object
      *
      * @param  array $options
-     * @throws Exception
-     * @return Pgsql
      */
     public function __construct(array $options)
     {
@@ -66,7 +64,7 @@ class Pgsql extends AbstractAdapter
         }
 
         if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
-            throw new Exception('Error: The proper database credentials were not passed.');
+            $this->throwError('Error: The proper database credentials were not passed.');
         }
 
         $connectionString = "host=" . $options['host'] . " dbname=" . $options['database'] .
@@ -97,8 +95,7 @@ class Pgsql extends AbstractAdapter
         }
 
         if (!$this->connection) {
-            $this->setError('PostgreSQL Connection Error: Unable to connect to the database.')
-                 ->throwError();
+            $this->throwError('PostgreSQL Connection Error: Unable to connect to the database.');
         }
     }
 
@@ -111,8 +108,7 @@ class Pgsql extends AbstractAdapter
     public function query($sql)
     {
         if (!($this->result = pg_query($this->connection, $sql))) {
-            $this->setError(pg_last_error($this->connection))
-                 ->throwError();
+            $this->throwError(pg_last_error($this->connection));
         }
         return $this;
     }
@@ -156,8 +152,7 @@ class Pgsql extends AbstractAdapter
     public function execute()
     {
         if ((null === $this->statement) || (null === $this->statementString) || (null === $this->statementName)) {
-            $this->setError('Error: The database statement resource is not currently set.')
-                 ->throwError();
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         if (count($this->parameters) > 0)  {
@@ -177,9 +172,8 @@ class Pgsql extends AbstractAdapter
      */
     public function fetch()
     {
-        if (!isset($this->result)) {
-            $this->setError('Error: The database result resource is not currently set.')
-                 ->throwError();
+        if (null === $this->result) {
+            $this->throwError('Error: The database result resource is not currently set.');
         }
 
         return pg_fetch_array($this->result, null, PGSQL_ASSOC);
@@ -222,9 +216,8 @@ class Pgsql extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (!isset($this->result)) {
-            $this->setError('Error: The database result resource is not currently set.')
-                 ->throwError();
+        if (null === $this->result) {
+            $this->throwError('Error: The database result resource is not currently set.');
         }
 
         return pg_num_rows($this->result);

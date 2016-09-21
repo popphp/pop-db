@@ -56,7 +56,6 @@ abstract class AbstractAdapter implements AdapterInterface
      * Instantiate the database adapter object
      *
      * @param  array $options
-     * @return AbstractAdapter
      */
     abstract public function __construct(array $options);
 
@@ -200,11 +199,15 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Throw a database error exception
      *
+     * @param  string $error
      * @throws Exception
      * @return void
      */
-    public function throwError()
+    public function throwError($error = null)
     {
+        if (null !== $error) {
+            $this->setError($error);
+        }
         if (null !== $this->error) {
             throw new Exception($this->error);
         }

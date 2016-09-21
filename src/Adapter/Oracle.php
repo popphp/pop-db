@@ -32,8 +32,6 @@ class Oracle extends AbstractAdapter
      * Instantiate the Oracle database connection object
      *
      * @param  array $options
-     * @throws Exception
-     * @return Oracle
      */
     public function __construct(array $options)
     {
@@ -42,7 +40,7 @@ class Oracle extends AbstractAdapter
         }
 
         if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
-            throw new Exception('Error: The proper database credentials were not passed.');
+            $this->throwError('Error: The proper database credentials were not passed.');
         }
 
         $connectionString = $options['host'] . '/' . $options['database'];
@@ -65,19 +63,97 @@ class Oracle extends AbstractAdapter
         }
 
         if ($this->connection == false) {
-            $this->setError('Oracle Connection Error: Unable to connect to the database. ' . oci_error())
-                 ->throwError();
+            $this->throwError('Oracle Connection Error: ' . oci_error());
         }
     }
 
     /**
-     * Return the database version
+     * Execute a SQL query directly
      *
-     * @return string
+     * @param  string $sql
+     * @return Oracle
      */
-    public function getVersion()
+    public function query($sql)
     {
-        return oci_server_version($this->connection);
+        $this->statement = oci_parse($this->connection, $sql);
+        if (!($this->result = oci_execute($this->statement))) {
+            $this->throwError('Error: ' . oci_error($this->connection));
+        }
+        return $this;
+    }
+
+    /**
+     * Prepare a SQL query
+     *
+     * @param  string $sql
+     * @return Oracle
+     */
+    public function prepare($sql)
+    {
+        $this->statement = oci_parse($this->connection, $sql);
+        return $this;
+    }
+
+    /**
+     * Bind parameters to a prepared SQL query
+     *
+     * @param  array $params
+     * @return Oracle
+     */
+    public function bindParams(array $params)
+    {
+        foreach ($params as $dbColumnName => $dbColumnValue) {
+            ${$dbColumnName} = $dbColumnValue;
+            oci_bind_by_name($this->statement, ':' . $dbColumnName, ${$dbColumnName});
+        }
+
+        return $this;
+    }
+
+    /**
+     * Execute a prepared SQL query
+     *
+     * @return Oracle
+     */
+    public function execute()
+    {
+        if (null === $this->statement) {
+            $this->throwError('Error: The database statement resource is not currently set.');
+        }
+
+        oci_execute($this->statement);
+
+        return $this;
+    }
+
+    /**
+     * Fetch and return a row from the result
+     *
+     * @return array
+     */
+    public function fetch()
+    {
+        if (!isset($this->statement)) {
+            $this->throwError('Error: The database result resource is not currently set.');
+        }
+
+        return oci_fetch_array($this->statement, OCI_RETURN_NULLS+OCI_ASSOC);
+    }
+
+    /**
+     * Fetch and return all rows from the result
+     *
+     * @return array
+     */
+    public function fetchAll()
+    {
+        $rows = [];
+
+        while (($row = $this->fetch())) {
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
     /**
@@ -92,6 +168,49 @@ class Oracle extends AbstractAdapter
         }
 
         parent::disconnect();
+    }
+
+    /**
+     * Return the number of rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfRows()
+    {
+        if (null !== $this->statement) {
+            return oci_num_rows($this->statement);
+        } else {
+            $this->throwError('Error: The database result resource is not currently set.');
+        }
+    }
+
+    /**
+     * Return the database version
+     *
+     * @return string
+     */
+    public function getVersion()
+    {
+        return oci_server_version($this->connection);
+    }
+
+    /**
+     * Return the tables in the database
+     *
+     * @return array
+     */
+    public function getTables()
+    {
+        $tables = [];
+
+        $this->query("SELECT TABLE_NAME FROM USER_TABLES");
+        while (($row = $this->fetch())) {
+            foreach($row as $value) {
+                $tables[] = $value;
+            }
+        }
+
+        return $tables;
     }
 
 }

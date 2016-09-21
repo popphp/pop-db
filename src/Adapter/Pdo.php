@@ -50,8 +50,6 @@ class Pdo extends AbstractAdapter
      * Instantiate the database connection object using PDO
      *
      * @param  array $options
-     * @throws Exception
-     * @return Pdo
      */
     public function __construct(array $options)
     {
@@ -60,7 +58,7 @@ class Pdo extends AbstractAdapter
         }
 
         if (!isset($options['type']) || !isset($options['database'])) {
-            throw new Exception('Error: The proper database credentials were not passed.');
+            $this->throwError('Error: The proper database credentials were not passed.');
         }
 
         try {
@@ -74,7 +72,7 @@ class Pdo extends AbstractAdapter
                 }
             } else {
                 if (!isset($options['host']) || !isset($options['username']) || !isset($options['password'])) {
-                    throw new Exception('Error: The proper database credentials were not passed.');
+                    $this->throwError('Error: The proper database credentials were not passed.');
                 }
 
                 $this->dsn = ($this->type == 'sqlsrv') ?
@@ -88,8 +86,7 @@ class Pdo extends AbstractAdapter
                 }
             }
         } catch (\PDOException $e) {
-            $this->setError('PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')')
-                 ->throwError();
+            $this->throwError('PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')');
         }
     }
 
@@ -199,8 +196,7 @@ class Pdo extends AbstractAdapter
     public function execute()
     {
         if (null === $this->statement) {
-            $this->setError('Error: The database statement resource is not currently set.')
-                 ->throwError();
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         $this->result = $this->statement->execute();
@@ -214,9 +210,8 @@ class Pdo extends AbstractAdapter
      */
     public function fetch()
     {
-        if (!isset($this->result)) {
-            $this->setError('Error: The database statement resource is not currently set.')
-                 ->throwError();
+        if (null === $this->result) {
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         return $this->result->fetch(\PDO::FETCH_ASSOC);
@@ -259,9 +254,8 @@ class Pdo extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (!isset($this->result)) {
-            $this->setError('Error: The database statement resource is not currently set.')
-                 ->throwError();
+        if (null === $this->result) {
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         return $this->result->rowCount();
