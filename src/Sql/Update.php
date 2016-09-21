@@ -27,12 +27,35 @@ class Update extends AbstractSql
 {
 
     /**
-     * Access the where clause
-     *
+     * WHERE predicate object
+     * @var Where
      */
-    public function where()
-    {
+    protected $where = null;
 
+    /**
+     * Access the WHERE clause
+     *
+     * @param  mixed $where
+     * @return Update
+     */
+    public function where($where = null)
+    {
+        if (null !== $where) {
+            if ($where instanceof Where) {
+                $this->where = $where;
+            } else {
+                if (null === $this->where) {
+                    $this->where = (new Where($this))->add($where);
+                } else {
+                    $this->where->add($where);
+                }
+            }
+        }
+        if (null === $this->where) {
+            $this->where = new Where($this);
+        }
+
+        return $this;
     }
 
     /**
@@ -67,7 +90,40 @@ class Update extends AbstractSql
      */
     public function render()
     {
-        return '';
+        // Start building the UPDATE statement
+        $sql = 'UPDATE ' . $this->quoteId($this->table) . ' SET ';
+        $set = [];
+
+        $paramCount = 1;
+        $dbType = $this->getDbType();
+
+        foreach ($this->values as $column => $value) {
+            $colValue = (strpos($column, '.') !== false) ?
+                substr($column, (strpos($column, '.') + 1)) : $column;
+
+            // Check for named parameters
+            if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) &&
+                ($dbType !== self::SQLITE) &&
+                ($dbType !== self::ORACLE)) {
+                if (($dbType == self::MYSQL) || ($dbType == self::SQLSRV)) {
+                    $value = '?';
+                } else if (($dbType == self::PGSQL) && (!($this->db instanceof \Pop\Db\Adapter\Pdo))) {
+                    $value = '$' . $paramCount;
+                    $paramCount++;
+                }
+            }
+            $val = (null === $value) ? 'NULL' : $this->quote($value);
+            $set[] = $this->quoteId($column) .' = ' . $val;
+        }
+
+        $sql .= implode(', ', $set);
+
+        // Build any WHERE clauses
+        if (null !== $this->where) {
+            $sql .= ' WHERE ' . $this->where->render($paramCount);
+        }
+
+        return $sql;
     }
 
     /**

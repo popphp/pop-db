@@ -27,12 +27,35 @@ class Delete extends AbstractSql
 {
 
     /**
-     * Access the where clause
-     *
+     * WHERE predicate object
+     * @var Where
      */
-    public function where()
-    {
+    protected $where = null;
 
+    /**
+     * Access the WHERE clause
+     *
+     * @param  $where
+     * @return Delete
+     */
+    public function where($where = null)
+    {
+        if (null !== $where) {
+            if ($where instanceof Where) {
+                $this->where = $where;
+            } else {
+                if (null === $this->where) {
+                    $this->where = (new Where($this))->add($where);
+                } else {
+                    $this->where->add($where);
+                }
+            }
+        }
+        if (null === $this->where) {
+            $this->where = new Where($this);
+        }
+
+        return $this;
     }
 
     /**
@@ -42,7 +65,15 @@ class Delete extends AbstractSql
      */
     public function render()
     {
-        return '';
+        // Start building the DELETE statement
+        $sql = 'DELETE FROM ' . $this->quoteId($this->table);
+
+        // Build any WHERE clauses
+        if (null !== $this->where) {
+            $sql .= ' WHERE ' . $this->where;
+        }
+
+        return $sql;
     }
 
     /**
