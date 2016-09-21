@@ -61,6 +61,51 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function __construct(array $options);
 
     /**
+     * Execute a SQL query directly
+     *
+     * @param  string $sql
+     * @return AbstractAdapter
+     */
+    abstract public function query($sql);
+
+    /**
+     * Prepare a SQL query.
+     *
+     * @param  string $sql
+     * @return AbstractAdapter
+     */
+    abstract public function prepare($sql);
+
+    /**
+     * Bind parameters to a prepared SQL query.
+     *
+     * @param  array $params
+     * @return AbstractAdapter
+     */
+    abstract public function bindParams(array $params);
+
+    /**
+     * Execute a prepared SQL query
+     *
+     * @return AbstractAdapter
+     */
+    abstract public function execute();
+
+    /**
+     * Fetch and return a row from the result
+     *
+     * @return array
+     */
+    abstract public function fetch();
+
+    /**
+     * Fetch and return all rows from the result
+     *
+     * @return array
+     */
+    abstract public function fetchAll();
+
+    /**
      * Determine whether or not connected
      *
      * @return boolean
@@ -131,6 +176,18 @@ abstract class AbstractAdapter implements AdapterInterface
     }
 
     /**
+     * Set the error
+     *
+     * @param  string $error
+     * @return AbstractAdapter
+     */
+    public function setError($error)
+    {
+        $this->error = $error;
+        return $this;
+    }
+
+    /**
      * Get the error
      *
      * @return mixed
@@ -154,6 +211,17 @@ abstract class AbstractAdapter implements AdapterInterface
     }
 
     /**
+     * Clear the error
+     *
+     * @return AbstractAdapter
+     */
+    public function clearError()
+    {
+        $this->error = null;
+        return $this;
+    }
+
+    /**
      * Disconnect from the database
      *
      * @return void
@@ -172,10 +240,24 @@ abstract class AbstractAdapter implements AdapterInterface
     }
 
     /**
-     * Return the database version.
+     * Return the number of rows from the last query
+     *
+     * @return int
+     */
+    abstract public function getNumberOfRows();
+
+    /**
+     * Return the database version
      *
      * @return string
      */
     abstract public function getVersion();
+
+    /**
+     * Return the tables in the database
+     *
+     * @return array
+     */
+    abstract public function getTables();
 
 }

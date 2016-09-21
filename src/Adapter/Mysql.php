@@ -27,6 +27,12 @@ class Mysql extends AbstractAdapter
 {
 
     /**
+     * Statement result
+     * @var boolean
+     */
+    protected $statementResult = false;
+
+    /**
      * Constructor
      *
      * Instantiate the MySQL database connection object using mysqli
@@ -48,7 +54,8 @@ class Mysql extends AbstractAdapter
         }
 
         if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
-            throw new Exception('Error: The proper database credentials were not passed.');
+            $this->setError('Error: The proper database credentials were not passed.')
+                 ->throwError();
         }
 
         $this->connection = new \mysqli(
@@ -57,20 +64,148 @@ class Mysql extends AbstractAdapter
         );
 
         if ($this->connection->connect_error != '') {
-            $this->error = 'MySQL Connection Error: ' . $this->connection->connect_error .
-                ' (#' . $this->connection->connect_errno . ')';
-            $this->throwError();
+            $this->setError('MySQL Connection Error: ' . $this->connection->connect_error .
+                ' (#' . $this->connection->connect_errno . ')')
+                 ->throwError();
         }
     }
 
     /**
-     * Return the database version.
+     * Execute a SQL query directly
      *
-     * @return string
+     * @param  string $sql
+     * @return Mysql
      */
-    public function getVersion()
+    public function query($sql)
     {
-        return 'MySQL ' . $this->connection->server_info;
+        $this->statement       = null;
+        $this->statementResult = false;
+
+        if (!($this->result = $this->connection->query($sql))) {
+            $this->setError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error . '.')
+                 ->throwError();
+        }
+        return $this;
+    }
+
+    /**
+     * Prepare a SQL query.
+     *
+     * @param  string $sql
+     * @return Mysql
+     */
+    public function prepare($sql)
+    {
+        $this->statement = $this->connection->stmt_init();
+        $this->statement->prepare($sql);
+        return $this;
+    }
+
+    /**
+     * Bind parameters to a prepared SQL query.
+     *
+     * @param  array $params
+     * @return Mysql
+     */
+    public function bindParams(array $params)
+    {
+        $bindParams = [''];
+
+        $i = 1;
+        foreach ($params as $dbColumnName => $dbColumnValue) {
+            ${$dbColumnName . $i} = $dbColumnValue;
+
+            if (is_int($dbColumnValue)) {
+                $bindParams[0] .= 'i';
+            } else if (is_double($dbColumnValue)) {
+                $bindParams[0] .= 'd';
+            } else if (is_string($dbColumnValue)) {
+                $bindParams[0] .= 's';
+            } else if (is_null($dbColumnValue)) {
+                $bindParams[0] .= 's';
+            } else {
+                $bindParams[0] .= 'b';
+            }
+
+            $bindParams[] = &${$dbColumnName . $i};
+            $i++;
+        }
+
+        call_user_func_array([$this->statement, 'bind_param'], $bindParams);
+
+        return $this;
+    }
+
+    /**
+     * Execute a prepared SQL query
+     *
+     * @throws Exception
+     * @return Mysql
+     */
+    public function execute()
+    {
+        if (null === $this->statement) {
+            $this->setError('Error: The database statement resource is not currently set.')
+                 ->throwError();
+        }
+
+        $this->statementResult = $this->statement->execute();
+        return $this;
+    }
+
+    /**
+     * Fetch and return a row from the result
+     *
+     * @throws Exception
+     * @return array
+     */
+    public function fetch()
+    {
+        if ((null !== $this->statement) && ($this->statementResult !== false)) {
+            $params     = [];
+            $bindParams = [];
+            $row        = false;
+
+            $metaData = $this->statement->result_metadata();
+            if ($metaData !== false) {
+                foreach ($metaData->fetch_fields() as $col) {
+                    ${$col->name} = null;
+                    $bindParams[] = &${$col->name};
+                    $params[]     = $col->name;
+                }
+
+                call_user_func_array([$this->statement, 'bind_result'], $bindParams);
+
+                if (($r = $this->statement->fetch()) != false) {
+                    $row = [];
+                    foreach ($bindParams as $dbColumnName => $dbColumnValue) {
+                        $row[$params[$dbColumnName]] = $dbColumnValue;
+                    }
+                }
+            }
+
+            return $row;
+        } else {
+            if (null === $this->result) {
+                $this->setError('Error: The database result resource is not currently set.')
+                     ->throwError();
+            }
+            return $this->result->fetch_array(MYSQLI_ASSOC);
+        }
+    }
+
+    /**
+     * Fetch and return all rows from the result
+     *
+     * @return array
+     */
+    public function fetchAll()
+    {
+        $rows = [];
+        while (($row = $this->fetch())) {
+            $rows[] = $row;
+        }
+        return $rows;
     }
 
     /**
@@ -85,6 +220,53 @@ class Mysql extends AbstractAdapter
         }
 
         parent::disconnect();
+    }
+
+    /**
+     * Return the number of rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfRows()
+    {
+        if (isset($this->statement)) {
+            $this->statement->store_result();
+            return $this->statement->num_rows;
+        } else if (isset($this->result)) {
+            return $this->result->num_rows;
+        } else {
+            $this->setError('Error: The database result resource is not currently set.')
+                 ->throwError();
+        }
+    }
+
+    /**
+     * Return the database version.
+     *
+     * @return string
+     */
+    public function getVersion()
+    {
+        return 'MySQL ' . $this->connection->server_info;
+    }
+
+    /**
+     * Return the tables in the database
+     *
+     * @return array
+     */
+    public function getTables()
+    {
+        $tables = [];
+
+        $this->query('SHOW TABLES');
+        while (($row = $this->fetch())) {
+            foreach($row as $value) {
+                $tables[] = $value;
+            }
+        }
+
+        return $tables;
     }
 
 }

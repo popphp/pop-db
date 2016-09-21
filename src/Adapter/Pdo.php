@@ -82,8 +82,8 @@ class Pdo extends AbstractAdapter
                 }
             }
         } catch (\PDOException $e) {
-            $this->error = 'PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')';
-            $this->throwError();
+            $this->setError('PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')')
+                 ->throwError();
         }
     }
 

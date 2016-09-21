@@ -65,8 +65,8 @@ class Oracle extends AbstractAdapter
         }
 
         if ($this->connection == false) {
-            $this->error = 'Oracle Connection Error: Unable to connect to the database. ' . oci_error();
-            $this->throwError();
+            $this->setError('Oracle Connection Error: Unable to connect to the database. ' . oci_error())
+                 ->throwError();
         }
     }
 

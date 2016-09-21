@@ -27,6 +27,51 @@ interface AdapterInterface
 {
 
     /**
+     * Execute a SQL query directly
+     *
+     * @param  string $sql
+     * @return AdapterInterface
+     */
+    public function query($sql);
+
+    /**
+     * Prepare a SQL query.
+     *
+     * @param  string $sql
+     * @return AdapterInterface
+     */
+    public function prepare($sql);
+
+    /**
+     * Bind parameters to a prepared SQL query.
+     *
+     * @param  array $params
+     * @return AdapterInterface
+     */
+    public function bindParams(array $params);
+
+    /**
+     * Execute a prepared SQL query
+     *
+     * @return AdapterInterface
+     */
+    public function execute();
+
+    /**
+     * Fetch and return a row from the result
+     *
+     * @return array
+     */
+    public function fetch();
+
+    /**
+     * Fetch and return all rows from the result
+     *
+     * @return array
+     */
+    public function fetchAll();
+
+    /**
      * Determine whether or not connected
      *
      * @return boolean
@@ -76,6 +121,14 @@ interface AdapterInterface
     public function hasError();
 
     /**
+     * Set the error
+     *
+     * @param  string $error
+     * @return AdapterInterface
+     */
+    public function setError($error);
+
+    /**
      * Get the error
      *
      * @return mixed
@@ -91,11 +144,11 @@ interface AdapterInterface
     public function throwError();
 
     /**
-     * Return the database version.
+     * Clear the error
      *
-     * @return string
+     * @return AdapterInterface
      */
-    public function getVersion();
+    public function clearError();
 
     /**
      * Disconnect from the database
@@ -103,5 +156,26 @@ interface AdapterInterface
      * @return void
      */
     public function disconnect();
+
+    /**
+     * Return the number of rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfRows();
+
+    /**
+     * Return the database version
+     *
+     * @return string
+     */
+    public function getVersion();
+
+    /**
+     * Return the tables in the database
+     *
+     * @return array
+     */
+    public function getTables();
 
 }

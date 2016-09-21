@@ -62,9 +62,8 @@ class Sqlsrv extends AbstractAdapter
         $this->connection = sqlsrv_connect($options['host'], $info);
 
         if ($this->connection == false) {
-            $this->error = 'SQL Server Connection Error: Unable to connect to the database.' . PHP_EOL .
-                $this->getSqlSrvErrors();
-            $this->throwError();
+            $this->setError('SQL Server Connection Error: Unable to connect to the database.' . PHP_EOL . $this->getSqlSrvErrors())
+                 ->throwError();
         }
     }
 

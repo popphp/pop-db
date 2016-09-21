@@ -27,6 +27,30 @@ class Pgsql extends AbstractAdapter
 {
 
     /**
+     * Statement index
+     * @var int
+     */
+    protected static $statementIndex = 0;
+
+    /**
+     * Prepared statement name
+     * @var string
+     */
+    protected $statementName = null;
+
+    /**
+     * Prepared statement string
+     * @var string
+     */
+    protected $statementString = null;
+
+    /**
+     * Prepared statement parameters
+     * @var array
+     */
+    protected $parameters = [];
+
+    /**
      * Constructor
      *
      * Instantiate the PostgreSQL database connection object
@@ -73,20 +97,108 @@ class Pgsql extends AbstractAdapter
         }
 
         if (!$this->connection) {
-            $this->error = 'PostgreSQL Connection Error: Unable to connect to the database.';
-            $this->throwError();
+            $this->setError('PostgreSQL Connection Error: Unable to connect to the database.')
+                 ->throwError();
         }
     }
 
     /**
-     * Return the database version
+     * Execute a SQL query directly
      *
-     * @return string
+     * @param  string $sql
+     * @return Pgsql
      */
-    public function getVersion()
+    public function query($sql)
     {
-        $version = pg_version($this->connection);
-        return 'PostgreSQL ' . $version['server'];
+        if (!($this->result = pg_query($this->connection, $sql))) {
+            $this->setError(pg_last_error($this->connection))
+                 ->throwError();
+        }
+        return $this;
+    }
+
+    /**
+     * Prepare a SQL query.
+     *
+     * @param  string $sql
+     * @return Pgsql
+     */
+    public function prepare($sql)
+    {
+        $this->statementString = $sql;
+        $this->statementName   = 'pop_db_adapter_pgsql_statement_' . ++static::$statementIndex;
+        $this->statement       = pg_prepare($this->connection, $this->statementName, $this->statementString);
+        return $this;
+    }
+
+    /**
+     * Bind parameters to a prepared SQL query.
+     *
+     * @param  array $params
+     * @return Pgsql
+     */
+    public function bindParams(array $params)
+    {
+        $this->parameters = [];
+
+        foreach ($params as $param) {
+            $this->parameters[] = $param;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Execute a prepared SQL query
+     *
+     * @return Pgsql
+     */
+    public function execute()
+    {
+        if ((null === $this->statement) || (null === $this->statementString) || (null === $this->statementName)) {
+            $this->setError('Error: The database statement resource is not currently set.')
+                 ->throwError();
+        }
+
+        if (count($this->parameters) > 0)  {
+            $this->result     = pg_execute($this->connection, $this->statementName, $this->parameters);
+            $this->parameters = [];
+        } else {
+            $this->query($this->statementString);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Fetch and return a row from the result
+     *
+     * @return array
+     */
+    public function fetch()
+    {
+        if (!isset($this->result)) {
+            $this->setError('Error: The database result resource is not currently set.')
+                 ->throwError();
+        }
+
+        return pg_fetch_array($this->result, null, PGSQL_ASSOC);
+    }
+
+    /**
+     * Fetch and return all rows from the result
+     *
+     * @return array
+     */
+    public function fetchAll()
+    {
+        $rows = [];
+
+        while (($row = $this->fetch())) {
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
     /**
@@ -101,6 +213,51 @@ class Pgsql extends AbstractAdapter
         }
 
         parent::disconnect();
+    }
+
+    /**
+     * Return the number of rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfRows()
+    {
+        if (!isset($this->result)) {
+            $this->setError('Error: The database result resource is not currently set.')
+                 ->throwError();
+        }
+
+        return pg_num_rows($this->result);
+    }
+
+    /**
+     * Return the database version
+     *
+     * @return string
+     */
+    public function getVersion()
+    {
+        $version = pg_version($this->connection);
+        return 'PostgreSQL ' . $version['server'];
+    }
+
+    /**
+     * Return the tables in the database
+     *
+     * @return array
+     */
+    public function getTables()
+    {
+        $tables = [];
+
+        $this->query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+        while (($row = $this->fetch())) {
+            foreach($row as $value) {
+                $tables[] = $value;
+            }
+        }
+
+        return $tables;
     }
 
 }
