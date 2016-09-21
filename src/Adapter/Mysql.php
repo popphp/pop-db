@@ -17,7 +17,7 @@ namespace Pop\Db\Adapter;
  * MySQL database adapter class
  *
  * @category   Pop
- * @package    Pop_Db
+ * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
@@ -89,7 +89,7 @@ class Mysql extends AbstractAdapter
     }
 
     /**
-     * Prepare a SQL query.
+     * Prepare a SQL query
      *
      * @param  string $sql
      * @return Mysql
@@ -102,7 +102,7 @@ class Mysql extends AbstractAdapter
     }
 
     /**
-     * Bind parameters to a prepared SQL query.
+     * Bind parameters to a prepared SQL query
      *
      * @param  array $params
      * @return Mysql

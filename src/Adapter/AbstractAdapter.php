@@ -17,7 +17,7 @@ namespace Pop\Db\Adapter;
  * Db abstract adapter class
  *
  * @category   Pop
- * @package    Pop_Db
+ * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
@@ -69,7 +69,7 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function query($sql);
 
     /**
-     * Prepare a SQL query.
+     * Prepare a SQL query
      *
      * @param  string $sql
      * @return AbstractAdapter
@@ -77,7 +77,7 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function prepare($sql);
 
     /**
-     * Bind parameters to a prepared SQL query.
+     * Bind parameters to a prepared SQL query
      *
      * @param  array $params
      * @return AbstractAdapter

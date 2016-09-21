@@ -17,7 +17,7 @@ namespace Pop\Db\Adapter;
  * Db adapter interface
  *
  * @category   Pop
- * @package    Pop_Db
+ * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
@@ -43,7 +43,7 @@ interface AdapterInterface
     public function prepare($sql);
 
     /**
-     * Bind parameters to a prepared SQL query.
+     * Bind parameters to a prepared SQL query
      *
      * @param  array $params
      * @return AdapterInterface

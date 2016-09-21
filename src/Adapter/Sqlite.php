@@ -17,7 +17,7 @@ namespace Pop\Db\Adapter;
  * SQLite database adapter class
  *
  * @category   Pop
- * @package    Pop_Db
+ * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2016 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
@@ -25,6 +25,18 @@ namespace Pop\Db\Adapter;
  */
 class Sqlite extends AbstractAdapter
 {
+
+    /**
+     * Last SQL query
+     * @var string
+     */
+    protected $lastSql = null;
+
+    /**
+     * Last result
+     * @var resource
+     */
+    protected $lastResult;
 
     /**
      * Constructor
@@ -50,14 +62,94 @@ class Sqlite extends AbstractAdapter
     }
 
     /**
-     * Return the database version
+     * Execute a SQL query directly
      *
-     * @return string
+     * @param  string $sql
+     * @return Sqlite
      */
-    public function getVersion()
+    public function query($sql)
     {
-        $version = $this->connection->version();
-        return 'SQLite ' . $version['versionString'];
+        $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
+
+        if (!($this->result = $this->connection->query($sql))) {
+            $this->setError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg())
+                 ->throwError();
+        }
+        return $this;
+    }
+
+    /**
+     * Prepare a SQL query
+     *
+     * @param  string $sql
+     * @return Sqlite
+     */
+    public function prepare($sql)
+    {
+        $this->statement = $this->connection->prepare($sql);
+        return $this;
+    }
+
+    /**
+     * Bind parameters to a prepared SQL query
+     *
+     * @param  array $params
+     * @return Sqlite
+     */
+    public function bindParams(array $params)
+    {
+        foreach ($params as $dbColumnName => $dbColumnValue) {
+            ${$dbColumnName} = $dbColumnValue;
+            $this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName});
+        }
+        return $this;
+    }
+
+    /**
+     * Execute a prepared SQL query
+     *
+     * @return Sqlite
+     */
+    public function execute()
+    {
+        if (null === $this->statement) {
+            $this->setError('Error: The database statement resource is not currently set.')
+                 ->throwError();
+        }
+
+        $this->result = $this->statement->execute();
+        return $this;
+    }
+
+    /**
+     * Fetch and return a row from the result
+     *
+     * @return array
+     */
+    public function fetch()
+    {
+        if (!isset($this->result)) {
+            $this->setError('Error: The database result resource is not currently set.')
+                 ->throwError();
+        }
+
+        return $this->result->fetchArray(SQLITE3_ASSOC);
+    }
+
+    /**
+     * Fetch and return all rows from the result
+     *
+     * @return array
+     */
+    public function fetchAll()
+    {
+        $rows = [];
+
+        while (($row = $this->fetch())) {
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
     /**
@@ -72,6 +164,58 @@ class Sqlite extends AbstractAdapter
         }
 
         parent::disconnect();
+    }
+
+    /**
+     * Return the number of rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfRows()
+    {
+        if (null === $this->lastSql) {
+            return $this->connection->changes();
+        } else {
+            if (!($this->lastResult = $this->connection->query($this->lastSql))) {
+                $this->setError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg())
+                     ->throwError();
+            } else {
+                $num = 0;
+                while (($row = $this->lastResult->fetcharray(SQLITE3_ASSOC)) != false) {
+                    $num++;
+                }
+                return $num;
+            }
+        }
+    }
+    
+    /**
+     * Return the database version
+     *
+     * @return string
+     */
+    public function getVersion()
+    {
+        $version = $this->connection->version();
+        return 'SQLite ' . $version['versionString'];
+    }
+
+    /**
+     * Return the tables in the database
+     *
+     * @return array
+     */
+    public function getTables()
+    {
+        $tables = [];
+        $sql = "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' UNION ALL SELECT name FROM sqlite_temp_master WHERE type IN ('table', 'view') ORDER BY 1";
+
+        $this->query($sql);
+        while (($row = $this->fetch())) {
+            $tables[] = $row['name'];
+        }
+
+        return $tables;
     }
 
 }
