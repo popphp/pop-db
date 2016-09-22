@@ -158,6 +158,14 @@ interface AdapterInterface
     public function disconnect();
 
     /**
+     * Escape the value
+     *
+     * @param  string $value
+     * @return string
+     */
+    public function escape($value);
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

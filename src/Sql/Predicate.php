@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Sql;
 
+use Pop\Db\Parser;
+
 /**
  * Predicate class
  *
@@ -45,6 +47,12 @@ class Predicate
     protected $nested = [];
 
     /**
+     * Nested group combine
+     * @var string
+     */
+    protected $nestedCombine = 'AND';
+
+    /**
      * Constructor
      *
      * Instantiate the predicate collection object.
@@ -57,107 +65,6 @@ class Predicate
     }
 
     /**
-     * Add a predicate from a string
-     *
-     * @param  mixed $predicate
-     * @return Predicate
-     */
-    public function add($predicate)
-    {
-        $predicates = [];
-
-        // If the predicate is a string
-        if (is_string($predicate)) {
-            $predicates = [Predicate\Parser::parse($predicate)];
-        // If the predicate is an array of strings
-        } else if (is_array($predicate) && isset($predicate[0]) && is_string($predicate[0])) {
-            foreach ($predicate as $pred) {
-                $predicates[] = Predicate\Parser::parse($pred);
-            }
-        // If the predicate is an array of associative array values, i.e., [['id' => 1], ...]
-        } else if (is_array($predicate) && isset($predicate[0]) && is_array($predicate[0])) {
-            foreach ($predicate as $pred) {
-                $key = current(array_keys($pred));
-                if (is_string($key) && !is_numeric($key)) {
-                    $val = $pred[$key];
-                    if (substr($val, -3) == ' OR') {
-                        $val      = substr($val, 0, -3);
-                        $combine = 'OR';
-                    } else {
-                        $combine = 'AND';
-                    }
-                    $predicates[] = [$key, '=', $val, $combine];
-                }
-            }
-        // If the predicate is a single associative array, i.e., ['id' => 1]
-        } else {
-            $key = current(array_keys($predicate));
-            if (is_string($key) && !is_numeric($key)) {
-                $val = $predicate[$key];
-                if (substr($val, -3) == ' OR') {
-                    $val   = substr($val, 0, -3);
-                    $combine = 'OR';
-                } else {
-                    $combine = 'AND';
-                }
-                $predicates[] = [$key, '=', $val, $combine];
-            }
-        }
-
-        // Loop through and add the predicates
-        foreach ($predicates as $predicate) {
-            if (count($predicate) >= 2) {
-                switch ($predicate[1]) {
-                    case '>=':
-                        $this->greaterThanOrEqualTo($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case '<=':
-                        $this->lessThanOrEqualTo($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case '!=':
-                        $this->notEqualTo($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case '=':
-                        $this->equalTo($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case '>':
-                        $this->greaterThan($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case '<':
-                        $this->lessThan($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case 'NOT LIKE':
-                        $this->notLike($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case 'LIKE':
-                        $this->like($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case 'NOT BETWEEN':
-                        $this->notBetween($predicate[0], $predicate[2][0], $predicate[2][1], $predicate[3]);
-                        break;
-                    case 'BETWEEN':
-                        $this->between($predicate[0], $predicate[2][0], $predicate[2][1], $predicate[3]);
-                        break;
-                    case 'NOT IN':
-                        $this->notIn($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case 'IN':
-                        $this->in($predicate[0], $predicate[2], $predicate[3]);
-                        break;
-                    case 'IS NOT NULL':
-                        $this->isNotNull($predicate[0], $predicate[3]);
-                        break;
-                    case 'IS NULL':
-                        $this->isNull($predicate[0], $predicate[3]);
-                        break;
-                }
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * Add a nested predicate
      *
      * @return Predicate
@@ -166,6 +73,32 @@ class Predicate
     {
         $this->nested[] = new Predicate($this->sql);
         return $this->nested[count($this->nested) - 1];
+    }
+
+    /**
+     * Add a nested predicate with AND
+     *
+     * @return Predicate
+     */
+    public function andNest()
+    {
+        if (count($this->nested) > 0) {
+            $this->nested[(count($this->nested) - 1)]->setNestedCombine('AND');
+        }
+        return $this->nest();
+    }
+
+    /**
+     * Add a nested predicate with OR
+     *
+     * @return Predicate
+     */
+    public function orNest()
+    {
+        if (count($this->nested) > 0) {
+            $this->nested[(count($this->nested) - 1)]->setNestedCombine('OR');
+        }
+        return $this->nest();
     }
 
     /**
@@ -191,20 +124,147 @@ class Predicate
     }
 
     /**
+     * Get nested combine
+     *
+     * @param  string $combine
+     * @return Predicate
+     */
+    public function setNestedCombine($combine)
+    {
+        $this->nestedCombine = $combine;
+        return $this;
+    }
+
+    /**
+     * Get nested combine
+     *
+     * @return string
+     */
+    public function getNestedCombine()
+    {
+        return $this->nestedCombine;
+    }
+
+    /**
+     * Add a predicate from a string
+     *
+     * @param  mixed $predicate
+     * @return Predicate
+     */
+    public function add($predicate)
+    {
+        $predicates = [];
+
+        // If the predicate is a string
+        if (is_string($predicate)) {
+            $predicates = [Parser\Predicate::parse($predicate)];
+        // If the predicate is an array of strings
+        } else if (is_array($predicate) && isset($predicate[0]) && is_string($predicate[0])) {
+            foreach ($predicate as $pred) {
+                $predicates[] = Parser\Predicate::parse($pred);
+            }
+        // If the predicate is an array of associative array values, i.e., [['id' => 1], ...]
+        } else if (is_array($predicate) && isset($predicate[0]) && is_array($predicate[0])) {
+            foreach ($predicate as $pred) {
+                $key = current(array_keys($pred));
+                if (is_string($key) && !is_numeric($key)) {
+                    $val          = $pred[$key];
+                    $predicates[] = [$key, '=', $val];
+                }
+            }
+        // If the predicate is a single associative array, i.e., ['id' => 1]
+        } else {
+            $key = current(array_keys($predicate));
+            if (is_string($key) && !is_numeric($key)) {
+                $val          = $predicate[$key];
+                $predicates[] = [$key, '=', $val];
+            }
+        }
+
+        // Loop through and add the predicates
+        foreach ($predicates as $predicate) {
+            if (count($predicate) >= 2) {
+                switch ($predicate[1]) {
+                    case '>=':
+                        $this->greaterThanOrEqualTo($predicate[0], $predicate[2]);
+                        break;
+                    case '<=':
+                        $this->lessThanOrEqualTo($predicate[0], $predicate[2]);
+                        break;
+                    case '!=':
+                        $this->notEqualTo($predicate[0], $predicate[2]);
+                        break;
+                    case '=':
+                        $this->equalTo($predicate[0], $predicate[2]);
+                        break;
+                    case '>':
+                        $this->greaterThan($predicate[0], $predicate[2]);
+                        break;
+                    case '<':
+                        $this->lessThan($predicate[0], $predicate[2]);
+                        break;
+                    case 'NOT LIKE':
+                        $this->notLike($predicate[0], $predicate[2]);
+                        break;
+                    case 'LIKE':
+                        $this->like($predicate[0], $predicate[2]);
+                        break;
+                    case 'NOT BETWEEN':
+                        $this->notBetween($predicate[0], $predicate[2][0], $predicate[2][1]);
+                        break;
+                    case 'BETWEEN':
+                        $this->between($predicate[0], $predicate[2][0], $predicate[2][1]);
+                        break;
+                    case 'NOT IN':
+                        $this->notIn($predicate[0], $predicate[2]);
+                        break;
+                    case 'IN':
+                        $this->in($predicate[0], $predicate[2]);
+                        break;
+                    case 'IS NOT NULL':
+                        $this->isNotNull($predicate[0]);
+                        break;
+                    case 'IS NULL':
+                        $this->isNull($predicate[0]);
+                        break;
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Determine if there are predicates
+     *
+     * @return boolean
+     */
+    public function hasPredicates()
+    {
+        return (count($this->predicates) > 0);
+    }
+
+    /**
+     * Get last predicate set added
+     *
+     * @return Predicate\AbstractPredicateSet
+     */
+    public function getLastPredicateSet()
+    {
+        return (count($this->predicates) > 0) ?
+            $this->predicates[(count($this->predicates) - 1)] : null;
+    }
+
+    /**
      * Predicate for =
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function equalTo($column, $value, $combine = 'AND')
+    public function equalTo($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 = %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\EqualTo([$column, $value]);
         return $this;
     }
 
@@ -213,16 +273,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function notEqualTo($column, $value, $combine = 'AND')
+    public function notEqualTo($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 != %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\NotEqualTo([$column, $value]);
         return $this;
     }
 
@@ -231,16 +286,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function greaterThan($column, $value, $combine = 'AND')
+    public function greaterThan($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 > %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\GreaterThan([$column, $value]);
         return $this;
     }
 
@@ -249,16 +299,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function greaterThanOrEqualTo($column, $value, $combine = 'AND')
+    public function greaterThanOrEqualTo($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 >= %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\GreaterThanOrEqualTo([$column, $value]);
         return $this;
     }
 
@@ -267,16 +312,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function lessThan($column, $value, $combine = 'AND')
+    public function lessThan($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 < %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\LessThan([$column, $value]);
         return $this;
     }
 
@@ -285,16 +325,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function lessThanOrEqualTo($column, $value, $combine = 'AND')
+    public function lessThanOrEqualTo($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 <= %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\LessThanOrEqualTo([$column, $value]);
         return $this;
     }
 
@@ -303,16 +338,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function like($column, $value, $combine = 'AND')
+    public function like($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 LIKE %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\Like([$column, $value]);
         return $this;
     }
 
@@ -321,16 +351,11 @@ class Predicate
      *
      * @param  string $column
      * @param  string $value
-     * @param  string $combine
      * @return Predicate
      */
-    public function notLike($column, $value, $combine = 'AND')
+    public function notLike($column, $value)
     {
-        $this->predicates[] = [
-            'format' => '%1 NOT LIKE %2',
-            'values' => [$column, $value],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\NotLike([$column, $value]);
         return $this;
     }
 
@@ -340,16 +365,11 @@ class Predicate
      * @param  string $column
      * @param  string $value1
      * @param  string $value2
-     * @param  string $combine
      * @return Predicate
      */
-    public function between($column, $value1, $value2, $combine = 'AND')
+    public function between($column, $value1, $value2)
     {
-        $this->predicates[] = [
-            'format' => '%1 BETWEEN %2 AND %3',
-            'values' => [$column, $value1, $value2],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\Between([$column, $value1, $value2]);
         return $this;
     }
 
@@ -359,16 +379,11 @@ class Predicate
      * @param  string $column
      * @param  string $value1
      * @param  string $value2
-     * @param  string $combine
      * @return Predicate
      */
-    public function notBetween($column, $value1, $value2, $combine = 'AND')
+    public function notBetween($column, $value1, $value2)
     {
-        $this->predicates[] = [
-            'format' => '%1 NOT BETWEEN %2 AND %3',
-            'values' => [$column, $value1, $value2],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\NotBetween([$column, $value1, $value2]);
         return $this;
     }
 
@@ -377,16 +392,11 @@ class Predicate
      *
      * @param  string $column
      * @param  mixed  $values
-     * @param  string $combine
      * @return Predicate
      */
-    public function in($column, $values, $combine = 'AND')
+    public function in($column, $values)
     {
-        $this->predicates[] = [
-            'format' => '%1 IN (%2)',
-            'values' => [$column, $values],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\In([$column, $values]);
         return $this;
     }
 
@@ -395,16 +405,11 @@ class Predicate
      *
      * @param  string $column
      * @param  mixed  $values
-     * @param  string $combine
      * @return Predicate
      */
-    public function notIn($column, $values, $combine = 'AND')
+    public function notIn($column, $values)
     {
-        $this->predicates[] = [
-            'format' => '%1 NOT IN (%2)',
-            'values' => [$column, $values],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\NotIn([$column, $values]);
         return $this;
     }
 
@@ -412,16 +417,11 @@ class Predicate
      * Predicate for IS NULL
      *
      * @param  string $column
-     * @param  string $combine
      * @return Predicate
      */
-    public function isNull($column, $combine = 'AND')
+    public function isNull($column)
     {
-        $this->predicates[] = [
-            'format' => '%1 IS NULL',
-            'values' => [$column],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\IsNull([$column]);
         return $this;
     }
 
@@ -429,16 +429,11 @@ class Predicate
      * Predicate for IS NOT NULL
      *
      * @param  string $column
-     * @param  string $combine
      * @return Predicate
      */
-    public function isNotNull($column, $combine = 'AND')
+    public function isNotNull($column)
     {
-        $this->predicates[] = [
-            'format' => '%1 IS NOT NULL',
-            'values' => [$column],
-            'combine' => ($combine == 'OR') ? 'OR' : 'AND'
-        ];
+        $this->predicates[] = new Predicate\IsNotNull([$column]);
         return $this;
     }
 
@@ -452,39 +447,47 @@ class Predicate
     {
         $predicateString = null;
 
+        // Loop through the nested predicated
         if (count($this->nested) > 0) {
-            $predicateString = '(' . implode(') AND (', $this->nested) . ')';
+            foreach ($this->nested as $key => $nested) {
+                $curPredicate = '(' . $nested . ')';
+                if ($key == 0) {
+                    $predicateString .= $curPredicate;
+                } else {
+                    $predicateString .= ' ' . $this->nested[($key - 1)]->getNestedCombine() . ' ' . $curPredicate;
+                }
+            }
         }
 
         // Loop through and format the predicates
         if (count($this->predicates) > 0) {
             if (null !== $predicateString) {
-                $predicateString .= ' ' . $this->predicates[0]['combine'] . ' ';
+                $predicateString .= ' ' . $this->nested[(count($this->nested) - 1)]->getNestedCombine() . ' ';
             }
 
             $paramCount = $count;
             $dbType     = $this->sql->getDbType();
 
             foreach ($this->predicates as $key => $predicate) {
-                $format       = $predicate['format'];
+                $format       = $predicate->getFormat();
+                $values       = $predicate->getValues();
                 $curPredicate = '(';
-                for ($i = 0; $i < count($predicate['values']); $i++) {
+                for ($i = 0; $i < count($values); $i++) {
                     if ($i == 0) {
-                        $format = str_replace('%1', $this->sql->quoteId($predicate['values'][$i]), $format);
+                        $format = str_replace('%1', $this->sql->quoteId($values[$i]), $format);
                     } else {
-                        if (is_array($predicate['values'][$i])) {
-                            $vals = $predicate['values'][$i];
+                        if (is_array($values[$i])) {
+                            $vals = $values[$i];
                             foreach ($vals as $k => $v) {
-                                $predValue = (strpos($predicate['values'][0], '.') !== false) ?
-                                    substr($predicate['values'][0], (strpos($predicate['values'][0], '.') + 1)) : $predicate['values'][0];
+                                $predValue = (strpos($values[0], '.') !== false) ?
+                                    substr($values[0], (strpos($values[0], '.') + 1)) : $values[0];
 
                                 // Check for named parameters
                                 if ((':' . $predValue == substr($v, 0, strlen(':' . $predValue))) &&
-                                    ($dbType !== AbstractSql::SQLITE) &&
-                                    ($dbType !== AbstractSql::ORACLE)) {
+                                    ($dbType !== AbstractSql::SQLITE) && ($dbType !== AbstractSql::ORACLE)) {
                                     if (($dbType == AbstractSql::MYSQL) || ($dbType == AbstractSql::SQLSRV)) {
                                         $v = '?';
-                                    } else if (($dbType == AbstractSql::PGSQL) && (!$this->sql->getDb()->isPdo())) {
+                                    } else if (($dbType == AbstractSql::PGSQL) && (!($this->sql->db() instanceof \Pop\Db\Adapter\Pdo))) {
                                         $v = '$' . $paramCount;
                                         $paramCount++;
                                     }
@@ -493,15 +496,15 @@ class Predicate
                             }
                             $format = str_replace('%' . ($i + 1), implode(', ', $vals), $format);
                         } else {
-                            if ($predicate['values'][$i] instanceof \Pop\Db\Sql\AbstractSql) {
-                                $val = (string)$predicate['values'][$i];
+                            if ($values[$i] instanceof \Pop\Db\Sql\AbstractSql) {
+                                $val = (string)$values[$i];
                             } else {
-                                $val = (null === $predicate['values'][$i]) ? 'NULL' :
-                                    $this->sql->quote($predicate['values'][$i]);
+                                $val = (null === $values[$i]) ? 'NULL' :
+                                    $this->sql->quote($values[$i]);
                             }
 
-                            $predValue = (strpos($predicate['values'][0], '.') !== false) ?
-                                substr($predicate['values'][0], (strpos($predicate['values'][0], '.') + 1)) : $predicate['values'][0];
+                            $predValue = (strpos($values[0], '.') !== false) ?
+                                substr($values[0], (strpos($values[0], '.') + 1)) : $values[0];
 
                             // Check for named parameters
                             if ((':' . $predValue == substr($val, 0, strlen(':' . $predValue))) &&
@@ -518,8 +521,13 @@ class Predicate
                     }
                 }
 
-                $curPredicate    .= $format . ')';
-                $predicateString .= ($key == 0) ? $curPredicate : $predicate['combine'] . ' ' . $curPredicate;
+                $curPredicate .= $format . ')';
+
+                if ($key == 0) {
+                    $predicateString .= $curPredicate;
+                } else {
+                    $predicateString .= ' ' . $this->predicates[($key - 1)]->getCombine() . ' ' . $curPredicate;
+                }
             }
         }
 

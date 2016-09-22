@@ -228,6 +228,19 @@ class Sqlsrv extends AbstractAdapter
     }
 
     /**
+     * Escape the value
+     *
+     * @param  string $value
+     * @return string
+     */
+    public function escape($value)
+    {
+        $search  = ['\\', "\n", "\r", "\x00", "\x1a", '\'', '"'];
+        $replace = ['\\\\', "\\n", "\\r", "\\x00", "\\x1a", '\\\'', '\\"'];
+        return str_replace($search, $replace, $value);
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

@@ -210,6 +210,17 @@ class Pgsql extends AbstractAdapter
     }
 
     /**
+     * Escape the value
+     *
+     * @param  string $value
+     * @return string
+     */
+    public function escape($value)
+    {
+        return pg_escape_string($value);
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

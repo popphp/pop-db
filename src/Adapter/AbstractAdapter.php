@@ -243,6 +243,14 @@ abstract class AbstractAdapter implements AdapterInterface
     }
 
     /**
+     * Escape the value
+     *
+     * @param  string $value
+     * @return string
+     */
+    abstract public function escape($value);
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

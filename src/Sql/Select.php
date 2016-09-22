@@ -23,7 +23,7 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Select extends AbstractSql
+class Select extends AbstractClause
 {
 
     /**
@@ -32,16 +32,6 @@ class Select extends AbstractSql
      */
     protected static $allowedFunctions = [
         'AVG', 'COUNT', 'FIRST', 'LAST', 'MAX', 'MIN', 'SUM'
-    ];
-
-    /**
-     * Allowed JOIN keywords
-     * @var array
-     */
-    protected static $allowedJoins = [
-        'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'FULL JOIN',
-        'OUTER JOIN', 'LEFT OUTER JOIN', 'RIGHT OUTER JOIN', 'FULL OUTER JOIN',
-        'INNER JOIN', 'LEFT INNER JOIN', 'RIGHT INNER JOIN', 'FULL INNER JOIN'
     ];
 
     /**
@@ -130,20 +120,7 @@ class Select extends AbstractSql
      */
     public function join($foreignTable, array $columns, $join = 'JOIN')
     {
-        // If it's a sub-select
-        if ($foreignTable instanceof Select) {
-            $alias = ($foreignTable->hasAlias()) ? $foreignTable->getAlias() : $foreignTable->getTable();
-            $table = '(' . $foreignTable . ') AS ' . $this->quoteId($alias);
-        } else {
-            $table = $this->quoteId($foreignTable);
-        }
-
-        $this->joins[] = [
-            'foreignTable' => $table,
-            'columns'      => $columns,
-            'typeOfJoin'   => (in_array(strtoupper($join), self::$allowedJoins)) ? strtoupper($join) : 'JOIN'
-        ];
-
+        $this->joins[] = new Join($this, $foreignTable, $columns, $join);
         return $this;
     }
 
@@ -306,6 +283,36 @@ class Select extends AbstractSql
     }
 
     /**
+     * Access the WHERE clause with AND
+     *
+     * @param  mixed $where
+     * @return Select
+     */
+    public function andWhere($where = null)
+    {
+        if ($this->where->hasPredicates()) {
+            $this->where->getLastPredicateSet()->setCombine('AND');
+        }
+        $this->where($where);
+        return $this;
+    }
+
+    /**
+     * Access the WHERE clause with OR
+     *
+     * @param  mixed $where
+     * @return Select
+     */
+    public function orWhere($where = null)
+    {
+        if ($this->where->hasPredicates()) {
+            $this->where->getLastPredicateSet()->setCombine('OR');
+        }
+        $this->where($where);
+        return $this;
+    }
+
+    /**
      * Access the HAVING clause
      *
      * @param  mixed $having
@@ -328,6 +335,36 @@ class Select extends AbstractSql
             $this->having = new Having($this);
         }
 
+        return $this;
+    }
+
+    /**
+     * Access the HAVING clause with AND
+     *
+     * @param  mixed $having
+     * @return Select
+     */
+    public function andHaving($having = null)
+    {
+        if ($this->having->hasPredicates()) {
+            $this->having->getLastPredicateSet()->setCombine('AND');
+        }
+        $this->having($having);
+        return $this;
+    }
+
+    /**
+     * Access the HAVING clause with OR
+     *
+     * @param  mixed $having
+     * @return Select
+     */
+    public function orHaving($having = null)
+    {
+        if ($this->having->hasPredicates()) {
+            $this->having->getLastPredicateSet()->setCombine('OR');
+        }
+        $this->having($having);
         return $this;
     }
 
@@ -461,50 +498,13 @@ class Select extends AbstractSql
             if (null === $this->orderBy) {
                 throw new Exception('Error: You must set an order by clause to execute a limit clause on the Oracle database.');
             }
-
-            $result = $this->getLimitAndOffset();
-
-            $sql .= '(SELECT t.*, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') ' .
-                $this->quoteId('RowNumber') . ' FROM ' .
-                $this->quoteId($this->table) . ' t)';
-
-            if (null === $this->where) {
-                $this->where = new Where($this);
-            }
-
-            if (null !== $result['offset']) {
-                if ($result['limit'] > 0) {
-                    $this->where->between('RowNumber', $result['offset'], $result['limit']);
-                } else {
-                    $this->where->greaterThanOrEqualTo('RowNumber', $result['offset']);
-                }
-            } else {
-                $this->where->lessThanOrEqualTo('RowNumber', $result['limit']);
-            }
+            $sql .= $this->buildOracleLimitAndOffset();
         // Account for LIMIT and OFFSET clauses if the database is SQLSRV
         } else if (($this->getDbType() == self::SQLSRV) && ((null !== $this->limit) || (null !== $this->offset))) {
             if (null === $this->orderBy) {
                 throw new Exception('Error: You must set an order by clause to execute a limit clause on the SQL server database.');
             }
-
-            $result = $this->getLimitAndOffset();
-
-            if (null !== $result['offset']) {
-                if (null === $this->where) {
-                    $this->where = new Where($this);
-                }
-
-                $sql .= '(SELECT *, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') AS RowNumber FROM ' .
-                    $this->quoteId($this->table) . ') AS OrderedTable';
-                if ($result['limit'] > 0) {
-                    $this->where->between('OrderedTable.RowNumber', $result['offset'], $result['limit']);
-                } else {
-                    $this->where->greaterThanOrEqualTo('OrderedTable.RowNumber', $result['offset']);
-                }
-            } else {
-                $sql  = str_replace('SELECT', 'SELECT TOP ' . $result['limit'], $sql);
-                $sql .= $this->quoteId($this->table);
-            }
+            $sql .= $this->buildSqlSrvLimitAndOffset();
         // Else, if there is a nested SELECT statement.
         } else if ($this->table instanceof \Pop\Db\Sql\Select) {
             $subSelect      = $this->table;
@@ -519,19 +519,7 @@ class Select extends AbstractSql
         // Build any JOIN clauses
         if (count($this->joins) > 0) {
             foreach ($this->joins as $join) {
-                $cols = [];
-                foreach ($join['columns'] as $col1 => $col2) {
-                    if (is_array($col2)) {
-                        foreach ($col2 as $c) {
-                            $cols[] = ((strpos($col1, '.') !== false) ? $this->quoteId($col1) : $col1) . ' = ' .
-                                ((strpos($c, '.') !== false) ? $this->quoteId($c) : $c);
-                        }
-                    } else {
-                        $cols[] = $this->quoteId($col1) . ' = ' . $this->quoteId($col2);
-                    }
-                }
-
-                $sql .= ' ' . $join['typeOfJoin'] . ' ' . (string)$join['foreignTable'] . ' ON (' . implode(' AND ', $cols) . ')';
+                $sql .= ' ' . $join;
             }
         }
 
@@ -588,6 +576,33 @@ class Select extends AbstractSql
     }
 
     /**
+     * Magic method to access $where and $having properties
+     *
+     * @param  string $name
+     * @throws Exception
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        switch (strtolower($name)) {
+            case 'where':
+                if (null === $this->where) {
+                    $this->where = new Where($this);
+                }
+                return $this->where;
+                break;
+            case 'having':
+                if (null === $this->having) {
+                    $this->having = new Having($this);
+                }
+                return $this->having;
+                break;
+            default:
+                throw new Exception('Not a valid property for this object.');
+        }
+    }
+
+    /**
      * Method to get the limit and offset
      *
      * @return array
@@ -612,6 +627,64 @@ class Select extends AbstractSql
         }
 
         return $result;
+    }
+
+    /**
+     * Method to build Oracle limit and offset sub-clause
+     *
+     * @return string
+     */
+    protected function buildOracleLimitAndOffset()
+    {
+        $result = $this->getLimitAndOffset();
+        $sql    = '(SELECT t.*, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') ' .
+            $this->quoteId('RowNumber') . ' FROM ' .
+            $this->quoteId($this->table) . ' t)';
+
+        if (null === $this->where) {
+            $this->where = new Where($this);
+        }
+
+        if (null !== $result['offset']) {
+            if ($result['limit'] > 0) {
+                $this->where->between('RowNumber', $result['offset'], $result['limit']);
+            } else {
+                $this->where->greaterThanOrEqualTo('RowNumber', $result['offset']);
+            }
+        } else {
+            $this->where->lessThanOrEqualTo('RowNumber', $result['limit']);
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Method to build SQL Server limit and offset sub-clause
+     *
+     * @return string
+     */
+    protected function buildSqlSrvLimitAndOffset()
+    {
+        $sql    = null;
+        $result = $this->getLimitAndOffset();
+        if (null !== $result['offset']) {
+            if (null === $this->where) {
+                $this->where = new Where($this);
+            }
+
+            $sql .= '(SELECT *, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') AS RowNumber FROM ' .
+                $this->quoteId($this->table) . ') AS OrderedTable';
+            if ($result['limit'] > 0) {
+                $this->where->between('OrderedTable.RowNumber', $result['offset'], $result['limit']);
+            } else {
+                $this->where->greaterThanOrEqualTo('OrderedTable.RowNumber', $result['offset']);
+            }
+        } else {
+            $sql  = str_replace('SELECT', 'SELECT TOP ' . $result['limit'], $sql);
+            $sql .= $this->quoteId($this->table);
+        }
+
+        return $sql;
     }
 
 }

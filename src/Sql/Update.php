@@ -23,7 +23,7 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Update extends AbstractSql
+class Update extends AbstractClause
 {
 
     /**
@@ -55,6 +55,36 @@ class Update extends AbstractSql
             $this->where = new Where($this);
         }
 
+        return $this;
+    }
+
+    /**
+     * Access the WHERE clause with AND
+     *
+     * @param  mixed $where
+     * @return Update
+     */
+    public function andWhere($where = null)
+    {
+        if ($this->where->hasPredicates()) {
+            $this->where->getLastPredicateSet()->setCombine('AND');
+        }
+        $this->where($where);
+        return $this;
+    }
+
+    /**
+     * Access the WHERE clause with OR
+     *
+     * @param  mixed $where
+     * @return Update
+     */
+    public function orWhere($where = null)
+    {
+        if ($this->where->hasPredicates()) {
+            $this->where->getLastPredicateSet()->setCombine('OR');
+        }
+        $this->where($where);
         return $this;
     }
 

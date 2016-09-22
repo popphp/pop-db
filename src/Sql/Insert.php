@@ -23,7 +23,7 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Insert extends AbstractSql
+class Insert extends AbstractClause
 {
 
     /**
