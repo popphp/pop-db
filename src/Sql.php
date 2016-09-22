@@ -147,6 +147,21 @@ class Sql extends AbstractSql
     }
 
     /**
+     * Reset and clear the SQL object
+     *
+     * @return Sql
+     */
+    public function reset()
+    {
+        $this->select = null;
+        $this->insert = null;
+        $this->update = null;
+        $this->delete = null;
+
+        return $this;
+    }
+
+    /**
      * Render the SQL statement
      *
      * @return string

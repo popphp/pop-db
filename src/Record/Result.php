@@ -382,6 +382,36 @@ class Result implements \ArrayAccess
     }
 
     /**
+     * Get the DB adapter
+     *
+     * @return AbstractAdapter
+     */
+    public function db()
+    {
+        return $this->db;
+    }
+
+    /**
+     * Get the SQL object
+     *
+     * @return Sql
+     */
+    public function sql()
+    {
+        return $this->sql;
+    }
+
+    /**
+     * Get the table
+     *
+     * @return string
+     */
+    public function getTable()
+    {
+        return $this->table;
+    }
+
+    /**
      * Get column values as array
      *
      * @return array
