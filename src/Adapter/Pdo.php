@@ -269,6 +269,35 @@ class Pdo extends AbstractAdapter
     }
 
     /**
+     * Return the last ID of the last query
+     *
+     * @return int
+     */
+    public function getLastId()
+    {
+        $id = 0;
+
+        // If pgsql
+        if ($this->type == 'pgsql') {
+            $this->query("SELECT lastval();");
+            if (null !== $this->result) {
+                $insertRow = $this->result->fetch();
+                $id        = $insertRow[0];
+            }
+        // Else, if sqlsrv
+        } else if ($this->type == 'sqlsrv') {
+            $this->query('SELECT SCOPE_IDENTITY() as Current_Identity');
+            $row = $this->fetch();
+            $id  = (isset($row['Current_Identity'])) ? $row['Current_Identity'] : 0;
+        // Else, just get the last insert ID
+        } else {
+            $id = $this->connection->lastInsertId();
+        }
+
+        return $id;
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

@@ -263,6 +263,13 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function escape($value);
 
     /**
+     * Return the last ID of the last query
+     *
+     * @return int
+     */
+    abstract public function getLastId();
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

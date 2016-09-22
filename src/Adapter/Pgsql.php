@@ -221,6 +221,18 @@ class Pgsql extends AbstractAdapter
     }
 
     /**
+     * Return the last ID of the last query
+     *
+     * @return int
+     */
+    public function getLastId()
+    {
+        $insertQuery = pg_query("SELECT lastval();");
+        $insertRow   = pg_fetch_row($insertQuery);
+        return $insertRow[0];
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

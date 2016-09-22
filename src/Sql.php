@@ -13,6 +13,8 @@
  */
 namespace Pop\Db;
 
+use Pop\Db\Sql\AbstractSql;
+
 /**
  * Sql class
  *
@@ -23,7 +25,7 @@ namespace Pop\Db;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Sql
+class Sql extends AbstractSql
 {
 
     /**
@@ -57,24 +59,12 @@ class Sql
     protected $delete = null;
 
     /**
-     * Constructor
-     *
-     * Instantiate the SQL object
-     *
-     * @param  Adapter\AbstractAdapter $db
-     */
-    public function __construct(Adapter\AbstractAdapter $db)
-    {
-        $this->db = $db;
-    }
-
-    /**
      * Access the select object
      *
-     * @param  array $values
+     * @param  array $columns
      * @return Sql\Select
      */
-    public function select(array $values = null)
+    public function select(array $columns = null)
     {
         $this->insert = null;
         $this->update = null;
@@ -83,8 +73,8 @@ class Sql
         if (null === $this->select) {
             $this->select = new Sql\Select($this->db);
         }
-        if (null !== $values) {
-            $this->select->setValues($values);
+        if (null !== $columns) {
+            $this->select->setValues($columns);
         }
 
         return $this->select;

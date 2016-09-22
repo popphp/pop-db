@@ -241,6 +241,18 @@ class Sqlsrv extends AbstractAdapter
     }
 
     /**
+     * Return the last ID of the last query
+     *
+     * @return int
+     */
+    public function getLastId()
+    {
+        $this->query('SELECT SCOPE_IDENTITY() as Current_Identity');
+        $row = $this->fetch();
+        return (isset($row['Current_Identity'])) ? $row['Current_Identity'] : 0;
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

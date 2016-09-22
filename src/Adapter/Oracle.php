@@ -184,6 +184,16 @@ class Oracle extends AbstractAdapter
     }
 
     /**
+     * Return the last ID of the last query
+     *
+     * @return int
+     */
+    public function getLastId()
+    {
+        return 0;
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int

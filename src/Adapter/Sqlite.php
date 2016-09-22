@@ -201,6 +201,16 @@ class Sqlite extends AbstractAdapter
     }
 
     /**
+     * Return the last ID of the last query
+     *
+     * @return int
+     */
+    public function getLastId()
+    {
+        return $this->connection->lastInsertRowID();
+    }
+
+    /**
      * Return the number of rows from the last query
      *
      * @return int
