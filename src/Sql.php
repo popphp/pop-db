@@ -76,6 +76,10 @@ class Sql
      */
     public function select(array $values = null)
     {
+        $this->insert = null;
+        $this->update = null;
+        $this->delete = null;
+
         if (null === $this->select) {
             $this->select = new Sql\Select($this->db);
         }
@@ -94,6 +98,10 @@ class Sql
      */
     public function insert($table = null)
     {
+        $this->select = null;
+        $this->update = null;
+        $this->delete = null;
+
         if (null === $this->insert) {
             $this->insert = new Sql\Insert($this->db);
         }
@@ -112,6 +120,10 @@ class Sql
      */
     public function update($table = null)
     {
+        $this->insert = null;
+        $this->select = null;
+        $this->delete = null;
+
         if (null === $this->update) {
             $this->update = new Sql\Update($this->db);
         }
@@ -130,6 +142,10 @@ class Sql
      */
     public function delete($table = null)
     {
+        $this->insert = null;
+        $this->update = null;
+        $this->select = null;
+
         if (null === $this->delete) {
             $this->delete = new Sql\Delete($this->db);
         }
@@ -138,6 +154,38 @@ class Sql
         }
 
         return $this->delete;
+    }
+
+    /**
+     * Render the SQL statement
+     *
+     * @return string
+     */
+    public function render()
+    {
+        $sql = null;
+
+        if (null !== $this->select) {
+            $sql = $this->select->render();
+        } else if (null !== $this->insert) {
+            $sql = $this->insert->render();
+        } else if (null !== $this->update) {
+            $sql = $this->update->render();
+        } else if (null !== $this->delete) {
+            $sql = $this->delete->render();
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Render the SQL statement
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->render();
     }
 
 }

@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Adapter;
 
+use Pop\Db\Sql;
+
 /**
  * Db abstract adapter class
  *
@@ -112,6 +114,16 @@ abstract class AbstractAdapter implements AdapterInterface
     public function isConnected()
     {
         return (null !== $this->connection);
+    }
+
+    /**
+     * Create SQL builder
+     *
+     * @return Sql
+     */
+    public function createSql()
+    {
+        return new Sql($this);
     }
 
     /**
