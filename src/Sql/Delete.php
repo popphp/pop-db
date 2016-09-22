@@ -116,4 +116,25 @@ class Delete extends AbstractClause
         return $this->render();
     }
 
+    /**
+     * Magic method to access $where property
+     *
+     * @param  string $name
+     * @throws Exception
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        switch (strtolower($name)) {
+            case 'where':
+                if (null === $this->where) {
+                    $this->where = new Where($this);
+                }
+                return $this->where;
+                break;
+            default:
+                throw new Exception('Not a valid property for this object.');
+        }
+    }
+
 }
