@@ -151,8 +151,8 @@ class Result implements \ArrayAccess
 
         if (null !== $columns) {
             $parsedColumns = Parser\Column::parse($columns, $this->sql->getPlaceholder());
-            $params = $parsedColumns['params'];
-            $where  = $parsedColumns['where'];
+            $params        = $parsedColumns['params'];
+            $where         = $parsedColumns['where'];
         }
 
         $this->setRows($this->tableGateway->select(null, $where, $params, $options), $resultsAs);
