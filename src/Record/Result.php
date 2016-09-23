@@ -367,9 +367,28 @@ class Result implements \ArrayAccess
                         $this->rows[] = (array)$row;
                         break;
                     case self::AS_OBJECT:
+                        $row = (array)$row;
+                        foreach ($row as $key => $value) {
+                            if (is_array($value)) {
+                                foreach ($value as $k => $v) {
+                                    $value[$k] = new \ArrayObject((array)$v, \ArrayObject::ARRAY_AS_PROPS);
+                                }
+                                $row[$key] = $value;
+                            }
+                        }
                         $this->rows[] = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
                         break;
                     default:
+                        $row = (array)$row;
+                        foreach ($row as $key => $value) {
+                            if (is_array($value)) {
+                                foreach ($value as $k => $v) {
+                                    $value[$k] = new self($this->db, $this->table, $this->primaryKeys);
+                                    $value[$k]->setColumns((array)$v, $resultsAs);
+                                }
+                                $row[$key] = $value;
+                            }
+                        }
                         $r = new self($this->db, $this->table, $this->primaryKeys);
                         $r->setColumns((array)$row, $resultsAs);
                         $this->rows[] = $r;
