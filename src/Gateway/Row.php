@@ -183,7 +183,7 @@ class Row extends AbstractGateway implements \ArrayAccess
 
         if (count($this->oneToOne) > 0) {
             foreach ($this->oneToOne as $oneToOne) {
-                $columns = (isset($oneToOne['columns'])) ? $oneToOne['columns'] : null;
+                $columns = (isset($oneToOne['columns'])) ? $oneToOne['columns'] : [$oneToOne['table'] . '.*'];
                 $this->sql->select($columns)->join($oneToOne['table'], $oneToOne['on'], $oneToOne['join']);
             }
         }
@@ -203,18 +203,23 @@ class Row extends AbstractGateway implements \ArrayAccess
                     $this->sql->select()->from($oneToMany['table']);
 
                     $params  = [];
-                    $columns = (is_array($oneToMany['columns'])) ? $oneToMany['columns'] : [$oneToMany['columns']];
+                    $columns = (is_array($oneToMany['on'])) ? $oneToMany['on'] : [$oneToMany['on']];
 
-                    foreach ($columns as $i => $key) {
+                    $i = 0;
+                    foreach ($columns as $foreignColumn => $key) {
+                        if (strpos($foreignColumn, '.') !== false) {
+                            $foreignColumn = substr($foreignColumn, (strrpos($foreignColumn, '.') + 1));
+                        }
                         $placeholder = $this->sql->getPlaceholder();
 
                         if ($placeholder == ':') {
-                            $placeholder .= $key;
+                            $placeholder .= $foreignColumn;
                         } else if ($placeholder == '$') {
                             $placeholder .= ($i + 1);
                         }
-                        $this->sql->select()->where->equalTo($key, $placeholder);
+                        $this->sql->select()->where->equalTo($foreignColumn, $placeholder);
                         $params[$key] = $this->primaryValues[$i];
+                        $i++;
                     }
 
                     $this->sql->db()->prepare((string)$this->sql)
