@@ -87,13 +87,6 @@ class Table extends AbstractGateway
             $this->sql->select()->where->add($where);
         }
 
-        if (count($this->oneToOne) > 0) {
-            foreach ($this->oneToOne as $oneToOne) {
-                $columns = (isset($oneToOne['columns'])) ? $oneToOne['columns'] : [$oneToOne['table'] . '.*'];
-                $this->sql->select($columns)->join($oneToOne['table'], $oneToOne['on'], $oneToOne['join']);
-            }
-        }
-
         if (isset($options['limit'])) {
             $this->sql->select()->limit((int)$options['limit']);
         }
@@ -115,50 +108,6 @@ class Table extends AbstractGateway
         $this->sql->db()->execute();
 
         $this->rows = $this->sql->db()->fetchAll();
-
-        if (count ($this->oneToMany) > 0) {
-            foreach ($this->rows as $index => $row) {
-                foreach ($this->oneToMany as $entity => $oneToMany) {
-                    $this->sql->reset();
-                    $this->sql->select()->from($oneToMany['table']);
-
-                    $params  = [];
-                    $columns = (is_array($oneToMany['on'])) ? $oneToMany['on'] : [$oneToMany['on']];
-
-                    $i = 0;
-                    foreach ($columns as $foreignColumn => $key) {
-                        if (strpos($foreignColumn, '.') !== false) {
-                            $foreignColumn = substr($foreignColumn, (strrpos($foreignColumn, '.') + 1));
-                        }
-                        if (strpos($key, '.') !== false) {
-                            $key = substr($key, (strrpos($key, '.') + 1));
-                        }
-                        if (isset($row[$key])) {
-                            $placeholder = $this->sql->getPlaceholder();
-
-                            if ($placeholder == ':') {
-                                $placeholder .= $foreignColumn;
-                            } else if ($placeholder == '$') {
-                                $placeholder .= ($i + 1);
-                            }
-                            $this->sql->select()->where->equalTo($foreignColumn, $placeholder);
-                            $params[$key] = $row[$key];
-                            $i++;
-                        }
-                    }
-
-                    if (count($params) > 0) {
-                        $this->sql->db()->prepare((string)$this->sql)
-                             ->bindParams($params)
-                             ->execute();
-
-                        $this->rows[$index][$entity] = $this->sql->db()->fetchAll();
-                    } else {
-                        $this->rows[$index][$entity] = [];
-                    }
-                }
-            }
-        }
 
         return $this->rows;
     }

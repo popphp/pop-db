@@ -59,18 +59,6 @@ class Record implements \ArrayAccess
     protected $result = null;
 
     /**
-     * 1:1 relationships
-     * @var array
-     */
-    protected $oneToOne = [];
-
-    /**
-     * 1:Many relationships
-     * @var array
-     */
-    protected $oneToMany = [];
-
-    /**
      * Constructor
      *
      * Instantiate the database record object
@@ -116,8 +104,6 @@ class Record implements \ArrayAccess
         }
 
         $this->result = new Result(static::db(), $this->getFullTable(), $this->primaryKeys, $columns);
-        $this->result->setOneToOne($this->oneToOne)
-             ->setOneToMany($this->oneToMany);
     }
 
     /**
@@ -216,6 +202,7 @@ class Record implements \ArrayAccess
     public static function findById($id, $resultsAs = Result::AS_OBJECT)
     {
         return (new static())->getResult()->findById($id, $resultsAs);
+
     }
 
     /**

@@ -181,13 +181,6 @@ class Row extends AbstractGateway implements \ArrayAccess
             $params[$primaryKey] = $this->primaryValues[$i];
         }
 
-        if (count($this->oneToOne) > 0) {
-            foreach ($this->oneToOne as $oneToOne) {
-                $columns = (isset($oneToOne['columns'])) ? $oneToOne['columns'] : [$oneToOne['table'] . '.*'];
-                $this->sql->select($columns)->join($oneToOne['table'], $oneToOne['on'], $oneToOne['join']);
-            }
-        }
-
         $this->sql->select()->limit(1);
 
         $this->sql->db()->prepare((string)$this->sql)
@@ -197,39 +190,6 @@ class Row extends AbstractGateway implements \ArrayAccess
         $row = $this->sql->db()->fetch();
 
         if (($row !== false) && is_array($row)) {
-            if (count ($this->oneToMany) > 0) {
-                foreach ($this->oneToMany as $entity => $oneToMany) {
-                    $this->sql->reset();
-                    $this->sql->select()->from($oneToMany['table']);
-
-                    $params  = [];
-                    $columns = (is_array($oneToMany['on'])) ? $oneToMany['on'] : [$oneToMany['on']];
-
-                    $i = 0;
-                    foreach ($columns as $foreignColumn => $key) {
-                        if (strpos($foreignColumn, '.') !== false) {
-                            $foreignColumn = substr($foreignColumn, (strrpos($foreignColumn, '.') + 1));
-                        }
-                        $placeholder = $this->sql->getPlaceholder();
-
-                        if ($placeholder == ':') {
-                            $placeholder .= $foreignColumn;
-                        } else if ($placeholder == '$') {
-                            $placeholder .= ($i + 1);
-                        }
-                        $this->sql->select()->where->equalTo($foreignColumn, $placeholder);
-                        $params[$key] = $this->primaryValues[$i];
-                        $i++;
-                    }
-
-                    $this->sql->db()->prepare((string)$this->sql)
-                         ->bindParams($params)
-                         ->execute();
-
-                    $row[$entity] = $this->sql->db()->fetchAll();
-                }
-            }
-
             $this->columns = $row;
         }
 
