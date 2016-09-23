@@ -116,7 +116,6 @@ class Result implements \ArrayAccess
         $this->rowGateway   = new Gateway\Row($this->sql, $table, $this->primaryKeys);
         $this->tableGateway = new Gateway\Table($this->sql, $table);
 
-
         if (null !== $columns) {
             $this->isNew = true;
             $this->setColumns($columns);
@@ -378,6 +377,32 @@ class Result implements \ArrayAccess
             }
         }
 
+        return $this;
+    }
+
+    /**
+     * Set 1:1 relationships
+     *
+     * @param  array $oneToOne
+     * @return Result
+     */
+    public function setOneToOne(array $oneToOne)
+    {
+        $this->rowGateway->setOneToOne($oneToOne);
+        $this->tableGateway->setOneToOne($oneToOne);
+        return $this;
+    }
+
+    /**
+     * Set 1:many relationships
+     *
+     * @param  array $oneToMany
+     * @return Result
+     */
+    public function setOneToMany(array $oneToMany)
+    {
+        $this->rowGateway->setOneToMany($oneToMany);
+        $this->tableGateway->setOneToMany($oneToMany);
         return $this;
     }
 

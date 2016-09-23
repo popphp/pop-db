@@ -74,7 +74,13 @@ class Sql extends AbstractSql
             $this->select = new Sql\Select($this->db);
         }
         if (null !== $columns) {
-            $this->select->setValues($columns);
+            foreach ($columns as $name => $value) {
+                if (!is_numeric($name)) {
+                    $this->select->addNamedValue($name, $value);
+                } else {
+                    $this->select->addValue($value);
+                }
+            }
         }
 
         return $this->select;

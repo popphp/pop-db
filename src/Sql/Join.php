@@ -72,6 +72,8 @@ class Join
      */
     public function __construct($sql, $foreignTable, array $columns, $join = 'JOIN')
     {
+        $this->sql = $sql;
+
         // If it's a sub-select
         if ($foreignTable instanceof Select) {
             $alias              = ($foreignTable->hasAlias()) ? $foreignTable->getAlias() : $foreignTable->getTable();

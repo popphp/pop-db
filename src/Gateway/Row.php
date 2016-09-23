@@ -115,7 +115,7 @@ class Row extends AbstractGateway implements \ArrayAccess
      */
     public function doesPrimaryCountMatch()
     {
-        if (count($this->primaryKeys) == count($this->primaryValues)) {
+        if (count($this->primaryKeys) != count($this->primaryValues)) {
             throw new Exception('Error: The number of primary key(s) and primary value(s) do not match.');
         }
     }
@@ -165,7 +165,7 @@ class Row extends AbstractGateway implements \ArrayAccess
         $this->setPrimaryValues($values);
         $this->doesPrimaryCountMatch();
 
-        $this->sql->select()->from($this->table);
+        $this->sql->select([$this->table . '.*'])->from($this->table);
 
         $params = [];
 
@@ -181,6 +181,13 @@ class Row extends AbstractGateway implements \ArrayAccess
             $params[$primaryKey] = $this->primaryValues[$i];
         }
 
+        if (count($this->oneToOne) > 0) {
+            foreach ($this->oneToOne as $oneToOne) {
+                $columns = (isset($oneToOne['columns'])) ? $oneToOne['columns'] : null;
+                $this->sql->select($columns)->join($oneToOne['table'], $oneToOne['on'], $oneToOne['join']);
+            }
+        }
+
         $this->sql->select()->limit(1);
 
         $this->sql->db()->prepare((string)$this->sql)
@@ -190,7 +197,35 @@ class Row extends AbstractGateway implements \ArrayAccess
         $row = $this->sql->db()->fetch();
 
         if (($row !== false) && is_array($row)) {
-            $this->columns = $row[0];
+            if (count ($this->oneToMany) > 0) {
+                foreach ($this->oneToMany as $entity => $oneToMany) {
+                    $this->sql->reset();
+                    $this->sql->select()->from($oneToMany['table']);
+
+                    $params  = [];
+                    $columns = (is_array($oneToMany['columns'])) ? $oneToMany['columns'] : [$oneToMany['columns']];
+
+                    foreach ($columns as $i => $key) {
+                        $placeholder = $this->sql->getPlaceholder();
+
+                        if ($placeholder == ':') {
+                            $placeholder .= $key;
+                        } else if ($placeholder == '$') {
+                            $placeholder .= ($i + 1);
+                        }
+                        $this->sql->select()->where->equalTo($key, $placeholder);
+                        $params[$key] = $this->primaryValues[$i];
+                    }
+
+                    $this->sql->db()->prepare((string)$this->sql)
+                         ->bindParams($params)
+                         ->execute();
+
+                    $row[$entity] = $this->sql->db()->fetchAll();
+                }
+            }
+
+            $this->columns = $row;
         }
 
         return $this->columns;
