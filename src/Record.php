@@ -29,12 +29,6 @@ class Record implements \ArrayAccess
 {
 
     /**
-     * Database connection(s)
-     * @var array
-     */
-    protected static $db = ['default' => null];
-
-    /**
      * Table name
      * @var string
      */
@@ -74,6 +68,7 @@ class Record implements \ArrayAccess
         $columns = null;
         $table   = null;
         $db      = null;
+        $class   = get_class($this);
 
         foreach ($args as $arg) {
             if (is_array($arg) || ($arg instanceof \ArrayAccess) || ($arg instanceof \ArrayObject)) {
@@ -86,11 +81,11 @@ class Record implements \ArrayAccess
         }
 
         if (null !== $db) {
-            $class = get_class($this);
-            $class::setDb($db);
+            $isDefault = ($class === __CLASS__);
+            Db::setDb($db, $class, null, $isDefault);
         }
 
-        if (!static::hasDb()) {
+        if (!Db::hasDb($class)) {
             throw new Exception('Error: A database connection has not been set.');
         }
 
@@ -100,35 +95,20 @@ class Record implements \ArrayAccess
 
         // Set the table name from the class name
         if (null === $this->table) {
-            $this->setTableFromClassName(get_class($this));
+            $this->setTableFromClassName($class);
         }
 
-        $this->result = new Result(static::db(), $this->getFullTable(), $this->primaryKeys, $columns);
+        $this->result = new Result(Db::db($class), $this->getFullTable(), $this->primaryKeys, $columns);
     }
 
     /**
-     * Check is the class has a DB adapter
+     * Check for a DB adapter
      *
      * @return boolean
      */
     public static function hasDb()
     {
-        $result = false;
-        $class  = get_called_class();
-
-        if (isset(static::$db[$class])) {
-            $result = true;
-        } else if (isset(static::$db['default'])) {
-            $result = true;
-        } else {
-            foreach (static::$db as $prefix => $adapter) {
-                if (substr($class, 0, strlen($prefix)) == $prefix) {
-                    $result = true;
-                }
-            }
-        }
-
-        return $result;
+        return Db::hasDb(get_called_class());
     }
 
     /**
@@ -141,45 +121,33 @@ class Record implements \ArrayAccess
      */
     public static function setDb(Adapter\AbstractAdapter $db, $prefix = null, $isDefault = false)
     {
-        if (null !== $prefix) {
-            static::$db[$prefix] = $db;
-        }
-
         $class = get_called_class();
-        static::$db[$class] = $db;
-
-        if (($isDefault) || ($class === __CLASS__)) {
-            static::$db['default'] = $db;
+        if ($class == 'Pop\Db\Record') {
+            Db::setDefaultDb($db);
+        } else {
+            Db::setDb($db, $class, $prefix, $isDefault);
         }
+    }
+
+    /**
+     * Set DB adapter
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @return void
+     */
+    public static function setDefaultDb(Adapter\AbstractAdapter $db)
+    {
+        Db::setDb($db, null, null, true);
     }
 
     /**
      * Get DB adapter
      *
-     * @throws Exception
      * @return Adapter\AbstractAdapter
      */
     public static function getDb()
     {
-        $class = get_called_class();
-
-        if (isset(static::$db[$class])) {
-            return static::$db[$class];
-        } else if (isset(static::$db['default'])) {
-            return static::$db['default'];
-        } else {
-            $dbAdapter = null;
-            foreach (static::$db as $prefix => $adapter) {
-                if (substr($class, 0, strlen($prefix)) == $prefix) {
-                    $dbAdapter = $adapter;
-                }
-            }
-            if (null !== $dbAdapter) {
-                return $dbAdapter;
-            } else {
-                throw new Exception('No database adapter was found.');
-            }
-        }
+        return Db::getDb(get_called_class());
     }
 
     /**
@@ -189,7 +157,7 @@ class Record implements \ArrayAccess
      */
     public static function db()
     {
-        return static::getDb();
+        return Db::db(get_called_class());
     }
 
     /**
@@ -202,7 +170,6 @@ class Record implements \ArrayAccess
     public static function findById($id, $resultsAs = Result::AS_OBJECT)
     {
         return (new static())->getResult()->findById($id, $resultsAs);
-
     }
 
     /**

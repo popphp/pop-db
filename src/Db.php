@@ -27,6 +27,12 @@ class Db
 {
 
     /**
+     * Database connection(s)
+     * @var array
+     */
+    protected static $db = ['default' => null];
+
+    /**
      * Method to connect to a database and return the database adapter object
      *
      * @param  string $adapter
@@ -209,6 +215,115 @@ class Db
         }
 
         return $result;
+    }
+
+    /**
+     * Check for a DB adapter
+     *
+     * @param  string $class
+     * @return boolean
+     */
+    public static function hasDb($class = null)
+    {
+        $result = false;
+
+        if ((null !== $class) && isset(self::$db[$class])) {
+            $result = true;
+        } else if (null !== $class) {
+            foreach (self::$db as $prefix => $adapter) {
+                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                    $result = true;
+                }
+            }
+        }
+
+        if ((!$result) && isset(self::$db['default'])) {
+            $result = true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Set DB adapter
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @param  string                  $class
+     * @param  string                  $prefix
+     * @param  boolean                 $isDefault
+     * @return void
+     */
+    public static function setDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null, $isDefault = false)
+    {
+        if (null !== $prefix) {
+            self::$db[$prefix] = $db;
+        }
+
+        if (null !== $class) {
+            self::$db[$class] = $db;
+        }
+
+        if ($isDefault) {
+            self::$db['default'] = $db;
+        }
+    }
+
+    /**
+     * Set DB adapter
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @param  string                  $class
+     * @param  string                  $prefix
+     * @return void
+     */
+    public static function setDefaultDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null)
+    {
+        self::setDb($db, $class, $prefix, true);
+    }
+
+    /**
+     * Get DB adapter
+     *
+     * @param  string $class
+     * @throws Exception
+     * @return Adapter\AbstractAdapter
+     */
+    public static function getDb($class = null)
+    {
+        $dbAdapter = null;
+
+        // Check for database adapter assigned to a full class name
+        if ((null !== $class) &&  isset(self::$db[$class])) {
+            $dbAdapter = self::$db[$class];
+        // Check for database adapter assigned to a namespace
+        } else if (null !== $class) {
+            foreach (self::$db as $prefix => $adapter) {
+                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                    $dbAdapter = $adapter;
+                }
+            }
+        }
+
+        if ((null === $dbAdapter) && isset(self::$db['default'])) {
+            $dbAdapter =  self::$db['default'];
+        }
+
+        if (null === $dbAdapter) {
+            throw new Exception('No database adapter was found.');
+        }
+
+        return $dbAdapter;
+    }
+
+    /**
+     * Get DB adapter (alias)
+     *
+     * @param  string $class
+     * @return Adapter\AbstractAdapter
+     */
+    public static function db($class = null)
+    {
+        return self::getDb($class);
     }
 
 }
