@@ -110,6 +110,26 @@ abstract class AbstractGateway implements GatewayInterface
     }
 
     /**
+     * Determine if the table has 1:1 relationships
+     *
+     * @return boolean
+     */
+    public function hasOneToOne()
+    {
+        return (count($this->oneToOne) > 0);
+    }
+
+    /**
+     * Determine if the table has 1:many relationships
+     *
+     * @return boolean
+     */
+    public function hasOneToMany()
+    {
+        return (count($this->oneToMany) > 0);
+    }
+
+    /**
      * Get the table name
      *
      * @return string

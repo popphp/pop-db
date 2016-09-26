@@ -94,6 +94,18 @@ class Result implements \ArrayAccess
     protected $primaryKeys = ['id'];
 
     /**
+     * Record 1:1 relationships
+     * @var array
+     */
+    protected $oneToOne = [];
+
+    /**
+     * Record 1:many relationships
+     * @var array
+     */
+    protected $oneToMany = [];
+
+    /**
      * Is new record flag
      * @var boolean
      */
@@ -205,12 +217,30 @@ class Result implements \ArrayAccess
     /**
      * Find record by ID method
      *
-     * @param  mixed $id
+     * @param  mixed  $id
+     * @param  string $resultsAs
      * @return Result
      */
-    public function findById($id)
+    public function findById($id, $resultsAs = Result::AS_OBJECT)
     {
-        $this->setColumns($this->rowGateway->find($id));
+        $row = $this->rowGateway->find($id);
+
+        if ($this->hasOneToMany()) {
+            foreach ($this->oneToMany as $entity => $oneToMany) {
+                $foreign = key($oneToMany);
+                $local   = array_values($oneToMany)[0];
+
+                $foreignColumn = substr($foreign, (strrpos($foreign, '.') + 1));
+                $foreignTable  = substr($foreign, 0, (strpos($foreign, '.')));
+                $localColumn   = substr($local, (strrpos($local, '.') + 1));
+
+                $params = [$foreignColumn => $row[$localColumn]];
+
+                $row[$entity] = $foreignTable::findBy($params, null, $resultsAs);
+            }
+        }
+
+        $this->setColumns($row);
         return $this;
     }
 
@@ -222,7 +252,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function findBy(array $columns = null, array $options = null, $resultsAs = Result::AS_RESULT)
+    public function findBy(array $columns = null, array $options = null, $resultsAs = Result::AS_OBJECT)
     {
         $params = null;
         $where  = null;
@@ -245,7 +275,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function findAll(array $options = null, $resultsAs = Result::AS_RESULT)
+    public function findAll(array $options = null, $resultsAs = Result::AS_OBJECT)
     {
         return $this->findBy(null, $options, $resultsAs);
     }
@@ -258,7 +288,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function execute($sql, $params, $resultsAs = Result::AS_RESULT)
+    public function execute($sql, $params, $resultsAs = Result::AS_OBJECT)
     {
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
@@ -292,7 +322,7 @@ class Result implements \ArrayAccess
      * @param  string $resultsAs
      * @return Result
      */
-    public function query($sql, $resultsAs = Result::AS_RESULT)
+    public function query($sql, $resultsAs = Result::AS_OBJECT)
     {
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
@@ -317,10 +347,11 @@ class Result implements \ArrayAccess
     /**
      * Save the record
      *
-     * @param  array $columns
+     * @param  array  $columns
+     * @param  string $resultsAs
      * @return void
      */
-    public function save(array $columns = null)
+    public function save(array $columns = null, $resultsAs = Result::AS_OBJECT)
     {
         // Save or update the record
         if (null === $columns) {
@@ -334,8 +365,10 @@ class Result implements \ArrayAccess
         // Else, save multiple rows
         } else {
             $this->tableGateway->insert($columns);
+
             $rows = $this->tableGateway->getRows();
 
+            $this->setRows($rows, $resultsAs);
             if (isset($rows[0])) {
                 $this->setColumns($rows[0]);
             }
@@ -361,6 +394,7 @@ class Result implements \ArrayAccess
             $parsedColumns = Parser\Column::parse($columns, $this->sql->getPlaceholder());
             $this->tableGateway->delete($parsedColumns['where'], $parsedColumns['params']);
         }
+        $this->setRows();
         $this->setColumns();
     }
 
@@ -378,6 +412,8 @@ class Result implements \ArrayAccess
         if (null !== $columns) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
                 $this->columns = (array)$columns;
+            } else if ($columns instanceof Result) {
+                $this->columns = $columns->toArray();
             } else {
                 throw new Exception('The parameter passed must be either an array, an array object or null.');
             }
@@ -401,41 +437,55 @@ class Result implements \ArrayAccess
         if (null !== $rows) {
             $this->columns = (isset($rows[0])) ? (array)$rows[0] : [];
             foreach ($rows as $row) {
-                switch ($resultsAs) {
-                    case self::AS_ARRAY:
-                        $this->rows[] = (array)$row;
-                        break;
-                    case self::AS_OBJECT:
-                        $row = (array)$row;
-                        foreach ($row as $key => $value) {
-                            if (is_array($value)) {
-                                foreach ($value as $k => $v) {
-                                    $value[$k] = new \ArrayObject((array)$v, \ArrayObject::ARRAY_AS_PROPS);
-                                }
-                                $row[$key] = $value;
-                            }
-                        }
-                        $this->rows[] = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
-                        break;
-                    default:
-                        $row = (array)$row;
-                        foreach ($row as $key => $value) {
-                            if (is_array($value)) {
-                                foreach ($value as $k => $v) {
-                                    $value[$k] = new Result($this->db, $this->table, $this->primaryKeys);
-                                    $value[$k]->setColumns((array)$v);
-                                }
-                                $row[$key] = $value;
-                            }
-                        }
-                        $r = new Result($this->db, $this->table, $this->primaryKeys);
-                        $r->setColumns((array)$row);
-                        $this->rows[] = $r;
-                }
+                $this->rows[] = $this->processRow($row, $resultsAs);
             }
         }
 
         return $this;
+    }
+
+    /**
+     * Process a table row
+     *
+     * @param  array  $row
+     * @param  string $resultsAs
+     * @return mixed
+     */
+    public function processRow(array $row, $resultsAs = Result::AS_RESULT)
+    {
+        switch ($resultsAs) {
+            case self::AS_ARRAY:
+                $row = (array)$row;
+                break;
+            case self::AS_OBJECT:
+                $row = (array)$row;
+                foreach ($row as $key => $value) {
+                    if (is_array($value)) {
+                        foreach ($value as $k => $v) {
+                            $value[$k] = new \ArrayObject((array)$v, \ArrayObject::ARRAY_AS_PROPS);
+                        }
+                        $row[$key] = $value;
+                    }
+                }
+                $row = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
+                break;
+            default:
+                $row = (array)$row;
+                foreach ($row as $key => $value) {
+                    if (is_array($value)) {
+                        foreach ($value as $k => $v) {
+                            $value[$k] = new Result($this->db, $this->table, $this->primaryKeys);
+                            $value[$k]->setColumns((array)$v);
+                        }
+                        $row[$key] = $value;
+                    }
+                }
+                $r = new Result($this->db, $this->table, $this->primaryKeys);
+                $r->setColumns((array)$row);
+                $row = $r;
+        }
+
+        return $row;
     }
 
     /**
@@ -446,6 +496,7 @@ class Result implements \ArrayAccess
      */
     public function setOneToOne(array $oneToOne)
     {
+        $this->oneToOne = $oneToOne;
         $this->rowGateway->setOneToOne($oneToOne);
         $this->tableGateway->setOneToOne($oneToOne);
         return $this;
@@ -459,9 +510,30 @@ class Result implements \ArrayAccess
      */
     public function setOneToMany(array $oneToMany)
     {
+        $this->oneToMany = $oneToMany;
         $this->rowGateway->setOneToMany($oneToMany);
         $this->tableGateway->setOneToMany($oneToMany);
         return $this;
+    }
+
+    /**
+     * Determine if the table has 1:1 relationships
+     *
+     * @return boolean
+     */
+    public function hasOneToOne()
+    {
+        return (count($this->oneToOne) > 0);
+    }
+
+    /**
+     * Determine if the table has 1:many relationships
+     *
+     * @return boolean
+     */
+    public function hasOneToMany()
+    {
+        return (count($this->oneToMany) > 0);
     }
 
     /**

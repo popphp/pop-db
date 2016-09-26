@@ -196,47 +196,6 @@ class Row extends AbstractGateway implements \ArrayAccess
         $row = $this->sql->db()->fetch();
 
         if (($row !== false) && is_array($row)) {
-            if (count ($this->oneToMany) > 0) {
-                foreach ($this->oneToMany as $entity => $oneToMany) {
-                    $table  = key($oneToMany);
-                    $column = array_values($oneToMany)[0];
-
-                    if (strpos($table, '.') !== false) {
-                        $column = substr($table, (strrpos($table, '.') + 1));
-                        $table  = substr($table, 0, (strpos($table, '.')));
-                    }
-
-                    $this->sql->reset();
-                    $this->sql->select()->from($table);
-
-                    $params  = [];
-                    $columns = (is_array($column)) ? $column : [$column];
-
-                    $i = 0;
-                    foreach ($columns as $key) {
-                        if (strpos($key, '.') !== false) {
-                            $key = substr($key, (strrpos($key, '.') + 1));
-                        }
-                        $placeholder = $this->sql->getPlaceholder();
-
-                        if ($placeholder == ':') {
-                            $placeholder .= $key;
-                        } else if ($placeholder == '$') {
-                            $placeholder .= ($i + 1);
-                        }
-                        $this->sql->select()->where->equalTo($key, $placeholder);
-                        $params[$key] = $this->primaryValues[$i];
-                        $i++;
-                    }
-
-                    $this->sql->db()->prepare((string)$this->sql)
-                        ->bindParams($params)
-                        ->execute();
-
-                    $row[$entity] = $this->sql->db()->fetchAll();
-                }
-            }
-
             $this->columns = $row;
         }
 

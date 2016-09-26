@@ -48,7 +48,7 @@ class Record implements \ArrayAccess
 
     /**
      * Record result object
-     * @var Result
+     * @var Record\Result
      */
     protected $result = null;
 
@@ -382,7 +382,7 @@ class Record implements \ArrayAccess
     /**
      * Get the record result object
      *
-     * @return Result
+     * @return Record\Result
      */
     public function getResult()
     {
