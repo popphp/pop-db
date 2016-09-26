@@ -43,6 +43,22 @@ interface GatewayInterface
     public function sql();
 
     /**
+     * Set 1:1 relationships
+     *
+     * @param  array $oneToOne
+     * @return AbstractGateway
+     */
+    public function setOneToOne(array $oneToOne);
+
+    /**
+     * Set 1:many relationships
+     *
+     * @param  array $oneToMany
+     * @return AbstractGateway
+     */
+    public function setOneToMany(array $oneToMany);
+
+    /**
      * Get the table name
      *
      * @return string

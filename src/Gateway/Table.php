@@ -87,6 +87,12 @@ class Table extends AbstractGateway
             $this->sql->select()->where->add($where);
         }
 
+        if (count($this->oneToOne) > 0) {
+            foreach ($this->oneToOne as $table => $columns) {
+                $this->sql->select([$table . '.*'])->leftJoin($table, $columns);
+            }
+        }
+
         if (isset($options['limit'])) {
             $this->sql->select()->limit((int)$options['limit']);
         }
@@ -108,6 +114,37 @@ class Table extends AbstractGateway
         $this->sql->db()->execute();
 
         $this->rows = $this->sql->db()->fetchAll();
+
+        if (count ($this->oneToMany) > 0) {
+            foreach ($this->rows as $index => $row) {
+                foreach ($this->oneToMany as $entity => $oneToMany) {
+                    $table        = key($oneToMany);
+                    $column       = array_values($oneToMany)[0];
+                    $foreignTable = substr($table, 0, (strrpos($table, '.')));
+                    $foreignKey   = substr($table, (strrpos($table, '.') + 1));
+                    $primaryKey   = substr($column, (strrpos($column, '.') + 1));
+
+                    $this->sql->reset();
+                    $this->sql->select()->from($foreignTable);
+
+                    $placeholder = $this->sql->getPlaceholder();
+
+                    if ($placeholder == ':') {
+                        $placeholder .= $foreignKey;
+                    } else if ($placeholder == '$') {
+                        $placeholder .= 1;
+                    }
+                    $this->sql->select()->where->equalTo($foreignKey, $placeholder);
+                    $params = [$foreignKey => $row[$primaryKey]];
+
+                    $this->sql->db()->prepare((string)$this->sql)
+                        ->bindParams($params)
+                        ->execute();
+
+                    $this->rows[$index][$entity] = $this->sql->db()->fetchAll();
+                }
+            }
+        }
 
         return $this->rows;
     }

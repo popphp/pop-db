@@ -53,6 +53,18 @@ class Record implements \ArrayAccess
     protected $result = null;
 
     /**
+     * Record 1:1 relationships
+     * @var array
+     */
+    protected $oneToOne = [];
+
+    /**
+     * Record 1:many relationships
+     * @var array
+     */
+    protected $oneToMany = [];
+
+    /**
      * Constructor
      *
      * Instantiate the database record object
@@ -99,6 +111,8 @@ class Record implements \ArrayAccess
         }
 
         $this->result = new Result(Db::db($class), $this->getFullTable(), $this->primaryKeys, $columns);
+        $this->result->setOneToOne($this->oneToOne)
+             ->setOneToMany($this->oneToMany);
     }
 
     /**
