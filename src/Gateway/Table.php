@@ -13,6 +13,7 @@
  */
 namespace Pop\Db\Gateway;
 
+use Pop\Db\Db;
 use Pop\Db\Parser;
 
 /**
@@ -81,39 +82,42 @@ class Table extends AbstractGateway
             $columns = [$this->table . '.*'];
         }
 
-        $this->sql->select($columns)->from($this->table);
+        $db  = Db::getDb($this->table);
+        $sql = $db->createSql();
+
+        $sql->select($columns)->from($this->table);
 
         if (null !== $where) {
-            $this->sql->select()->where->add($where);
+            $sql->select()->where->add($where);
         }
 
         if (count($this->oneToOne) > 0) {
             foreach ($this->oneToOne as $table => $columns) {
-                $this->sql->select([$table . '.*'])->leftJoin($table, $columns);
+                $sql->select([$table . '.*'])->leftJoin($table, $columns);
             }
         }
 
         if (isset($options['limit'])) {
-            $this->sql->select()->limit((int)$options['limit']);
+            $sql->select()->limit((int)$options['limit']);
         }
 
         if (isset($options['offset'])) {
-            $this->sql->select()->offset((int)$options['offset']);
+            $sql->select()->offset((int)$options['offset']);
         }
 
         if (isset($options['order'])) {
             $order = Parser\Order::parse($options['order']);
-            $this->sql->select()->orderBy($order['by'], $this->sql->db()->escape($order['order']));
+            $sql->select()->orderBy($order['by'], $db->escape($order['order']));
         }
 
-        $this->sql->db()->prepare((string)$this->sql);
+        $db->prepare((string)$sql);
         if ((null !== $parameters) && (count($parameters) > 0)) {
-            $this->sql->db()->bindParams($parameters);
+            $db->bindParams($parameters);
         }
 
-        $this->sql->db()->execute();
+        $db->execute();
 
-        $this->rows = $this->sql->db()->fetchAll();
+        $this->rows = $db->fetchAll();
 
         if (count ($this->oneToMany) > 0) {
             foreach ($this->rows as $index => $row) {
@@ -124,24 +128,24 @@ class Table extends AbstractGateway
                     $foreignKey   = substr($table, (strrpos($table, '.') + 1));
                     $primaryKey   = substr($column, (strrpos($column, '.') + 1));
 
-                    $this->sql->reset();
-                    $this->sql->select()->from($foreignTable);
+                    $sql->reset();
+                    $sql->select()->from($foreignTable);
 
-                    $placeholder = $this->sql->getPlaceholder();
+                    $placeholder = $sql->getPlaceholder();
 
                     if ($placeholder == ':') {
                         $placeholder .= $foreignKey;
                     } else if ($placeholder == '$') {
                         $placeholder .= 1;
                     }
-                    $this->sql->select()->where->equalTo($foreignKey, $placeholder);
+                    $sql->select()->where->equalTo($foreignKey, $placeholder);
                     $params = [$foreignKey => $row[$primaryKey]];
 
-                    $this->sql->db()->prepare((string)$this->sql)
-                        ->bindParams($params)
-                        ->execute();
+                    $db->prepare((string)$sql)
+                       ->bindParams($params)
+                       ->execute();
 
-                    $this->rows[$index][$entity] = $this->sql->db()->fetchAll();
+                    $this->rows[$index][$entity] = $db->fetchAll();
                 }
             }
         }
@@ -159,12 +163,14 @@ class Table extends AbstractGateway
     {
         $this->rows = [];
 
+        $db     = Db::getDb($this->table);
+        $sql    = $db->createSql();
         $values = [];
         $params = [];
 
         $i = 1;
         foreach ($columns as $column => $value) {
-            $placeholder = $this->sql->getPlaceholder();
+            $placeholder = $sql->getPlaceholder();
 
             if ($placeholder == ':') {
                 $placeholder .= $column;
@@ -176,11 +182,11 @@ class Table extends AbstractGateway
             $i++;
         }
 
-        $this->sql->insert($this->table)->values($values);
+        $sql->insert($this->table)->values($values);
 
-        $this->sql->db()->prepare((string)$this->sql)
-             ->bindParams($params)
-             ->execute();
+        $db->prepare((string)$sql)
+           ->bindParams($params)
+           ->execute();
 
         return $this;
     }
@@ -197,12 +203,14 @@ class Table extends AbstractGateway
     {
         $this->rows = [];
 
+        $db     = Db::getDb($this->table);
+        $sql    = $db->createSql();
         $values = [];
         $params = [];
 
         $i = 1;
         foreach ($columns as $column => $value) {
-            $placeholder = $this->sql->getPlaceholder();
+            $placeholder = $sql->getPlaceholder();
 
             if ($placeholder == ':') {
                 $placeholder .= $column;
@@ -214,15 +222,15 @@ class Table extends AbstractGateway
             $i++;
         }
 
-        $this->sql->update($this->table)->values($values);
+        $sql->update($this->table)->values($values);
 
         if (null !== $where) {
-            $this->sql->update()->where->add($where);
+            $sql->update()->where->add($where);
         }
 
-        $this->sql->db()->prepare((string)$this->sql)
-             ->bindParams(array_merge($params, $parameters))
-             ->execute();
+        $db->prepare((string)$sql)
+           ->bindParams(array_merge($params, $parameters))
+           ->execute();
 
         return $this;
     }
@@ -238,19 +246,22 @@ class Table extends AbstractGateway
     {
         $this->rows = [];
 
-        $this->sql->delete($this->table);
+        $db  = Db::getDb($this->table);
+        $sql = $db->createSql();
+
+        $sql->delete($this->table);
 
         if (null !== $where) {
-            $this->sql->delete()->where->add($where);
+            $sql->delete()->where->add($where);
         }
 
-        $this->sql->db()->prepare((string)$this->sql);
+        $db->prepare((string)$sql);
 
         if (count($parameters) > 0) {
-            $this->sql->db()->bindParams($parameters);
+            $db->bindParams($parameters);
         }
 
-        $this->sql->db()->execute();
+        $db->execute();
 
         return $this;
     }

@@ -13,8 +13,6 @@
  */
 namespace Pop\Db\Gateway;
 
-use Pop\Db\Sql;
-
 /**
  * Db gateway interface
  *
@@ -27,20 +25,6 @@ use Pop\Db\Sql;
  */
 interface GatewayInterface
 {
-
-    /**
-     * Get the SQL object
-     *
-     * @return Sql
-     */
-    public function getSql();
-
-    /**
-     * Get the SQL object (alias method)
-     *
-     * @return Sql
-     */
-    public function sql();
 
     /**
      * Set 1:1 relationships

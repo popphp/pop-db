@@ -13,10 +13,11 @@
  */
 namespace Pop\Db\Record;
 
-use Pop\Db\Adapter\AbstractAdapter;
+use Pop\Db\Db;
 use Pop\Db\Gateway;
 use Pop\Db\Parser;
 use Pop\Db\Sql;
+
 
 /**
  * Result class
@@ -38,18 +39,6 @@ class Result implements \ArrayAccess
     const AS_ARRAY  = 'AS_ARRAY';
     const AS_OBJECT = 'AS_OBJECT';
     const AS_RESULT = 'AS_RESULT';
-
-    /**
-     * Database connection
-     * @var AbstractAdapter
-     */
-    protected $db = null;
-
-    /**
-     * SQL Object
-     * @var Sql
-     */
-    protected $sql = null;
 
     /**
      * Table name
@@ -116,59 +105,26 @@ class Result implements \ArrayAccess
      *
      * Instantiate the database record result object
      *
-     * @param  AbstractAdapter $db
-     * @param  string          $table
-     * @param  mixed           $keys
-     * @param  array           $columns
+     * @param  string $table
+     * @param  mixed  $keys
+     * @param  array  $columns
      */
-    public function __construct(AbstractAdapter $db, $table, $keys = null, array $columns = null)
+    public function __construct($table, $keys = null, array $columns = null)
     {
-        $this->db           = $db;
-        $this->sql          = $db->createSql();
         $this->table        = $table;
-        $this->tableGateway = new Gateway\Table($this->sql, $this->table);
+        $this->tableGateway = new Gateway\Table($this->table);
 
         if (null !== $columns) {
             $this->isNew = true;
             $this->setColumns($columns);
         }
 
-        $tableInfo         = $this->getTableInfo();
-        $this->columnNames = array_keys($tableInfo['columns']);
-
         if (null !== $keys) {
             $keys = (!is_array($keys)) ? [$keys] : $keys;
-        } else {
-            $keys = [];
-            foreach ($tableInfo['columns'] as $column => $info) {
-                if ($info['primary']) {
-                    $keys[] = $column;
-                }
-            }
         }
 
         $this->primaryKeys = $keys;
-        $this->rowGateway  = new Gateway\Row($this->sql, $this->table, $this->primaryKeys);
-    }
-
-    /**
-     * Get the DB adapter
-     *
-     * @return AbstractAdapter
-     */
-    public function db()
-    {
-        return $this->db;
-    }
-
-    /**
-     * Get the SQL object
-     *
-     * @return Sql
-     */
-    public function sql()
-    {
-        return $this->sql;
+        $this->rowGateway  = new Gateway\Row($this->table, $this->primaryKeys);
     }
 
     /**
@@ -179,6 +135,30 @@ class Result implements \ArrayAccess
     public function getTable()
     {
         return $this->table;
+    }
+
+    /**
+     * Determine if the column names have been fetched
+     *
+     * @return boolean
+     */
+    public function hasColumnNames()
+    {
+        return (count($this->columnNames) > 0);
+    }
+
+    /**
+     * Get the column names
+     *
+     * @return array
+     */
+    public function getColumnNames()
+    {
+        if (count($this->columnNames) == 0) {
+            $tableInfo         = $this->tableGateway->getTableInfo();
+            $this->columnNames = array_keys($tableInfo['columns']);
+        }
+        return $this->columnNames;
     }
 
     /**
@@ -193,13 +173,15 @@ class Result implements \ArrayAccess
         $where  = null;
 
         if (null !== $columns) {
-            $parsedColumns = Parser\Column::parse($columns, $this->sql->getPlaceholder());
+            $db  = Db::getDb($this->table);
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $params        = $parsedColumns['params'];
             $where         = $parsedColumns['where'];
         }
 
         $rows = $this->tableGateway->select(['total_count' => 'COUNT(1)'], $where, $params);
-
 
         return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
@@ -211,7 +193,12 @@ class Result implements \ArrayAccess
      */
     public function getTableInfo()
     {
-        return $this->tableGateway->getTableInfo();
+        $tableInfo = $this->tableGateway->getTableInfo();
+        if (count($this->columnNames) == 0) {
+            $this->columnNames = array_keys($tableInfo['columns']);
+        }
+
+        return $tableInfo;
     }
 
     /**
@@ -224,22 +211,6 @@ class Result implements \ArrayAccess
     public function findById($id, $resultsAs = Result::AS_OBJECT)
     {
         $row = $this->rowGateway->find($id);
-
-        if ($this->hasOneToMany()) {
-            foreach ($this->oneToMany as $entity => $oneToMany) {
-                $foreign = key($oneToMany);
-                $local   = array_values($oneToMany)[0];
-
-                $foreignColumn = substr($foreign, (strrpos($foreign, '.') + 1));
-                $foreignTable  = substr($foreign, 0, (strpos($foreign, '.')));
-                $localColumn   = substr($local, (strrpos($local, '.') + 1));
-
-                $params = [$foreignColumn => $row[$localColumn]];
-
-                $row[$entity] = $foreignTable::findBy($params, null, $resultsAs);
-            }
-        }
-
         $this->setColumns($row);
         return $this;
     }
@@ -258,12 +229,16 @@ class Result implements \ArrayAccess
         $where  = null;
 
         if (null !== $columns) {
-            $parsedColumns = Parser\Column::parse($columns, $this->sql->getPlaceholder());
+            $db  = Db::getDb($this->table);
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $params        = $parsedColumns['params'];
             $where         = $parsedColumns['where'];
         }
 
-        $this->setRows($this->tableGateway->select(null, $where, $params, $options), $resultsAs);
+        $rows = $this->tableGateway->select(null, $where, $params, $options);
+        $this->setRows($rows, $resultsAs);
 
         return $this;
     }
@@ -293,16 +268,19 @@ class Result implements \ArrayAccess
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
         }
+
         if (!is_array($params)) {
             $params = [$params];
         }
 
-        $this->db->prepare($sql)
-             ->bindParams($params)
-             ->execute();
+        $db = Db::getDb($this->table);
+
+        $db->prepare($sql)
+           ->bindParams($params)
+           ->execute();
 
         if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
-            $rows = $this->db->fetchAll();
+            $rows = $db->fetchAll();
             foreach ($rows as $i => $row) {
                 $rows[$i] = $row;
             }
@@ -328,11 +306,13 @@ class Result implements \ArrayAccess
             $sql = (string)$sql;
         }
 
-        $this->db->query($sql);
+        $db = Db::getDb($this->table);
+
+        $db->query($sql);
 
         if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
             $rows = [];
-            while (($row = $this->db->fetch())) {
+            while (($row = $db->fetch())) {
                 $rows[] = $row;
             }
             $this->setRows($rows, $resultsAs);
@@ -391,7 +371,10 @@ class Result implements \ArrayAccess
             $this->rowGateway->delete();
         // Delete multiple rows
         } else {
-            $parsedColumns = Parser\Column::parse($columns, $this->sql->getPlaceholder());
+            $db  = Db::getDb($this->table);
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $this->tableGateway->delete($parsedColumns['where'], $parsedColumns['params']);
         }
         $this->setRows();
@@ -474,13 +457,13 @@ class Result implements \ArrayAccess
                 foreach ($row as $key => $value) {
                     if (is_array($value)) {
                         foreach ($value as $k => $v) {
-                            $value[$k] = new Result($this->db, $this->table, $this->primaryKeys);
+                            $value[$k] = new Result($this->table, $this->primaryKeys);
                             $value[$k]->setColumns((array)$v);
                         }
                         $row[$key] = $value;
                     }
                 }
-                $r = new Result($this->db, $this->table, $this->primaryKeys);
+                $r = new Result($this->table, $this->primaryKeys);
                 $r->setColumns((array)$row);
                 $row = $r;
         }

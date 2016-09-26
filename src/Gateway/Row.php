@@ -13,7 +13,7 @@
  */
 namespace Pop\Db\Gateway;
 
-use Pop\Db\Sql;
+use Pop\Db\Db;
 
 /**
  * Row gateway class
@@ -51,16 +51,15 @@ class Row extends AbstractGateway implements \ArrayAccess
      *
      * Instantiate the row gateway object.
      *
-     * @param  Sql    $sql
      * @param  string $table
      * @param  mixed  $primaryKeys
      */
-    public function __construct(Sql $sql, $table, $primaryKeys = null)
+    public function __construct($table, $primaryKeys = null)
     {
         if (null !== $primaryKeys) {
             $this->setPrimaryKeys($primaryKeys);
         }
-        parent::__construct($sql, $table);
+        parent::__construct($table);
     }
 
     /**
@@ -116,7 +115,7 @@ class Row extends AbstractGateway implements \ArrayAccess
     public function doesPrimaryCountMatch()
     {
         if (count($this->primaryKeys) != count($this->primaryValues)) {
-            throw new Exception('Error: The number of primary key(s) and primary value(s) do not match.');
+            throw new Exception('Error: The number of primary keys and primary values do not match.');
         }
     }
 
@@ -162,38 +161,41 @@ class Row extends AbstractGateway implements \ArrayAccess
             throw new Exception('Error: The primary key(s) have not been set.');
         }
 
+        $db  = Db::getDb($this->table);
+        $sql = $db->createSql();
+
         $this->setPrimaryValues($values);
         $this->doesPrimaryCountMatch();
 
-        $this->sql->select([$this->table . '.*'])->from($this->table);
+        $sql->select([$this->table . '.*'])->from($this->table);
 
         $params = [];
 
         foreach ($this->primaryKeys as $i => $primaryKey) {
-            $placeholder = $this->sql->getPlaceholder();
+            $placeholder = $sql->getPlaceholder();
 
             if ($placeholder == ':') {
                 $placeholder .= $primaryKey;
             } else if ($placeholder == '$') {
                 $placeholder .= ($i + 1);
             }
-            $this->sql->select()->where->equalTo($primaryKey, $placeholder);
+            $sql->select()->where->equalTo($primaryKey, $placeholder);
             $params[$primaryKey] = $this->primaryValues[$i];
         }
 
         if (count($this->oneToOne) > 0) {
             foreach ($this->oneToOne as $table => $columns) {
-                $this->sql->select([$table . '.*'])->leftJoin($table, $columns);
+                $sql->select([$table . '.*'])->leftJoin($table, $columns);
             }
         }
 
-        $this->sql->select()->limit(1);
+        $sql->select()->limit(1);
 
-        $this->sql->db()->prepare((string)$this->sql)
+        $db->prepare((string)$sql)
              ->bindParams($params)
              ->execute();
 
-        $row = $this->sql->db()->fetch();
+        $row = $db->fetch();
 
         if (($row !== false) && is_array($row)) {
             $this->columns = $row;
@@ -209,12 +211,14 @@ class Row extends AbstractGateway implements \ArrayAccess
      */
     public function save()
     {
+        $db     = Db::getDb($this->table);
+        $sql    = $db->createSql();
         $values = [];
         $params = [];
 
         $i = 1;
         foreach ($this->columns as $column => $value) {
-            $placeholder = $this->sql->getPlaceholder();
+            $placeholder = $sql->getPlaceholder();
 
             if ($placeholder == ':') {
                 $placeholder .= $column;
@@ -226,14 +230,14 @@ class Row extends AbstractGateway implements \ArrayAccess
             $i++;
         }
 
-        $this->sql->insert($this->table)->values($values);
+        $sql->insert($this->table)->values($values);
 
-        $this->sql->db()->prepare((string)$this->sql)
-            ->bindParams($params)
-            ->execute();
+        $db->prepare((string)$sql)
+           ->bindParams($params)
+           ->execute();
 
         if ((count($this->primaryKeys) == 1) && !isset($this->columns[$this->primaryKeys[0]])) {
-            $this->columns[$this->primaryKeys[0]] = $this->sql->db()->getLastId();
+            $this->columns[$this->primaryKeys[0]] = $db->getLastId();
         }
 
         return $this;
@@ -247,13 +251,15 @@ class Row extends AbstractGateway implements \ArrayAccess
      */
     public function update()
     {
+        $db     = Db::getDb($this->table);
+        $sql    = $db->createSql();
         $values = [];
         $params = [];
 
         $i = 1;
         foreach ($this->columns as $column => $value) {
             if (!in_array($column, $this->primaryKeys)) {
-                $placeholder = $this->sql->getPlaceholder();
+                $placeholder = $sql->getPlaceholder();
 
                 if ($placeholder == ':') {
                     $placeholder .= $column;
@@ -266,17 +272,17 @@ class Row extends AbstractGateway implements \ArrayAccess
             }
         }
 
-        $this->sql->update($this->table)->values($values);
+        $sql->update($this->table)->values($values);
 
         foreach ($this->primaryKeys as $key => $primaryKey) {
-            $placeholder = $this->sql->getPlaceholder();
+            $placeholder = $sql->getPlaceholder();
 
             if ($placeholder == ':') {
                 $placeholder .= $primaryKey;
             } else if ($placeholder == '$') {
                 $placeholder .= $i;
             }
-            $this->sql->update()->where->equalTo($primaryKey, $placeholder);
+            $sql->update()->where->equalTo($primaryKey, $placeholder);
             if (isset($this->primaryValues[$key])) {
                 if (substr($placeholder, 0 , 1) == ':') {
                     $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
@@ -296,9 +302,9 @@ class Row extends AbstractGateway implements \ArrayAccess
             $i++;
         }
 
-        $this->sql->db()->prepare((string)$this->sql)
-            ->bindParams($params)
-            ->execute();
+        $db->prepare((string)$sql)
+           ->bindParams($params)
+           ->execute();
 
         return $this;
     }
@@ -315,26 +321,29 @@ class Row extends AbstractGateway implements \ArrayAccess
             throw new Exception('Error: The primary key(s) have not been set.');
         }
 
+        $db     = Db::getDb($this->table);
+        $sql    = $db->createSql();
+
         $this->doesPrimaryCountMatch();
 
-        $this->sql->delete($this->table);
+        $sql->delete($this->table);
 
         $params = [];
         foreach ($this->primaryKeys as $i => $primaryKey) {
-            $placeholder = $this->sql->getPlaceholder();
+            $placeholder = $sql->getPlaceholder();
 
             if ($placeholder == ':') {
                 $placeholder .= $primaryKey;
             } else if ($placeholder == '$') {
                 $placeholder .= ($i + 1);
             }
-            $this->sql->delete()->where->equalTo($primaryKey, $placeholder);
+            $sql->delete()->where->equalTo($primaryKey, $placeholder);
             $params[$primaryKey] = $this->primaryValues[$i];
         }
 
-        $this->sql->db()->prepare((string)$this->sql)
-             ->bindParams($params)
-             ->execute();
+        $db->prepare((string)$sql)
+           ->bindParams($params)
+           ->execute();
 
         $this->columns       = [];
         $this->primaryValues = [];

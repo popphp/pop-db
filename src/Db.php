@@ -33,6 +33,12 @@ class Db
     protected static $db = ['default' => null];
 
     /**
+     * Database connection class to table relationship
+     * @var array
+     */
+    protected static $classToTable = [];
+
+    /**
      * Method to connect to a database and return the database adapter object
      *
      * @param  string $adapter
@@ -261,6 +267,10 @@ class Db
 
         if (null !== $class) {
             self::$db[$class] = $db;
+            $record = new $class();
+            if ($record instanceof Record) {
+                self::$classToTable[$class] = $record->getFullTable();
+            }
         }
 
         if ($isDefault) {
@@ -293,7 +303,7 @@ class Db
         $dbAdapter = null;
 
         // Check for database adapter assigned to a full class name
-        if ((null !== $class) &&  isset(self::$db[$class])) {
+        if ((null !== $class) && isset(self::$db[$class])) {
             $dbAdapter = self::$db[$class];
         // Check for database adapter assigned to a namespace
         } else if (null !== $class) {
@@ -301,6 +311,14 @@ class Db
                 if (substr($class, 0, strlen($prefix)) == $prefix) {
                     $dbAdapter = $adapter;
                 }
+            }
+        }
+
+        // Check if class is actual table name
+        if ((null === $dbAdapter) && (null !== $class) && in_array($class, self::$classToTable)) {
+            $class = array_search($class, self::$classToTable);
+            if (isset(self::$db[$class])) {
+                $dbAdapter = self::$db[$class];
             }
         }
 
@@ -324,6 +342,16 @@ class Db
     public static function db($class = null)
     {
         return self::getDb($class);
+    }
+
+    /**
+     * Get all DB adapters
+     *
+     * @return array
+     */
+    public static function getAll()
+    {
+        return self::$db;
     }
 
 }

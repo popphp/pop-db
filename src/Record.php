@@ -110,7 +110,7 @@ class Record implements \ArrayAccess
             $this->setTableFromClassName($class);
         }
 
-        $this->result = new Result(Db::db($class), $this->getFullTable(), $this->primaryKeys, $columns);
+        $this->result = new Result($this->getFullTable(), $this->primaryKeys, $columns);
         $this->result->setOneToOne($this->oneToOne)
              ->setOneToMany($this->oneToMany);
     }
@@ -386,6 +386,9 @@ class Record implements \ArrayAccess
      */
     public function getResult()
     {
+        if (!$this->result->hasColumnNames()) {
+            $this->result->getTableInfo();
+        }
         return $this->result;
     }
 
