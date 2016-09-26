@@ -59,14 +59,8 @@ class Result implements \ArrayAccess
     protected $tableGateway = null;
 
     /**
-     * Column names of the table
-     * @var array
-     */
-    protected $columnNames = [];
-
-    /**
      * Columns of the first result row
-     * @var string
+     * @var array
      */
     protected $columns = [];
 
@@ -138,30 +132,6 @@ class Result implements \ArrayAccess
     }
 
     /**
-     * Determine if the column names have been fetched
-     *
-     * @return boolean
-     */
-    public function hasColumnNames()
-    {
-        return (count($this->columnNames) > 0);
-    }
-
-    /**
-     * Get the column names
-     *
-     * @return array
-     */
-    public function getColumnNames()
-    {
-        if (count($this->columnNames) == 0) {
-            $tableInfo         = $this->tableGateway->getTableInfo();
-            $this->columnNames = array_keys($tableInfo['columns']);
-        }
-        return $this->columnNames;
-    }
-
-    /**
      * Method to get the total count of a set from the DB table
      *
      * @param  array  $columns
@@ -193,25 +163,18 @@ class Result implements \ArrayAccess
      */
     public function getTableInfo()
     {
-        $tableInfo = $this->tableGateway->getTableInfo();
-        if (count($this->columnNames) == 0) {
-            $this->columnNames = array_keys($tableInfo['columns']);
-        }
-
-        return $tableInfo;
+        return $this->tableGateway->getTableInfo();
     }
 
     /**
      * Find record by ID method
      *
      * @param  mixed  $id
-     * @param  string $resultsAs
      * @return Result
      */
-    public function findById($id, $resultsAs = Result::AS_OBJECT)
+    public function findById($id)
     {
-        $row = $this->rowGateway->find($id);
-        $this->setColumns($row);
+        $this->setColumns($this->rowGateway->find($id));
         return $this;
     }
 

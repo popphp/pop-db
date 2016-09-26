@@ -183,12 +183,6 @@ class Row extends AbstractGateway implements \ArrayAccess
             $params[$primaryKey] = $this->primaryValues[$i];
         }
 
-        if (count($this->oneToOne) > 0) {
-            foreach ($this->oneToOne as $table => $columns) {
-                $sql->select([$table . '.*'])->leftJoin($table, $columns);
-            }
-        }
-
         $sql->select()->limit(1);
 
         $db->prepare((string)$sql)

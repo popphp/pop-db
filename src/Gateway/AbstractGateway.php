@@ -36,17 +36,6 @@ abstract class AbstractGateway implements GatewayInterface
     protected $table = null;
 
     /**
-     * 1:1 relationships
-     * @var array
-     */
-    protected $oneToOne = [];
-    /**
-     * 1:Many relationships
-     * @var array
-     */
-    protected $oneToMany = [];
-
-    /**
      * Constructor
      *
      * Instantiate the AbstractGateway object.
@@ -56,50 +45,6 @@ abstract class AbstractGateway implements GatewayInterface
     public function __construct($table)
     {
         $this->table = $table;
-    }
-
-    /**
-     * Set 1:1 relationships
-     *
-     * @param  array $oneToOne
-     * @return AbstractGateway
-     */
-    public function setOneToOne(array $oneToOne)
-    {
-        $this->oneToOne = $oneToOne;
-        return $this;
-    }
-
-    /**
-     * Set 1:many relationships
-     *
-     * @param  array $oneToMany
-     * @return AbstractGateway
-     */
-    public function setOneToMany(array $oneToMany)
-    {
-        $this->oneToMany = $oneToMany;
-        return $this;
-    }
-
-    /**
-     * Determine if the table has 1:1 relationships
-     *
-     * @return boolean
-     */
-    public function hasOneToOne()
-    {
-        return (count($this->oneToOne) > 0);
-    }
-
-    /**
-     * Determine if the table has 1:many relationships
-     *
-     * @return boolean
-     */
-    public function hasOneToMany()
-    {
-        return (count($this->oneToMany) > 0);
     }
 
     /**

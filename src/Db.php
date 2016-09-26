@@ -243,6 +243,13 @@ class Db
             }
         }
 
+        if ((!$result) && (null !== $class) && in_array($class, self::$classToTable)) {
+            $class = array_search($class, self::$classToTable);
+            if (isset(self::$db[$class])) {
+                $result = true;
+            }
+        }
+
         if ((!$result) && isset(self::$db['default'])) {
             $result = true;
         }

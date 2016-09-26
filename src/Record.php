@@ -53,18 +53,6 @@ class Record implements \ArrayAccess
     protected $result = null;
 
     /**
-     * Record 1:1 relationships
-     * @var array
-     */
-    protected $oneToOne = [];
-
-    /**
-     * Record 1:many relationships
-     * @var array
-     */
-    protected $oneToMany = [];
-
-    /**
      * Constructor
      *
      * Instantiate the database record object
@@ -111,8 +99,6 @@ class Record implements \ArrayAccess
         }
 
         $this->result = new Result($this->getFullTable(), $this->primaryKeys, $columns);
-        $this->result->setOneToOne($this->oneToOne)
-             ->setOneToMany($this->oneToMany);
     }
 
     /**
@@ -178,12 +164,11 @@ class Record implements \ArrayAccess
      * Find by ID static method
      *
      * @param  mixed  $id
-     * @param  string $resultsAs
      * @return mixed
      */
-    public static function findById($id, $resultsAs = Result::AS_OBJECT)
+    public static function findById($id)
     {
-        return (new static())->getResult()->findById($id, $resultsAs);
+        return (new static())->getResult()->findById($id);
     }
 
     /**
@@ -386,9 +371,6 @@ class Record implements \ArrayAccess
      */
     public function getResult()
     {
-        if (!$this->result->hasColumnNames()) {
-            $this->result->getTableInfo();
-        }
         return $this->result;
     }
 
