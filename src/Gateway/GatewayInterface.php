@@ -59,6 +59,20 @@ interface GatewayInterface
     public function setOneToMany(array $oneToMany);
 
     /**
+     * Determine if the table has 1:1 relationships
+     *
+     * @return boolean
+     */
+    public function hasOneToOne();
+
+    /**
+     * Determine if the table has 1:many relationships
+     *
+     * @return boolean
+     */
+    public function hasOneToMany();
+
+    /**
      * Get the table name
      *
      * @return string
