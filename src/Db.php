@@ -78,7 +78,7 @@ class Db
             if (!class_exists($class)) {
                 $result = 'Error: The database adapter ' . $class . ' does not exist.';
             } else {
-                $db     = new $class($options);
+                $db = new $class($options);
             }
         } catch (\Exception $e) {
             $result = $e->getMessage();
@@ -323,7 +323,7 @@ class Db
         }
 
         if ((null === $dbAdapter) && isset(self::$db['default'])) {
-            $dbAdapter =  self::$db['default'];
+            $dbAdapter = self::$db['default'];
         }
 
         if (null === $dbAdapter) {
