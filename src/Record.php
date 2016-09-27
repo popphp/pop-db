@@ -23,7 +23,7 @@ namespace Pop\Db;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Record extends Record\AbstractRecord implements \ArrayAccess
+class Record extends Record\AbstractRecord
 {
 
     /**
@@ -277,12 +277,27 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
      * Static method to get the total count of a set from the DB table
      *
      * @param  array  $columns
-     * @param  string $rowsAs
      * @return int
      */
-    public static function getTotal(array $columns = null, $rowsAs = Record::AS_OBJECT)
+    public static function getTotal(array $columns = null)
     {
-        return (new static())->getTotalCount($columns, $rowsAs);
+        $record = new static();
+
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $db  = Db::getDb($record->getFullTable());
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
+            $params        = $parsedColumns['params'];
+            $where         = $parsedColumns['where'];
+        }
+
+        $rows = $record->getTableGateway()->select(['total_count' => 'COUNT(1)'], $where, $params);
+
+        return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
 
     /**
@@ -293,31 +308,6 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
     public static function getTableInfo()
     {
         return (new static())->getTableGateway()->getTableInfo();
-    }
-
-    /**
-     * Method to get the total count of a set from the DB table
-     *
-     * @param  array  $columns
-     * @return int
-     */
-    public function getTotalCount(array $columns = null)
-    {
-        $params = null;
-        $where  = null;
-
-        if (null !== $columns) {
-            $db  = Db::getDb($this->getFullTable());
-            $sql = $db->createSql();
-
-            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
-            $params        = $parsedColumns['params'];
-            $where         = $parsedColumns['where'];
-        }
-
-        $rows = $this->tableGateway->select(['total_count' => 'COUNT(1)'], $where, $params);
-
-        return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
 
     /**
@@ -336,7 +326,7 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             } else {
                 $this->rowGateway->update();
             }
-            // Else, save multiple rows
+        // Else, save multiple rows
         } else {
             $this->tableGateway->insert($columns);
 
@@ -368,26 +358,9 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $this->tableGateway->delete($parsedColumns['where'], $parsedColumns['params']);
         }
+
         $this->setRows();
         $this->setColumns();
-    }
-
-    /**
-     * Set the table from a class name
-     *
-     * @param  string $class
-     * @return mixed
-     */
-    public function setTableFromClassName($class)
-    {
-        if (strpos($class, '_') !== false) {
-            $cls = substr($class, (strrpos($class, '_') + 1));
-        } else if (strpos($class, '\\') !== false) {
-            $cls = substr($class, (strrpos($class, '\\') + 1));
-        } else {
-            $cls = $class;
-        }
-        return $this->setTable(Parser\Table::parse($cls));
     }
 
     /**
@@ -409,17 +382,19 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             $foreignKey = strtolower($class) . '_id';
         }
         $this->oneToOne[$class] = $foreignKey;
+
         return $this->getOne($class);
     }
 
     /**
      * Add a 1:many relationship
      *
-     * @param  string $class
-     * @param  mixed  $foreignKey
+     * @param  string  $class
+     * @param  mixed   $foreignKey
+     * @param  boolean $eager
      * @return mixed
      */
-    public function hasMany($class, $foreignKey = null)
+    public function hasMany($class, $foreignKey = null, $eager = false)
     {
         if (null === $foreignKey) {
             $class = get_class($this);
@@ -431,7 +406,12 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             $foreignKey = strtolower($class) . '_id';
         }
         $this->oneToMany[$class] = $foreignKey;
-        return $this->getMany($class);
+
+        if ($eager) {
+            $this->getManyEager($class);
+        } else {
+            return $this->getMany($class);
+        }
     }
 
     /**
@@ -453,7 +433,22 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             $foreignKey = strtolower($class) . '_id';
         }
         $this->belongsTo[$class] = $foreignKey;
+
         return $this->getBelong($class);
+    }
+
+    /**
+     * With a 1:many relationship (eager-loading)
+     *
+     * @param  string $name
+     * @return Record
+     */
+    public function with($name)
+    {
+        if (method_exists($this, $name)) {
+            $this->{$name}(true);
+        }
+        return $this;
     }
 
     /**
@@ -487,14 +482,18 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
     /**
      * Get a 1:many relationship
      *
-     * @param  string $class
+     * @param  string  $class
      * @return mixed
      */
     public function getMany($class)
     {
         $result = null;
+        $id     = (count($this->primaryKeys) == 1) ? $this->rowGateway[$this->primaryKeys[0]] : null;
 
-        if (!isset($this->hasMany[$class])) {
+        if ((null !== $id) && isset($this->relationships[$id])) {
+            $this->hasMany[$class] = new Record\Collection($this->relationships[$id]);
+            $result = $this->hasMany[$class];
+        } else if (!isset($this->hasMany[$class])) {
             $foreignKeys = (!is_array($this->oneToMany[$class])) ? [$this->oneToMany[$class]] : $this->oneToMany[$class];
 
             if (count($foreignKeys) == count($this->primaryKeys)) {
@@ -510,6 +509,61 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
         }
 
         return $result;
+    }
+
+    /**
+     * Get a 1:many eager relationship
+     *
+     * @param  string $class
+     * @return void
+     */
+    public function getManyEager($class)
+    {
+        $record = new $class();
+        $db     = Db::getDb($record->getFullTable());
+        $sql    = $db->createSql();
+        $rows   = $this->tableGateway->rows();
+        $ids    = [];
+        $values = [];
+
+        foreach ($rows as $row) {
+            foreach ($this->primaryKeys as $key) {
+                $ids[]    = $row[$key];
+                $values[] = $sql->getPlaceholder();
+            }
+        }
+
+        $sql->select()->from($record->getFullTable());
+        $foreignKeys = (!is_array($this->oneToMany[$class])) ? [$this->oneToMany[$class]] : $this->oneToMany[$class];
+        if (count($foreignKeys) == count($this->primaryKeys)) {
+            foreach ($foreignKeys as $i => $key) {
+                $sql->select()->where->in($key, $values);
+            }
+        }
+
+        $db->prepare($sql)
+            ->bindParams($ids)
+            ->execute();
+
+        $rows       = $db->fetchAll();
+        $parentRows = $this->tableGateway->getRows();
+
+        if ((count($this->primaryKeys) == 1) && (count($foreignKeys) == 1)) {
+            $foreignKey = $foreignKeys[0];
+            $primaryKey = $this->primaryKeys[0];
+
+            foreach ($parentRows as $parent) {
+                foreach ($rows as $row) {
+                    if ($row[$foreignKey] == $parent[$primaryKey]) {
+                        $r = new $class();
+                        $r->setColumns($row);
+                        $parent->addRelationship($parent[$this->primaryKeys[$i]], $r);
+                    } else {
+                        $parent->addRelationship($parent[$this->primaryKeys[$i]]);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -603,9 +657,6 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             case self::AS_OBJECT:
                 $row = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
                 break;
-            case self::AS_COLLECTION:
-                $row = new Record\Collection($row);
-                break;
             default:
                 $r = new static();
                 $r->setColumns((array)$row);
@@ -613,106 +664,6 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
         }
 
         return $row;
-    }
-
-    /**
-     * Magic method to set the property to the value of $this->rowGateway[$name]
-     *
-     * @param  string $name
-     * @param  mixed $value
-     * @return void
-     */
-    public function __set($name, $value)
-    {
-        $this->rowGateway[$name] = $value;
-    }
-
-    /**
-     * Magic method to return the value of $this->rowGateway[$name]
-     *
-     * @param  string $name
-     * @return mixed
-     */
-    public function __get($name)
-    {
-        $result = null;
-
-        if (isset($this->rowGateway[$name])) {
-            $result = $this->rowGateway[$name];
-        } else if (method_exists($this, $name)) {
-            $result = $this->{$name}();
-        }
-
-        return $result;
-    }
-
-    /**
-     * Magic method to return the isset value of $this->rowGateway[$name]
-     *
-     * @param  string $name
-     * @return boolean
-     */
-    public function __isset($name)
-    {
-        return isset($this->rowGateway[$name]);
-    }
-
-    /**
-     * Magic method to unset $this->rowGateway[$name]
-     *
-     * @param  string $name
-     * @return void
-     */
-    public function __unset($name)
-    {
-        if (isset($this->rowGateway[$name])) {
-            unset($this->rowGateway[$name]);
-        }
-    }
-
-    /**
-     * ArrayAccess offsetExists
-     *
-     * @param  mixed $offset
-     * @return boolean
-     */
-    public function offsetExists($offset)
-    {
-        return $this->__isset($offset);
-    }
-
-    /**
-     * ArrayAccess offsetGet
-     *
-     * @param  mixed $offset
-     * @return mixed
-     */
-    public function offsetGet($offset)
-    {
-        return $this->__get($offset);
-    }
-
-    /**
-     * ArrayAccess offsetSet
-     *
-     * @param  mixed $offset
-     * @param  mixed $value
-     * @return void
-     */
-    public function offsetSet($offset, $value)
-    {
-        $this->__set($offset, $value);
-    }
-
-    /**
-     * ArrayAccess offsetUnset
-     *
-     * @param  mixed $offset
-     * @return void
-     */
-    public function offsetUnset($offset)
-    {
-        $this->__unset($offset);
     }
 
 }

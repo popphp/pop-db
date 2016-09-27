@@ -14,6 +14,7 @@
 namespace Pop\Db\Record;
 
 use Pop\Db\Gateway;
+use Pop\Db\Parser;
 
 /**
  * Abstract record class
@@ -25,7 +26,7 @@ use Pop\Db\Gateway;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-abstract class AbstractRecord
+abstract class AbstractRecord implements \ArrayAccess
 {
 
     /**
@@ -34,7 +35,6 @@ abstract class AbstractRecord
      */
     const AS_ARRAY      = 'AS_ARRAY';
     const AS_OBJECT     = 'AS_OBJECT';
-    const AS_COLLECTION = 'AS_COLLECTION';
     const AS_RECORD     = 'AS_RECORD';
 
     /**
@@ -110,6 +110,12 @@ abstract class AbstractRecord
     protected $doesBelong = [];
 
     /**
+     * Eager relationships
+     * @var array
+     */
+    protected $relationships = [];
+
+    /**
      * Set the table
      *
      * @param  string $table
@@ -119,6 +125,24 @@ abstract class AbstractRecord
     {
         $this->table = $table;
         return $this;
+    }
+
+    /**
+     * Set the table from a class name
+     *
+     * @param  string $class
+     * @return mixed
+     */
+    public function setTableFromClassName($class)
+    {
+        if (strpos($class, '_') !== false) {
+            $cls = substr($class, (strrpos($class, '_') + 1));
+        } else if (strpos($class, '\\') !== false) {
+            $cls = substr($class, (strrpos($class, '\\') + 1));
+        } else {
+            $cls = $class;
+        }
+        return $this->setTable(Parser\Table::parse($cls));
     }
 
     /**
@@ -143,6 +167,46 @@ abstract class AbstractRecord
     {
         $this->primaryKeys = $keys;
         return $this;
+    }
+
+    /**
+     * Add eager relationship
+     *
+     * @param  int            $id
+     * @param  AbstractRecord $row
+     * @return AbstractRecord
+     */
+    public function addRelationship($id, $row = null)
+    {
+        if (!isset($this->relationships[$id])) {
+            $this->relationships[$id] = [];
+        }
+        if (null !== $row) {
+            $this->relationships[$id][] = $row;
+        }
+        return $this;
+    }
+
+    /**
+     * Has eager relationships
+     *
+     * @param  int $id
+     * @return boolean
+     */
+    public function hasRelationships($id)
+    {
+        return (isset($this->relationships[$id]) && (count($this->relationships[$id]) > 0));
+    }
+
+    /**
+     * Get eager relationships
+     *
+     * @param  int $id
+     * @return array
+     */
+    public function getRelationships($id)
+    {
+        return (isset($this->relationships[$id])) ? $this->relationships[$id] : null;
     }
 
     /**
@@ -273,6 +337,106 @@ abstract class AbstractRecord
     public function hasRows()
     {
         return ($this->tableGateway->getNumberOfRows() > 0);
+    }
+
+    /**
+     * Magic method to set the property to the value of $this->rowGateway[$name]
+     *
+     * @param  string $name
+     * @param  mixed $value
+     * @return void
+     */
+    public function __set($name, $value)
+    {
+        $this->rowGateway[$name] = $value;
+    }
+
+    /**
+     * Magic method to return the value of $this->rowGateway[$name]
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        $result = null;
+
+        if (isset($this->rowGateway[$name])) {
+            $result = $this->rowGateway[$name];
+        } else if (method_exists($this, $name)) {
+            $result = $this->{$name}();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Magic method to return the isset value of $this->rowGateway[$name]
+     *
+     * @param  string $name
+     * @return boolean
+     */
+    public function __isset($name)
+    {
+        return isset($this->rowGateway[$name]);
+    }
+
+    /**
+     * Magic method to unset $this->rowGateway[$name]
+     *
+     * @param  string $name
+     * @return void
+     */
+    public function __unset($name)
+    {
+        if (isset($this->rowGateway[$name])) {
+            unset($this->rowGateway[$name]);
+        }
+    }
+
+    /**
+     * ArrayAccess offsetExists
+     *
+     * @param  mixed $offset
+     * @return boolean
+     */
+    public function offsetExists($offset)
+    {
+        return $this->__isset($offset);
+    }
+
+    /**
+     * ArrayAccess offsetGet
+     *
+     * @param  mixed $offset
+     * @return mixed
+     */
+    public function offsetGet($offset)
+    {
+        return $this->__get($offset);
+    }
+
+    /**
+     * ArrayAccess offsetSet
+     *
+     * @param  mixed $offset
+     * @param  mixed $value
+     * @return void
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->__set($offset, $value);
+    }
+
+    /**
+     * ArrayAccess offsetUnset
+     *
+     * @param  mixed $offset
+     * @return void
+     */
+    public function offsetUnset($offset)
+    {
+        $this->__unset($offset);
     }
 
 }
