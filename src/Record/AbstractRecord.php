@@ -33,9 +33,9 @@ abstract class AbstractRecord implements \ArrayAccess
      * Constants to set individual row data type
      * @var string
      */
-    const AS_ARRAY      = 'AS_ARRAY';
-    const AS_OBJECT     = 'AS_OBJECT';
-    const AS_RECORD     = 'AS_RECORD';
+    const AS_ARRAY  = 'AS_ARRAY';
+    const AS_OBJECT = 'AS_OBJECT';
+    const AS_RECORD = 'AS_RECORD';
 
     /**
      * Table name
@@ -287,16 +287,6 @@ abstract class AbstractRecord implements \ArrayAccess
     public function toArrayObject()
     {
         return new \ArrayObject($this->rowGateway->getColumns(), \ArrayObject::ARRAY_AS_PROPS);
-    }
-
-    /**
-     * Get column values as collection
-     *
-     * @return Collection
-     */
-    public function toCollection()
-    {
-        return new Collection($this->rowGateway->getColumns());
     }
 
     /**
