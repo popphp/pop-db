@@ -98,6 +98,18 @@ abstract class AbstractRecord
     protected $hasMany = [];
 
     /**
+     * 1:1 belongs to associations
+     * @var array
+     */
+    protected $belongsTo = [];
+
+    /**
+     * 1:1 belongs to association object
+     * @var array
+     */
+    protected $doesBelong = [];
+
+    /**
      * Set the table
      *
      * @param  string $table

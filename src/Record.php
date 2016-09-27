@@ -435,6 +435,28 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
     }
 
     /**
+     * Add a 1:1 belongs to relationship
+     *
+     * @param  string $class
+     * @param  mixed  $foreignKey
+     * @return mixed
+     */
+    public function belongsTo($class, $foreignKey = null)
+    {
+        if (null === $foreignKey) {
+            $class = get_class($this);
+            if (strpos($class, '\\') !== false) {
+                $class = substr($class, (strrpos($class, '\\') + 1));
+            } else if (strpos($class, '_') !== false) {
+                $class = substr($class, (strrpos($class, '_') + 1));
+            }
+            $foreignKey = strtolower($class) . '_id';
+        }
+        $this->belongsTo[$class] = $foreignKey;
+        return $this->getBelong($class);
+    }
+
+    /**
      * Get a 1:1 relationship
      *
      * @param  string $class
@@ -485,6 +507,36 @@ class Record extends Record\AbstractRecord implements \ArrayAccess
             }
         } else {
             $result = $this->hasMany[$class];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get a 1:1 belongs to relationship
+     *
+     * @param  string $class
+     * @return mixed
+     */
+    public function getBelong($class)
+    {
+        $result = null;
+
+        if (!isset($this->doesBelong[$class])) {
+            $foreignKeys = (!is_array($this->belongsTo[$class])) ? [$this->belongsTo[$class]] : $this->belongsTo[$class];
+
+            $id = [];
+            foreach ($foreignKeys as $i => $key) {
+                if (isset($this->rowGateway[$key])) {
+                    $id[] = $this->rowGateway[$key];
+                }
+            }
+            if (count($id) > 0) {
+                $this->doesBelong[$class] = $class::findById($id);
+                $result = $this->doesBelong[$class];
+            }
+        } else {
+            $result = $this->doesBelong[$class];
         }
 
         return $result;
