@@ -13,8 +13,6 @@
  */
 namespace Pop\Db;
 
-use Pop\Db\Record\Result;
-
 /**
  * Record class
  *
@@ -25,50 +23,8 @@ use Pop\Db\Record\Result;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Record implements \ArrayAccess
+class Record extends Record\AbstractRecord implements \ArrayAccess
 {
-
-    /**
-     * Table name
-     * @var string
-     */
-    protected $table = null;
-
-    /**
-     * Table prefix
-     * @var string
-     */
-    protected $prefix = null;
-
-    /**
-     * Primary keys
-     * @var array
-     */
-    protected $primaryKeys = ['id'];
-
-    /**
-     * Foreign keys
-     * @var array
-     */
-    protected $foreignKeys = [];
-
-    /**
-     * Record result object
-     * @var Record\Result
-     */
-    protected $result = null;
-
-    /**
-     * 1:1 associations
-     * @var array
-     */
-    protected $oneToOne = [];
-
-    /**
-     * 1:Many associations
-     * @var array
-     */
-    protected $oneToMany = [];
 
     /**
      * Constructor
@@ -116,10 +72,13 @@ class Record implements \ArrayAccess
             $this->setTableFromClassName($class);
         }
 
-        $this->result = new Result($this->getFullTable(), $this->primaryKeys, $columns);
-        $this->result->setForeignKeys($this->foreignKeys)
-             ->setOneToOne($this->oneToOne)
-             ->setOneToMany($this->oneToMany);
+        $this->tableGateway = new Gateway\Table($this->getFullTable());
+        $this->rowGateway   = new Gateway\Row($this->getFullTable(), $this->primaryKeys);
+        if (null !== $columns) {
+            $this->isNew = true;
+            $this->setColumns($columns);
+            $this->setRows([$columns]);
+        }
     }
 
     /**
@@ -185,11 +144,16 @@ class Record implements \ArrayAccess
      * Find by ID static method
      *
      * @param  mixed  $id
-     * @return mixed
+     * @return Record
      */
     public static function findById($id)
     {
-        return (new static())->getResult()->findById($id);
+        $record = new static();
+        $row    = $record->getRowGateway()->find($id);
+        $record->setColumns($row);
+        $record->setRows([$row]);
+
+        return $record;
     }
 
     /**
@@ -197,24 +161,43 @@ class Record implements \ArrayAccess
      *
      * @param  array  $columns
      * @param  array  $options
-     * @param  string $resultsAs
-     * @return mixed
+     * @param  string $rowsAs
+     * @return Record
      */
-    public static function findBy(array $columns = null, array $options = null, $resultsAs = Result::AS_OBJECT)
+    public static function findBy(array $columns = null, array $options = null, $rowsAs = Record::AS_OBJECT)
     {
-        return (new static())->getResult()->findBy($columns, $options, $resultsAs);
+        $record = new static();
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $db  = Db::getDb($record->getFullTable());
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
+            $params        = $parsedColumns['params'];
+            $where         = $parsedColumns['where'];
+        }
+
+        $rows = $record->getTableGateway()->select(null, $where, $params, $options);
+        $record->setRows($rows, $rowsAs);
+        if (isset($rows[0])) {
+            $record->setColumns($rows[0]);
+        }
+
+        return $record;
     }
 
     /**
      * Find all static method
      *
      * @param  array  $options
-     * @param  string $resultsAs
-     * @return mixed
+     * @param  string $rowsAs
+     * @return Record
      */
-    public static function findAll(array $options = null, $resultsAs = Result::AS_OBJECT)
+    public static function findAll(array $options = null, $rowsAs = Record::AS_OBJECT)
     {
-        return (new static())->getResult()->findBy(null, $options, $resultsAs);
+        return static::findBy(null, $options, $rowsAs);
     }
 
     /**
@@ -222,36 +205,84 @@ class Record implements \ArrayAccess
      *
      * @param  mixed  $sql
      * @param  mixed  $params
-     * @param  string $resultsAs
+     * @param  string $rowsAs
      * @return mixed
      */
-    public static function execute($sql, $params, $resultsAs = Result::AS_OBJECT)
+    public static function execute($sql, $params, $rowsAs = Record::AS_OBJECT)
     {
-        return (new static())->getResult()->execute($sql, $params, $resultsAs);
+        $record = new static();
+
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+
+        if (!is_array($params)) {
+            $params = [$params];
+        }
+
+        $db = Db::getDb($record->getFullTable());
+
+        $db->prepare($sql)
+           ->bindParams($params)
+           ->execute();
+
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = $db->fetchAll();
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $row;
+            }
+            $record->setRows($rows, $rowsAs);
+            if (isset($rows[0])){
+                $record->setColumns($rows[0]);
+            }
+        }
+
+        return $record;
     }
 
     /**
      * Static method to execute a custom SQL query.
      *
      * @param  mixed  $sql
-     * @param  string $resultsAs
-     * @return mixed
+     * @param  string $rowsAs
+     * @return Record
      */
-    public static function query($sql, $resultsAs = Result::AS_OBJECT)
+    public static function query($sql, $rowsAs = Record::AS_OBJECT)
     {
-        return (new static())->getResult()->query($sql, $resultsAs);
+        $record = new static();
+
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+
+        $db = Db::getDb($record->getFullTable());
+
+        $db->query($sql);
+
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = [];
+            while (($row = $db->fetch())) {
+                $rows[] = $row;
+            }
+            $record->setRows($rows, $rowsAs);
+            if (isset($rows[0])){
+                $record->setColumns($rows[0]);
+            }
+        }
+
+        return $record;
     }
 
     /**
      * Static method to get the total count of a set from the DB table
      *
      * @param  array  $columns
-     * @param  string $resultsAs
+     * @param  string $rowsAs
      * @return int
      */
-    public static function getTotal(array $columns = null, $resultsAs = Result::AS_OBJECT)
+    public static function getTotal(array $columns = null, $rowsAs = Record::AS_OBJECT)
     {
-        return (new static())->getResult()->getTotal($columns, $resultsAs);
+        return (new static())->getTotalCount($columns, $rowsAs);
     }
 
     /**
@@ -261,20 +292,60 @@ class Record implements \ArrayAccess
      */
     public static function getTableInfo()
     {
-        return (new static())->getResult()->getTableInfo();
+        return (new static())->getTableGateway()->getTableInfo();
+    }
+
+    /**
+     * Method to get the total count of a set from the DB table
+     *
+     * @param  array  $columns
+     * @return int
+     */
+    public function getTotalCount(array $columns = null)
+    {
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $db  = Db::getDb($this->getFullTable());
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
+            $params        = $parsedColumns['params'];
+            $where         = $parsedColumns['where'];
+        }
+
+        $rows = $this->tableGateway->select(['total_count' => 'COUNT(1)'], $where, $params);
+
+        return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
 
     /**
      * Save the record
      *
      * @param  array  $columns
-     * @param  string $resultsAs
+     * @param  string $rowsAs
      * @return void
      */
-    public function save(array $columns = null, $resultsAs = Result::AS_OBJECT)
+    public function save(array $columns = null, $rowsAs = Record::AS_OBJECT)
     {
-        if (null !== $this->result) {
-            $this->result->save($columns, $resultsAs);
+        // Save or update the record
+        if (null === $columns) {
+            if ($this->isNew) {
+                $this->rowGateway->save();
+            } else {
+                $this->rowGateway->update();
+            }
+            // Else, save multiple rows
+        } else {
+            $this->tableGateway->insert($columns);
+
+            $rows = $this->tableGateway->getRows();
+
+            $this->setRows($rows, $rowsAs);
+            if (isset($rows[0])) {
+                $this->setColumns($rows[0]);
+            }
         }
     }
 
@@ -286,28 +357,26 @@ class Record implements \ArrayAccess
      */
     public function delete(array $columns = null)
     {
-        if (null !== $this->result) {
-            $this->result->delete($columns);
-        }
-    }
+        // Delete the record
+        if (null === $columns) {
+            $this->rowGateway->delete();
+        // Delete multiple rows
+        } else {
+            $db  = Db::getDb($this->getFullTable());
+            $sql = $db->createSql();
 
-    /**
-     * Set the table
-     *
-     * @param  string $table
-     * @return Record
-     */
-    public function setTable($table)
-    {
-        $this->table = $table;
-        return $this;
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
+            $this->tableGateway->delete($parsedColumns['where'], $parsedColumns['params']);
+        }
+        $this->setRows();
+        $this->setColumns();
     }
 
     /**
      * Set the table from a class name
      *
      * @param  string $class
-     * @return Record
+     * @return mixed
      */
     public function setTableFromClassName($class)
     {
@@ -322,91 +391,180 @@ class Record implements \ArrayAccess
     }
 
     /**
-     * Set the table prefix
+     * Add a 1:1 relationship
      *
-     * @param  string $prefix
+     * @param  string $class
+     * @param  mixed  $foreignKey
+     * @return mixed
+     */
+    public function hasOne($class, $foreignKey = null)
+    {
+        if (null === $foreignKey) {
+            $class = get_class($this);
+            if (strpos($class, '\\') !== false) {
+                $class = substr($class, (strrpos($class, '\\') + 1));
+            } else if (strpos($class, '_') !== false) {
+                $class = substr($class, (strrpos($class, '_') + 1));
+            }
+            $foreignKey = strtolower($class) . '_id';
+        }
+        $this->oneToOne[$class] = $foreignKey;
+        return $this->getOne($class);
+    }
+
+    /**
+     * Add a 1:many relationship
+     *
+     * @param  string $class
+     * @param  mixed  $foreignKey
+     * @return mixed
+     */
+    public function hasMany($class, $foreignKey = null)
+    {
+        if (null === $foreignKey) {
+            $class = get_class($this);
+            if (strpos($class, '\\') !== false) {
+                $class = substr($class, (strrpos($class, '\\') + 1));
+            } else if (strpos($class, '_') !== false) {
+                $class = substr($class, (strrpos($class, '_') + 1));
+            }
+            $foreignKey = strtolower($class) . '_id';
+        }
+        $this->oneToMany[$class] = $foreignKey;
+        return $this->getMany($class);
+    }
+
+    /**
+     * Get a 1:1 relationship
+     *
+     * @param  string $class
+     * @return mixed
+     */
+    public function getOne($class)
+    {
+        $result = null;
+
+        if (!isset($this->hasOne[$class])) {
+            $foreignKeys = (!is_array($this->oneToOne[$class])) ? [$this->oneToOne[$class]] : $this->oneToOne[$class];
+
+            if (count($foreignKeys) == count($this->primaryKeys)) {
+                $columns = [];
+                foreach ($foreignKeys as $i => $key) {
+                    $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
+                }
+                $this->hasOne[$class] = $class::findBy($columns, ['limit' => 1], Record::AS_RECORD);
+                $result = $this->hasOne[$class];
+            }
+        } else {
+            $result = $this->hasOne[$class];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get a 1:many relationship
+     *
+     * @param  string $class
+     * @return mixed
+     */
+    public function getMany($class)
+    {
+        $result = null;
+
+        if (!isset($this->hasMany[$class])) {
+            $foreignKeys = (!is_array($this->oneToMany[$class])) ? [$this->oneToMany[$class]] : $this->oneToMany[$class];
+
+            if (count($foreignKeys) == count($this->primaryKeys)) {
+                $columns = [];
+                foreach ($foreignKeys as $i => $key) {
+                    $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
+                }
+                $this->hasMany[$class] = new Record\Collection($class::findBy($columns, null, Record::AS_RECORD)->rows());
+                $result = $this->hasMany[$class];
+            }
+        } else {
+            $result = $this->hasMany[$class];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Set all the table column values at once
+     *
+     * @param  mixed  $columns
+     * @throws Exception
      * @return Record
      */
-    public function setPrefix($prefix)
+    public function setColumns($columns = null)
     {
-        $this->prefix = $prefix;
+        if (null !== $columns) {
+            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
+                $this->rowGateway->setColumns((array)$columns);
+            } else if ($columns instanceof Record) {
+                $this->rowGateway->setColumns($columns->toArray());
+            } else {
+                throw new Exception('The parameter passed must be either an array, an array object or null.');
+            }
+        }
+
         return $this;
     }
 
     /**
-     * Set the primary keys
+     * Set all the table rows at once
      *
-     * @param  array $keys
+     * @param  array  $rows
+     * @param  string $rowsAs
      * @return Record
      */
-    public function setPrimaryKeys(array $keys)
+    public function setRows(array $rows = null, $rowsAs = Record::AS_RECORD)
     {
-        $this->primaryKeys = $keys;
+        $this->rowGateway->setColumns();
+        $this->tableGateway->setRows() ;
+
+        if (null !== $rows) {
+            $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $this->processRow($row, $rowsAs);
+            }
+            $this->tableGateway->setRows($rows);
+        }
+
         return $this;
     }
 
     /**
-     * Get the table
+     * Process a table row
      *
-     * @return string
+     * @param  array  $row
+     * @param  string $rowsAs
+     * @return mixed
      */
-    public function getTable()
+    public function processRow(array $row, $rowsAs = Record::AS_RECORD)
     {
-        return $this->table;
+        switch ($rowsAs) {
+            case self::AS_ARRAY:
+                $row = (array)$row;
+                break;
+            case self::AS_OBJECT:
+                $row = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
+                break;
+            case self::AS_COLLECTION:
+                $row = new Record\Collection($row);
+                break;
+            default:
+                $r = new static();
+                $r->setColumns((array)$row);
+                $row = $r;
+        }
+
+        return $row;
     }
 
     /**
-     * Get the full table name (prefix + table)
-     *
-     * @return string
-     */
-    public function getFullTable()
-    {
-        return $this->prefix . $this->table;
-    }
-
-    /**
-     * Get the table prefix
-     *
-     * @return string
-     */
-    public function getPrefix()
-    {
-        return $this->prefix;
-    }
-
-    /**
-     * Get the primary keys
-     *
-     * @return array
-     */
-    public function getPrimaryKeys()
-    {
-        return $this->primaryKeys;
-    }
-
-    /**
-     * Get the foreign keys
-     *
-     * @return array
-     */
-    public function getForeignKeys()
-    {
-        return $this->foreignKeys;
-    }
-
-    /**
-     * Get the record result object
-     *
-     * @return Record\Result
-     */
-    public function getResult()
-    {
-        return $this->result;
-    }
-
-    /**
-     * Magic method to set the property to the value of $this->result[$name]
+     * Magic method to set the property to the value of $this->rowGateway[$name]
      *
      * @param  string $name
      * @param  mixed $value
@@ -414,43 +572,49 @@ class Record implements \ArrayAccess
      */
     public function __set($name, $value)
     {
-        if (null !== $this->result) {
-            $this->result[$name] = $value;
-        }
+        $this->rowGateway[$name] = $value;
     }
 
     /**
-     * Magic method to return the value of $this->result[$name]
+     * Magic method to return the value of $this->rowGateway[$name]
      *
      * @param  string $name
      * @return mixed
      */
     public function __get($name)
     {
-        return ((null !== $this->result) && isset($this->result[$name])) ? $this->result[$name] : null;
+        $result = null;
+
+        if (isset($this->rowGateway[$name])) {
+            $result = $this->rowGateway[$name];
+        } else if (method_exists($this, $name)) {
+            $result = $this->{$name}();
+        }
+
+        return $result;
     }
 
     /**
-     * Magic method to return the isset value of $this->result[$name]
+     * Magic method to return the isset value of $this->rowGateway[$name]
      *
      * @param  string $name
      * @return boolean
      */
     public function __isset($name)
     {
-        return isset($this->result[$name]);
+        return isset($this->rowGateway[$name]);
     }
 
     /**
-     * Magic method to unset $this->result[$name]
+     * Magic method to unset $this->rowGateway[$name]
      *
      * @param  string $name
      * @return void
      */
     public function __unset($name)
     {
-        if (isset($this->result[$name])) {
-            unset($this->result[$name]);
+        if (isset($this->rowGateway[$name])) {
+            unset($this->rowGateway[$name]);
         }
     }
 
@@ -481,7 +645,6 @@ class Record implements \ArrayAccess
      *
      * @param  mixed $offset
      * @param  mixed $value
-     * @throws Exception
      * @return void
      */
     public function offsetSet($offset, $value)
@@ -493,7 +656,6 @@ class Record implements \ArrayAccess
      * ArrayAccess offsetUnset
      *
      * @param  mixed $offset
-     * @throws Exception
      * @return void
      */
     public function offsetUnset($offset)
