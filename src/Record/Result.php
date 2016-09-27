@@ -59,34 +59,10 @@ class Result implements \ArrayAccess
     protected $tableGateway = null;
 
     /**
-     * Columns of the first result row
-     * @var array
-     */
-    protected $columns = [];
-
-    /**
-     * Result rows
-     * @var array
-     */
-    protected $rows = [];
-
-    /**
      * Primary keys
      * @var array
      */
     protected $primaryKeys = ['id'];
-
-    /**
-     * Record 1:1 relationships
-     * @var array
-     */
-    protected $oneToOne = [];
-
-    /**
-     * Record 1:many relationships
-     * @var array
-     */
-    protected $oneToMany = [];
 
     /**
      * Is new record flag
@@ -174,7 +150,9 @@ class Result implements \ArrayAccess
      */
     public function findById($id)
     {
-        $this->setColumns($this->rowGateway->find($id));
+        $row = $this->rowGateway->find($id);
+        $this->setColumns($row)
+             ->setRows([$row]);
         return $this;
     }
 
@@ -298,13 +276,11 @@ class Result implements \ArrayAccess
     {
         // Save or update the record
         if (null === $columns) {
-            $this->rowGateway->setColumns($this->columns);
             if ($this->isNew) {
                 $this->rowGateway->save();
             } else {
                 $this->rowGateway->update();
             }
-            $this->setColumns($this->rowGateway->getColumns());
         // Else, save multiple rows
         } else {
             $this->tableGateway->insert($columns);
@@ -328,9 +304,6 @@ class Result implements \ArrayAccess
     {
         // Delete the record
         if (null === $columns) {
-            if ((count($this->columns) > 0) && (count($this->rowGateway->getColumns()) == 0)) {
-                $this->rowGateway->setColumns($this->columns);
-            }
             $this->rowGateway->delete();
         // Delete multiple rows
         } else {
@@ -353,13 +326,11 @@ class Result implements \ArrayAccess
      */
     public function setColumns($columns = null)
     {
-        $this->columns = [];
-
         if (null !== $columns) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-                $this->columns = (array)$columns;
+                $this->rowGateway->setColumns((array)$columns);
             } else if ($columns instanceof Result) {
-                $this->columns = $columns->toArray();
+                $this->rowGateway->setColumns($columns->toArray());
             } else {
                 throw new Exception('The parameter passed must be either an array, an array object or null.');
             }
@@ -377,14 +348,15 @@ class Result implements \ArrayAccess
      */
     public function setRows(array $rows = null, $resultsAs = Result::AS_RESULT)
     {
-        $this->columns = [];
-        $this->rows    = [];
+        $this->rowGateway->setColumns();
+        $this->tableGateway->setRows() ;
 
         if (null !== $rows) {
-            $this->columns = (isset($rows[0])) ? (array)$rows[0] : [];
-            foreach ($rows as $row) {
-                $this->rows[] = $this->processRow($row, $resultsAs);
+            $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $this->processRow($row, $resultsAs);
             }
+            $this->tableGateway->setRows($rows);
         }
 
         return $this;
@@ -435,61 +407,13 @@ class Result implements \ArrayAccess
     }
 
     /**
-     * Set 1:1 relationships
-     *
-     * @param  array $oneToOne
-     * @return Result
-     */
-    public function setOneToOne(array $oneToOne)
-    {
-        $this->oneToOne = $oneToOne;
-        $this->rowGateway->setOneToOne($oneToOne);
-        $this->tableGateway->setOneToOne($oneToOne);
-        return $this;
-    }
-
-    /**
-     * Set 1:many relationships
-     *
-     * @param  array $oneToMany
-     * @return Result
-     */
-    public function setOneToMany(array $oneToMany)
-    {
-        $this->oneToMany = $oneToMany;
-        $this->rowGateway->setOneToMany($oneToMany);
-        $this->tableGateway->setOneToMany($oneToMany);
-        return $this;
-    }
-
-    /**
-     * Determine if the table has 1:1 relationships
-     *
-     * @return boolean
-     */
-    public function hasOneToOne()
-    {
-        return (count($this->oneToOne) > 0);
-    }
-
-    /**
-     * Determine if the table has 1:many relationships
-     *
-     * @return boolean
-     */
-    public function hasOneToMany()
-    {
-        return (count($this->oneToMany) > 0);
-    }
-
-    /**
      * Get column values as array
      *
      * @return array
      */
     public function toArray()
     {
-        return $this->columns;
+        return $this->rowGateway->getColumns();
     }
 
     /**
@@ -499,7 +423,7 @@ class Result implements \ArrayAccess
      */
     public function toArrayObject()
     {
-        return new \ArrayObject($this->columns, \ArrayObject::ARRAY_AS_PROPS);
+        return new \ArrayObject($this->rowGateway->getColumns(), \ArrayObject::ARRAY_AS_PROPS);
     }
 
     /**
@@ -509,7 +433,7 @@ class Result implements \ArrayAccess
      */
     public function getRows()
     {
-        return $this->rows;
+        return $this->tableGateway->getRows();
     }
 
     /**
@@ -519,7 +443,7 @@ class Result implements \ArrayAccess
      */
     public function rows()
     {
-        return $this->rows;
+        return $this->tableGateway->getRows();
     }
 
     /**
@@ -529,7 +453,7 @@ class Result implements \ArrayAccess
      */
     public function count()
     {
-        return count($this->rows);
+        return $this->tableGateway->getNumberOfRows();
     }
 
     /**
@@ -539,11 +463,11 @@ class Result implements \ArrayAccess
      */
     public function hasRows()
     {
-        return (count($this->rows) > 0);
+        return ($this->tableGateway->getNumberOfRows() > 0);
     }
 
     /**
-     * Magic method to set the property to the value of $this->columns[$name]
+     * Magic method to set the property to the value of $this->rowGateway[$name]
      *
      * @param  string $name
      * @param  mixed $value
@@ -551,41 +475,41 @@ class Result implements \ArrayAccess
      */
     public function __set($name, $value)
     {
-        $this->columns[$name] = $value;
+        $this->rowGateway[$name] = $value;
     }
 
     /**
-     * Magic method to return the value of $this->columns[$name]
+     * Magic method to return the value of $this->rowGateway[$name]
      *
      * @param  string $name
      * @return mixed
      */
     public function __get($name)
     {
-        return (isset($this->columns[$name])) ? $this->columns[$name] : null;
+        return (isset($this->rowGateway[$name])) ? $this->rowGateway[$name] : null;
     }
 
     /**
-     * Magic method to return the isset value of $this->columns[$name]
+     * Magic method to return the isset value of $this->rowGateway[$name]
      *
      * @param  string $name
      * @return boolean
      */
     public function __isset($name)
     {
-        return isset($this->columns[$name]);
+        return isset($this->rowGateway[$name]);
     }
 
     /**
-     * Magic method to unset $this->columns[$name]
+     * Magic method to unset $this->rowGateway[$name]
      *
      * @param  string $name
      * @return void
      */
     public function __unset($name)
     {
-        if (isset($this->columns[$name])) {
-            unset($this->columns[$name]);
+        if (isset($this->rowGateway[$name])) {
+            unset($this->rowGateway[$name]);
         }
     }
 

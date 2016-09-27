@@ -53,6 +53,12 @@ class Record implements \ArrayAccess
     protected $result = null;
 
     /**
+     * Record table associations
+     * @var array
+     */
+    protected $associations = [];
+
+    /**
      * Constructor
      *
      * Instantiate the database record object

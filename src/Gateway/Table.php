@@ -229,4 +229,16 @@ class Table extends AbstractGateway
         return $this;
     }
 
+    /**
+     * Set all the table rows at once
+     *
+     * @param  array  $rows
+     * @return Table
+     */
+    public function setRows(array $rows = [])
+    {
+        $this->rows = $rows;
+        return $this;
+    }
+
 }
