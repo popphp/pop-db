@@ -65,10 +65,40 @@ class Result implements \ArrayAccess
     protected $primaryKeys = ['id'];
 
     /**
+     * Foreign keys
+     * @var array
+     */
+    protected $foreignKeys = [];
+
+    /**
      * Is new record flag
      * @var boolean
      */
     protected $isNew = false;
+
+    /**
+     * 1:1 associations
+     * @var array
+     */
+    protected $oneToOne = [];
+
+    /**
+     * 1:1 association objects
+     * @var array
+     */
+    protected $hasOne = [];
+
+    /**
+     * 1:Many associations
+     * @var array
+     */
+    protected $oneToMany = [];
+
+    /**
+     * 1:many association objects
+     * @var array
+     */
+    protected $hasMany = [];
 
     /**
      * Constructor
@@ -407,6 +437,42 @@ class Result implements \ArrayAccess
     }
 
     /**
+     * Set foreign keys
+     *
+     * @param  array $foreignKeys
+     * @return Result
+     */
+    public function setForeignKeys(array $foreignKeys)
+    {
+        $this->foreignKeys = $foreignKeys;
+        return $this;
+    }
+
+    /**
+     * Set 1:1 associations
+     *
+     * @param  array $oneToOne
+     * @return Result
+     */
+    public function setOneToOne(array $oneToOne)
+    {
+        $this->oneToOne = $oneToOne;
+        return $this;
+    }
+
+    /**
+     * Set 1:many associations
+     *
+     * @param  array $oneToMany
+     * @return Result
+     */
+    public function setOneToMany(array $oneToMany)
+    {
+        $this->oneToMany = $oneToMany;
+        return $this;
+    }
+
+    /**
      * Get column values as array
      *
      * @return array
@@ -486,7 +552,52 @@ class Result implements \ArrayAccess
      */
     public function __get($name)
     {
-        return (isset($this->rowGateway[$name])) ? $this->rowGateway[$name] : null;
+        $result = null;
+        if (isset($this->rowGateway[$name])) {
+            $result = $this->rowGateway[$name];
+        } else if (isset($this->oneToOne[$name])) {
+            if (!isset($this->hasOne[$name])) {
+                $class       = $this->oneToOne[$name];
+                $record      = new $class();
+                $primaryKeys = $record->getPrimaryKeys();
+                $foreignKeys = $record->getForeignKeys();
+
+                $keys = (count($foreignKeys) == 0) ? $primaryKeys : $foreignKeys;
+
+                if (count($keys) == count($this->primaryKeys)) {
+                    $columns = [];
+                    foreach ($keys as $i => $key) {
+                        $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
+                    }
+                    $this->hasOne[$name] = $class::findBy($columns, ['limit' => 1], Result::AS_RESULT);
+                    $result = $this->hasOne[$name];
+                }
+            } else {
+                $result = $this->hasOne[$name];
+            }
+        } else if (isset($this->oneToMany[$name])) {
+            if (!isset($this->hasMany[$name])) {
+                $class       = $this->oneToMany[$name];
+                $record      = new $class();
+                $primaryKeys = $record->getPrimaryKeys();
+                $foreignKeys = $record->getForeignKeys();
+
+                $keys = (count($foreignKeys) == 0) ? $primaryKeys : $foreignKeys;
+
+                if (count($keys) == count($this->primaryKeys)) {
+                    $columns = [];
+                    foreach ($keys as $i => $key) {
+                        $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
+                    }
+                    $this->hasMany[$name] = $class::findBy($columns, null, Result::AS_RESULT)->rows();
+                    $result = $this->hasMany[$name];
+                }
+            } else {
+                $result = $this->hasMany[$name];
+            }
+        }
+
+        return $result;
     }
 
     /**

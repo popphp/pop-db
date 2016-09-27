@@ -47,16 +47,28 @@ class Record implements \ArrayAccess
     protected $primaryKeys = ['id'];
 
     /**
+     * Foreign keys
+     * @var array
+     */
+    protected $foreignKeys = [];
+
+    /**
      * Record result object
      * @var Record\Result
      */
     protected $result = null;
 
     /**
-     * Record table associations
+     * 1:1 associations
      * @var array
      */
-    protected $associations = [];
+    protected $oneToOne = [];
+
+    /**
+     * 1:Many associations
+     * @var array
+     */
+    protected $oneToMany = [];
 
     /**
      * Constructor
@@ -105,6 +117,9 @@ class Record implements \ArrayAccess
         }
 
         $this->result = new Result($this->getFullTable(), $this->primaryKeys, $columns);
+        $this->result->setForeignKeys($this->foreignKeys)
+             ->setOneToOne($this->oneToOne)
+             ->setOneToMany($this->oneToMany);
     }
 
     /**
@@ -368,6 +383,16 @@ class Record implements \ArrayAccess
     public function getPrimaryKeys()
     {
         return $this->primaryKeys;
+    }
+
+    /**
+     * Get the foreign keys
+     *
+     * @return array
+     */
+    public function getForeignKeys()
+    {
+        return $this->foreignKeys;
     }
 
     /**
