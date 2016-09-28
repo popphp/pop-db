@@ -119,7 +119,7 @@ class Db
         }
 
         $db    = new $class($options);
-        $lines = file($sql);
+        $lines = (file_exists($sql)) ? file($sql) : explode("\n", $sql);
 
         // Remove comments, execute queries
         if (count($lines) > 0) {
