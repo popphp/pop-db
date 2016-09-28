@@ -44,26 +44,71 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
-    public function addColumn($name, $type, $size = null, $point = null)
+    public function addColumn($name, $type, $size = null, $precision = null)
     {
         $this->currentColumn  = $name;
         $this->columns[$name] = [
             'type'      => $type,
             'size'      => $size,
-            'point'     => $point,
+            'precision' => $precision,
             'nullable'  => null,
             'default'   => null,
             'increment' => false,
+            'primary'   => false,
             'unsigned'  => false
         ];
 
         return $this;
     }
 
-    public function increment()
+    public function hasIncrement()
+    {
+        $result = false;
+        foreach ($this->columns as $name => $column) {
+            if ($column['increment'] !== false) {
+                $result = true;
+            }
+        }
+        return $result;
+    }
+
+    public function getIncrement($quote = false)
+    {
+        $result = [];
+        foreach ($this->columns as $name => $column) {
+            if ($column['increment'] !== false) {
+                $result[] = ($quote) ? $this->quoteId($name) : $name;
+            }
+        }
+        return $result;
+    }
+
+    public function hasPrimary()
+    {
+        $result = false;
+        foreach ($this->columns as $name => $column) {
+            if ($column['primary']) {
+                $result = true;
+            }
+        }
+        return $result;
+    }
+
+    public function getPrimary($quote = false)
+    {
+        $result = [];
+        foreach ($this->columns as $name => $column) {
+            if ($column['primary']) {
+                $result[] = ($quote) ? $this->quoteId($name) : $name;
+            }
+        }
+        return $result;
+    }
+
+    public function increment($start = 1)
     {
         if (null !== $this->currentColumn) {
-            $this->columns[$this->currentColumn]['increment'] = true;
+            $this->columns[$this->currentColumn]['increment'] = (int)$start;
         }
 
         return $this;
@@ -87,7 +132,7 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
-    public function isNotNullable()
+    public function notNullable()
     {
         if (null !== $this->currentColumn) {
             $this->columns[$this->currentColumn]['nullable'] = false;
@@ -107,14 +152,23 @@ abstract class AbstractStructure extends AbstractTable
 
     public function index($column, $name = null, $type = 'index')
     {
+        if (!is_array($column)) {
+            $column = [$column];
+        }
+
+        foreach ($column as $c) {
+            if (!isset($this->columns[$c])) {
+                throw new Exception('Error: That column has not been added to the table schema.');
+            }
+            if ($type == 'primary') {
+                $this->columns[$c]['primary'] = true;
+            }
+        }
+
         if (null === $name) {
             $name = 'index';
-            if (is_array($column)) {
-                foreach ($column as $c) {
-                    $name .= '_' . strtolower($c);
-                }
-            } else {
-                $name .= '_' . strtolower($column);
+            foreach ($column as $c) {
+                $name .= '_' . strtolower($c);
             }
         }
         $this->indices[$name] = [
@@ -125,13 +179,19 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
-    public function unique($column, $name = null)
+    public function unique($column = null, $name = null)
     {
+        if (null === $column) {
+            $column = $this->currentColumn;
+        }
         return $this->index($column, $name, 'unique');
     }
 
-    public function primary($column, $name = null)
+    public function primary($column = null, $name = null)
     {
+        if (null === $column) {
+            $column = $this->currentColumn;
+        }
         return $this->index($column, $name, 'primary');
     }
 
@@ -142,6 +202,7 @@ abstract class AbstractStructure extends AbstractTable
         }
         $this->currentConstraint  = $name;
         $this->constraints[$name] = [
+            'column'     => $column,
             'references' => null,
             'on'         => null,
             'delete'     => null
@@ -154,6 +215,8 @@ abstract class AbstractStructure extends AbstractTable
         if (null !== $this->currentConstraint) {
             $this->constraints[$this->currentConstraint]['reference'] = $foreignTable;
         }
+
+        return $this;
     }
 
     public function on($foreignColumn)
@@ -161,13 +224,17 @@ abstract class AbstractStructure extends AbstractTable
         if (null !== $this->currentConstraint) {
             $this->constraints[$this->currentConstraint]['on'] = $foreignColumn;
         }
+
+        return $this;
     }
 
     public function onDelete($action = null)
     {
         if (null !== $this->currentConstraint) {
-            $this->constraints[$this->currentConstraint]['delete'] = (strtolower($action) == 'cascade') ? 'cascade' : null;
+            $this->constraints[$this->currentConstraint]['delete'] = (strtolower($action) == 'cascade') ? 'CASCADE' : 'SET NULL';
         }
+
+        return $this;
     }
 
     /*
@@ -176,72 +243,72 @@ abstract class AbstractStructure extends AbstractTable
 
     public function integer($name, $size = null)
     {
-        $this->addColumn($name, 'integer', $size);
+        return $this->addColumn($name, 'integer', $size);
     }
 
     public function serial($name, $size = null)
     {
-        $this->addColumn($name, 'serial', $size);
+        return $this->addColumn($name, 'serial', $size);
     }
 
     public function bigSerial($name, $size = null)
     {
-        $this->addColumn($name, 'bigserial', $size);
+        return $this->addColumn($name, 'bigserial', $size);
     }
 
     public function smallSerial($name, $size = null)
     {
-        $this->addColumn($name, 'smallserial', $size);
+        return $this->addColumn($name, 'smallserial', $size);
     }
 
     public function int($name, $size = null)
     {
-        $this->addColumn($name, 'int', $size);
+        return $this->addColumn($name, 'int', $size);
     }
 
     public function bigInt($name, $size = null)
     {
-        $this->addColumn($name, 'bigint', $size);
+        return $this->addColumn($name, 'bigint', $size);
     }
 
     public function mediumInt($name, $size = null)
     {
-        $this->addColumn($name, 'mediumint', $size);
+        return $this->addColumn($name, 'mediumint', $size);
     }
 
     public function smallInt($name, $size = null)
     {
-        $this->addColumn($name, 'smallint', $size);
+        return $this->addColumn($name, 'smallint', $size);
     }
 
     public function tinyInt($name, $size = null)
     {
-        $this->addColumn($name, 'tinyint', $size);
+        return $this->addColumn($name, 'tinyint', $size);
     }
 
-    public function float($name, $size = null, $point = null)
+    public function float($name, $size = null, $precision = null)
     {
-        $this->addColumn($name, 'float', $size, $point);
+        return $this->addColumn($name, 'float', $size, $precision);
     }
 
     public function real($name)
     {
-        $this->addColumn($name, 'real');
+        return $this->addColumn($name, 'real');
     }
 
-    public function double($name, $size = null, $point = null)
+    public function double($name, $size = null, $precision = null)
     {
-        $this->addColumn($name, 'double', $size, $point);
+        return $this->addColumn($name, 'double', $size, $precision);
     }
 
-    public function decimal($name, $size = null, $point = null)
+    public function decimal($name, $size = null, $precision = null)
     {
-        $this->addColumn($name, 'decimal', $size, $point);
+        return $this->addColumn($name, 'decimal', $size, $precision);
     }
 
-    public function numeric($name, $size = null, $point = null)
+    public function numeric($name, $size = null, $precision = null)
     {
-        $this->addColumn($name, 'numeric', $size, $point);
+        return $this->addColumn($name, 'numeric', $size, $precision);
     }
 
     /*
@@ -250,27 +317,27 @@ abstract class AbstractStructure extends AbstractTable
 
     public function date($name)
     {
-        $this->addColumn($name, 'date');
+        return $this->addColumn($name, 'date');
     }
 
     public function time($name)
     {
-        $this->addColumn($name, 'time');
+        return $this->addColumn($name, 'time');
     }
 
     public function datetime($name)
     {
-        $this->addColumn($name, 'datetime');
+        return $this->addColumn($name, 'datetime');
     }
 
     public function timestamp($name)
     {
-        $this->addColumn($name, 'timestamp');
+        return $this->addColumn($name, 'timestamp');
     }
 
     public function year($name, $size = null)
     {
-        $this->addColumn($name, 'year', $size);
+        return $this->addColumn($name, 'year', $size);
     }
 
     /*
@@ -279,47 +346,82 @@ abstract class AbstractStructure extends AbstractTable
 
     public function text($name)
     {
-        $this->addColumn($name, 'text');
+        return $this->addColumn($name, 'text');
     }
 
     public function tinyText($name)
     {
-        $this->addColumn($name, 'tinytext');
+        return $this->addColumn($name, 'tinytext');
     }
 
     public function mediumText($name)
     {
-        $this->addColumn($name, 'mediumtext');
+        return $this->addColumn($name, 'mediumtext');
     }
 
     public function longText($name)
     {
-        $this->addColumn($name, 'longtext');
+        return $this->addColumn($name, 'longtext');
     }
 
     public function blob($name)
     {
-        $this->addColumn($name, 'blob');
+        return $this->addColumn($name, 'blob');
     }
 
     public function mediumBlob($name)
     {
-        $this->addColumn($name, 'mediumblob');
+        return $this->addColumn($name, 'mediumblob');
     }
 
     public function longBlob($name)
     {
-        $this->addColumn($name, 'longblob');
+        return $this->addColumn($name, 'longblob');
     }
 
     public function char($name, $size = null)
     {
-        $this->addColumn($name, 'char', $size);
+        return $this->addColumn($name, 'char', $size);
     }
 
     public function varchar($name, $size = null)
     {
-        $this->addColumn($name, 'varchar', $size);
+        return $this->addColumn($name, 'varchar', $size);
+    }
+
+    protected function getColumnType(array $column)
+    {
+        $columnString = $this->getValidColumnType($column['type']);
+
+        if (!empty($column['size'])) {
+            $columnString .= '(' . $column['size'];
+            $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
+        }
+
+        if ($column['nullable'] === false) {
+            $columnString .= ' NOT NULL';
+        }
+
+        if ((null === $column['default']) && ($column['nullable'] === true)) {
+            $columnString .= ' DEFAULT NULL';
+        } else if (!empty($column['default'])) {
+            $columnString .= ' DEFAULT \'' . $column['default'] . '\'';
+        }
+
+        if ($column['increment'] !== false) {
+            if ($this->dbType == self::MYSQL) {
+                $columnString .= ' AUTO_INCREMENT';
+            } else if ($this->dbType == self::SQLITE) {
+                $columnString .= ' AUTOINCREMENT';
+            }
+        }
+
+        return $columnString;
+    }
+
+    protected function getValidColumnType($type)
+    {
+        return $type;
     }
 
 }

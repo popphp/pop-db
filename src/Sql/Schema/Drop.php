@@ -37,7 +37,7 @@ class Drop extends AbstractTable
     public function render()
     {
         return 'DROP TABLE ' . ((($this->ifExists) && ($this->dbType != self::SQLSRV)) ? 'IF EXISTS ' : null)
-        . $this->quoteId($this->name) . ';';
+        . $this->quoteId($this->table) . ';' . PHP_EOL;
     }
 
     public function __toString()

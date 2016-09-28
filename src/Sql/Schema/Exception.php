@@ -14,7 +14,7 @@
 namespace Pop\Db\Sql\Schema;
 
 /**
- * Schema RENAME table class
+ * Db SQL schema exception class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,30 +23,4 @@ namespace Pop\Db\Sql\Schema;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Rename extends AbstractTable
-{
-
-    protected $to = null;
-
-    public function to($table)
-    {
-        $this->to = $table;
-        return $this;
-    }
-
-    public function getTo()
-    {
-        return $this->to;
-    }
-
-    public function render()
-    {
-        return 'RENAME TABLE ' . $this->quoteId($this->table) . ' TO ' . $this->quoteId($this->to) . ';' . PHP_EOL;
-    }
-
-    public function __toString()
-    {
-        return $this->render();
-    }
-
-}
+class Exception extends \Exception {}

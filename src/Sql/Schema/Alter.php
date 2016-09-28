@@ -28,9 +28,9 @@ class Alter extends AbstractStructure
 
     public function render()
     {
-        $sql = 'ALTER TABLE ' . $this->quoteId($this->name);
+        $sql = 'ALTER TABLE ' . $this->quoteId($this->table);
 
-        return $sql;
+        return $sql . PHP_EOL;
     }
 
     public function __toString()

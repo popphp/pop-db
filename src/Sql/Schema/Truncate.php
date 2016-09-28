@@ -28,7 +28,7 @@ class Truncate extends AbstractTable
 
     public function render()
     {
-        return 'TRUNCATE TABLE ' . $this->quoteId($this->name) . ';';
+        return 'TRUNCATE TABLE ' . $this->quoteId($this->table) . ';' . PHP_EOL;
     }
 
     public function __toString()

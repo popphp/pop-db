@@ -75,27 +75,27 @@ class Schema extends AbstractSql
 
         // Render DROP tables
         foreach ($this->drop as $drop) {
-            $sql .= $drop->render() . PHP_EOL . PHP_EOL;
+            $sql .= $drop->render();
         }
 
         // Render CREATE tables
         foreach ($this->create as $create) {
-            $sql .= $create->render() . PHP_EOL . PHP_EOL;
+            $sql .= $create->render();
         }
 
         // Render ALTER tables
         foreach ($this->alter as $alter) {
-            $sql .= $alter->render() . PHP_EOL . PHP_EOL;
+            $sql .= $alter->render();
         }
 
         // Render RENAME tables
         foreach ($this->rename as $rename) {
-            $sql .= $rename->render() . PHP_EOL . PHP_EOL;
+            $sql .= $rename->render();
         }
 
         // Render TRUNCATE tables
         foreach ($this->truncate as $truncate) {
-            $sql .= $truncate->render() . PHP_EOL . PHP_EOL;
+            $sql .= $truncate->render();
         }
 
         return $sql;

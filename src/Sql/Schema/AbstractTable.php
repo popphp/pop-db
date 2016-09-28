@@ -29,25 +29,25 @@ use Pop\Db\Sql\AbstractSql;
 abstract class AbstractTable extends AbstractSql
 {
 
-    protected $name = null;
+    protected $table = null;
 
     /**
      * Constructor
      *
      * Instantiate the table object
      *
-     * @param  string          $name
+     * @param  string          $table
      * @param  AbstractAdapter $db
      */
-    public function __construct($name, $db)
+    public function __construct($table, $db)
     {
-        $this->name = $name;
+        $this->table = $table;
         parent::__construct($db);
     }
 
-    public function getName()
+    public function getTable()
     {
-        return $this->name;
+        return $this->table;
     }
 
     abstract public function render();

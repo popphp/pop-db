@@ -36,12 +36,73 @@ class Create extends AbstractStructure
 
     public function render()
     {
-        $sql = 'CREATE TABLE ' . ((($this->ifNotExists) && ($this->dbType != self::SQLSRV)) ? 'IF NOT EXISTS ' : null) .
-            $this->quoteId($this->name) . ' (' . PHP_EOL;
+        $sql = '';
 
-        $sql .= ');';
+        if ($this->hasIncrement()) {
+            $increment = $this->getIncrement();
+            if ($this->dbType == self::PGSQL) {
+                foreach ($increment as $name) {
+                    $sql .= 'CREATE SEQUENCE ' . $this->table . '_' . $name . '_seq START ' . (int)$this->columns[$name]['increment'] . ';';
+                }
+                $sql .= PHP_EOL . PHP_EOL;
+            }
+        }
 
-        return $sql;
+        $sql .= 'CREATE TABLE ' . ((($this->ifNotExists) && ($this->dbType != self::SQLSRV)) ? 'IF NOT EXISTS ' : null) .
+            $this->quoteId($this->table) . ' (' . PHP_EOL;
+
+        $i = 0;
+        foreach ($this->columns as $name => $column) {
+            $sql .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->quoteId($name) . ' ' . $this->getColumnType($column);
+            $i++;
+        }
+
+        if ($this->hasPrimary()) {
+            $sql .= ',' . PHP_EOL . '  PRIMARY KEY (' . implode(', ', $this->getPrimary(true)) . ')';
+        }
+
+        $sql .= PHP_EOL . ');' . PHP_EOL . PHP_EOL;
+
+        if ($this->hasIncrement()) {
+            $increment = $this->getIncrement();
+            if ($this->dbType == self::PGSQL) {
+                foreach ($increment as $name) {
+                    $sql .= 'ALTER SEQUENCE ' . $this->table . '_' . $name . '_seq OWNED BY ' . $this->quoteId($this->table . '.' . $name) . ';' . PHP_EOL;
+                }
+                $sql .= PHP_EOL;
+            } else if ($this->dbType == self::SQLITE) {
+                foreach ($increment as $name) {
+                    $start = (int)$this->columns[$name]['increment'];
+                    if (substr((string)$start, -1) == '1') {
+                        $start -= 1;
+                    }
+                    $sql .= 'INSERT INTO "sqlite_sequence" ("name", "seq") ' .
+                        'VALUES (' . $this->quoteId($this->table) . ', ' . $start . ');' . PHP_EOL;
+                }
+                $sql .= PHP_EOL;
+            }
+        }
+
+        foreach ($this->indices as $name => $index) {
+            foreach ($index['column'] as $i => $column) {
+                $index['column'][$i] = $this->quoteId($column);
+            }
+
+            if ($index['type'] != 'primary') {
+                $sql .= 'CREATE ' . (($index['type'] == 'unique') ? 'UNIQUE ' : null) . 'INDEX ' . $this->quoteId($name) .
+                    ' ON ' . $this->quoteId($this->table) . ' (' . implode(', ', $index['column']) . ');' . PHP_EOL;
+            }
+        }
+
+        foreach ($this->constraints as $name => $constraint) {
+            $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
+                ' ADD CONSTRAINT ' . $this->quoteId($name) .
+                ' FOREIGN KEY (' . $this->quoteId($constraint['column']) . ')' .
+                ' REFERENCES ' . $this->quoteId($constraint['references']) . ' (' . $this->quoteId($constraint['on']) . ')' .
+                ' ON DELETE ' . $constraint['delete'] . ' ON UPDATE CASCADE;' . PHP_EOL;
+        }
+
+        return $sql . PHP_EOL;
     }
 
     public function __toString()
