@@ -166,7 +166,6 @@ class Db
 
         return [
             'mysqli' => (class_exists('mysqli', false)),
-            'oracle' => (function_exists('oci_connect')),
             'pdo'    => [
                 'mysql'  => (in_array('mysql', $pdoDrivers)),
                 'pgsql'  => (in_array('pgsql', $pdoDrivers)),
@@ -201,10 +200,6 @@ class Db
             case 'mysql':
             case 'mysqli':
                 $result = (class_exists('mysqli', false));
-                break;
-            case 'oci':
-            case 'oracle':
-                $result = (function_exists('oci_connect'));
                 break;
             case 'pdo':
                 $result = (in_array($type, $pdoDrivers));

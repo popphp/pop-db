@@ -55,8 +55,7 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $db) {
-            $isDefault = ($class === __CLASS__);
-            Db::setDb($db, $class, null, $isDefault);
+            Db::setDb($db, $class, null, ($class === __CLASS__));
         }
 
         if (!Db::hasDb($class)) {
@@ -77,7 +76,6 @@ class Record extends Record\AbstractRecord
         if (null !== $columns) {
             $this->isNew = true;
             $this->setColumns($columns);
-            $this->setRows([$columns]);
         }
     }
 
@@ -545,7 +543,7 @@ class Record extends Record\AbstractRecord
      * Get a 1:many eager relationship
      *
      * @param  string $class
-     * @return Record\Collection
+     * @return array
      */
     public function getManyEager($class)
     {
@@ -572,8 +570,8 @@ class Record extends Record\AbstractRecord
         }
 
         $db->prepare($sql)
-            ->bindParams($ids)
-            ->execute();
+           ->bindParams($ids)
+           ->execute();
 
         $rows       = $db->fetchAll();
         $parentRows = $this->processRows($this->tableGateway->getRows(), Record::AS_RECORD);

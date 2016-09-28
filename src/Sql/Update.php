@@ -132,9 +132,7 @@ class Update extends AbstractClause
                 substr($column, (strpos($column, '.') + 1)) : $column;
 
             // Check for named parameters
-            if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) &&
-                ($dbType !== self::SQLITE) &&
-                ($dbType !== self::ORACLE)) {
+            if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) && ($dbType !== self::SQLITE)) {
                 if (($dbType == self::MYSQL) || ($dbType == self::SQLSRV)) {
                     $value = '?';
                 } else if (($dbType == self::PGSQL) && (!($this->db instanceof \Pop\Db\Adapter\Pdo))) {

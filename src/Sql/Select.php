@@ -493,14 +493,8 @@ class Select extends AbstractClause
 
         $sql .= 'FROM ';
 
-        // Account for LIMIT and OFFSET clauses if the database is ORACLE
-        if (($this->getDbType() == self::ORACLE) && ((null !== $this->limit) || (null !== $this->offset))) {
-            if (null === $this->orderBy) {
-                throw new Exception('Error: You must set an order by clause to execute a limit clause on the Oracle database.');
-            }
-            $sql .= $this->buildOracleLimitAndOffset();
         // Account for LIMIT and OFFSET clauses if the database is SQLSRV
-        } else if (($this->getDbType() == self::SQLSRV) && ((null !== $this->limit) || (null !== $this->offset))) {
+        if (($this->getDbType() == self::SQLSRV) && ((null !== $this->limit) || (null !== $this->offset))) {
             if (null === $this->orderBy) {
                 throw new Exception('Error: You must set an order by clause to execute a limit clause on the SQL server database.');
             }
@@ -544,7 +538,7 @@ class Select extends AbstractClause
         }
 
         // Build any LIMIT clause for all other database types.
-        if (($this->getDbType() != self::SQLSRV) && ($this->getDbType() != self::ORACLE)) {
+        if ($this->getDbType() != self::SQLSRV) {
             if (null !== $this->limit) {
                 if ((strpos($this->limit, ',') !== false) && ($this->getDbType() == self::PGSQL)) {
                     $ary = explode(',', $this->limit);
@@ -556,7 +550,7 @@ class Select extends AbstractClause
         }
 
         // Build any OFFSET clause for all other database types.
-        if (($this->getDbType() != self::SQLSRV) && ($this->getDbType() != self::ORACLE)) {
+        if ($this->getDbType() != self::SQLSRV) {
             if (null !== $this->offset) {
                 $sql .= ' OFFSET ' . $this->offset;
             }
@@ -627,35 +621,6 @@ class Select extends AbstractClause
         }
 
         return $result;
-    }
-
-    /**
-     * Method to build Oracle limit and offset sub-clause
-     *
-     * @return string
-     */
-    protected function buildOracleLimitAndOffset()
-    {
-        $result = $this->getLimitAndOffset();
-        $sql    = '(SELECT t.*, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') ' .
-            $this->quoteId('RowNumber') . ' FROM ' .
-            $this->quoteId($this->table) . ' t)';
-
-        if (null === $this->where) {
-            $this->where = new Where($this);
-        }
-
-        if (null !== $result['offset']) {
-            if ($result['limit'] > 0) {
-                $this->where->between('RowNumber', $result['offset'], $result['limit']);
-            } else {
-                $this->where->greaterThanOrEqualTo('RowNumber', $result['offset']);
-            }
-        } else {
-            $this->where->lessThanOrEqualTo('RowNumber', $result['limit']);
-        }
-
-        return $sql;
     }
 
     /**

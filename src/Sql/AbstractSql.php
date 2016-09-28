@@ -32,7 +32,6 @@ abstract class AbstractSql
      * Constants for database types
      */
     const MYSQL  = 'MYSQL';
-    const ORACLE = 'ORACLE';
     const PGSQL  = 'PGSQL';
     const SQLITE = 'SQLITE';
     const SQLSRV = 'SQLSRV';
@@ -84,10 +83,6 @@ abstract class AbstractSql
         if (strpos($adapter, 'mysql') !== false) {
             $this->dbType      = self::MYSQL;
             $this->idQuoteType = self::BACKTICK;
-            $this->placeholder = '?';
-        } else if (strpos($adapter, 'oracle') !== false) {
-            $this->dbType      = self::ORACLE;
-            $this->idQuoteType = self::DOUBLE_QUOTE;
             $this->placeholder = '?';
         } else if (strpos($adapter, 'pgsql') !== false) {
             $this->dbType      = self::PGSQL;

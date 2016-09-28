@@ -483,8 +483,7 @@ class Predicate
                                     substr($values[0], (strpos($values[0], '.') + 1)) : $values[0];
 
                                 // Check for named parameters
-                                if ((':' . $predValue == substr($v, 0, strlen(':' . $predValue))) &&
-                                    ($dbType !== AbstractSql::SQLITE) && ($dbType !== AbstractSql::ORACLE)) {
+                                if ((':' . $predValue == substr($v, 0, strlen(':' . $predValue))) && ($dbType !== AbstractSql::SQLITE)) {
                                     if (($dbType == AbstractSql::MYSQL) || ($dbType == AbstractSql::SQLSRV)) {
                                         $v = '?';
                                     } else if (($dbType == AbstractSql::PGSQL) && (!($this->sql->db() instanceof \Pop\Db\Adapter\Pdo))) {
@@ -507,8 +506,7 @@ class Predicate
                                 substr($values[0], (strpos($values[0], '.') + 1)) : $values[0];
 
                             // Check for named parameters
-                            if ((':' . $predValue == substr($val, 0, strlen(':' . $predValue))) &&
-                                ($dbType !== AbstractSql::SQLITE) && ($dbType !== AbstractSql::ORACLE)) {
+                            if ((':' . $predValue == substr($val, 0, strlen(':' . $predValue))) && ($dbType !== AbstractSql::SQLITE)) {
                                 if (($dbType == AbstractSql::MYSQL) || ($dbType == AbstractSql::SQLSRV)) {
                                     $val = '?';
                                 } else if (($dbType == AbstractSql::PGSQL) && (!($this->sql->db() instanceof \Pop\Db\Adapter\Pdo))) {

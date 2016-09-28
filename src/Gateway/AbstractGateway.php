@@ -92,17 +92,6 @@ abstract class AbstractGateway implements GatewayInterface
                 $nullField = 'notnull';
                 $keyField  = 'pk';
                 break;
-            case Sql::ORACLE:
-                $sqlString = 'SELECT ALL_TAB_COLUMNS.COLUMN_NAME AS COLUMN_NAME, ' .
-                    'ALL_TAB_COLUMNS.DATA_TYPE AS DATA_TYPE, ALL_TAB_COLUMNS.NULLABLE AS NULLABLE, ' .
-                    'ALL_CONSTRAINTS.CONSTRAINT_TYPE AS CONSTRAINT_TYPE FROM ALL_TAB_COLUMNS ' .
-                    'LEFT JOIN ALL_CONSTRAINTS ON ALL_CONSTRAINTS,TABLE_NAME = ALL_TAB_COLUMNS.TABLE_NAME ' .
-                    'WHERE ALL_TAB_COLUMNS.TABLE_NAME = \'' . $this->table . '\'';
-                $field     = 'COLUMN_NAME';
-                $type      = 'DATA_TYPE';
-                $nullField = 'NULLABLE';
-                $keyField  = 'CONSTRAINT_TYPE';
-                break;
             default:
                 $sqlString = 'SHOW COLUMNS FROM `' . $this->table . '`';
                 $field     = 'Field';
@@ -122,10 +111,6 @@ abstract class AbstractGateway implements GatewayInterface
                 case Sql::MYSQL:
                     $nullResult    = (strtoupper($row[$nullField]) != 'NO');
                     $primaryResult = (strtoupper($row[$keyField]) == 'PRI');
-                    break;
-                case Sql::ORACLE:
-                    $nullResult    = (strtoupper($row[$nullField]) != 'Y');
-                    $primaryResult = (strtoupper($row[$keyField]) == 'P');
                     break;
                 default:
                     $nullResult    = $row[$nullField];
