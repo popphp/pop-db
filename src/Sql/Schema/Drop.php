@@ -27,6 +27,7 @@ class Drop extends AbstractTable
 {
 
     protected $ifExists = false;
+    protected $cascade  = false;
 
     public function ifExists()
     {
@@ -34,10 +35,16 @@ class Drop extends AbstractTable
         return $this;
     }
 
+    public function cascade()
+    {
+        $this->cascade = true;
+        return $this;
+    }
+
     public function render()
     {
         return 'DROP TABLE ' . ((($this->ifExists) && ($this->dbType != self::SQLSRV)) ? 'IF EXISTS ' : null)
-        . $this->quoteId($this->table) . ';' . PHP_EOL;
+        . $this->quoteId($this->table) . ((($this->dbType == self::PGSQL) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
     }
 
     public function __toString()

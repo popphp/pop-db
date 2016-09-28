@@ -32,6 +32,8 @@ class Schema extends AbstractSql
     protected $rename   = [];
     protected $truncate = [];
 
+    protected $foreignKeyCheck = true;
+
     public function create($table)
     {
         return $this->getCreateTable($table);
@@ -69,9 +71,25 @@ class Schema extends AbstractSql
         return $this->getTruncateTable($table);
     }
 
+    public function enableForeignKeyCheck()
+    {
+        $this->foreignKeyCheck = true;
+        return $this;
+    }
+
+    public function disableForeignKeyCheck()
+    {
+        $this->foreignKeyCheck = false;
+        return $this;
+    }
+
     public function render()
     {
         $sql = '';
+
+        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
+            $sql .= 'SET foreign_key_checks = 0;' . PHP_EOL . PHP_EOL;
+        }
 
         // Render DROP tables
         foreach ($this->drop as $drop) {
@@ -98,11 +116,19 @@ class Schema extends AbstractSql
             $sql .= $truncate->render();
         }
 
+        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
+            $sql .= 'SET foreign_key_checks = 1;' . PHP_EOL . PHP_EOL;
+        }
+
         return $sql;
     }
 
     public function execute()
     {
+        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
+            $this->db->query('SET foreign_key_checks = 0');
+        }
+
         // Execute DROP tables
         foreach ($this->drop as $drop) {
             $this->db->query($drop->render());
@@ -126,6 +152,10 @@ class Schema extends AbstractSql
         // Execute TRUNCATE tables
         foreach ($this->truncate as $truncate) {
             $this->db->query($truncate->render());
+        }
+
+        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
+            $this->db->query('SET foreign_key_checks = 1');
         }
     }
 

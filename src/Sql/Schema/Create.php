@@ -38,6 +38,7 @@ class Create extends AbstractStructure
     {
         $sql = '';
 
+        // Create PGSQL sequence
         if ($this->hasIncrement()) {
             $increment = $this->getIncrement();
             if ($this->dbType == self::PGSQL) {
@@ -48,6 +49,9 @@ class Create extends AbstractStructure
             }
         }
 
+        /*
+         * BEGIN CREATE TABLE
+         */
         $sql .= 'CREATE TABLE ' . ((($this->ifNotExists) && ($this->dbType != self::SQLSRV)) ? 'IF NOT EXISTS ' : null) .
             $this->quoteId($this->table) . ' (' . PHP_EOL;
 
@@ -63,6 +67,11 @@ class Create extends AbstractStructure
 
         $sql .= PHP_EOL . ');' . PHP_EOL . PHP_EOL;
 
+        /*
+         * END CREATE TABLE
+         */
+
+        // Assign PGSQL or SQLITE sequences
         if ($this->hasIncrement()) {
             $increment = $this->getIncrement();
             if ($this->dbType == self::PGSQL) {
@@ -83,6 +92,7 @@ class Create extends AbstractStructure
             }
         }
 
+        // Create indices
         foreach ($this->indices as $name => $index) {
             foreach ($index['column'] as $i => $column) {
                 $index['column'][$i] = $this->quoteId($column);
@@ -94,6 +104,7 @@ class Create extends AbstractStructure
             }
         }
 
+        // Create constraints
         if (count($this->constraints) > 0) {
             $sql .= PHP_EOL;
             foreach ($this->constraints as $name => $constraint) {
