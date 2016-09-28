@@ -94,12 +94,15 @@ class Create extends AbstractStructure
             }
         }
 
-        foreach ($this->constraints as $name => $constraint) {
-            $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
-                ' ADD CONSTRAINT ' . $this->quoteId($name) .
-                ' FOREIGN KEY (' . $this->quoteId($constraint['column']) . ')' .
-                ' REFERENCES ' . $this->quoteId($constraint['references']) . ' (' . $this->quoteId($constraint['on']) . ')' .
-                ' ON DELETE ' . $constraint['delete'] . ' ON UPDATE CASCADE;' . PHP_EOL;
+        if (count($this->constraints) > 0) {
+            $sql .= PHP_EOL;
+            foreach ($this->constraints as $name => $constraint) {
+                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
+                    ' ADD CONSTRAINT ' . $this->quoteId($name) .
+                    ' FOREIGN KEY (' . $this->quoteId($constraint['column']) . ')' .
+                    ' REFERENCES ' . $this->quoteId($constraint['references']) . ' (' . $this->quoteId($constraint['on']) . ')' .
+                    ' ON DELETE ' . $constraint['delete'] . ' ON UPDATE CASCADE;' . PHP_EOL;
+            }
         }
 
         return $sql . PHP_EOL;

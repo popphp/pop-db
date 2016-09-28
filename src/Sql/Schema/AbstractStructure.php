@@ -205,7 +205,7 @@ abstract class AbstractStructure extends AbstractTable
             'column'     => $column,
             'references' => null,
             'on'         => null,
-            'delete'     => null
+            'delete'     => 'SET NULL'
         ];
         return $this;
     }
@@ -213,7 +213,7 @@ abstract class AbstractStructure extends AbstractTable
     public function references($foreignTable)
     {
         if (null !== $this->currentConstraint) {
-            $this->constraints[$this->currentConstraint]['reference'] = $foreignTable;
+            $this->constraints[$this->currentConstraint]['references'] = $foreignTable;
         }
 
         return $this;
