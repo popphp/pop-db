@@ -29,6 +29,10 @@ use Pop\Db\Sql\AbstractSql;
 abstract class AbstractTable extends AbstractSql
 {
 
+    /**
+     * Table name
+     * @var string
+     */
     protected $table = null;
 
     /**
@@ -45,13 +49,28 @@ abstract class AbstractTable extends AbstractSql
         parent::__construct($db);
     }
 
+    /**
+     * Get the table name
+     *
+     * @return string
+     */
     public function getTable()
     {
         return $this->table;
     }
 
+    /**
+     * Render the table schema
+     *
+     * @return string
+     */
     abstract public function render();
 
+    /**
+     * Render the table schema to string
+     *
+     * @return string
+     */
     abstract public function __toString();
 
 }

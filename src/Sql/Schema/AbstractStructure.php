@@ -26,24 +26,69 @@ namespace Pop\Db\Sql\Schema;
 abstract class AbstractStructure extends AbstractTable
 {
 
-    protected $columns           = [];
-    protected $indices           = [];
-    protected $constraints       = [];
-    protected $currentColumn     = null;
+    /**
+     * Columns to be added or modified
+     * @var array
+     */
+    protected $columns = [];
+
+    /**
+     * Indices to be created
+     * @var array
+     */
+    protected $indices = [];
+
+    /**
+     * Constraints to be added
+     * @var array
+     */
+    protected $constraints = [];
+
+    /**
+     * Current column
+     * @var string
+     */
+    protected $currentColumn = null;
+
+    /**
+     * Current constraint
+     * @var string
+     */
     protected $currentConstraint = null;
 
+    /**
+     * Set the current column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function column($name)
     {
         $this->currentColumn = $name;
         return $this;
     }
 
+    /**
+     * Set the current constraint
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function constraint($name)
     {
         $this->currentConstraint = $name;
         return $this;
     }
 
+    /**
+     * Add a column
+     *
+     * @param  string $name
+     * @param  string $type
+     * @param  mixed  $size
+     * @param  mixed  $precision
+     * @return AbstractStructure
+     */
     public function addColumn($name, $type, $size = null, $precision = null)
     {
         $this->currentColumn  = $name;
@@ -61,6 +106,11 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Determine if the table has an increment column
+     *
+     * @return boolean
+     */
     public function hasIncrement()
     {
         $result = false;
@@ -72,6 +122,12 @@ abstract class AbstractStructure extends AbstractTable
         return $result;
     }
 
+    /**
+     * Get the increment column(s)
+     *
+     * @param  boolean $quote
+     * @return array
+     */
     public function getIncrement($quote = false)
     {
         $result = [];
@@ -83,6 +139,11 @@ abstract class AbstractStructure extends AbstractTable
         return $result;
     }
 
+    /**
+     * Determine if the table has a primary key column
+     *
+     * @return boolean
+     */
     public function hasPrimary()
     {
         $result = false;
@@ -94,6 +155,12 @@ abstract class AbstractStructure extends AbstractTable
         return $result;
     }
 
+    /**
+     * Get the primary key column(s)
+     *
+     * @param  boolean $quote
+     * @return array
+     */
     public function getPrimary($quote = false)
     {
         $result = [];
@@ -105,6 +172,12 @@ abstract class AbstractStructure extends AbstractTable
         return $result;
     }
 
+    /**
+     * Set the current column as an increment column
+     *
+     * @param  int $start
+     * @return AbstractStructure
+     */
     public function increment($start = 1)
     {
         if (null !== $this->currentColumn) {
@@ -114,6 +187,12 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Set the current column's default value
+     *
+     * @param  mixed $value
+     * @return AbstractStructure
+     */
     public function default($value)
     {
         if (null !== $this->currentColumn) {
@@ -123,6 +202,11 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Set the current column as nullable
+     *
+     * @return AbstractStructure
+     */
     public function nullable()
     {
         if (null !== $this->currentColumn) {
@@ -132,6 +216,11 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Set the current column as NOT nullable
+     *
+     * @return AbstractStructure
+     */
     public function notNullable()
     {
         if (null !== $this->currentColumn) {
@@ -141,6 +230,11 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Set the current column as unsigned
+     *
+     * @return AbstractStructure
+     */
     public function unsigned()
     {
         if (null !== $this->currentColumn) {
@@ -150,6 +244,15 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Create an index
+     *
+     * @param  string $column
+     * @param  string $name
+     * @param  string $type
+     * @throws Exception
+     * @return AbstractStructure
+     */
     public function index($column, $name = null, $type = 'index')
     {
         if (!is_array($column)) {
@@ -179,6 +282,13 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Create a UNIQUE index
+     *
+     * @param  string $column
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function unique($column = null, $name = null)
     {
         if (null === $column) {
@@ -187,6 +297,13 @@ abstract class AbstractStructure extends AbstractTable
         return $this->index($column, $name, 'unique');
     }
 
+    /**
+     * Create a PRIMARY KEY index
+     *
+     * @param  string $column
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function primary($column = null, $name = null)
     {
         if (null === $column) {
@@ -195,6 +312,13 @@ abstract class AbstractStructure extends AbstractTable
         return $this->index($column, $name, 'primary');
     }
 
+    /**
+     * Create a FOREIGN KEY constraint
+     *
+     * @param  string $column
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function foreignKey($column, $name = null)
     {
         if (null === $name) {
@@ -210,6 +334,12 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Assign FOREIGN KEY reference table
+     *
+     * @param  string $foreignTable
+     * @return AbstractStructure
+     */
     public function references($foreignTable)
     {
         if (null !== $this->currentConstraint) {
@@ -219,6 +349,12 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Assign FOREIGN KEY reference table column
+     *
+     * @param  string $foreignColumn
+     * @return AbstractStructure
+     */
     public function on($foreignColumn)
     {
         if (null !== $this->currentConstraint) {
@@ -228,6 +364,12 @@ abstract class AbstractStructure extends AbstractTable
         return $this;
     }
 
+    /**
+     * Assign FOREIGN KEY ON DELETE action
+     *
+     * @param  string $action
+     * @return AbstractStructure
+     */
     public function onDelete($action = null)
     {
         if (null !== $this->currentConstraint) {
@@ -241,71 +383,172 @@ abstract class AbstractStructure extends AbstractTable
      * NUMERIC TYPES
      */
 
+    /**
+     * Add an INTEGER column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function integer($name, $size = null)
     {
         return $this->addColumn($name, 'integer', $size);
     }
 
+    /**
+     * Add a SERIAL column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function serial($name, $size = null)
     {
         return $this->addColumn($name, 'serial', $size);
     }
 
+    /**
+     * Add a BIGSERIAL column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function bigSerial($name, $size = null)
     {
         return $this->addColumn($name, 'bigserial', $size);
     }
 
+    /**
+     * Add a SMALLSERIAL column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function smallSerial($name, $size = null)
     {
         return $this->addColumn($name, 'smallserial', $size);
     }
 
+    /**
+     * Add an INT column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function int($name, $size = null)
     {
         return $this->addColumn($name, 'int', $size);
     }
 
+    /**
+     * Add a BIGINT column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function bigInt($name, $size = null)
     {
         return $this->addColumn($name, 'bigint', $size);
     }
 
+    /**
+     * Add a MEDIUMINT column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function mediumInt($name, $size = null)
     {
         return $this->addColumn($name, 'mediumint', $size);
     }
 
+    /**
+     * Add a SMALLINT column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function smallInt($name, $size = null)
     {
         return $this->addColumn($name, 'smallint', $size);
     }
 
+    /**
+     * Add a TINYINT column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function tinyInt($name, $size = null)
     {
         return $this->addColumn($name, 'tinyint', $size);
     }
 
+    /**
+     * Add a FLOAT column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @param  mixed  $precision
+     * @return AbstractStructure
+     */
     public function float($name, $size = null, $precision = null)
     {
         return $this->addColumn($name, 'float', $size, $precision);
     }
 
+    /**
+     * Add a REAL column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function real($name)
     {
         return $this->addColumn($name, 'real');
     }
 
+    /**
+     * Add a DOUBLE column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @param  mixed  $precision
+     * @return AbstractStructure
+     */
     public function double($name, $size = null, $precision = null)
     {
         return $this->addColumn($name, 'double', $size, $precision);
     }
 
+    /**
+     * Add a DECIMAL column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @param  mixed  $precision
+     * @return AbstractStructure
+     */
     public function decimal($name, $size = null, $precision = null)
     {
         return $this->addColumn($name, 'decimal', $size, $precision);
     }
 
+    /**
+     * Add a NUMERIC column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @param  mixed  $precision
+     * @return AbstractStructure
+     */
     public function numeric($name, $size = null, $precision = null)
     {
         return $this->addColumn($name, 'numeric', $size, $precision);
@@ -315,26 +558,57 @@ abstract class AbstractStructure extends AbstractTable
      * DATE & TIME TYPES
      */
 
+    /**
+     * Add a DATE column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function date($name)
     {
         return $this->addColumn($name, 'date');
     }
 
+    /**
+     * Add a TIME column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function time($name)
     {
         return $this->addColumn($name, 'time');
     }
 
+    /**
+     * Add a DATETIME column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function datetime($name)
     {
         return $this->addColumn($name, 'datetime');
     }
 
+    /**
+     * Add a TIMESTAMP column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function timestamp($name)
     {
         return $this->addColumn($name, 'timestamp');
     }
 
+    /**
+     * Add a YEAR column
+     *
+     * @param  string $name
+     * @param  mixed  $size
+     * @return AbstractStructure
+     */
     public function year($name, $size = null)
     {
         return $this->addColumn($name, 'year', $size);
@@ -344,51 +618,111 @@ abstract class AbstractStructure extends AbstractTable
      * CHARACTER TYPES
      */
 
+    /**
+     * Add a TEXT column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function text($name)
     {
         return $this->addColumn($name, 'text');
     }
 
+    /**
+     * Add a TINYTEXT column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function tinyText($name)
     {
         return $this->addColumn($name, 'tinytext');
     }
 
+    /**
+     * Add a MEDIUMTEXT column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function mediumText($name)
     {
         return $this->addColumn($name, 'mediumtext');
     }
 
+    /**
+     * Add a LONGTEXT column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function longText($name)
     {
         return $this->addColumn($name, 'longtext');
     }
 
+    /**
+     * Add a BLOB column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function blob($name)
     {
         return $this->addColumn($name, 'blob');
     }
 
+    /**
+     * Add a MEDIUMBLOB column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function mediumBlob($name)
     {
         return $this->addColumn($name, 'mediumblob');
     }
 
+    /**
+     * Add a LONGBLOB column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function longBlob($name)
     {
         return $this->addColumn($name, 'longblob');
     }
 
+    /**
+     * Add a CHAR column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function char($name, $size = null)
     {
         return $this->addColumn($name, 'char', $size);
     }
 
+    /**
+     * Add a VARCHAR column
+     *
+     * @param  string $name
+     * @return AbstractStructure
+     */
     public function varchar($name, $size = null)
     {
         return $this->addColumn($name, 'varchar', $size);
     }
 
+    /**
+     * Format column data type and parameters
+     *
+     * @param  array $column
+     * @return string
+     */
     protected function getColumnType(array $column)
     {
         $columnString = $this->getValidColumnType($column['type']);
@@ -419,6 +753,13 @@ abstract class AbstractStructure extends AbstractTable
         return $columnString;
     }
 
+
+    /**
+     * Get valid column type
+     *
+     * @param  string $type
+     * @return string
+     */
     protected function getValidColumnType($type)
     {
         return $type;

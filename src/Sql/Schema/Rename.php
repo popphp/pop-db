@@ -26,19 +26,39 @@ namespace Pop\Db\Sql\Schema;
 class Rename extends AbstractTable
 {
 
+    /**
+     * Rename table name
+     * @var array
+     */
     protected $to = null;
 
+    /**
+     * Set the rename table name
+     *
+     * @param  string $table
+     * @return Rename
+     */
     public function to($table)
     {
         $this->to = $table;
         return $this;
     }
 
+    /**
+     * Get the rename table name
+     *
+     * @return string
+     */
     public function getTo()
     {
         return $this->to;
     }
 
+    /**
+     * Render the table schema
+     *
+     * @return string
+     */
     public function render()
     {
         return ($this->dbType == self::MYSQL) ?
@@ -46,6 +66,11 @@ class Rename extends AbstractTable
                 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME TO ' . $this->quoteId($this->to) . ';' . PHP_EOL;
     }
 
+    /**
+     * Render the table schema to string
+     *
+     * @return string
+     */
     public function __toString()
     {
         return $this->render();

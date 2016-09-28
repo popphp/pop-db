@@ -26,63 +26,148 @@ namespace Pop\Db\Sql;
 class Schema extends AbstractSql
 {
 
+    /**
+     * DROP table schema objects
+     * @var array
+     */
     protected $drop     = [];
+
+    /**
+     * CREATE table schema objects
+     * @var array
+     */
     protected $create   = [];
+
+    /**
+     * ALTER table schema objects
+     * @var array
+     */
     protected $alter    = [];
+
+    /**
+     * RENAME table schema objects
+     * @var array
+     */
     protected $rename   = [];
+
+    /**
+     * TRUNCATE table schema objects
+     * @var array
+     */
     protected $truncate = [];
 
+    /**
+     * Foreign key check flag
+     * @var boolean
+     */
     protected $foreignKeyCheck = true;
 
+    /**
+     * Access the CREATE table object
+     *
+     * @param  string $table
+     * @return Schema\Create
+     */
     public function create($table)
     {
         return $this->getCreateTable($table);
     }
 
+    /**
+     * Access the CREATE table object, setting IF NOT EXISTS
+     *
+     * @param  string $table
+     * @return Schema\Create
+     */
     public function createIfNotExists($table)
     {
         $this->getCreateTable($table)->ifNotExists();
         return $this->getCreateTable($table);
     }
 
+    /**
+     * Access the DROP table object
+     *
+     * @param  string $table
+     * @return Schema\Drop
+     */
     public function drop($table)
     {
         return $this->getDropTable($table);
     }
 
+    /**
+     * Access the DROP table object, setting IF EXISTS
+     *
+     * @param  string $table
+     * @return Schema\Drop
+     */
     public function dropIfExists($table)
     {
         $this->getDropTable($table)->ifExists();
         return $this->getDropTable($table);
     }
 
+    /**
+     * Access the ALTER table object
+     *
+     * @param  string $table
+     * @return Schema\Alter
+     */
     public function alter($table)
     {
         return $this->getAlterTable($table);
     }
 
+    /**
+     * Access the RENAME table object
+     *
+     * @param  string $table
+     * @return Schema\Rename
+     */
     public function rename($table)
     {
         return $this->getRenameTable($table);
     }
 
+    /**
+     * Access the TRUNCATE table object
+     *
+     * @param  string $table
+     * @return Schema\Truncate
+     */
     public function truncate($table)
     {
         return $this->getTruncateTable($table);
     }
 
+    /**
+     * Enable the foreign key check
+     *
+     * @return Schema
+     */
     public function enableForeignKeyCheck()
     {
         $this->foreignKeyCheck = true;
         return $this;
     }
 
+    /**
+     * Disable the foreign key check
+     *
+     * @return Schema
+     */
     public function disableForeignKeyCheck()
     {
         $this->foreignKeyCheck = false;
         return $this;
     }
 
+    /**
+     * Render the schema
+     *
+     * @return string
+     */
     public function render()
     {
         $sql = '';
@@ -123,6 +208,11 @@ class Schema extends AbstractSql
         return $sql;
     }
 
+    /**
+     * Execute the schema directly
+     *
+     * @return void
+     */
     public function execute()
     {
         if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
@@ -159,6 +249,11 @@ class Schema extends AbstractSql
         }
     }
 
+    /**
+     * Render the schema to string
+     *
+     * @return string
+     */
     public function __toString()
     {
         return $this->render();

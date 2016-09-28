@@ -26,11 +26,21 @@ namespace Pop\Db\Sql\Schema;
 class Truncate extends AbstractTable
 {
 
+    /**
+     * Render the table schema
+     *
+     * @return string
+     */
     public function render()
     {
         return 'TRUNCATE TABLE ' . $this->quoteId($this->table) . ';' . PHP_EOL;
     }
 
+    /**
+     * Render the table schema to string
+     *
+     * @return string
+     */
     public function __toString()
     {
         return $this->render();

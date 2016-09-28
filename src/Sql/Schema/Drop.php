@@ -26,27 +26,56 @@ namespace Pop\Db\Sql\Schema;
 class Drop extends AbstractTable
 {
 
+    /**
+     * IF EXISTS flag
+     * @var boolean
+     */
     protected $ifExists = false;
+
+    /**
+     * CASCADE flag
+     * @var boolean
+     */
     protected $cascade  = false;
 
+    /**
+     * Set the IF EXISTS flag
+     *
+     * @return Drop
+     */
     public function ifExists()
     {
         $this->ifExists = true;
         return $this;
     }
 
+    /**
+     * Set the CASCADE flag
+     *
+     * @return Drop
+     */
     public function cascade()
     {
         $this->cascade = true;
         return $this;
     }
 
+    /**
+     * Render the table schema
+     *
+     * @return string
+     */
     public function render()
     {
         return 'DROP TABLE ' . ((($this->ifExists) && ($this->dbType != self::SQLSRV)) ? 'IF EXISTS ' : null)
         . $this->quoteId($this->table) . ((($this->dbType == self::PGSQL) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
     }
 
+    /**
+     * Render the table schema to string
+     *
+     * @return string
+     */
     public function __toString()
     {
         return $this->render();

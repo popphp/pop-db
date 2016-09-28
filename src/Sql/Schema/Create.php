@@ -26,14 +26,28 @@ namespace Pop\Db\Sql\Schema;
 class Create extends AbstractStructure
 {
 
+    /**
+     * IF NOT EXISTS flag
+     * @var boolean
+     */
     protected $ifNotExists = false;
 
+    /**
+     * Set the IF NOT EXISTS flag
+     *
+     * @return Create
+     */
     public function ifNotExists()
     {
         $this->ifNotExists = true;
         return $this;
     }
 
+    /**
+     * Render the table schema
+     *
+     * @return string
+     */
     public function render()
     {
         $sql = '';
@@ -119,6 +133,11 @@ class Create extends AbstractStructure
         return $sql . PHP_EOL;
     }
 
+    /**
+     * Render the table schema to string
+     *
+     * @return string
+     */
     public function __toString()
     {
         return $this->render();
