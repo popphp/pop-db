@@ -11,11 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
-
+namespace Pop\Db\Sql\Schema;
 
 /**
- * Schema TRUNCATE table class
+ * Schema DROP table class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,12 +23,21 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Truncate extends AbstractTable
+class Drop extends AbstractTable
 {
+
+    protected $ifExists = false;
+
+    public function ifExists()
+    {
+        $this->ifExists = true;
+        return $this;
+    }
 
     public function render()
     {
-        return '';
+        return 'DROP TABLE ' . ((($this->ifExists) && ($this->dbType != self::SQLSRV)) ? 'IF EXISTS ' : null)
+        . $this->quoteId($this->name) . ';';
     }
 
     public function __toString()

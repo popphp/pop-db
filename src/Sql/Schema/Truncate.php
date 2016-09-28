@@ -11,11 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
-
+namespace Pop\Db\Sql\Schema;
 
 /**
- * Abstract schema table class
+ * Schema TRUNCATE table class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,23 +23,17 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-abstract class AbstractTable
+class Truncate extends AbstractTable
 {
 
-    protected $name = null;
-
-    public function __construct($name)
+    public function render()
     {
-        $this->name = $name;
+        return 'TRUNCATE TABLE ' . $this->quoteId($this->name) . ';';
     }
 
-    public function getName()
+    public function __toString()
     {
-        return $this->name;
+        return $this->render();
     }
-
-    abstract public function render();
-
-    abstract public function __toString();
 
 }

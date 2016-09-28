@@ -11,11 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
-
+namespace Pop\Db\Sql\Schema;
 
 /**
- * Schema DROP table class
+ * Schema ALTER table class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,20 +23,14 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Drop extends AbstractTable
+class Alter extends AbstractStructure
 {
-
-    protected $ifExists = false;
-
-    public function ifExists()
-    {
-        $this->ifExists = true;
-        return $this;
-    }
 
     public function render()
     {
-        return '';
+        $sql = 'ALTER TABLE ' . $this->quoteId($this->name);
+
+        return $sql;
     }
 
     public function __toString()

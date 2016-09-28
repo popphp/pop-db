@@ -11,11 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
-
+namespace Pop\Db\Sql\Schema;
 
 /**
- * Schema CREATE table class
+ * Schema RENAME table class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,20 +23,25 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Create extends AbstractCreate
+class Rename extends AbstractTable
 {
 
-    protected $ifNotExists = false;
+    protected $to = null;
 
-    public function ifNotExists()
+    public function to($table)
     {
-        $this->ifNotExists = true;
+        $this->to = $table;
         return $this;
+    }
+
+    public function getTo()
+    {
+        return $this->to;
     }
 
     public function render()
     {
-        return '';
+        return 'RENAME TABLE ' . $this->quoteId($this->name) . ' TO ' . $this->quoteId($this->to) . ';';
     }
 
     public function __toString()

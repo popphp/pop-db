@@ -13,8 +13,6 @@
  */
 namespace Pop\Db\Sql;
 
-use Pop\Db\Adapter;
-
 /**
  * Abstract clause class
  *

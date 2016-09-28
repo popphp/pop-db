@@ -11,11 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
-
+namespace Pop\Db\Sql\Schema;
 
 /**
- * Schema ALTER table class
+ * Schema CREATE table class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,12 +23,25 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Alter extends AbstractCreate
+class Create extends AbstractStructure
 {
+
+    protected $ifNotExists = false;
+
+    public function ifNotExists()
+    {
+        $this->ifNotExists = true;
+        return $this;
+    }
 
     public function render()
     {
-        return '';
+        $sql = 'CREATE TABLE ' . ((($this->ifNotExists) && ($this->dbType != self::SQLSRV)) ? 'IF NOT EXISTS ' : null) .
+            $this->quoteId($this->name) . ' (' . PHP_EOL;
+
+        $sql .= ');';
+
+        return $sql;
     }
 
     public function __toString()

@@ -26,8 +26,8 @@ namespace Pop\Db\Sql;
 class Schema extends AbstractSql
 {
 
-    protected $create   = [];
     protected $drop     = [];
+    protected $create   = [];
     protected $alter    = [];
     protected $rename   = [];
     protected $truncate = [];
@@ -69,64 +69,129 @@ class Schema extends AbstractSql
         return $this->getTruncateTable($table);
     }
 
+    public function render()
+    {
+        $sql = '';
+
+        // Render DROP tables
+        foreach ($this->drop as $drop) {
+            $sql .= $drop->render() . PHP_EOL . PHP_EOL;
+        }
+
+        // Render CREATE tables
+        foreach ($this->create as $create) {
+            $sql .= $create->render() . PHP_EOL . PHP_EOL;
+        }
+
+        // Render ALTER tables
+        foreach ($this->alter as $alter) {
+            $sql .= $alter->render() . PHP_EOL . PHP_EOL;
+        }
+
+        // Render RENAME tables
+        foreach ($this->rename as $rename) {
+            $sql .= $rename->render() . PHP_EOL . PHP_EOL;
+        }
+
+        // Render TRUNCATE tables
+        foreach ($this->truncate as $truncate) {
+            $sql .= $truncate->render() . PHP_EOL . PHP_EOL;
+        }
+
+        return $sql;
+    }
+
+    public function execute()
+    {
+        // Execute DROP tables
+        foreach ($this->drop as $drop) {
+            $this->db->query($drop->render());
+        }
+
+        // Execute CREATE tables
+        foreach ($this->create as $create) {
+            $this->db->query($create->render());
+        }
+
+        // Execute ALTER tables
+        foreach ($this->alter as $alter) {
+            $this->db->query($alter->render());
+        }
+
+        // Execute RENAME tables
+        foreach ($this->rename as $rename) {
+            $this->db->query($rename->render());
+        }
+
+        // Execute TRUNCATE tables
+        foreach ($this->truncate as $truncate) {
+            $this->db->query($truncate->render());
+        }
+    }
+
+    public function __toString()
+    {
+        return $this->render();
+    }
+
     /**
      * @param  string $table
-     * @return Table\Create
+     * @return Schema\Create
      */
     protected function getCreateTable($table)
     {
-        if (!isset($this->createTables[$table])) {
-            $this->createTables[$table] = new Table\Create($table);
+        if (!isset($this->create[$table])) {
+            $this->create[$table] = new Schema\Create($table, $this->db);
         }
-        return $this->createTables[$table];
+        return $this->create[$table];
     }
 
     /**
      * @param  string $table
-     * @return Table\Drop
+     * @return Schema\Drop
      */
     protected function getDropTable($table)
     {
-        if (!isset($this->dropTables[$table])) {
-            $this->dropTables[$table] = new Table\Drop($table);
+        if (!isset($this->drop[$table])) {
+            $this->drop[$table] = new Schema\Drop($table, $this->db);
         }
-        return $this->dropTables[$table];
+        return $this->drop[$table];
     }
 
     /**
      * @param  string $table
-     * @return Table\Alter
+     * @return Schema\Alter
      */
     protected function getAlterTable($table)
     {
-        if (!isset($this->alterTables[$table])) {
-            $this->alterTables[$table] = new Table\Alter($table);
+        if (!isset($this->alter[$table])) {
+            $this->alter[$table] = new Schema\Alter($table, $this->db);
         }
-        return $this->alterTables[$table];
+        return $this->alter[$table];
     }
 
     /**
      * @param  string $table
-     * @return Table\Rename
+     * @return Schema\Rename
      */
     protected function getRenameTable($table)
     {
-        if (!isset($this->renameTables[$table])) {
-            $this->renameTables[$table] = new Table\Rename($table);
+        if (!isset($this->rename[$table])) {
+            $this->rename[$table] = new Schema\Rename($table, $this->db);
         }
-        return $this->renameTables[$table];
+        return $this->rename[$table];
     }
 
     /**
      * @param  string $table
-     * @return Table\Truncate
+     * @return Schema\Truncate
      */
     protected function getTruncateTable($table)
     {
-        if (!isset($this->truncateTables[$table])) {
-            $this->truncateTables[$table] = new Table\Truncate($table);
+        if (!isset($this->truncate[$table])) {
+            $this->truncate[$table] = new Schema\Truncate($table, $this->db);
         }
-        return $this->truncateTables[$table];
+        return $this->truncate[$table];
     }
 
 }

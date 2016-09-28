@@ -127,6 +127,16 @@ abstract class AbstractAdapter implements AdapterInterface
     }
 
     /**
+     * Create Schema builder
+     *
+     * @return Sql\Schema
+     */
+    public function createSchema()
+    {
+        return new Sql\Schema($this);
+    }
+
+    /**
      * Get the connection object/resource
      *
      * @return mixed

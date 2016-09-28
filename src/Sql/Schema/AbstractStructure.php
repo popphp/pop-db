@@ -11,11 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
-
+namespace Pop\Db\Sql\Schema;
 
 /**
- * Schema CREATE table class
+ * Schema abstract design table class for CREATE and ALTER
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,7 +23,7 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-abstract class AbstractCreate extends AbstractTable
+abstract class AbstractStructure extends AbstractTable
 {
 
     protected $columns           = [];

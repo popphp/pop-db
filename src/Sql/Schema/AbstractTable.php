@@ -11,11 +11,13 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Table;
+namespace Pop\Db\Sql\Schema;
 
+use Pop\Db\Adapter\AbstractAdapter;
+use Pop\Db\Sql\AbstractSql;
 
 /**
- * Schema RENAME table class
+ * Abstract schema table class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -24,30 +26,32 @@ namespace Pop\Db\Sql\Table;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Rename extends AbstractTable
+abstract class AbstractTable extends AbstractSql
 {
 
-    protected $to = null;
+    protected $name = null;
 
-    public function to($table)
+    /**
+     * Constructor
+     *
+     * Instantiate the table object
+     *
+     * @param  string          $name
+     * @param  AbstractAdapter $db
+     */
+    public function __construct($name, $db)
     {
-        $this->to = $table;
-        return $this;
+        $this->name = $name;
+        parent::__construct($db);
     }
 
-    public function getTo()
+    public function getName()
     {
-        return $this->to;
+        return $this->name;
     }
 
-    public function render()
-    {
-        return '';
-    }
+    abstract public function render();
 
-    public function __toString()
-    {
-        return $this->render();
-    }
+    abstract public function __toString();
 
 }
