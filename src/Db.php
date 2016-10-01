@@ -59,6 +59,71 @@ class Db
     }
 
     /**
+     * Method to connect to a MySQL database and return the MySQL database adapter object
+     *
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return Adapter\Mysql
+     */
+    public static function mysqlConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    {
+        return self::connect('mysql', $options, $prefix);
+    }
+
+    /**
+     * Method to connect to a PDO database and return the PDO database adapter object
+     *
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return Adapter\Pdo
+     */
+    public static function pdoConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    {
+        return self::connect('pdo', $options, $prefix);
+    }
+
+    /**
+     * Method to connect to a PostgreSQL database and return the PostgreSQL database adapter object
+     *
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return Adapter\Pgsql
+     */
+    public static function pgsqlConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    {
+        return self::connect('pgsql', $options, $prefix);
+    }
+
+    /**
+     * Method to connect to a SQL Server database and return the SQL Server database adapter object
+     *
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return Adapter\Sqlsrv
+     */
+    public static function sqlsrvConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    {
+        return self::connect('sqlsrv', $options, $prefix);
+    }
+
+    /**
+     * Method to connect to a SQLite database and return the SQLite database adapter object
+     *
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return Adapter\Sqlite
+     */
+    public static function sqliteConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    {
+        return self::connect('sqlite', $options, $prefix);
+    }
+
+    /**
      * Check the database connection
      *
      * @param  string $adapter

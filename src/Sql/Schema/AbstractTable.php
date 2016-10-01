@@ -60,6 +60,26 @@ abstract class AbstractTable extends AbstractSql
     }
 
     /**
+     * Render the table schema to an array of statements
+     *
+     * @return array
+     */
+    public function renderToStatements()
+    {
+        $statements    = explode(';' . PHP_EOL, $this->render());
+        $sqlStatements = [];
+
+        foreach ($statements as $statement) {
+            $statement = trim($statement);
+            if (!empty($statement)) {
+                $sqlStatements[] = $statement;
+            }
+        }
+
+        return $sqlStatements;
+    }
+
+    /**
      * Render the table schema
      *
      * @return string

@@ -113,6 +113,46 @@ abstract class AbstractSql
     }
 
     /**
+     * Determine if the DB type is MySQL
+     *
+     * @return boolean
+     */
+    public function isMysql()
+    {
+        return ($this->dbType == self::MYSQL);
+    }
+
+    /**
+     * Determine if the DB type is PostgreSQL
+     *
+     * @return boolean
+     */
+    public function isPgsql()
+    {
+        return ($this->dbType == self::PGSQL);
+    }
+
+    /**
+     * Determine if the DB type is SQL Server
+     *
+     * @return boolean
+     */
+    public function isSqlsrv()
+    {
+        return ($this->dbType == self::SQLSRV);
+    }
+
+    /**
+     * Determine if the DB type is SQLite
+     *
+     * @return boolean
+     */
+    public function isSqlite()
+    {
+        return ($this->dbType == self::SQLITE);
+    }
+
+    /**
      * Get the current database adapter object (alias method)
      *
      * @return Adapter\AbstractAdapter

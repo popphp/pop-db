@@ -30,25 +30,25 @@ class Schema extends AbstractSql
      * DROP table schema objects
      * @var array
      */
-    protected $drop     = [];
+    protected $drop = [];
 
     /**
      * CREATE table schema objects
      * @var array
      */
-    protected $create   = [];
+    protected $create = [];
 
     /**
      * ALTER table schema objects
      * @var array
      */
-    protected $alter    = [];
+    protected $alter = [];
 
     /**
      * RENAME table schema objects
      * @var array
      */
-    protected $rename   = [];
+    protected $rename = [];
 
     /**
      * TRUNCATE table schema objects
@@ -172,8 +172,12 @@ class Schema extends AbstractSql
     {
         $sql = '';
 
-        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
-            $sql .= 'SET foreign_key_checks = 0;' . PHP_EOL . PHP_EOL;
+        if (!$this->foreignKeyCheck) {
+            if ($this->isMysql()) {
+                $sql .= 'SET foreign_key_checks = 0;' . PHP_EOL . PHP_EOL;
+            } else if ($this->isSqlite()) {
+                $sql .= 'PRAGMA foreign_keys=off;' . PHP_EOL . PHP_EOL;
+            }
         }
 
         // Render DROP tables
@@ -201,8 +205,12 @@ class Schema extends AbstractSql
             $sql .= $truncate->render();
         }
 
-        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
-            $sql .= 'SET foreign_key_checks = 1;' . PHP_EOL . PHP_EOL;
+        if (!$this->foreignKeyCheck) {
+            if ($this->isMysql()) {
+                $sql .= 'SET foreign_key_checks = 1;' . PHP_EOL . PHP_EOL;
+            } else if ($this->isSqlite()) {
+                $sql .= 'PRAGMA foreign_keys=on;' . PHP_EOL . PHP_EOL;
+            }
         }
 
         return $sql;
@@ -215,37 +223,60 @@ class Schema extends AbstractSql
      */
     public function execute()
     {
-        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
-            $this->db->query('SET foreign_key_checks = 0');
+        if (!$this->foreignKeyCheck) {
+            if ($this->isMysql()) {
+                $this->db->query('SET foreign_key_checks = 0');
+            } else if ($this->isSqlite()) {
+                $this->db->query('PRAGMA foreign_keys=off');
+            }
         }
 
         // Execute DROP tables
         foreach ($this->drop as $drop) {
-            $this->db->query($drop->render());
+            $dropStatements = $drop->renderToStatements();
+            foreach ($dropStatements as $statement) {
+                $this->db->query($statement);
+            }
         }
 
         // Execute CREATE tables
         foreach ($this->create as $create) {
-            $this->db->query($create->render());
+            $createStatements = $create->renderToStatements();
+            foreach ($createStatements as $statement) {
+                $this->db->query($statement);
+            }
         }
 
         // Execute ALTER tables
         foreach ($this->alter as $alter) {
-            $this->db->query($alter->render());
+            $alterStatements = $alter->renderToStatements();
+            foreach ($alterStatements as $statement) {
+                $this->db->query($statement);
+            }
         }
 
         // Execute RENAME tables
         foreach ($this->rename as $rename) {
-            $this->db->query($rename->render());
+            $renameStatements = $rename->renderToStatements();
+            foreach ($renameStatements as $statement) {
+                $this->db->query($statement);
+            }
         }
 
         // Execute TRUNCATE tables
         foreach ($this->truncate as $truncate) {
-            $this->db->query($truncate->render());
+            $truncateStatements = $truncate->renderToStatements();
+            foreach ($truncateStatements as $statement) {
+                $this->db->query($statement);
+            }
         }
 
-        if (($this->dbType == self::MYSQL) && (!$this->foreignKeyCheck)) {
-            $this->db->query('SET foreign_key_checks = 1');
+        if (!$this->foreignKeyCheck) {
+            if ($this->isMysql()) {
+                $this->db->query('SET foreign_key_checks = 1');
+            } else if ($this->isSqlite()) {
+                $this->db->query('PRAGMA foreign_keys=on');
+            }
         }
     }
 

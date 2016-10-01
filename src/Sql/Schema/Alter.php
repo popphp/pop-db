@@ -114,7 +114,7 @@ class Alter extends AbstractStructure
 
         foreach ($this->columns as $name => $column) {
             if (isset($column['modify'])) {
-                if ($this->dbType == self::MYSQL) {
+                if ($this->isMysql()) {
                     $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
                         ' CHANGE COLUMN ' . $this->quoteId($column['modify']) . ' ' .
                         $this->quoteId($name) . ' ' . $this->getColumnType($column). ';' . PHP_EOL;
@@ -138,7 +138,7 @@ class Alter extends AbstractStructure
         }
 
         foreach ($this->dropIndices as $index) {
-            if ($this->dbType == self::MYSQL) {
+            if ($this->isMysql()) {
                 $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP INDEX ' . $this->quoteId($index) . ';' . PHP_EOL;
             } else {
                 $sql .= 'DROP INDEX ' . $this->quoteId($this->table . '.' . $index) . ';' . PHP_EOL;
@@ -146,7 +146,7 @@ class Alter extends AbstractStructure
         }
 
         foreach ($this->dropConstraints as $constraint) {
-            if ($this->dbType == self::MYSQL) {
+            if ($this->isMysql()) {
                 $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' . $this->quoteId($constraint) . ';' . PHP_EOL;
             } else {
                 $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP CONSTRAINT ' . $this->quoteId($constraint) . ';' . PHP_EOL;

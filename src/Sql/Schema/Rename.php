@@ -61,7 +61,7 @@ class Rename extends AbstractTable
      */
     public function render()
     {
-        return ($this->dbType == self::MYSQL) ?
+        return ($this->isMysql()) ?
                 'RENAME TABLE ' . $this->quoteId($this->table) . ' TO ' . $this->quoteId($this->to) . ';' . PHP_EOL :
                 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME TO ' . $this->quoteId($this->to) . ';' . PHP_EOL;
     }

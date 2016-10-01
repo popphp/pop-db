@@ -193,10 +193,13 @@ abstract class AbstractStructure extends AbstractTable
      * @param  mixed $value
      * @return AbstractStructure
      */
-    public function default($value)
+    public function defaultIs($value)
     {
         if (null !== $this->currentColumn) {
             $this->columns[$this->currentColumn]['default'] = $value;
+            if (null === $value) {
+                $this->columns[$this->currentColumn]['nullable'] = true;
+            }
         }
 
         return $this;
@@ -699,6 +702,7 @@ abstract class AbstractStructure extends AbstractTable
      * Add a CHAR column
      *
      * @param  string $name
+     * @param  int    $size
      * @return AbstractStructure
      */
     public function char($name, $size = null)
@@ -710,6 +714,7 @@ abstract class AbstractStructure extends AbstractTable
      * Add a VARCHAR column
      *
      * @param  string $name
+     * @param  int    $size
      * @return AbstractStructure
      */
     public function varchar($name, $size = null)
@@ -720,10 +725,11 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Format column data type and parameters
      *
+     * @param  string $name
      * @param  array $column
      * @return string
      */
-    protected function getColumnType(array $column)
+    protected function getColumnType($name, array $column)
     {
         $columnString = $this->getValidColumnType($column['type']);
 
@@ -739,20 +745,33 @@ abstract class AbstractStructure extends AbstractTable
         if ((null === $column['default']) && ($column['nullable'] === true)) {
             $columnString .= ' DEFAULT NULL';
         } else if (!empty($column['default'])) {
-            $columnString .= ' DEFAULT \'' . $column['default'] . '\'';
+            if (stripos($column['default'], 'null')) {
+                $columnString .= ' DEFAULT ' . strtoupper($column['default']);
+            } else {
+                $columnString .= ' DEFAULT \'' . $column['default'] . '\'';
+            }
         }
 
         if ($column['increment'] !== false) {
-            if ($this->dbType == self::MYSQL) {
-                $columnString .= ' AUTO_INCREMENT';
-            } else if ($this->dbType == self::SQLITE) {
-                $columnString .= ' AUTOINCREMENT';
+            switch ($this->dbType) {
+                case (self::MYSQL):
+                    $columnString .= ' AUTO_INCREMENT';
+                    break;
+                case (self::SQLITE):
+                    $columnString .= (($column['primary'] !== false) ? ' PRIMARY KEY' : null) . ' AUTOINCREMENT';
+                    break;
+                case (self::PGSQL):
+                    $columnString .= ' nextval(\'' . $this->table . '_' . $name . '_seq\')';
+                    break;
+                case (self::SQLSRV):
+                    $columnString .= (($column['primary'] !== false) ? ' PRIMARY KEY' : null) .
+                        ' IDENTITY(' . (int)$column['increment'] . ', 1)';
+                    break;
             }
         }
 
         return $columnString;
     }
-
 
     /**
      * Get valid column type

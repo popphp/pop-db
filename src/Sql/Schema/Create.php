@@ -33,6 +33,18 @@ class Create extends AbstractStructure
     protected $ifNotExists = false;
 
     /**
+     * Table engine (MySQL only)
+     * @var string
+     */
+    protected $engine = 'InnoDB';
+
+    /**
+     * Table charset (MySQL only)
+     * @var string
+     */
+    protected $charset = 'utf8';
+
+    /**
      * Set the IF NOT EXISTS flag
      *
      * @return Create
@@ -40,6 +52,18 @@ class Create extends AbstractStructure
     public function ifNotExists()
     {
         $this->ifNotExists = true;
+        return $this;
+    }
+
+    /**
+     * Set the IF NOT EXISTS flag
+     *
+     * @param  string $engine
+     * @return Create
+     */
+    public function setEngine($engine)
+    {
+        $this->engine = $engine;
         return $this;
     }
 
@@ -54,8 +78,8 @@ class Create extends AbstractStructure
 
         // Create PGSQL sequence
         if ($this->hasIncrement()) {
-            $increment = $this->getIncrement();
-            if ($this->dbType == self::PGSQL) {
+            if ($this->isPgsql()) {
+                $increment = $this->getIncrement();
                 foreach ($increment as $name) {
                     $sql .= 'CREATE SEQUENCE ' . $this->table . '_' . $name . '_seq START ' . (int)$this->columns[$name]['increment'] . ';';
                 }
@@ -69,17 +93,36 @@ class Create extends AbstractStructure
         $sql .= 'CREATE TABLE ' . ((($this->ifNotExists) && ($this->dbType != self::SQLSRV)) ? 'IF NOT EXISTS ' : null) .
             $this->quoteId($this->table) . ' (' . PHP_EOL;
 
-        $i = 0;
+        $i   = 0;
+        $inc = null;
         foreach ($this->columns as $name => $column) {
-            $sql .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->quoteId($name) . ' ' . $this->getColumnType($column);
+            if ($column['increment'] !== false) {
+                $inc = $column['increment'];
+            }
+            $sql .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->quoteId($name) . ' ' . $this->getColumnType($name, $column);
             $i++;
         }
 
-        if ($this->hasPrimary()) {
-            $sql .= ',' . PHP_EOL . '  PRIMARY KEY (' . implode(', ', $this->getPrimary(true)) . ')';
+        if (($this->hasPrimary()) && ($this->dbType !== self::SQLSRV)) {
+            if ($this->isSqlite()) {
+                $sql .= ',' . PHP_EOL . '  UNIQUE (' . implode(', ', $this->getPrimary(true)) . ')';
+            } else {
+                $sql .= ',' . PHP_EOL . '  PRIMARY KEY (' . implode(', ', $this->getPrimary(true)) . ')';
+            }
         }
 
-        $sql .= PHP_EOL . ');' . PHP_EOL . PHP_EOL;
+        $sql .= PHP_EOL . ')';
+
+        if ($this->isMysql()) {
+            $sql .= ' ENGINE=' . $this->engine;
+            $sql .= ' DEFAULT CHARSET=' . $this->charset;
+            if (null !== $inc) {
+                $sql .= ' AUTO_INCREMENT=' . (int)$inc;
+            }
+            $sql .= ';' . PHP_EOL . PHP_EOL;
+        } else {
+            $sql .= ';' . PHP_EOL . PHP_EOL;
+        }
 
         /*
          * END CREATE TABLE
@@ -88,12 +131,12 @@ class Create extends AbstractStructure
         // Assign PGSQL or SQLITE sequences
         if ($this->hasIncrement()) {
             $increment = $this->getIncrement();
-            if ($this->dbType == self::PGSQL) {
+            if ($this->isPgsql()) {
                 foreach ($increment as $name) {
                     $sql .= 'ALTER SEQUENCE ' . $this->table . '_' . $name . '_seq OWNED BY ' . $this->quoteId($this->table . '.' . $name) . ';' . PHP_EOL;
                 }
                 $sql .= PHP_EOL;
-            } else if ($this->dbType == self::SQLITE) {
+            } else if ($this->isSqlite()) {
                 foreach ($increment as $name) {
                     $start = (int)$this->columns[$name]['increment'];
                     if (substr((string)$start, -1) == '1') {
