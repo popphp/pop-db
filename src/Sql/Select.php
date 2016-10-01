@@ -431,7 +431,7 @@ class Select extends AbstractClause
         $order = strtoupper($order);
 
         if (strpos($order, 'RAND') !== false) {
-            $this->orderBy = ($this->getDbType() == self::SQLITE) ? ' RANDOM()' : ' RAND()';
+            $this->orderBy = ($this->isSqlite()) ? ' RANDOM()' : ' RAND()';
         } else if (($order == 'ASC') || ($order == 'DESC')) {
             $this->orderBy .= ' ' . $order;
         }
@@ -494,7 +494,7 @@ class Select extends AbstractClause
         $sql .= 'FROM ';
 
         // Account for LIMIT and OFFSET clauses if the database is SQLSRV
-        if (($this->getDbType() == self::SQLSRV) && ((null !== $this->limit) || (null !== $this->offset))) {
+        if (($this->isSqlsrv()) && ((null !== $this->limit) || (null !== $this->offset))) {
             if (null === $this->orderBy) {
                 throw new Exception('Error: You must set an order by clause to execute a limit clause on the SQL server database.');
             }
@@ -538,9 +538,9 @@ class Select extends AbstractClause
         }
 
         // Build any LIMIT clause for all other database types.
-        if ($this->getDbType() != self::SQLSRV) {
+        if (!$this->isSqlsrv()) {
             if (null !== $this->limit) {
-                if ((strpos($this->limit, ',') !== false) && ($this->getDbType() == self::PGSQL)) {
+                if ((strpos($this->limit, ',') !== false) && ($this->isPgsql())) {
                     $ary = explode(',', $this->limit);
                     $this->offset = (int)trim($ary[0]);
                     $this->limit = (int)trim($ary[1]);
@@ -550,7 +550,7 @@ class Select extends AbstractClause
         }
 
         // Build any OFFSET clause for all other database types.
-        if ($this->getDbType() != self::SQLSRV) {
+        if (!$this->isSqlsrv()) {
             if (null !== $this->offset) {
                 $sql .= ' OFFSET ' . $this->offset;
             }
