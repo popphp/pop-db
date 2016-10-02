@@ -88,7 +88,7 @@ class Create extends AbstractStructure
         }
 
         /*
-         * BEGIN CREATE TABLE
+         * START CREATE TABLE
          */
         $sql .= 'CREATE TABLE ' . ((($this->ifNotExists) && ($this->dbType != self::SQLSRV)) ? 'IF NOT EXISTS ' : null) .
             $this->quoteId($this->table) . ' (' . PHP_EOL;
@@ -149,7 +149,7 @@ class Create extends AbstractStructure
             }
         }
 
-        // Create indices
+        // Add indices
         foreach ($this->indices as $name => $index) {
             foreach ($index['column'] as $i => $column) {
                 $index['column'][$i] = $this->quoteId($column);
@@ -161,7 +161,7 @@ class Create extends AbstractStructure
             }
         }
 
-        // Create constraints
+        // Add constraints
         if (count($this->constraints) > 0) {
             $sql .= PHP_EOL;
             foreach ($this->constraints as $name => $constraint) {

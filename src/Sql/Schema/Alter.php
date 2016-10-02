@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Sql\Schema;
 
+use Pop\Db\Adapter\AbstractAdapter;
+
 /**
  * Schema ALTER table class
  *
@@ -26,23 +28,77 @@ namespace Pop\Db\Sql\Schema;
 class Alter extends AbstractStructure
 {
 
+
+    /**
+     * Existing columns in the table
+     * @var array
+     */
+    protected $existingColumns = [];
+
     /**
      * Columns to be dropped
      * @var array
      */
-    protected $dropColumns     = [];
+    protected $dropColumns = [];
 
     /**
      * Indices to be dropped
      * @var array
      */
-    protected $dropIndices     = [];
+    protected $dropIndices = [];
 
     /**
      * Constraints to be dropped
      * @var array
      */
     protected $dropConstraints = [];
+
+    /**
+     * Constructor
+     *
+     * Instantiate the ALTER table object
+     *
+     * @param  string          $table
+     * @param  AbstractAdapter $db
+     */
+    public function __construct($table, $db)
+    {
+        parent::__construct($table, $db);
+
+        if (count($this->info['columns']) > 0) {
+            foreach ($this->info['columns'] as $name => $column) {
+                $size      = null;
+                $precision = null;
+                if (strpos($column['type'], '(') !== false) {
+                    $type = substr($column['type'], 0, strpos($column['type'], '('));
+                    if (strpos($column['type'], ',') !== false) {
+                        $size = substr($column['type'], (strpos($column['type'], '(') + 1));
+                        $size = substr($size, 0, strpos($size, ','));
+                        $precision = substr($column['type'], (strpos($column['type'], ',') + 1));
+                        $precision = trim(substr($precision, 0, strpos($precision, ')')));
+                    } else {
+                        $size = substr($column['type'], (strpos($column['type'], '(') + 1));
+                        $size = substr($size, 0, strpos($size, ')'));
+                    }
+                } else {
+                    $type = $column['type'];
+                }
+
+                $this->existingColumns[$name] = [
+                    'type'       => $type,
+                    'size'       => $size,
+                    'precision'  => $precision,
+                    'nullable'   => $column['null'],
+                    'default'    => null,
+                    'increment'  => false,
+                    'primary'    => $column['primary'],
+                    'unsigned'   => false,
+                    'attributes' => [],
+                    'modify'     => null
+                ];
+            }
+        }
+    }
 
     /**
      * Modify a column
@@ -54,10 +110,22 @@ class Alter extends AbstractStructure
      * @param  mixed  $precision
      * @return Alter
      */
-    public function modifyColumn($oldName, $newName, $type, $size = null, $precision = null)
+    public function modifyColumn($oldName, $newName, $type = null, $size = null, $precision = null)
     {
-        $this->addColumn($newName, $type, $size, $precision);
-        $this->columns[$newName]['modify'] = $oldName;
+        if (isset($this->existingColumns[$oldName])) {
+            if (null !== $type) {
+                $this->existingColumns[$oldName]['type'] = $type;
+            }
+            if (null !== $size) {
+                $this->existingColumns[$oldName]['size'] = $size;
+            }
+            if (null !== $precision) {
+                $this->existingColumns[$oldName]['precision'] = $precision;
+            }
+
+            $this->existingColumns[$oldName]['modify'] = $newName;
+        }
+
         return $this;
     }
 
@@ -112,31 +180,37 @@ class Alter extends AbstractStructure
     {
         $sql = '';
 
-        foreach ($this->columns as $name => $column) {
-            if (isset($column['modify'])) {
+        // Modify existing columns
+        foreach ($this->existingColumns as $name => $column) {
+            if (null !== $column['modify']) {
                 if ($this->isMysql()) {
                     $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
-                        ' CHANGE COLUMN ' . $this->quoteId($column['modify']) . ' ' .
-                        $this->quoteId($name) . ' ' . $this->getColumnType($name, $column). ';' . PHP_EOL;
+                        ' CHANGE COLUMN ' . $this->quoteId($name) . ' ' .
+                        $this->quoteId($column['modify']) . ' ' . $this->getColumnType($column['modify'], $column) . ';' . PHP_EOL;
                 } else {
                     if ($column['modify'] == $name) {
                         $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ALTER COLUMN ' .
-                            $this->quoteId($name) . ' ' . $this->getColumnType($name, $column) . ';' . PHP_EOL;
+                            $this->quoteId($name) . ' ' . $this->getColumnType($column['modify'], $column) . ';' . PHP_EOL;
                     } else {
                         $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME COLUMN ' .
-                            $this->quoteId($column['modify']) . ' ' . $this->quoteId($name) . ';' . PHP_EOL;
+                            $this->quoteId($name) . ' ' . $this->quoteId($column['modify']) . ';' . PHP_EOL;
                     }
                 }
-            } else {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' .
-                    $this->quoteId($name) . ' ' . $this->getColumnType($name, $column). ';' . PHP_EOL;
             }
         }
 
+        // Add new columns
+        foreach ($this->columns as $name => $column) {
+            $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' .
+                $this->quoteId($name) . ' ' . $this->getColumnType($name, $column) . ';' . PHP_EOL;
+        }
+
+        // Drop columns
         foreach ($this->dropColumns as $name => $column) {
             $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP COLUMN ' . $this->quoteId($column) . ';' . PHP_EOL;
         }
 
+        // Drop indices
         foreach ($this->dropIndices as $index) {
             if ($this->isMysql()) {
                 $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP INDEX ' . $this->quoteId($index) . ';' . PHP_EOL;
@@ -145,6 +219,7 @@ class Alter extends AbstractStructure
             }
         }
 
+        // Drop constraints
         foreach ($this->dropConstraints as $constraint) {
             if ($this->isMysql()) {
                 $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' . $this->quoteId($constraint) . ';' . PHP_EOL;
@@ -153,7 +228,7 @@ class Alter extends AbstractStructure
             }
         }
 
-        // Create indices
+        // Add indices
         if (count($this->indices) > 0) {
             $sql .= PHP_EOL;
             foreach ($this->indices as $name => $index) {
@@ -168,7 +243,7 @@ class Alter extends AbstractStructure
             }
         }
 
-        // Create constraints
+        // Add constraints
         if (count($this->constraints) > 0) {
             $sql .= PHP_EOL;
             foreach ($this->constraints as $name => $constraint) {

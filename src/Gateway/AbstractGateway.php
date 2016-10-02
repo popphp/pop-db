@@ -15,6 +15,7 @@ namespace Pop\Db\Gateway;
 
 use Pop\Db\Db;
 use Pop\Db\Sql;
+use Pop\Db\Adapter\AbstractAdapter;
 
 /**
  * Db abstract gateway class
@@ -60,69 +61,76 @@ abstract class AbstractGateway implements GatewayInterface
     /**
      * Get table info
      *
+     * @param  AbstractAdapter $db
      * @return array
      */
-    public function getTableInfo()
+    public function getTableInfo(AbstractAdapter $db = null)
     {
-        $db    = Db::getDb($this->table);
-        $sql   = $db->createSql();
-        $info  = [
+        if (null === $db) {
+            $db = Db::getDb($this->table);
+        }
+
+        $tables = $db->getTables();
+        $sql    = $db->createSql();
+        $info   = [
             'tableName' => $this->table,
             'columns'   => []
         ];
 
-        $sqlString = null;
-        $field     = 'column_name';
-        $type      = 'data_type';
-        $nullField = 'is_nullable';
-        $keyField  = 'constraint_type';
+        if (in_array($this->table, $tables)) {
+            $sqlString = null;
+            $field     = 'column_name';
+            $type      = 'data_type';
+            $nullField = 'is_nullable';
+            $keyField  = 'constraint_type';
 
-        switch ($sql->getDbType()) {
-            case Sql::PGSQL:
-            case Sql::SQLSRV:
-                $sqlString = 'SELECT * FROM information_schema.columns ' .
-                    'LEFT JOIN information_schema.table_constraints ' .
-                    'ON information_schema.columns.table_name = information_schema.table_constraints.table_name ' .
-                    'WHERE table_name = \'' . $this->table . '\' ORDER BY information_schema.ordinal_position ASC';
-                break;
-            case Sql::SQLITE:
-                $sqlString = 'PRAGMA table_info(\'' . $this->table . '\')';
-                $field     = 'name';
-                $type      = 'type';
-                $nullField = 'notnull';
-                $keyField  = 'pk';
-                break;
-            default:
-                $sqlString = 'SHOW COLUMNS FROM `' . $this->table . '`';
-                $field     = 'Field';
-                $type      = 'Type';
-                $nullField = 'Null';
-                $keyField  = 'Key';
-        }
-
-        $db->query($sqlString);
-
-        while (($row = $db->fetch()) != false) {
             switch ($sql->getDbType()) {
-                case Sql::SQLITE:
-                    $nullResult    = !($row[$nullField]);
-                    $primaryResult = ($row[$keyField] == 1);
+                case Sql::PGSQL:
+                case Sql::SQLSRV:
+                    $sqlString = 'SELECT * FROM information_schema.columns ' .
+                        'LEFT JOIN information_schema.table_constraints ' .
+                        'ON information_schema.columns.table_name = information_schema.table_constraints.table_name ' .
+                        'WHERE table_name = \'' . $this->table . '\' ORDER BY information_schema.ordinal_position ASC';
                     break;
-                case Sql::MYSQL:
-                    $nullResult    = (strtoupper($row[$nullField]) != 'NO');
-                    $primaryResult = (strtoupper($row[$keyField]) == 'PRI');
+                case Sql::SQLITE:
+                    $sqlString = 'PRAGMA table_info(\'' . $this->table . '\')';
+                    $field     = 'name';
+                    $type      = 'type';
+                    $nullField = 'notnull';
+                    $keyField  = 'pk';
                     break;
                 default:
-                    $nullResult    = $row[$nullField];
-                    $primaryResult = (strtoupper($row[$keyField]) == 'PRIMARY KEY');
-
+                    $sqlString = 'SHOW COLUMNS FROM `' . $this->table . '`';
+                    $field     = 'Field';
+                    $type      = 'Type';
+                    $nullField = 'Null';
+                    $keyField  = 'Key';
             }
 
-            $info['columns'][$row[$field]] = [
-                'type'    => $row[$type],
-                'primary' => $primaryResult,
-                'null'    => $nullResult
-            ];
+            $db->query($sqlString);
+
+            while (($row = $db->fetch()) != false) {
+                switch ($sql->getDbType()) {
+                    case Sql::SQLITE:
+                        $nullResult    = !($row[$nullField]);
+                        $primaryResult = ($row[$keyField] == 1);
+                        break;
+                    case Sql::MYSQL:
+                        $nullResult    = (strtoupper($row[$nullField]) != 'NO');
+                        $primaryResult = (strtoupper($row[$keyField]) == 'PRI');
+                        break;
+                    default:
+                        $nullResult    = $row[$nullField];
+                        $primaryResult = (strtoupper($row[$keyField]) == 'PRIMARY KEY');
+
+                }
+
+                $info['columns'][$row[$field]] = [
+                    'type'    => $row[$type],
+                    'primary' => $primaryResult,
+                    'null'    => $nullResult
+                ];
+            }
         }
 
         return $info;

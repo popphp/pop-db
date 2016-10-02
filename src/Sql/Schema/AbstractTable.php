@@ -15,6 +15,7 @@ namespace Pop\Db\Sql\Schema;
 
 use Pop\Db\Adapter\AbstractAdapter;
 use Pop\Db\Sql\AbstractSql;
+use Pop\Db\Gateway;
 
 /**
  * Abstract schema table class
@@ -36,6 +37,12 @@ abstract class AbstractTable extends AbstractSql
     protected $table = null;
 
     /**
+     * Table info
+     * @var array
+     */
+    protected $info = [];
+
+    /**
      * Constructor
      *
      * Instantiate the table object
@@ -47,6 +54,9 @@ abstract class AbstractTable extends AbstractSql
     {
         $this->table = $table;
         parent::__construct($db);
+
+        $tableGateway = new Gateway\Table($table);
+        $this->info = $tableGateway->getTableInfo($db);
     }
 
     /**
