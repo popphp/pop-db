@@ -50,7 +50,7 @@ abstract class AbstractTable extends AbstractSql
      * @param  string          $table
      * @param  AbstractAdapter $db
      */
-    public function __construct($table, $db)
+    public function __construct($table, AbstractAdapter $db)
     {
         $this->table = $table;
         parent::__construct($db);
@@ -67,6 +67,16 @@ abstract class AbstractTable extends AbstractSql
     public function getTable()
     {
         return $this->table;
+    }
+
+    /**
+     * Get the table info
+     *
+     * @return array
+     */
+    public function getInfo()
+    {
+        return $this->info;
     }
 
     /**

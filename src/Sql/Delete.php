@@ -35,7 +35,7 @@ class Delete extends AbstractClause
     /**
      * Access the WHERE clause
      *
-     * @param  $where
+     * @param  mixed $where
      * @return Delete
      */
     public function where($where = null)
