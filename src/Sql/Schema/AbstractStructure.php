@@ -93,15 +93,42 @@ abstract class AbstractStructure extends AbstractTable
     {
         $this->currentColumn  = $name;
         $this->columns[$name] = [
-            'type'      => $type,
-            'size'      => $size,
-            'precision' => $precision,
-            'nullable'  => null,
-            'default'   => null,
-            'increment' => false,
-            'primary'   => false,
-            'unsigned'  => false
+            'type'       => $type,
+            'size'       => $size,
+            'precision'  => $precision,
+            'nullable'   => null,
+            'default'    => null,
+            'increment'  => false,
+            'primary'    => false,
+            'unsigned'   => false,
+            'attributes' => []
         ];
+
+        return $this;
+    }
+
+    /**
+     * Determine if the table has a column
+     *
+     * @param  string $name
+     * @return boolean
+     */
+    public function hasColumn($name)
+    {
+        return (isset($this->columns[$name]));
+    }
+
+    /**
+     * Add a custom column attribute
+     *
+     * @param  string $attribute
+     * @return AbstractStructure
+     */
+    public function addColumnAttribute($attribute)
+    {
+        if (null !== $this->currentColumn) {
+            $this->columns[$this->currentColumn]['attributes'][] = $attribute;
+        }
 
         return $this;
     }
@@ -263,10 +290,7 @@ abstract class AbstractStructure extends AbstractTable
         }
 
         foreach ($column as $c) {
-            if (!isset($this->columns[$c])) {
-                throw new Exception('Error: That column has not been added to the table schema.');
-            }
-            if ($type == 'primary') {
+            if (isset($this->columns[$c]) && ($type == 'primary')) {
                 $this->columns[$c]['primary'] = true;
             }
         }
@@ -396,42 +420,6 @@ abstract class AbstractStructure extends AbstractTable
     public function integer($name, $size = null)
     {
         return $this->addColumn($name, 'integer', $size);
-    }
-
-    /**
-     * Add a SERIAL column
-     *
-     * @param  string $name
-     * @param  mixed  $size
-     * @return AbstractStructure
-     */
-    public function serial($name, $size = null)
-    {
-        return $this->addColumn($name, 'serial', $size);
-    }
-
-    /**
-     * Add a BIGSERIAL column
-     *
-     * @param  string $name
-     * @param  mixed  $size
-     * @return AbstractStructure
-     */
-    public function bigSerial($name, $size = null)
-    {
-        return $this->addColumn($name, 'bigserial', $size);
-    }
-
-    /**
-     * Add a SMALLSERIAL column
-     *
-     * @param  string $name
-     * @param  mixed  $size
-     * @return AbstractStructure
-     */
-    public function smallSerial($name, $size = null)
-    {
-        return $this->addColumn($name, 'smallserial', $size);
     }
 
     /**
@@ -738,17 +726,23 @@ abstract class AbstractStructure extends AbstractTable
             $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
         }
 
-        if ($column['nullable'] === false) {
+        if (($this->isMysql()) && ($column['unsigned'] !== false)) {
+            $columnString .= ' UNSIGNED';
+        }
+
+        if (count($column['attributes']) > 0) {
+            $columnString .= ' ' . implode(' ', $column['attributes']);
+        }
+
+        if (($column['nullable'] === false) || (strtoupper($column['default']) == 'NOT NULL')) {
             $columnString .= ' NOT NULL';
         }
 
         if ((null === $column['default']) && ($column['nullable'] === true)) {
             $columnString .= ' DEFAULT NULL';
         } else if (!empty($column['default'])) {
-            if (stripos($column['default'], 'null')) {
-                $columnString .= ' DEFAULT ' . strtoupper($column['default']);
-            } else {
-                $columnString .= ' DEFAULT \'' . $column['default'] . '\'';
+            if (strtoupper($column['default']) == 'NULL') {
+                $columnString .= ' DEFAULT NULL';
             }
         }
 
@@ -781,6 +775,94 @@ abstract class AbstractStructure extends AbstractTable
      */
     protected function getValidColumnType($type)
     {
+        $type = strtoupper($type);
+
+        if ($this->isMysql()) {
+            switch ($type) {
+                case 'INTEGER':
+                    $type = 'INT';
+                    break;
+                case 'SERIAL':
+                    $type = 'INT';
+                    break;
+                case 'BIGSERIAL':
+                    $type = 'BIGINT';
+                    break;
+                case 'SMALLSERIAL':
+                    $type = 'SMALLINT';
+                    break;
+            }
+        } else if ($this->isPgsql()) {
+            switch ($type) {
+                case 'TINYINT':
+                    $type = 'INT';
+                    break;
+                case 'MEDIUMINT':
+                    $type = 'INT';
+                    break;
+                case 'DATETIME':
+                    $type = 'TIMESTAMP';
+                    break;
+                case 'VARBINARY':
+                    $type = 'BYTEA';
+                    break;
+                case 'BLOB':
+                case 'TINYBLOB':
+                case 'MEDIUMBLOB':
+                case 'LONGBLOB':
+                case 'TINYTEXT':
+                case 'MEDIUMTEXT':
+                case 'LONGTEXT':
+                    $type = 'TEXT';
+                    break;
+            }
+        } else if ($this->isSqlsrv()) {
+            switch ($type) {
+                case 'INTEGER':
+                    $type = 'INT';
+                    break;
+                case 'MEDIUMINT':
+                    $type = 'INT';
+                    break;
+                case 'SERIAL':
+                    $type = 'INT';
+                    break;
+                case 'BIGSERIAL':
+                    $type = 'BIGINT';
+                    break;
+                case 'SMALLSERIAL':
+                    $type = 'SMALLINT';
+                    break;
+                case 'TIMESTAMP':
+                    $type = 'DATETIME2';
+                    break;
+                case 'BLOB':
+                case 'TINYBLOB':
+                case 'MEDIUMBLOB':
+                case 'LONGBLOB':
+                case 'TINYTEXT':
+                case 'MEDIUMTEXT':
+                case 'LONGTEXT':
+                    $type = 'TEXT';
+                    break;
+            }
+        } else if ($this->isSqlite()) {
+            switch ($type) {
+                case 'SERIAL':
+                    $type = 'INT';
+                    break;
+                case 'BIGSERIAL':
+                    $type = 'BIGINT';
+                    break;
+                case 'SMALLSERIAL':
+                    $type = 'SMALLINT';
+                    break;
+                case 'TIMESTAMP':
+                    $type = 'DATETIME';
+                    break;
+            }
+        }
+
         return $type;
     }
 

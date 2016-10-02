@@ -117,11 +117,11 @@ class Alter extends AbstractStructure
                 if ($this->isMysql()) {
                     $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
                         ' CHANGE COLUMN ' . $this->quoteId($column['modify']) . ' ' .
-                        $this->quoteId($name) . ' ' . $this->getColumnType($column). ';' . PHP_EOL;
+                        $this->quoteId($name) . ' ' . $this->getColumnType($name, $column). ';' . PHP_EOL;
                 } else {
                     if ($column['modify'] == $name) {
                         $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ALTER COLUMN ' .
-                            $this->quoteId($name) . ' ' . $this->getColumnType($column) . ';' . PHP_EOL;
+                            $this->quoteId($name) . ' ' . $this->getColumnType($name, $column) . ';' . PHP_EOL;
                     } else {
                         $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME COLUMN ' .
                             $this->quoteId($column['modify']) . ' ' . $this->quoteId($name) . ';' . PHP_EOL;
@@ -129,7 +129,7 @@ class Alter extends AbstractStructure
                 }
             } else {
                 $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' .
-                    $this->quoteId($name) . ' ' . $this->getColumnType($column). ';' . PHP_EOL;
+                    $this->quoteId($name) . ' ' . $this->getColumnType($name, $column). ';' . PHP_EOL;
             }
         }
 
