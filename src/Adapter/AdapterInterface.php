@@ -27,6 +27,27 @@ interface AdapterInterface
 {
 
     /**
+     * Begin a transaction
+     *
+     * @return AdapterInterface
+     */
+    public function beginTransaction();
+
+    /**
+     * Commit a transaction
+     *
+     * @return AdapterInterface
+     */
+    public function commit();
+
+    /**
+     * Rollback a transaction
+     *
+     * @return AdapterInterface
+     */
+    public function rollback();
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql

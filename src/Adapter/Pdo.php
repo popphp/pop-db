@@ -111,6 +111,39 @@ class Pdo extends AbstractAdapter
     }
 
     /**
+     * Begin a transaction
+     *
+     * @return Pdo
+     */
+    public function beginTransaction()
+    {
+        $this->connection->beginTransaction();
+        return $this;
+    }
+
+    /**
+     * Commit a transaction
+     *
+     * @return Pdo
+     */
+    public function commit()
+    {
+        $this->connection->commit();
+        return $this;
+    }
+
+    /**
+     * Rollback a transaction
+     *
+     * @return Pdo
+     */
+    public function rollback()
+    {
+        $this->connection->rollBack();
+        return $this;
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql

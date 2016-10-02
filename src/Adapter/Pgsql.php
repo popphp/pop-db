@@ -100,6 +100,43 @@ class Pgsql extends AbstractAdapter
     }
 
     /**
+     * Begin a transaction
+     *
+     * @return Pgsql
+     */
+    public function beginTransaction()
+    {
+        $this->query('SET AUTOCOMMIT=OFF')
+             ->query('START TRANSACTION');
+
+        return $this;
+    }
+
+    /**
+     * Commit a transaction
+     *
+     * @return Pgsql
+     */
+    public function commit()
+    {
+        $this->query('COMMIT')
+             ->query('SET AUTOCOMMIT=ON');
+
+        return $this;
+    }
+
+    /**
+     * Rollback a transaction
+     *
+     * @return Pgsql
+     */
+    public function rollback()
+    {
+        $this->query('ROLLBACK');
+        return $this;
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql
@@ -124,6 +161,10 @@ class Pgsql extends AbstractAdapter
         $this->statementString = $sql;
         $this->statementName   = 'pop_db_adapter_pgsql_statement_' . ++static::$statementIndex;
         $this->statement       = pg_prepare($this->connection, $this->statementName, $this->statementString);
+
+        if ($this->statement === false) {
+            $this->throwError('PostgreSQL Statement Error: ' . pg_last_error());
+        }
         return $this;
     }
 

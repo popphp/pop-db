@@ -66,6 +66,66 @@ class Mysql extends AbstractAdapter
     }
 
     /**
+     * Begin a transaction
+     *
+     * @param  int    $flags
+     * @param  string $name
+     * @return Mysql
+     */
+    public function beginTransaction($flags = null, $name = null)
+    {
+        if ((null !== $flags) && (null !== $name)) {
+            $this->connection->begin_transaction($flags, $name);
+        } else if (null !== $flags) {
+            $this->connection->begin_transaction($flags);
+        } else {
+            $this->connection->begin_transaction();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Commit a transaction
+     *
+     * @param  int    $flags
+     * @param  string $name
+     * @return Mysql
+     */
+    public function commit($flags = null, $name = null)
+    {
+        if ((null !== $flags) && (null !== $name)) {
+            $this->connection->commit($flags, $name);
+        } else if (null !== $flags) {
+            $this->connection->commit($flags);
+        } else {
+            $this->connection->commit();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Rollback a transaction
+     *
+     * @param  int    $flags
+     * @param  string $name
+     * @return Mysql
+     */
+    public function rollback($flags = null, $name = null)
+    {
+        if ((null !== $flags) && (null !== $name)) {
+            $this->connection->rollback($flags, $name);
+        } else if (null !== $flags) {
+            $this->connection->rollback($flags);
+        } else {
+            $this->connection->rollback();
+        }
+
+        return $this;
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql
@@ -91,7 +151,10 @@ class Mysql extends AbstractAdapter
     public function prepare($sql)
     {
         $this->statement = $this->connection->stmt_init();
-        $this->statement->prepare($sql);
+        if (!$this->statement->prepare($sql)) {
+            $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
+        }
+
         return $this;
     }
 
@@ -125,7 +188,9 @@ class Mysql extends AbstractAdapter
             $i++;
         }
 
-        call_user_func_array([$this->statement, 'bind_param'], $bindParams);
+        if (call_user_func_array([$this->statement, 'bind_param'], $bindParams) === false) {
+            $this->throwError('Error: There was an error binding the parameters');
+        }
 
         return $this;
     }
@@ -139,7 +204,7 @@ class Mysql extends AbstractAdapter
     public function execute()
     {
         if (null === $this->statement) {
-            $this->throwError('Error: The database statement resource is not currently set.');
+            $this->throwError('Error: The database statement resource is not currently set');
         }
 
         $this->statementResult = $this->statement->execute();

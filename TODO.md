@@ -1,8 +1,8 @@
 TODO pop-db
 ===========
 
-- Schema builder
-    + Migrations
-- Transaction support
+- Schema builder [DONE]
+- Migrations with the schema builder 
+- Transaction support [DONE]
 - Data mapper
 - DB real-time logger/debugger

@@ -62,6 +62,27 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function __construct(array $options);
 
     /**
+     * Begin a transaction
+     *
+     * @return AbstractAdapter
+     */
+    abstract public function beginTransaction();
+
+    /**
+     * Commit a transaction
+     *
+     * @return AbstractAdapter
+     */
+    abstract public function commit();
+
+    /**
+     * Rollback a transaction
+     *
+     * @return AbstractAdapter
+     */
+    abstract public function rollback();
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql

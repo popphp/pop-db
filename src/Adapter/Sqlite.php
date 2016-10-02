@@ -60,6 +60,39 @@ class Sqlite extends AbstractAdapter
     }
 
     /**
+     * Begin a transaction
+     *
+     * @return Sqlite
+     */
+    public function beginTransaction()
+    {
+        $this->query('BEGIN TRANSACTION');
+        return $this;
+    }
+
+    /**
+     * Commit a transaction
+     *
+     * @return Sqlite
+     */
+    public function commit()
+    {
+        $this->query('COMMIT');
+        return $this;
+    }
+
+    /**
+     * Rollback a transaction
+     *
+     * @return Sqlite
+     */
+    public function rollback()
+    {
+        $this->query('ROLLBACK');
+        return $this;
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql
@@ -84,6 +117,10 @@ class Sqlite extends AbstractAdapter
     public function prepare($sql)
     {
         $this->statement = $this->connection->prepare($sql);
+
+        if ($this->statement === false) {
+            $this->throwError('SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
+        }
         return $this;
     }
 
@@ -97,7 +134,9 @@ class Sqlite extends AbstractAdapter
     {
         foreach ($params as $dbColumnName => $dbColumnValue) {
             ${$dbColumnName} = $dbColumnValue;
-            $this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName});
+            if ($this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName}) === false) {
+                $this->throwError('Error: There was an error binding the parameters');
+            }
         }
         return $this;
     }
@@ -112,7 +151,9 @@ class Sqlite extends AbstractAdapter
      */
     public function bindParam($param, $value, $type = SQLITE3_BLOB)
     {
-        $this->statement->bindParam($param, $value, $type);
+        if ($this->statement->bindParam($param, $value, $type) === false) {
+            $this->throwError('Error: There was an error binding the parameter');
+        }
         return $this;
     }
 
@@ -126,7 +167,9 @@ class Sqlite extends AbstractAdapter
      */
     public function bindValue($param, $value, $type = SQLITE3_BLOB)
     {
-        $this->statement->bindValue($param, $value, $type);
+        if ($this->statement->bindValue($param, $value, $type) === false) {
+            $this->throwError('Error: There was an error binding the value');
+        }
         return $this;
     }
 
@@ -142,6 +185,10 @@ class Sqlite extends AbstractAdapter
         }
 
         $this->result = $this->statement->execute();
+
+        if ($this->result === false) {
+            $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
+        }
         return $this;
     }
 

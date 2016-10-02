@@ -84,6 +84,39 @@ class Sqlsrv extends AbstractAdapter
     }
 
     /**
+     * Begin a transaction
+     *
+     * @return Sqlsrv
+     */
+    public function beginTransaction()
+    {
+        sqlsrv_begin_transaction($this->connection);
+        return $this;
+    }
+
+    /**
+     * Commit a transaction
+     *
+     * @return Sqlsrv
+     */
+    public function commit()
+    {
+        sqlsrv_commit($this->connection);
+        return $this;
+    }
+
+    /**
+     * Rollback a transaction
+     *
+     * @return Sqlsrv
+     */
+    public function rollback()
+    {
+        sqlsrv_rollback($this->connection);
+        return $this;
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  string $sql
@@ -112,6 +145,9 @@ class Sqlsrv extends AbstractAdapter
         $this->statementString = $sql;
         if (strpos($this->statementString, '?') === false) {
             $this->statement = sqlsrv_prepare($this->connection, $this->statementString);
+            if ($this->statement === false) {
+                $this->throwError('SQL Server Statement Error: ' . $this->getSqlSrvErrors());
+            }
         }
 
         return $this;
@@ -139,6 +175,10 @@ class Sqlsrv extends AbstractAdapter
             $this->statement = (null !== $options) ?
                 sqlsrv_prepare($this->connection, $this->statementString, $bindParams, $options) :
                 sqlsrv_prepare($this->connection, $this->statementString, $bindParams);
+
+            if ($this->statement === false) {
+                $this->throwError('Error: ' . $this->getSqlSrvErrors());
+            }
         }
 
         return $this;
@@ -156,6 +196,10 @@ class Sqlsrv extends AbstractAdapter
         }
 
         $this->statementResult = sqlsrv_execute($this->statement);
+
+        if ($this->statementResult === false) {
+            $this->throwError('Error: ' . $this->getSqlSrvErrors());
+        }
 
         return $this;
     }
