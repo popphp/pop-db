@@ -47,7 +47,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     /**
      * Method to get the count of items in the collection
      *
-     * @return array
+     * @return int
      */
     public function count()
     {
