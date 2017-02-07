@@ -33,7 +33,6 @@ interface MigrationInterface
      */
     public function up();
 
-
     /**
      * Execute a DOWN migration (rollback previous changes)
      *
