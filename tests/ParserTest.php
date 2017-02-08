@@ -47,6 +47,31 @@ class ParserTest extends \PHPUnit_Framework_TestCase
     public function testParserColumn2()
     {
         $results = Parser\Column::parse([
+            '%username1%'   => 'test',
+            'username2%'    => 'test',
+            '%username3'    => 'test',
+            '-%username4'   => 'test',
+            'username5%-'   => 'test',
+            '-%username6%-' => 'test'
+        ], ':');
+
+        $this->assertContains('username1 LIKE :username1', $results['where']);
+        $this->assertContains('username2 LIKE :username2', $results['where']);
+        $this->assertContains('username3 LIKE :username3', $results['where']);
+        $this->assertContains('username4 NOT LIKE :username4', $results['where']);
+        $this->assertContains('username5 NOT LIKE :username5', $results['where']);
+        $this->assertContains('username6 NOT LIKE :username6', $results['where']);
+        $this->assertEquals('%test%', $results['params']['username1']);
+        $this->assertEquals('test%', $results['params']['username2']);
+        $this->assertEquals('%test', $results['params']['username3']);
+        $this->assertEquals('%test', $results['params']['username4']);
+        $this->assertEquals('test%', $results['params']['username5']);
+        $this->assertEquals('%test%', $results['params']['username6']);
+    }
+
+    public function testParserColumnOr()
+    {
+        $results = Parser\Column::parse([
             '%username% OR' => 'test'
         ], ':');
 
