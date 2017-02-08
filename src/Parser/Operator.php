@@ -36,6 +36,17 @@ class Operator
     {
         $op = '=';
 
+        if (substr($column, 0, 2) == '-%') {
+            $column = substr($column, 2);
+        } else if (substr($column, 0, 1) == '%') {
+            $column = substr($column, 1);
+        }
+        if (substr($column, -2) == '%-') {
+            $column = substr($column, 0, -2);
+        } else if (substr($column, -1) == '%') {
+            $column = substr($column, 0, -1);
+        }
+
         if (substr($column, -2) == '>=') {
             $op = '>=';
             $column = trim(substr($column, 0, -2));

@@ -10,14 +10,14 @@ class ParserTest extends \PHPUnit_Framework_TestCase
     public function testParserColumn1()
     {
         $results = Parser\Column::parse([
-            'username1' => '%test%',
-            'username2' => 'test%',
-            'username3' => '%test',
-            'username4' => '-%test',
-            'username5' => 'test%-',
-            'username6' => '-%test%-',
-            'username7' => null,
-            'username-' => null,
+            '%username1%'   => 'test',
+            'username2%'    => 'test',
+            '%username3'    => 'test',
+            '-%username4'   => 'test',
+            'username5%-'   => 'test',
+            '-%username6%-' => 'test',
+            'username7'     => null,
+            'username-'     => null,
             'id' => [2, 3],
             'id-' => [2, 3],
             'id1' => '(1, 5)',
@@ -47,7 +47,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
     public function testParserColumn2()
     {
         $results = Parser\Column::parse([
-            'username' => '%test% OR'
+            '%username% OR' => 'test'
         ], ':');
 
         $this->assertContains('username LIKE :username OR', $results['where']);

@@ -40,8 +40,8 @@ class Column
 
         $i = 1;
         foreach ($columns as $column => $value) {
-            if (!is_array($value) && (substr($value, -3) == ' OR')) {
-                $value   = substr($value, 0, -3);
+            if (!is_array($column) && (substr($column, -3) == ' OR')) {
+                $column  = substr($column, 0, -3);
                 $combine = ' OR';
             } else {
                 $combine = null;
@@ -64,7 +64,7 @@ class Column
                 } else {
                     $where[] = $column . ' IS NULL' . $combine;
                 }
-                // IN or NOT IN
+            // IN or NOT IN
             } else if (is_array($value)) {
                 if (substr($column, -1) == '-') {
                     $column  = substr($column, 0, -1);
@@ -72,7 +72,7 @@ class Column
                 } else {
                     $where[] = $column . ' IN (' . implode(', ', $value) . ')' . $combine;
                 }
-                // BETWEEN or NOT BETWEEN
+            // BETWEEN or NOT BETWEEN
             } else if ((substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
                 (strpos($value, ',') !== false)) {
                 if (substr($column, -1) == '-') {
@@ -81,35 +81,47 @@ class Column
                 } else {
                     $where[] = $column . ' BETWEEN ' . $value . $combine;
                 }
-                // LIKE or NOT LIKE
-            } else if ((substr($value, 0, 2) == '-%') || (substr($value, -2) == '%-') ||
-                (substr($value, 0, 1) == '%') || (substr($value, -1) == '%')) {
-                $op = ((substr($value, 0, 2) == '-%') || (substr($value, -2) == '%-')) ? 'NOT LIKE' : 'LIKE';
+            // LIKE or NOT LIKE
+            } else if ((substr($column, 0, 2) == '-%') || (substr($column, -2) == '%-') ||
+                (substr($column, 0, 1) == '%') || (substr($column, -1) == '%')) {
+                $op = ((substr($column, 0, 2) == '-%') || (substr($column, -2) == '%-')) ? 'NOT LIKE' : 'LIKE';
 
-                $where[]  = $column . ' ' . $op . ' ' .  $pHolder . $combine;
-                if (substr($value, 0, 2) == '-%') {
-                    $value = substr($value, 1);
+                $realColumn = $column;
+                $realValue  = $value;
+                if (substr($realColumn, 0, 2) == '-%') {
+                    $realColumn = substr($realColumn, 2);
+                    $realValue  = '%' . $realValue;
+                } else if (substr($realColumn, 0, 1) == '%') {
+                    $realColumn = substr($realColumn, 1);
+                    $realValue  = '%' . $realValue;
                 }
-                if (substr($value, -2) == '%-') {
-                    $value = substr($value, 0, -1);
+                if (substr($realColumn, -2) == '%-') {
+                    $realColumn = substr($realColumn, 0, -2);
+                    $realValue .= '%';
+                } else if (substr($realColumn, -1) == '%') {
+                    $realColumn = substr($realColumn, 0, -1);
+                    $realValue .= '%';
                 }
-                if (isset($params[$column])) {
-                    if (is_array($params[$column])) {
+
+                $where[]  = $realColumn . ' ' . $op . ' ' .  $pHolder . $combine;
+
+                if (isset($params[$realColumn])) {
+                    if (is_array($params[$realColumn])) {
                         if ($placeholder == ':') {
                             $where[count($where) - 1] .= $i;
                         }
-                        $params[$column][] = $value;
+                        $params[$realColumn][] = $realValue;
                     } else {
                         if ($placeholder == ':') {
                             $where[0] .= ($i - 1);
                             $where[1] .= $i;
                         }
-                        $params[$column] = [$params[$column], $value];
+                        $params[$realColumn] = [$params[$realColumn], $realValue];
                     }
                 } else {
-                    $params[$column] = $value;
+                    $params[$realColumn] = $realValue;
                 }
-                // Standard operators
+            // Standard operators
             } else {
                 $column  = $operator['column'];
                 $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
