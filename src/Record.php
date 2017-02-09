@@ -418,10 +418,11 @@ class Record extends Record\AbstractRecord
      *
      * @param  string  $class
      * @param  mixed   $foreignKey
+     * @param  array   $options
      * @param  boolean $eager
      * @return mixed
      */
-    public function hasMany($class, $foreignKey = null, $eager = false)
+    public function hasMany($class, $foreignKey = null, array $options = null, $eager = false)
     {
         if (null === $foreignKey) {
             $class = get_class($this);
@@ -435,9 +436,9 @@ class Record extends Record\AbstractRecord
         $this->oneToMany[$class] = $foreignKey;
 
         if ($eager) {
-            return $this->getManyEager($class);
+            return $this->getManyEager($class, $options);
         } else {
-            return $this->getMany($class);
+            return $this->getMany($class, $options);
         }
     }
 
@@ -510,10 +511,11 @@ class Record extends Record\AbstractRecord
     /**
      * Get a 1:many relationship
      *
-     * @param  string  $class
+     * @param  string $class
+     * @param  array  $options
      * @return mixed
      */
-    public function getMany($class)
+    public function getMany($class, array $options = null)
     {
         $result = null;
         $id     = (count($this->primaryKeys) == 1) ? $this->rowGateway[$this->primaryKeys[0]] : null;
@@ -529,7 +531,7 @@ class Record extends Record\AbstractRecord
                 foreach ($foreignKeys as $i => $key) {
                     $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
                 }
-                $this->hasMany[$class] = new Record\Collection($class::findBy($columns));
+                $this->hasMany[$class] = new Record\Collection($class::findBy($columns, $options));
                 $result = $this->hasMany[$class];
             }
         } else {
@@ -543,9 +545,10 @@ class Record extends Record\AbstractRecord
      * Get a 1:many eager relationship
      *
      * @param  string $class
+     * @param  array  $options
      * @return array
      */
-    public function getManyEager($class)
+    public function getManyEager($class, array $options = null)
     {
         $record = new $class();
         $db     = Db::getDb($record->getFullTable());
@@ -567,6 +570,17 @@ class Record extends Record\AbstractRecord
             foreach ($foreignKeys as $i => $key) {
                 $sql->select()->where->in($key, $values);
             }
+        }
+
+        if ((null !== $options) && isset($options['limit'])) {
+            $sql->select()->limit((int)$options['limit']);
+        }
+        if ((null !== $options) && isset($options['offset'])) {
+            $sql->select()->offset((int)$options['offset']);
+        }
+        if ((null !== $options) && isset($options['order'])) {
+            $order = Parser\Order::parse($options['order']);
+            $sql->select()->orderBy($order['by'], $db->escape($order['order']));
         }
 
         $db->prepare($sql)
