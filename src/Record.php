@@ -359,7 +359,10 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $this->with) {
-            return $this->getWith($this->with);
+            $r = $this->getWith($this->with);
+            if (is_array($r) && (count($r) == 1)) {
+                return $r[0];
+            }
         } else {
             return $this;
         }
@@ -394,7 +397,10 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $this->with) {
-            return $this->getWith($this->with);
+            $r = $this->getWith($this->with);
+            if (is_array($r)) {
+                return new Record\Collection($r);
+            }
         } else {
             return new Record\Collection($rows);
         }
