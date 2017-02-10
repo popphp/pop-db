@@ -147,10 +147,7 @@ class Record extends Record\AbstractRecord
     public static function findById($id)
     {
         $record = new static();
-        $row    = $record->getRowGateway()->find($id);
-        $record->setColumns($row);
-
-        return $record;
+        return $record->getById($id);
     }
 
     /**
@@ -162,36 +159,8 @@ class Record extends Record\AbstractRecord
      */
     public static function findOne(array $columns = null, array $options = null)
     {
-        if (null === $options) {
-            $options = ['limit' => 1];
-        } else {
-            $options['limit'] = 1;
-        }
-
         $record = new static();
-        $params = null;
-        $where  = null;
-
-        if (null !== $columns) {
-            $db  = Db::getDb($record->getFullTable());
-            $sql = $db->createSql();
-
-            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
-            $params        = $parsedColumns['params'];
-            $where         = $parsedColumns['where'];
-        }
-
-        $rows = $record->getTableGateway()->select(null, $where, $params, $options);
-
-        if (isset($rows[0])) {
-            $record->setColumns($rows[0]);
-        }
-
-        if (isset($options['with'])) {
-            return $record->with($options['with']);
-        } else {
-            return $record;
-        }
+        $record->get1($columns, $options);
     }
 
     /**
@@ -205,29 +174,7 @@ class Record extends Record\AbstractRecord
     public static function findBy(array $columns = null, array $options = null, $resultAs = Record::AS_RECORD)
     {
         $record = new static();
-        $params = null;
-        $where  = null;
-
-        if (null !== $columns) {
-            $db  = Db::getDb($record->getFullTable());
-            $sql = $db->createSql();
-
-            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
-            $params        = $parsedColumns['params'];
-            $where         = $parsedColumns['where'];
-        }
-
-        $rows = $record->getTableGateway()->select(null, $where, $params, $options);
-
-        foreach ($rows as $i => $row) {
-            $rows[$i] = $record->processRow($row, $resultAs);
-        }
-
-        if (isset($options['with'])) {
-            return $record->with($options['with']);
-        } else {
-            return new Record\Collection($rows);
-        }
+        return $record->getBy($columns, $options, $resultAs);
     }
 
     /**
@@ -309,6 +256,19 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * With a 1:many relationship (eager-loading)
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    public static function with($name)
+    {
+        $record = new static();
+        $record->setWith($name);
+        return $record;
+    }
+
+    /**
      * Static method to get the total count of a set from the DB table
      *
      * @param  array  $columns
@@ -343,6 +303,101 @@ class Record extends Record\AbstractRecord
     public static function getTableInfo()
     {
         return (new static())->getTableGateway()->getTableInfo();
+    }
+
+    /**
+     * Get by ID method
+     *
+     * @param  mixed  $id
+     * @return Record
+     */
+    public function getById($id)
+    {
+        $this->setColumns($this->getRowGateway()->find($id));
+        return $this;
+    }
+
+    /**
+     * Get one method
+     *
+     * @param  array  $columns
+     * @param  array  $options
+     * @return Record
+     */
+    public function getOneBy(array $columns = null, array $options = null)
+    {
+        if (null === $options) {
+            $options = ['limit' => 1];
+        } else {
+            $options['limit'] = 1;
+        }
+
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $db  = Db::getDb($this->getFullTable());
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
+            $params        = $parsedColumns['params'];
+            $where         = $parsedColumns['where'];
+        }
+
+        $rows = $this->getTableGateway()->select(null, $where, $params, $options);
+
+        if (isset($rows[0])) {
+            $this->setColumns($rows[0]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get by method
+     *
+     * @param  array  $columns
+     * @param  array  $options
+     * @param  string $resultAs
+     * @return Record\Collection
+     */
+    public function getBy(array $columns = null, array $options = null, $resultAs = Record::AS_RECORD)
+    {
+        $params = null;
+        $where  = null;
+
+        if (null !== $columns) {
+            $db  = Db::getDb($this->getFullTable());
+            $sql = $db->createSql();
+
+            $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
+            $params        = $parsedColumns['params'];
+            $where         = $parsedColumns['where'];
+        }
+
+        $rows = $this->getTableGateway()->select(null, $where, $params, $options);
+
+        foreach ($rows as $i => $row) {
+            $rows[$i] = $this->processRow($row, $resultAs);
+        }
+
+        if (null !== $this->with) {
+            return $this->getWith($this->with);
+        } else {
+            return new Record\Collection($rows);
+        }
+    }
+
+    /**
+     * Get all method
+     *
+     * @param  array  $options
+     * @param  string $resultAs
+     * @return Record\Collection
+     */
+    public function getAll(array $options = null, $resultAs = Record::AS_RECORD)
+    {
+        return $this->getBy(null, $options, $resultAs);
     }
 
     /**
@@ -466,12 +521,24 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Set eager with
+     *
+     * @param  string $name
+     * @return Record
+     */
+    public function setWith($name)
+    {
+        $this->with = $name;
+        return $this;
+    }
+
+    /**
      * With a 1:many relationship (eager-loading)
      *
      * @param  string $name
      * @return mixed
      */
-    public function with($name)
+    public function getWith($name)
     {
         if (method_exists($this, $name)) {
             return $this->{$name}(true);

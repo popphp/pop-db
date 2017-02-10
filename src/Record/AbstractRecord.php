@@ -116,6 +116,12 @@ abstract class AbstractRecord implements \ArrayAccess
     protected $relationships = [];
 
     /**
+     * Eager with
+     * @var string
+     */
+    protected $with = null;
+
+    /**
      * Set the table
      *
      * @param  string $table
