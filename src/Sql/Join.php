@@ -78,6 +78,11 @@ class Join
         if ($foreignTable instanceof Select) {
             $alias              = ($foreignTable->hasAlias()) ? $foreignTable->getAlias() : $foreignTable->getTable();
             $this->foreignTable = '(' . $foreignTable . ') AS ' . $this->sql->quoteId($alias);
+        } else if (is_array($foreignTable)) {
+            foreach ($foreignTable as $alias => $table) {
+                $this->foreignTable = $this->sql->quoteId($table) . ' AS ' . $this->sql->quoteId($alias);
+                break;
+            }
         } else {
             $this->foreignTable = $this->sql->quoteId($foreignTable);
         }
