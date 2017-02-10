@@ -314,7 +314,15 @@ class Record extends Record\AbstractRecord
     public function getById($id)
     {
         $this->setColumns($this->getRowGateway()->find($id));
-        return $this;
+
+        if (null !== $this->with) {
+            $r = $this->getWith($this->with);
+            if (is_array($r) && (count($r) == 1)) {
+                return $r[0];
+            }
+        } else {
+            return $this;
+        }
     }
 
     /**
@@ -350,7 +358,11 @@ class Record extends Record\AbstractRecord
             $this->setColumns($rows[0]);
         }
 
-        return $this;
+        if (null !== $this->with) {
+            return $this->getWith($this->with);
+        } else {
+            return $this;
+        }
     }
 
     /**
@@ -624,6 +636,10 @@ class Record extends Record\AbstractRecord
         $ids    = [];
         $values = [];
 
+        if (count($rows) == 0) {
+            $rows = [$this->rowGateway->getColumns()];
+        }
+
         foreach ($rows as $row) {
             foreach ($this->primaryKeys as $key) {
                 $ids[]    = $row[$key];
@@ -656,6 +672,10 @@ class Record extends Record\AbstractRecord
 
         $rows       = $db->fetchAll();
         $parentRows = $this->processRows($this->tableGateway->getRows(), Record::AS_RECORD);
+
+        if (count($parentRows) == 0) {
+            $parentRows = $this->processRows([$this->rowGateway->getColumns()], Record::AS_RECORD);
+        }
 
         if ((count($this->primaryKeys) == 1) && (count($foreignKeys) == 1)) {
             $foreignKey = $foreignKeys[0];
