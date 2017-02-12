@@ -35,8 +35,8 @@ class SelectTest extends \PHPUnit_Framework_TestCase
             ->groupBy('id')
             ->having('user_id > 5')
             ->orderBy('id DESC')
-            ->offset(20)
-            ->limit(10);
+            ->limit(10)
+            ->offset(20);
 
         $this->assertEquals(
             'SELECT * FROM "users" WHERE ("id" >= 1) HAVING ("user_id" > 5) GROUP BY "id" ORDER BY "id DESC" ASC LIMIT 10 OFFSET 20',
