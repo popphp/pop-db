@@ -259,12 +259,14 @@ class Record extends Record\AbstractRecord
      * With a 1:many relationship (eager-loading)
      *
      * @param  string $name
+     * @param  array  $options
      * @return mixed
      */
-    public static function with($name)
+    public static function with($name, array $options = null)
     {
         $record = new static();
         $record->setWith($name);
+        $record->setWithOptions($options);
         return $record;
     }
 
@@ -316,7 +318,7 @@ class Record extends Record\AbstractRecord
         $this->setColumns($this->getRowGateway()->find($id));
 
         if (null !== $this->with) {
-            $r = $this->getWith($this->with);
+            $r = $this->getWith($this->with, $this->withOptions);
             if (is_array($r) && (count($r) == 1)) {
                 return $r[0];
             }
@@ -359,7 +361,7 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $this->with) {
-            $r = $this->getWith($this->with);
+            $r = $this->getWith($this->with, $this->withOptions);
             if (is_array($r) && (count($r) == 1)) {
                 return $r[0];
             }
@@ -397,7 +399,7 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $this->with) {
-            $r = $this->getWith($this->with);
+            $r = $this->getWith($this->with, $this->withOptions);
             if (is_array($r)) {
                 return new Record\Collection($r);
             }
@@ -539,33 +541,6 @@ class Record extends Record\AbstractRecord
     }
 
     /**
-     * Set eager with
-     *
-     * @param  string $name
-     * @return Record
-     */
-    public function setWith($name)
-    {
-        $this->with = $name;
-        return $this;
-    }
-
-    /**
-     * With a 1:many relationship (eager-loading)
-     *
-     * @param  string $name
-     * @return mixed
-     */
-    public function getWith($name)
-    {
-        if (method_exists($this, $name)) {
-            return $this->{$name}(true);
-        } else {
-            return null;
-        }
-    }
-
-    /**
      * Get a 1:1 relationship
      *
      * @param  string $class
@@ -583,8 +558,11 @@ class Record extends Record\AbstractRecord
                 foreach ($foreignKeys as $i => $key) {
                     $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
                 }
-                $this->hasOne[$class] = $class::findBy($columns, ['limit' => 1], Record::AS_RECORD);
-                $result = $this->hasOne[$class];
+                $collection = $class::findBy($columns, ['limit' => 1], Record::AS_RECORD);
+                if (isset($collection[0])) {
+                    $this->hasOne[$class] = $collection[0];
+                    $result = $this->hasOne[$class];
+                }
             }
         } else {
             $result = $this->hasOne[$class];
@@ -661,12 +639,9 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        if ((null !== $options) && isset($options['limit'])) {
-            $sql->select()->limit((int)$options['limit']);
-        }
-        if ((null !== $options) && isset($options['offset'])) {
-            $sql->select()->offset((int)$options['offset']);
-        }
+        //if ((null !== $options) && isset($options['limit'])) {
+        //    $sql->select()->limit((int)$options['limit']);
+        //}
         if ((null !== $options) && isset($options['order'])) {
             $order = Parser\Order::parse($options['order']);
             $sql->select()->orderBy($order['by'], $db->escape($order['order']));
@@ -692,7 +667,10 @@ class Record extends Record\AbstractRecord
                     if ($row[$foreignKey] == $parent[$primaryKey]) {
                         $r = new $class();
                         $r->setColumns($row);
-                        $parent->addRelationship($parent[$this->primaryKeys[$i]], $r);
+                        if (!isset($options['limit']) ||
+                            (isset($options['limit']) && (count($parent->getRelationships($parent[$this->primaryKeys[$i]])) < (int)$options['limit']))) {
+                            $parent->addRelationship($parent[$this->primaryKeys[$i]], $r);
+                        }
                     } else {
                         $parent->addRelationship($parent[$this->primaryKeys[$i]]);
                     }
@@ -731,91 +709,6 @@ class Record extends Record\AbstractRecord
         }
 
         return $result;
-    }
-
-    /**
-     * Set all the table column values at once
-     *
-     * @param  mixed  $columns
-     * @throws Exception
-     * @return Record
-     */
-    public function setColumns($columns = null)
-    {
-        if (null !== $columns) {
-            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-                $this->rowGateway->setColumns((array)$columns);
-            } else if ($columns instanceof Record) {
-                $this->rowGateway->setColumns($columns->toArray());
-            } else {
-                throw new Exception('The parameter passed must be either an array, an array object or null.');
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set all the table rows at once
-     *
-     * @param  array  $rows
-     * @param  string $resultAs
-     * @return Record
-     */
-    public function setRows(array $rows = null, $resultAs = Record::AS_RECORD)
-    {
-        $this->rowGateway->setColumns();
-        $this->tableGateway->setRows();
-
-        if (null !== $rows) {
-            $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
-            foreach ($rows as $i => $row) {
-                $rows[$i] = $this->processRow($row, $resultAs);
-            }
-            $this->tableGateway->setRows($rows);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Process table rows
-     *
-     * @param  array  $rows
-     * @param  string $resultAs
-     * @return array
-     */
-    public function processRows(array $rows, $resultAs = Record::AS_RECORD)
-    {
-        foreach ($rows as $i => $row) {
-            $rows[$i] = $this->processRow($row, $resultAs);
-        }
-        return $rows;
-    }
-
-    /**
-     * Process a table row
-     *
-     * @param  array  $row
-     * @param  string $resultAs
-     * @return mixed
-     */
-    public function processRow(array $row, $resultAs = Record::AS_RECORD)
-    {
-        switch ($resultAs) {
-            case self::AS_ARRAY:
-                $row = (array)$row;
-                break;
-            case self::AS_OBJECT:
-                $row = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
-                break;
-            default:
-                $r = new static();
-                $r->setColumns((array)$row);
-                $row = $r;
-        }
-
-        return $row;
     }
 
 }

@@ -122,6 +122,12 @@ abstract class AbstractRecord implements \ArrayAccess
     protected $with = null;
 
     /**
+     * Eager with options
+     * @var array
+     */
+    protected $withOptions = null;
+
+    /**
      * Set the table
      *
      * @param  string $table
@@ -213,6 +219,46 @@ abstract class AbstractRecord implements \ArrayAccess
     public function getRelationships($id)
     {
         return (isset($this->relationships[$id])) ? $this->relationships[$id] : null;
+    }
+
+    /**
+     * Set eager with options
+     *
+     * @param  array $options
+     * @return AbstractRecord
+     */
+    public function setWithOptions(array $options = null)
+    {
+        $this->withOptions = $options;
+        return $this;
+    }
+
+    /**
+     * Set eager with
+     *
+     * @param  string $name
+     * @return AbstractRecord
+     */
+    public function setWith($name)
+    {
+        $this->with = $name;
+        return $this;
+    }
+
+    /**
+     * With a 1:many relationship (eager-loading)
+     *
+     * @param  string $name
+     * @param  array  $options
+     * @return mixed
+     */
+    public function getWith($name, array $options = null)
+    {
+        if (method_exists($this, $name)) {
+            return $this->{$name}($options, true);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -333,6 +379,91 @@ abstract class AbstractRecord implements \ArrayAccess
     public function hasRows()
     {
         return ($this->tableGateway->getNumberOfRows() > 0);
+    }
+
+    /**
+     * Set all the table column values at once
+     *
+     * @param  mixed  $columns
+     * @throws Exception
+     * @return AbstractRecord
+     */
+    public function setColumns($columns = null)
+    {
+        if (null !== $columns) {
+            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
+                $this->rowGateway->setColumns((array)$columns);
+            } else if ($columns instanceof AbstractRecord) {
+                $this->rowGateway->setColumns($columns->toArray());
+            } else {
+                throw new Exception('The parameter passed must be either an array, an array object or null.');
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set all the table rows at once
+     *
+     * @param  array  $rows
+     * @param  string $resultAs
+     * @return AbstractRecord
+     */
+    public function setRows(array $rows = null, $resultAs = AbstractRecord::AS_RECORD)
+    {
+        $this->rowGateway->setColumns();
+        $this->tableGateway->setRows();
+
+        if (null !== $rows) {
+            $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $this->processRow($row, $resultAs);
+            }
+            $this->tableGateway->setRows($rows);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Process table rows
+     *
+     * @param  array  $rows
+     * @param  string $resultAs
+     * @return array
+     */
+    public function processRows(array $rows, $resultAs = AbstractRecord::AS_RECORD)
+    {
+        foreach ($rows as $i => $row) {
+            $rows[$i] = $this->processRow($row, $resultAs);
+        }
+        return $rows;
+    }
+
+    /**
+     * Process a table row
+     *
+     * @param  array  $row
+     * @param  string $resultAs
+     * @return mixed
+     */
+    public function processRow(array $row, $resultAs = AbstractRecord::AS_RECORD)
+    {
+        switch ($resultAs) {
+            case self::AS_ARRAY:
+                $row = (array)$row;
+                break;
+            case self::AS_OBJECT:
+                $row = new \ArrayObject((array)$row, \ArrayObject::ARRAY_AS_PROPS);
+                break;
+            default:
+                $r = new static();
+                $r->setColumns((array)$row);
+                $row = $r;
+        }
+
+        return $row;
     }
 
     /**
