@@ -69,6 +69,10 @@ class Predicate
                     $value = self::stripQuotes($value);
                 }
 
+                if (is_string($value) && strpos($value, ' AND ')) {
+                    $value = explode(' AND ', $value);
+                }
+
                 if (is_numeric($value)) {
                     if (strpos($value, '.') !== false) {
                         $value = (float)$value;

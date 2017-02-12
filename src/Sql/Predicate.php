@@ -53,15 +53,23 @@ class Predicate
     protected $nestedCombine = 'AND';
 
     /**
+     * Flag to determine if the predicate is nested
+     * @var boolean
+     */
+    protected $isNested = false;
+
+    /**
      * Constructor
      *
      * Instantiate the predicate collection object.
      *
      * @param  AbstractSql $sql
+     * @param  boolean     $nested
      */
-    public function __construct(AbstractSql $sql)
+    public function __construct(AbstractSql $sql, $nested = false)
     {
-        $this->sql = $sql;
+        $this->sql      = $sql;
+        $this->isNested = (bool)$nested;
     }
 
     /**
@@ -71,7 +79,7 @@ class Predicate
      */
     public function nest()
     {
-        $this->nested[] = new Predicate($this->sql);
+        $this->nested[] = new Predicate($this->sql, true);
         return $this->nested[count($this->nested) - 1];
     }
 
@@ -121,6 +129,16 @@ class Predicate
     public function getNest($i)
     {
         return (isset($this->nested[$i])) ? $this->nested[$i] : null;
+    }
+
+    /**
+     * Determine if predicate is nested
+     *
+     * @return boolean
+     */
+    public function isNested()
+    {
+        return $this->isNested;
     }
 
     /**
@@ -450,13 +468,14 @@ class Predicate
         // Loop through the nested predicated
         if (count($this->nested) > 0) {
             foreach ($this->nested as $key => $nested) {
-                $curPredicate = '(' . $nested . ')';
+                $curPredicate = (string)$nested;
                 if ($key == 0) {
                     $predicateString .= $curPredicate;
                 } else {
                     $predicateString .= ' ' . $this->nested[($key - 1)]->getNestedCombine() . ' ' . $curPredicate;
                 }
             }
+            $predicateString = '(' . $predicateString . ')';
         }
 
         // Loop through and format the predicates
