@@ -321,4 +321,15 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     abstract public function getTables();
 
+    /**
+     * Return if the database has a table
+     *
+     * @param  string  $table
+     * @return boolean
+     */
+    public function hasTable($table)
+    {
+        return (in_array($table, $this->getTables()));
+    }
+
 }

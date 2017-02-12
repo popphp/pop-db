@@ -501,13 +501,13 @@ class Select extends AbstractClause
             $sql .= $this->buildSqlSrvLimitAndOffset();
         // Else, if there is a nested SELECT statement.
         } else if ($this->table instanceof \Pop\Db\Sql\Select) {
-            $subSelect      = $this->table;
-            $subSelectAlias = ($subSelect->hasAlias()) ? $subSelect->getAlias() : $subSelect->getTable();
-
-            $sql .= '(' . $subSelect . ') AS ' . $this->quoteId($subSelectAlias);
+            $sql .= (string)$this->table;
         // Else, just select from the table
         } else {
             $sql .=  $this->quoteId($this->table);
+            if (null !== $this->alias) {
+                $sql = '(' . $sql . ') AS ' . $this->quoteId($this->alias);
+            }
         }
 
         // Build any JOIN clauses
@@ -522,14 +522,14 @@ class Select extends AbstractClause
             $sql .= ' WHERE ' . $this->where;
         }
 
-        // Build any GROUP BY clause
-        if (null !== $this->groupBy) {
-            $sql .= ' GROUP BY ' . $this->groupBy;
-        }
-
         // Build any HAVING clause
         if (null !== $this->having) {
             $sql .= ' HAVING ' . $this->having;
+        }
+
+        // Build any GROUP BY clause
+        if (null !== $this->groupBy) {
+            $sql .= ' GROUP BY ' . $this->groupBy;
         }
 
         // Build any ORDER BY clause

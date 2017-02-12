@@ -32,7 +32,7 @@ class JoinTest extends \PHPUnit_Framework_TestCase
         $db  = Db::connect('sqlite', ['database' => __DIR__ . '/../tmp/db.sqlite']);
         $sql = $db->createSql();
         $select = new Sql\Select($db);
-        $select->from('user_info')->setAlias('foo');
+        $select->from('user_info', 'foo');
         $join = new Sql\Join($sql, $select, ['id' => 'user_id'], 'LEFT JOIN');
         $this->assertEquals('(SELECT * FROM "user_info") AS "foo"', $join->getForeignTable());
     }

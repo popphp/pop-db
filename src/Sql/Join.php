@@ -76,8 +76,9 @@ class Join
 
         // If it's a sub-select
         if ($foreignTable instanceof Select) {
-            $alias              = ($foreignTable->hasAlias()) ? $foreignTable->getAlias() : $foreignTable->getTable();
-            $this->foreignTable = '(' . $foreignTable . ') AS ' . $this->sql->quoteId($alias);
+            //$alias              = ($foreignTable->hasAlias()) ? $foreignTable->getAlias() : $foreignTable->getTable();
+            //$this->foreignTable = '(' . $foreignTable . ') AS ' . $this->sql->quoteId($alias);
+            $this->foreignTable = (string)$foreignTable;
         } else if (is_array($foreignTable)) {
             foreach ($foreignTable as $alias => $table) {
                 $this->foreignTable = $this->sql->quoteId($table) . ' AS ' . $this->sql->quoteId($alias);

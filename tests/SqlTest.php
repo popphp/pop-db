@@ -63,8 +63,8 @@ class SqlTest extends \PHPUnit_Framework_TestCase
     {
         $db  = Db::connect('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']);
         $sql = $db->createSql();
-        $sql->select()->from('users');
-        $this->assertEquals('SELECT * FROM "users"', $sql->render());
+        $sql->select()->from('users', 'u');
+        $this->assertEquals('(SELECT * FROM "users") AS "u"', $sql->render());
         $sql->insert('users')->values(['username' => 'admin']);
         $this->assertEquals('INSERT INTO "users" ("username") VALUES (\'admin\')', $sql->render());
         $sql->update('users')->values(['username' => 'admin2'])->where('id = 1');
