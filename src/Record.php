@@ -160,7 +160,7 @@ class Record extends Record\AbstractRecord
     public static function findOne(array $columns = null, array $options = null)
     {
         $record = new static();
-        $record->getOneBy($columns, $options);
+        return $record->getOneBy($columns, $options);
     }
 
     /**
