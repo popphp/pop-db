@@ -2,6 +2,7 @@
 
 namespace Pop\Db\Test\Adapter;
 
+use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Pgsql;
 use Pop\Db\Adapter\Pdo;
@@ -20,12 +21,27 @@ class PgsqlTest extends \PHPUnit_Framework_TestCase
         ]);
     }
 
+    public function testPgsqlConnect()
+    {
+        $db = Db::pgsqlConnect([
+            'database'        => 'travis_popdb',
+            'username'        => 'postgres',
+            'password'        => $this->password,
+        ]);
+        $this->assertInstanceOf('Pop\Db\Adapter\Pgsql', $db);
+    }
+
     public function testConstructor()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database'        => 'travis_popdb',
+            'username'        => 'postgres',
+            'password'        => $this->password,
+            'port'            => 5432,
+            'hostaddr'        => '127.0.0.1',
+            'connect_timeout' => 3000,
+            'options'         => "'--client_encoding=UTF8'",
+            'type'            => PGSQL_CONNECT_FORCE_NEW
         ]);
 
         $db->query('DROP TABLE IF EXISTS ph_users CASCADE');

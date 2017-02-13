@@ -58,4 +58,29 @@ class DbTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', $db);
     }
 
+    public function testSqliteConnect()
+    {
+        $db = Db::sqliteConnect(['database' => __DIR__  . '/tmp/db.sqlite']);
+        $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', $db);
+    }
+
+    public function testPdoConnect()
+    {
+        $db = Db::pdoConnect(['database' => __DIR__  . '/tmp/db.sqlite', 'type' => 'sqlite']);
+        $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
+    }
+
+    public function testAdapters()
+    {
+        $available = Db::getAvailableAdapters();
+        $this->assertTrue($available['mysqli']);
+        $this->assertTrue(Db::isAvailable('mysqli'));
+        $this->assertTrue(Db::isAvailable('pdo_mysql'));
+        $this->assertTrue(Db::isAvailable('pdo_pgsql'));
+        $this->assertTrue(Db::isAvailable('pdo_sqlite'));
+        $this->assertTrue(Db::isAvailable('sqlite'));
+        $this->assertTrue(Db::isAvailable('pgsql'));
+        $this->assertFalse(Db::isAvailable('sqlsrv'));
+    }
+
 }

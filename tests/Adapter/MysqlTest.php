@@ -2,6 +2,7 @@
 
 namespace Pop\Db\Test\Adapter;
 
+use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Mysql;
 use Pop\Db\Adapter\Pdo;
@@ -18,6 +19,16 @@ class MysqlTest extends \PHPUnit_Framework_TestCase
             'username' => 'root',
             'password' => $this->password
         ]);
+    }
+
+    public function testMysqlConnect()
+    {
+        $db = Db::mysqlConnect([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password
+        ]);
+        $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $db);
     }
 
     public function testPdoMysql()
@@ -88,6 +99,8 @@ TABLE;
             'username' => 'root',
             'password' => $this->password
         ]);
+        $db->clearError();
+        $this->assertFalse($db->hasError());
         $db->throwError('Error: Some Error');
     }
 
@@ -99,6 +112,7 @@ TABLE;
             'password' => $this->password
         ]);
         $this->assertContains('ph_users', $db->getTables());
+        $this->assertTrue($db->hasTable('ph_users'));
     }
 
     public function testGetTablesFromPdo()
@@ -162,7 +176,7 @@ TABLE;
             'password' => $this->password
         ]);
         $db->query('SELECT * FROM ph_users');
-
+        $this->assertTrue($db->hasResult());
         $rows = [];
 
         while (($row = $db->fetch())) {
@@ -184,10 +198,55 @@ TABLE;
            ->execute();
 
         $rows = $db->fetchAll();
+        $this->assertTrue($db->hasStatement());
+        $this->assertInstanceOf('mysqli_stmt', $db->getStatement());
         $this->assertEquals(2, count($rows));
         $this->assertEquals(2, $db->getNumberOfRows());
+        $this->assertNull($db->getError());
 
         $db->disconnect();
+    }
+
+    public function testTransaction()
+    {
+        $db = new Mysql([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password
+        ]);
+
+        $db->beginTransaction();
+        $db->prepare('INSERT INTO ph_users (`username`, `password`, `email`) VALUES (?, ?, ?)')
+           ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
+           ->execute();
+        $db->commit();
+
+        $db->prepare('SELECT * FROM ph_users WHERE id != ?')
+            ->bindParams([0])
+            ->execute();
+
+        $this->assertEquals(3, $db->getNumberOfRows());
+    }
+
+    public function testRollback()
+    {
+        $db = new Mysql([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password
+        ]);
+
+        $db->beginTransaction();
+        $db->prepare('INSERT INTO ph_users (`username`, `password`, `email`) VALUES (?, ?, ?)')
+            ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
+            ->execute();
+        $db->rollback();
+
+        $db->prepare('SELECT * FROM ph_users WHERE id != ?')
+            ->bindParams([0])
+            ->execute();
+
+        $this->assertEquals(3, $db->getNumberOfRows());
     }
 
 }
