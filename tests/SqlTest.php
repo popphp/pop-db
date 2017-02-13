@@ -71,6 +71,9 @@ class SqlTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('UPDATE "users" SET "username" = \'admin2\' WHERE ("id" = 1)', $sql->render());
         $sql->delete('users')->where('id = 1');
         $this->assertEquals('DELETE FROM "users" WHERE ("id" = 1)', (string)$sql);
+        if (file_exists(__DIR__  . '/tmp/db.sqlite')) {
+            unlink(__DIR__  . '/tmp/db.sqlite');
+        }
     }
 
 }
