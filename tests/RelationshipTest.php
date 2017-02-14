@@ -9,7 +9,7 @@ use Pop\Db\Adapter\Mysql;
 class RelationshipTest extends \PHPUnit_Framework_TestCase
 {
 
-    protected $password = '12root34';
+    protected $password = '';
 
     public function testSetup()
     {
