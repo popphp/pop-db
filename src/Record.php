@@ -639,6 +639,14 @@ class Record extends Record\AbstractRecord
             }
         }
 
+        if (isset($options['limit'])) {
+            $sql->select()->limit((int)$options['limit']);
+        }
+
+        if (isset($options['offset'])) {
+            $sql->select()->offset((int)$options['offset']);
+        }
+
         if ((null !== $options) && isset($options['order'])) {
             $order = Parser\Order::parse($options['order']);
             $sql->select()->orderBy($order['by'], $db->escape($order['order']));
