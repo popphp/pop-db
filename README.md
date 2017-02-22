@@ -1,6 +1,9 @@
 pop-db
 ======
 
+[![Build Status](https://travis-ci.org/popphp/pop-db.svg?branch=master)](https://travis-ci.org/popphp/pop-db)
+[![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-db)](http://cc.popphp.org/pop-db/)
+
 OVERVIEW
 --------
 `pop-db` is a robust database component that provides a variety of features and functionality
