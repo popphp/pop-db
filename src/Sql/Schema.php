@@ -291,6 +291,8 @@ class Schema extends AbstractSql
     }
 
     /**
+     * Get the CREATE table object
+     *
      * @param  string $table
      * @return Schema\Create
      */
@@ -303,6 +305,8 @@ class Schema extends AbstractSql
     }
 
     /**
+     * Get the DROP table object
+     *
      * @param  string $table
      * @return Schema\Drop
      */
@@ -315,6 +319,8 @@ class Schema extends AbstractSql
     }
 
     /**
+     * Get the ALTER table object
+     *
      * @param  string $table
      * @return Schema\Alter
      */
@@ -327,6 +333,8 @@ class Schema extends AbstractSql
     }
 
     /**
+     * Get the RENAME table object
+     *
      * @param  string $table
      * @return Schema\Rename
      */
@@ -339,6 +347,8 @@ class Schema extends AbstractSql
     }
 
     /**
+     * Get the TRUNCATE table object
+     *
      * @param  string $table
      * @return Schema\Truncate
      */
