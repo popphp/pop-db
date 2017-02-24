@@ -139,6 +139,36 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Get SQL builder
+     *
+     * @return Sql
+     */
+    public static function getSql()
+    {
+        return Db::db(get_called_class())->createSql();
+    }
+
+    /**
+     * Get SQL builder (alias)
+     *
+     * @return Sql
+     */
+    public static function sql()
+    {
+        return Db::db(get_called_class())->createSql();
+    }
+
+    /**
+     * Get table name
+     *
+     * @return string
+     */
+    public static function table()
+    {
+        return (new static())->getFullTable();
+    }
+
+    /**
      * Find by ID static method
      *
      * @param  mixed  $id
