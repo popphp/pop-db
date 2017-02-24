@@ -14,6 +14,7 @@
 namespace Pop\Db\Sql;
 
 use Pop\Db\Adapter\AbstractAdapter;
+use Pop\Db\Parser;
 
 /**
  * Sql migrator class
@@ -58,6 +59,25 @@ class Migrator extends Migration\AbstractMigrator
     {
         parent::__construct($db);
         $this->setPath($path);
+    }
+
+    /**
+     * Create new migration file
+     *
+     * @param string $class
+     * @param string $path
+     * @return void
+     */
+    public static function create($class, $path = null)
+    {
+        $file = date('YmdHis') . '_' . Parser\Table::parse($class) . '.php';
+        $classContents = str_replace('MigrationTemplate', $class, file_get_contents(__DIR__ . '/Migration/Template/MigrationTemplate.php'));
+
+        if (null !== $path) {
+            $file = $path . DIRECTORY_SEPARATOR . $file;
+        }
+
+        file_put_contents($file, $classContents);
     }
 
     /**
