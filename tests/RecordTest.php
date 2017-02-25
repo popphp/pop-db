@@ -20,7 +20,10 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         TestAsset\Users::setDb($db, true);
         TestAsset\Users::setDefaultDb($db);
         $this->assertTrue(TestAsset\Users::hasDb());
+        $this->assertEquals('ph_users', TestAsset\Users::table());
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', TestAsset\Users::db());
+        $this->assertInstanceOf('Pop\Db\Sql', TestAsset\Users::getSql());
+        $this->assertInstanceOf('Pop\Db\Sql', TestAsset\Users::sql());
     }
 
     public function testConstructorSetDb()

@@ -106,8 +106,10 @@ class Migrator extends Migration\AbstractMigrator
         if (count($stepsToRun) > 0) {
             $stop = ($steps == 'all') ? count($stepsToRun) : (int)$steps;
             for ($i = 0; $i < $stop; $i++) {
-                include $this->path . DIRECTORY_SEPARATOR . $this->migrations[$stepsToRun[$i]]['filename'];
                 $class = $this->migrations[$stepsToRun[$i]]['class'];
+                if (!class_exists($class)) {
+                    include $this->path . DIRECTORY_SEPARATOR . $this->migrations[$stepsToRun[$i]]['filename'];
+                }
                 $migration = new $class($this->db);
                 $migration->up();
                 $current = $stepsToRun[$i];
@@ -153,8 +155,10 @@ class Migrator extends Migration\AbstractMigrator
         if (count($stepsToRun) > 0) {
             $stop = ($steps == 'all') ? count($stepsToRun) : (int)$steps;
             for ($i = 0; $i < $stop; $i++) {
-                include $this->path . DIRECTORY_SEPARATOR . $this->migrations[$stepsToRun[$i]]['filename'];
                 $class = $this->migrations[$stepsToRun[$i]]['class'];
+                if (!class_exists($class)) {
+                    include $this->path . DIRECTORY_SEPARATOR . $this->migrations[$stepsToRun[$i]]['filename'];
+                }
                 $migration = new $class($this->db);
                 $migration->down();
             }

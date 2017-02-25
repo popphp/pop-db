@@ -223,20 +223,16 @@ class Record extends Record\AbstractRecord
      * Static method to execute a custom prepared SQL statement.
      *
      * @param  mixed  $sql
-     * @param  mixed  $params
+     * @param  array  $params
      * @param  string $resultAs
      * @return Record\Collection
      */
-    public static function execute($sql, $params, $resultAs = Record::AS_RECORD)
+    public static function execute($sql, array $params, $resultAs = Record::AS_RECORD)
     {
         $record = new static();
 
         if ($sql instanceof Sql) {
             $sql = (string)$sql;
-        }
-
-        if (!is_array($params)) {
-            $params = [$params];
         }
 
         $db = Db::getDb($record->getFullTable());
