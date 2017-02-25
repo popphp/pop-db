@@ -95,11 +95,15 @@ class Sqlite extends AbstractAdapter
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Sqlite
      */
     public function query($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
 
         if (!($this->result = $this->connection->query($sql))) {
@@ -111,11 +115,15 @@ class Sqlite extends AbstractAdapter
     /**
      * Prepare a SQL query
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Sqlite
      */
     public function prepare($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $this->statement = $this->connection->prepare($sql);
 
         if ($this->statement === false) {

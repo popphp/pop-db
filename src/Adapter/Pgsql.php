@@ -139,11 +139,15 @@ class Pgsql extends AbstractAdapter
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Pgsql
      */
     public function query($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         if (!($this->result = pg_query($this->connection, $sql))) {
             $this->throwError(pg_last_error($this->connection));
         }
@@ -153,11 +157,15 @@ class Pgsql extends AbstractAdapter
     /**
      * Prepare a SQL query
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Pgsql
      */
     public function prepare($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $this->statementString = $sql;
         $this->statementName   = 'pop_db_adapter_pgsql_statement_' . ++static::$statementIndex;
         $this->statement       = pg_prepare($this->connection, $this->statementName, $this->statementString);

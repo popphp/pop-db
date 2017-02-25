@@ -119,11 +119,15 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Sqlsrv
      */
     public function query($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $this->statement       = null;
         $this->statementResult = false;
 
@@ -137,11 +141,15 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Prepare a SQL query
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Sqlsrv
      */
     public function prepare($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $this->statementString = $sql;
         if (strpos($this->statementString, '?') === false) {
             $this->statement = sqlsrv_prepare($this->connection, $this->statementString);

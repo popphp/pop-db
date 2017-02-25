@@ -146,11 +146,15 @@ class Pdo extends AbstractAdapter
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Pdo
      */
     public function query($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $sth = $this->connection->prepare($sql);
 
         if (!($sth->execute())) {
@@ -166,12 +170,16 @@ class Pdo extends AbstractAdapter
     /**
      * Prepare a SQL query
      *
-     * @param  string $sql
+     * @param  mixed  $sql
      * @param  array  $attribs
      * @return Pdo
      */
     public function prepare($sql, $attribs = null)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         if (strpos($sql, '?') !== false) {
             $this->placeholder = '?';
         } else if (strpos($sql, ':') !== false) {

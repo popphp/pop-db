@@ -128,13 +128,17 @@ class Mysql extends AbstractAdapter
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Mysql
      */
     public function query($sql)
     {
         $this->statement       = null;
         $this->statementResult = false;
+
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
 
         if (!($this->result = $this->connection->query($sql))) {
             $this->throwError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error);
@@ -145,11 +149,15 @@ class Mysql extends AbstractAdapter
     /**
      * Prepare a SQL query
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return Mysql
      */
     public function prepare($sql)
     {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
         $this->statement = $this->connection->stmt_init();
         if (!$this->statement->prepare($sql)) {
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
