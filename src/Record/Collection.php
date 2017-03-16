@@ -396,13 +396,29 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     }
 
     /**
+     * Method to get collection object items
+     *
+     * @return array
+     */
+    public function getItems()
+    {
+        return $this->items;
+    }
+
+    /**
      * Method to get collection object as an array
      *
      * @return array
      */
     public function toArray()
     {
-        return $this->items;
+        $items = $this->items;
+        foreach ($items as $key => $value) {
+            if ($value instanceof AbstractRecord) {
+                $items[$key] = $value->toArray();
+            }
+        }
+        return $items;
     }
 
     /**
