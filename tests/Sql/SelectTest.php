@@ -21,7 +21,7 @@ class SelectTest extends \PHPUnit_Framework_TestCase
         $db  = Db::connect('sqlite', ['database' => __DIR__ . '/../tmp/db.sqlite']);
         $sql = $db->createSql();
         $sub = new Sql\Select($db);
-        $sub->from('user_info', 'info');
+        $sub->from('user_info')->as('info');
         $sql->select([0 => 'username', 'address' => 'email'])->from($sub);
         $this->assertEquals('SELECT "username", "email" AS "address" FROM (SELECT * FROM "user_info") AS "info"', $sql->render());
     }

@@ -153,6 +153,46 @@ class Sql extends AbstractSql
     }
 
     /**
+     * Determine if SQL object has a select object
+     *
+     * @return boolean
+     */
+    public function hasSelect()
+    {
+        return (null !== $this->select);
+    }
+
+    /**
+     * Determine if SQL object has a insert object
+     *
+     * @return boolean
+     */
+    public function hasInsert()
+    {
+        return (null !== $this->insert);
+    }
+
+    /**
+     * Determine if SQL object has a update object
+     *
+     * @return boolean
+     */
+    public function hasUpdate()
+    {
+        return (null !== $this->update);
+    }
+
+    /**
+     * Determine if SQL object has a delete object
+     *
+     * @return boolean
+     */
+    public function hasDelete()
+    {
+        return (null !== $this->delete);
+    }
+
+    /**
      * Reset and clear the SQL object
      *
      * @return Sql

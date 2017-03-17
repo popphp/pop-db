@@ -18,6 +18,10 @@ class SqlTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Pop\Db\Sql', $sql2);
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', $sql->db());
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', $sql->getDb());
+        $this->assertFalse($sql->hasSelect());
+        $this->assertFalse($sql->hasInsert());
+        $this->assertFalse($sql->hasUpdate());
+        $this->assertFalse($sql->hasDelete());
     }
 
     public function testDbTypes()
@@ -63,7 +67,7 @@ class SqlTest extends \PHPUnit_Framework_TestCase
     {
         $db  = Db::connect('sqlite', ['database' => __DIR__  . '/tmp/db.sqlite']);
         $sql = $db->createSql();
-        $sql->select()->from('users', 'u');
+        $sql->select()->from('users')->as('u');
         $this->assertEquals('(SELECT * FROM "users") AS "u"', $sql->render());
         $sql->insert('users')->values(['username' => 'admin']);
         $this->assertEquals('INSERT INTO "users" ("username") VALUES (\'admin\')', $sql->render());

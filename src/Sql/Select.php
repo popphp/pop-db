@@ -97,16 +97,24 @@ class Select extends AbstractClause
     /**
      * Set from table
      *
-     * @param  string $table
-     * @param  string $alias
+     * @param  mixed  $table
      * @return Select
      */
-    public function from($table, $alias = null)
+    public function from($table)
     {
         $this->setTable($table);
-        if (null !== $alias) {
-            $this->setAlias($alias);
-        }
+        return $this;
+    }
+
+    /**
+     * Set table alias name
+     *
+     * @param  mixed  $table
+     * @return Select
+     */
+    public function as($table)
+    {
+        $this->setAlias($table);
         return $this;
     }
 
@@ -500,14 +508,14 @@ class Select extends AbstractClause
             }
             $sql .= $this->buildSqlSrvLimitAndOffset();
         // Else, if there is a nested SELECT statement.
+        } else if (($this->table instanceof \Pop\Db\Sql) && ($this->table->hasSelect())) {
+            $sql .= (string)$this->table->select();
+        // Else, if there is a nested SELECT statement.
         } else if ($this->table instanceof \Pop\Db\Sql\Select) {
             $sql .= (string)$this->table;
         // Else, just select from the table
         } else {
-            $sql .=  $this->quoteId($this->table);
-            if (null !== $this->alias) {
-                $sql = '(' . $sql . ') AS ' . $this->quoteId($this->alias);
-            }
+            $sql .= $this->quoteId($this->table);
         }
 
         // Build any JOIN clauses
@@ -554,6 +562,10 @@ class Select extends AbstractClause
             if (null !== $this->offset) {
                 $sql .= ' OFFSET ' . $this->offset;
             }
+        }
+
+        if (null !== $this->alias) {
+            $sql = '(' . $sql . ') AS ' . $this->quoteId($this->alias);
         }
 
         return $sql;

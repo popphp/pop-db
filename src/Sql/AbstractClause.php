@@ -28,7 +28,7 @@ abstract class AbstractClause extends AbstractSql
 
     /**
      * Table
-     * @var string
+     * @var mixed
      */
     protected $table = null;
 
@@ -47,7 +47,7 @@ abstract class AbstractClause extends AbstractSql
     /**
      * Set the table
      *
-     * @param  string $table
+     * @param  mixed $table
      * @return AbstractSql
      */
     public function setTable($table)
