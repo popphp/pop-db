@@ -107,12 +107,12 @@ class Select extends AbstractClause
     }
 
     /**
-     * Set table alias name
+     * Set table AS alias name
      *
      * @param  mixed  $table
      * @return Select
      */
-    public function as($table)
+    public function asAlias($table)
     {
         $this->setAlias($table);
         return $this;
