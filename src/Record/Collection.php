@@ -439,10 +439,10 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     protected function getItemsAsArray($items)
     {
-        if ($items instanceof \ArrayObject) {
+        if ($items instanceof self) {
+            $items = $items->getItems();
+        } else if ($items instanceof \ArrayObject) {
             $items = (array)$items;
-        } else if ($items instanceof self) {
-            $items = $items->toArray();
         } else if ($items instanceof \Traversable) {
             $items = iterator_to_array($items);
         }
