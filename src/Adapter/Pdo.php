@@ -543,6 +543,7 @@ class Pdo extends AbstractAdapter
     /**
      * The method displays information about the prepared SQL command for debugging purposes.
      *
+     * @param  boolean $debug
      * @return string
      */
     public function debugDumpParams($debug = false)
