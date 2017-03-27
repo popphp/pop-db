@@ -458,6 +458,7 @@ class Record extends Record\AbstractRecord
         if (null === $columns) {
             if ($this->isNew) {
                 $this->rowGateway->save();
+                $this->isNew = false;
             } else {
                 $this->rowGateway->update();
             }

@@ -55,11 +55,18 @@ class PdoTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('ph_users', $db->getTables());
     }
 
+    public function testSetAndGetAttributes()
+    {
+        $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite']);
+        $db->setAttribute(\PDO::ATTR_CASE, \PDO::CASE_LOWER);
+        $this->assertEquals(\PDO::CASE_LOWER, $db->getAttribute(\PDO::ATTR_CASE));
+    }
+
     public function testBindParams()
     {
         $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite']);
         $db->prepare('INSERT INTO ph_users (username, password, email) VALUES (:username, :password, :email)')
-           ->bindParams(['username' => $db->escape('testuser'), 'password' => '12test34', 'email' => 'test#test.com'])
+           ->bindParams(['username' => $db->escape('testuser'), 'password' => '12test34', 'email' => 'test@test.com'])
            ->execute();
 
         $this->assertNotNull($db->getLastId());
@@ -71,8 +78,13 @@ class PdoTest extends \PHPUnit_Framework_TestCase
         $rows = $db->fetchAll();
 
         $this->assertEquals(1, count($rows));
+        $this->assertEquals(0, $db->getCountOfRows());
+        $this->assertEquals(6, $db->getCountOfFields());
+        $this->assertFalse($db->fetchColumn(10));
         $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getConnection());
+
+        $db->closeCursor();
     }
 
     public function testQuery()
@@ -87,8 +99,29 @@ class PdoTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(1, count($rows));
         $this->assertNotNull($db->getResult());
+        $this->assertEquals(6, $db->getNumberOfFields());
         $this->assertEquals(0, $db->getNumberOfRows());
         $db->disconnect();
+    }
+
+    public function testTransaction()
+    {
+        $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite']);
+        $db->beginTransaction();
+        $this->assertTrue($db->inTransaction());
+        $db->exec("INSERT INTO ph_users (username, password, email) VALUES ('testuser', '12test34', 'test@test.com')");
+        $db->commit();
+
+        $this->assertNotNull($db->getLastId());
+    }
+
+    public function testTransactionRollback()
+    {
+        $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite']);
+        $db->beginTransaction();
+        $this->assertTrue($db->inTransaction());
+        $db->exec("INSERT INTO ph_users (username, password, email) VALUES ('testuser', '12test34', 'test@test.com')");
+        $db->rollback();
 
         if (file_exists(__DIR__  . '/../tmp/db.sqlite')) {
             unlink(__DIR__  . '/../tmp/db.sqlite');
