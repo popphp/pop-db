@@ -133,6 +133,16 @@ class Pdo extends AbstractAdapter
     }
 
     /**
+     * Method checks, whether the transaction is initiated.
+     *
+     * @return bool
+     */
+    public function inTransaction()
+    {
+        return $this->connection->inTransaction();
+    }
+
+    /**
      * Rollback a transaction
      *
      * @return Pdo
@@ -141,6 +151,29 @@ class Pdo extends AbstractAdapter
     {
         $this->connection->rollBack();
         return $this;
+    }
+
+    /**
+     * Method sets the value of the request attribute PDO.
+     *
+     * @param  int    $attribute A request attribute
+     * @param  mixed  $value     The value of the attribute request
+     * @return bool
+     */
+    public function setAttribute($attribute, $value)
+    {
+        return $this->connection->setAttribute($attribute, $value);
+    }
+
+    /**
+     * The method of obtaining the value of the request attribute PDO.
+     *
+     * @param  int $attribute A request attribute
+     * @return string
+     */
+    public function getAttribute($attribute)
+    {
+        return $this->connection->getAttribute($attribute);
     }
 
     /**
@@ -250,6 +283,20 @@ class Pdo extends AbstractAdapter
     }
 
     /**
+     *  Bind a column to a PHP variable.
+     *
+     * @param  mixed $column    Number of the column (1-indexed) or name of the column in the result set.
+     * @param  mixed $param     Name of the PHP variable to which the column will be bound.
+     * @param  int   $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
+     * @return Pdo
+     */
+    public function bindColumn($column, $param, $dataType = \PDO::PARAM_STR)
+    {
+        $this->statement->bindColumn($column, $param, $dataType);
+        return $this;
+    }
+
+    /**
      * Execute a prepared SQL query
      *
      * @return Pdo
@@ -267,25 +314,27 @@ class Pdo extends AbstractAdapter
     /**
      * Fetch and return a row from the result
      *
+     * @param  int $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
      * @return array
      */
-    public function fetch()
+    public function fetch($dataType = \PDO::FETCH_ASSOC)
     {
         if (null === $this->result) {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        return $this->result->fetch(\PDO::FETCH_ASSOC);
+        return $this->result->fetch($dataType);
     }
 
     /**
      * Fetch and return all rows from the result
      *
+     * @param  int $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
      * @return array
      */
-    public function fetchAll()
+    public function fetchAll($dataType = \PDO::FETCH_ASSOC)
     {
-        return $this->statement->fetchAll(\PDO::FETCH_ASSOC);
+        return $this->statement->fetchAll($dataType);
     }
 
     /**
@@ -432,6 +481,91 @@ class Pdo extends AbstractAdapter
         }
 
         $this->setError('Error: ' . $errorCode . ' => ' . $errorMessage);
+        return $this;
+    }
+
+    /**
+     * Return the number of fields in the result.
+     *
+     * @throws Exception
+     * @return int
+     */
+    public function getNumberOfFields()
+    {
+        if (!isset($this->result)) {
+            throw new Exception('Error: The database result resource is not currently set.');
+        }
+
+        return $this->result->columnCount();
+    }
+
+    /**
+     * Method closes the cursor, translating the request in the ready state.
+     *
+     * @return bool
+     */
+    public function closeCursor()
+    {
+        return $this->statement->closeCursor();
+    }
+
+    /**
+     * The method returns the number of columns in the result set.
+     *
+     * @return int
+     */
+    public function getCountOfFields()
+    {
+        return $this->statement->columnCount();
+    }
+
+    /**
+     * The method receives data of one column from the next row of the result set.
+     *
+     * @param  int $num The number of the table column
+     * @return mixed
+     */
+    public function fetchColumn($num = null)
+    {
+        return $this->statement->fetchColumn($num);
+    }
+
+    /**
+     * The method returns the number of rows modified by the last SQL query.
+     *
+     * @return int
+     */
+    public function getCountOfRows()
+    {
+        return $this->statement->rowCount();
+    }
+
+    /**
+     * The method displays information about the prepared SQL command for debugging purposes.
+     *
+     * @return string
+     */
+    public function debugDumpParams($debug = false)
+    {
+        ob_start();
+        $this->statement->debugDumpParams();
+        $result = ob_get_contents();
+        ob_end_clean();
+        return (!$debug) ?: $result;
+    }
+
+    /**
+     * The method runs an SQL query for execution and returns the number of rows affected during execution.
+     *
+     * @param  string $sql The SQL statement to be prepared and run
+     * @return Pdo
+     */
+    public function exec($sql)
+    {
+        if (!($this->connection->exec($sql))) {
+            $this->throwError('Error: The database statement resource is not currently set.');
+        }
+
         return $this;
     }
 
