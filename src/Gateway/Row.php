@@ -347,8 +347,12 @@ class Row extends AbstractGateway implements \ArrayAccess
             } else if ($placeholder == '$') {
                 $placeholder .= ($i + 1);
             }
-            $sql->delete()->where->equalTo($primaryKey, $placeholder);
-            $params[$primaryKey] = $this->primaryValues[$i];
+            if (null === $this->primaryValues[$i]) {
+                $sql->delete()->where->isNull($primaryKey);
+            } else {
+                $sql->delete()->where->equalTo($primaryKey, $placeholder);
+                $params[$primaryKey] = $this->primaryValues[$i];
+            }
         }
 
         $db->prepare((string)$sql)
