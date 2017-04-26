@@ -179,8 +179,13 @@ class Row extends AbstractGateway implements \ArrayAccess
             } else if ($placeholder == '$') {
                 $placeholder .= ($i + 1);
             }
-            $sql->select()->where->equalTo($primaryKey, $placeholder);
-            $params[$primaryKey] = $this->primaryValues[$i];
+
+            if (null === $this->primaryValues[$i]) {
+                $sql->select()->where->isNull($primaryKey);
+            } else {
+                $sql->select()->where->equalTo($primaryKey, $placeholder);
+                $params[$primaryKey] = $this->primaryValues[$i];
+            }
         }
 
         $sql->select()->limit(1);
@@ -276,20 +281,31 @@ class Row extends AbstractGateway implements \ArrayAccess
             } else if ($placeholder == '$') {
                 $placeholder .= $i;
             }
-            $sql->update()->where->equalTo($primaryKey, $placeholder);
-            if (isset($this->primaryValues[$key])) {
-                if (substr($placeholder, 0 , 1) == ':') {
-                    $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
-                } else {
-                    $params[$key] = $this->primaryValues[$key];
-                }
-            } else if (isset($this->columns[$this->primaryKeys[$key]])) {
-                if (substr($placeholder, 0 , 1) == ':') {
-                    $params[$this->primaryKeys[$key]] = $this->columns[$this->primaryKeys[$key]];
-                } else {
-                    $params[$key] = $this->columns[$this->primaryKeys[$key]];
-                }
 
+            if (array_key_exists($key, $this->primaryValues)) {
+                if (null === $this->primaryValues[$key]) {
+                    $sql->update()->where->isNull($primaryKey);
+                } else {
+                    $sql->update()->where->equalTo($primaryKey, $placeholder);
+                }
+            }
+
+            if (array_key_exists($key, $this->primaryValues)) {
+                if (null !== $this->primaryValues[$key]) {
+                    if (substr($placeholder, 0, 1) == ':') {
+                        $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
+                    } else {
+                        $params[$key] = $this->primaryValues[$key];
+                    }
+                }
+            } else if (array_key_exists($this->primaryKeys[$key], $this->columns)) {
+                if (null !== $this->primaryValues[$key]) {
+                    if (substr($placeholder, 0, 1) == ':') {
+                        $params[$this->primaryKeys[$key]] = $this->columns[$this->primaryKeys[$key]];
+                    } else {
+                        $params[$key] = $this->columns[$this->primaryKeys[$key]];
+                    }
+                }
             } else {
                 throw new Exception('Error: The value of \'' . $key . '\' is not set');
             }
