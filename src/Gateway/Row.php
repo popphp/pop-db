@@ -237,6 +237,7 @@ class Row extends AbstractGateway implements \ArrayAccess
 
         if ((count($this->primaryKeys) == 1) && !isset($this->columns[$this->primaryKeys[0]])) {
             $this->columns[$this->primaryKeys[0]] = $db->getLastId();
+            $this->primaryValues[] = $this->columns[$this->primaryKeys[0]];
         }
 
         return $this;
