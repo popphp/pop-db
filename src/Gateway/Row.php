@@ -225,7 +225,7 @@ class Row extends AbstractGateway implements \ArrayAccess
                 $placeholder .= $i;
             }
             $values[$column] = $placeholder;
-            $params[$column]  = $value;
+            $params[$column] = $value;
             $i++;
         }
 
@@ -293,11 +293,7 @@ class Row extends AbstractGateway implements \ArrayAccess
 
             if (array_key_exists($key, $this->primaryValues)) {
                 if (null !== $this->primaryValues[$key]) {
-                    if (substr($placeholder, 0, 1) == ':') {
-                        $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
-                    } else {
-                        $params[$key] = $this->primaryValues[$key];
-                    }
+                    $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
                 }
             } else if (array_key_exists($this->primaryKeys[$key], $this->columns)) {
                 if (null !== $this->primaryValues[$key]) {
