@@ -54,6 +54,15 @@ class Record extends Record\AbstractRecord
             }
         }
 
+        if (null !== $table) {
+            $this->setTable($table);
+        }
+
+        // Set the table name from the class name
+        if (null === $this->table) {
+            $this->setTableFromClassName($class);
+        }
+
         if (null !== $db) {
             Db::setDb($db, $class, null, ($class === __CLASS__));
         }
@@ -62,15 +71,6 @@ class Record extends Record\AbstractRecord
             throw new Exception('Error: A database connection has not been set.');
         } else if (!Db::hasClassToTable($class)) {
             Db::addClassToTable($class, $this->getFullTable());
-        }
-
-        if (null !== $table) {
-            $this->setTable($table);
-        }
-
-        // Set the table name from the class name
-        if (null === $this->table) {
-            $this->setTableFromClassName($class);
         }
 
         $this->tableGateway = new Gateway\Table($this->getFullTable());
