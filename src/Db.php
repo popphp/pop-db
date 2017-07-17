@@ -413,7 +413,7 @@ class Db
             // Check prefixes
             } else {
                 foreach (self::$db as $prefix => $adapter) {
-                    if (substr($class, 0, strlen($class)) == $class) {
+                    if (substr($class, 0, strlen($prefix)) == $prefix) {
                         $dbAdapter = $adapter;
                     }
                 }
