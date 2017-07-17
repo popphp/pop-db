@@ -60,6 +60,8 @@ class Record extends Record\AbstractRecord
 
         if (!Db::hasDb($class)) {
             throw new Exception('Error: A database connection has not been set.');
+        } else if (!Db::hasClassToTable($class)) {
+            Db::addClassToTable($class, $this->getFullTable());
         }
 
         if (null !== $table) {

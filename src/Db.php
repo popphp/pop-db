@@ -346,6 +346,29 @@ class Db
     }
 
     /**
+     * Add class-to-table relationship
+     *
+     * @param  string $class
+     * @param  string $table
+     * @return void
+     */
+    public static function addClassToTable($class, $table)
+    {
+        self::$classToTable[$class] = $table;
+    }
+
+    /**
+     * Check if class-to-table relationship exists
+     *
+     * @param  string $class
+     * @return boolean
+     */
+    public static function hasClassToTable($class)
+    {
+        return isset(self::$classToTable[$class]);
+    }
+
+    /**
      * Set DB adapter
      *
      * @param  Adapter\AbstractAdapter $db
@@ -384,8 +407,16 @@ class Db
         // Check if class is actual table name
         if ((null === $dbAdapter) && (null !== $class) && in_array($class, self::$classToTable)) {
             $class = array_search($class, self::$classToTable);
+            // Direct match
             if (isset(self::$db[$class])) {
                 $dbAdapter = self::$db[$class];
+            // Check prefixes
+            } else {
+                foreach (self::$db as $prefix => $adapter) {
+                    if (substr($class, 0, strlen($class)) == $class) {
+                        $dbAdapter = $adapter;
+                    }
+                }
             }
         }
 
