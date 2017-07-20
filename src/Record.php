@@ -174,7 +174,7 @@ class Record extends Record\AbstractRecord
      * Find by ID static method
      *
      * @param  mixed  $id
-     * @return Record
+     * @return static
      */
     public static function findById($id)
     {
@@ -187,7 +187,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array  $columns
      * @param  array  $options
-     * @return Record
+     * @return static
      */
     public static function findOne(array $columns = null, array $options = null)
     {
@@ -339,7 +339,7 @@ class Record extends Record\AbstractRecord
      * Get by ID method
      *
      * @param  mixed  $id
-     * @return Record
+     * @return static
      */
     public function getById($id)
     {
@@ -360,7 +360,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array  $columns
      * @param  array  $options
-     * @return Record
+     * @return static
      */
     public function getOneBy(array $columns = null, array $options = null)
     {
