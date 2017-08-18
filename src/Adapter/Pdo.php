@@ -45,6 +45,12 @@ class Pdo extends AbstractAdapter
     protected $placeholder = null;
 
     /**
+     * Statement result
+     * @var boolean
+     */
+    protected $statementResult = false;
+
+    /**
      * Constructor
      *
      * Instantiate the database connection object using PDO
@@ -188,6 +194,9 @@ class Pdo extends AbstractAdapter
             $sql = (string)$sql;
         }
 
+        $this->statement       = null;
+        $this->statementResult = false;
+
         $sth = $this->connection->prepare($sql);
 
         if (!($sth->execute())) {
@@ -307,7 +316,7 @@ class Pdo extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        $this->result = $this->statement->execute();
+        $this->statementResult = $this->statement->execute();
         return $this;
     }
 
@@ -319,11 +328,14 @@ class Pdo extends AbstractAdapter
      */
     public function fetch($dataType = \PDO::FETCH_ASSOC)
     {
-        if (null === $this->result) {
-            $this->throwError('Error: The database statement resource is not currently set.');
+        if ((null !== $this->statement) && ($this->statementResult !== false)) {
+            return $this->statement->fetch($dataType);
+        } else {
+            if (null === $this->result) {
+                $this->throwError('Error: The database statement resource is not currently set.');
+            }
+            return $this->result->fetch($dataType);
         }
-
-        return $this->result->fetch($dataType);
     }
 
     /**
