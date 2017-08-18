@@ -163,7 +163,6 @@ TABLE;
             ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
             ->execute();
 
-        $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
     }

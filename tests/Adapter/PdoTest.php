@@ -81,7 +81,6 @@ class PdoTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(0, $db->getCountOfRows());
         $this->assertEquals(6, $db->getCountOfFields());
         $this->assertFalse($db->fetchColumn(10));
-        $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getConnection());
 
         $db->closeCursor();
