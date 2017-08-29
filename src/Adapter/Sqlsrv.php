@@ -165,7 +165,7 @@ class Sqlsrv extends AbstractAdapter
             $this->statement = sqlsrv_prepare($this->connection, $this->statementString);
             if ($this->statement === false) {
                 if (null !== $this->profiler) {
-                    $this->profiler->setStatement($sql);
+                    $this->profiler->setQuery($sql);
                     $errors = $this->getSqlSrvErrors(false);
                     foreach ($errors as $code => $error) {
                         $this->profiler->addError($error, $code);
@@ -173,7 +173,7 @@ class Sqlsrv extends AbstractAdapter
                 }
                 $this->throwError('SQL Server Statement Error: ' . $this->getSqlSrvErrors());
             } else if (null !== $this->profiler) {
-                $this->profiler->setStatement($sql);
+                $this->profiler->setQuery($sql);
             }
         }
 
@@ -226,10 +226,6 @@ class Sqlsrv extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        if (null !== $this->profiler) {
-            $this->profiler->setExecution();
-        }
-
         $this->statementResult = sqlsrv_execute($this->statement);
 
         if ($this->statementResult === false) {
@@ -240,6 +236,10 @@ class Sqlsrv extends AbstractAdapter
                 }
             }
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
+        }
+
+        if (null !== $this->profiler) {
+            $this->profiler->finish();
         }
 
         return $this;

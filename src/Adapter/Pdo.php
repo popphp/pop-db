@@ -236,7 +236,7 @@ class Pdo extends AbstractAdapter
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->setStatement($sql);
+            $this->profiler->setQuery($sql);
         }
 
         if ((null !== $attribs) && is_array($attribs)) {
@@ -337,10 +337,6 @@ class Pdo extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        if (null !== $this->profiler) {
-            $this->profiler->setExecution();
-        }
-
         $this->statementResult = $this->statement->execute();
 
         if ($this->statement->errorCode() != 0) {
@@ -350,6 +346,11 @@ class Pdo extends AbstractAdapter
             $this->buildError($this->statement->errorCode(), $this->statement->errorInfo())
                  ->throwError();
         }
+
+        if (null !== $this->profiler) {
+            $this->profiler->finish();
+        }
+
         return $this;
     }
 

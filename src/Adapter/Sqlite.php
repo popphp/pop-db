@@ -134,12 +134,12 @@ class Sqlite extends AbstractAdapter
 
         if ($this->statement === false) {
             if (null !== $this->profiler) {
-                $this->profiler->setStatement($sql);
+                $this->profiler->setQuery($sql);
                 $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
             $this->throwError('SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         } else if (null !== $this->profiler) {
-            $this->profiler->setStatement($sql);
+            $this->profiler->setQuery($sql);
         }
         return $this;
     }
@@ -216,10 +216,6 @@ class Sqlite extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        if (null !== $this->profiler) {
-            $this->profiler->setExecution();
-        }
-
         $this->result = $this->statement->execute();
 
         if ($this->result === false) {
@@ -228,6 +224,11 @@ class Sqlite extends AbstractAdapter
             }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         }
+
+        if (null !== $this->profiler) {
+            $this->profiler->finish();
+        }
+
         return $this;
     }
 

@@ -56,28 +56,6 @@ interface ProfilerInterface
     public function getQuery();
 
     /**
-     * Set statement
-     *
-     * @param  string $sql
-     * @return ProfilerInterface
-     */
-    public function setStatement($sql);
-
-    /**
-     * Determine if the profiler has statement
-     *
-     * @return boolean
-     */
-    public function hasStatement();
-
-    /**
-     * Get statement
-     *
-     * @return string
-     */
-    public function getStatement();
-
-    /**
      * Add param
      *
      * @param  string $name
@@ -107,27 +85,6 @@ interface ProfilerInterface
      * @return array
      */
     public function getParams();
-
-    /**
-     * Set execution time
-     *
-     * @return ProfilerInterface
-     */
-    public function setExecution();
-
-    /**
-     * Determine if the profiler has execution time
-     *
-     * @return boolean
-     */
-    public function hasExecution();
-
-    /**
-     * Get execution
-     *
-     * @return int
-     */
-    public function getExecution();
 
     /**
      * Add error
@@ -164,7 +121,7 @@ interface ProfilerInterface
      *
      * @return int
      */
-    public function getEnd();
+    public function getFinish();
 
     /**
      * Get elapsed time

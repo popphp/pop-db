@@ -181,12 +181,12 @@ class Pgsql extends AbstractAdapter
         if ($this->statement === false) {
             $pgError = pg_last_error();
             if (null !== $this->profiler) {
-                $this->profiler->setStatement($sql);
+                $this->profiler->setQuery($sql);
                 $this->profiler->addError($pgError);
             }
             $this->throwError('PostgreSQL Statement Error: ' . $pgError);
         } else if (null !== $this->profiler) {
-            $this->profiler->setStatement($sql);
+            $this->profiler->setQuery($sql);
         }
 
         return $this;
@@ -224,15 +224,15 @@ class Pgsql extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        if (null !== $this->profiler) {
-            $this->profiler->setExecution();
-        }
-
         if (count($this->parameters) > 0)  {
             $this->result     = pg_execute($this->connection, $this->statementName, $this->parameters);
             $this->parameters = [];
         } else {
             $this->query($this->statementString);
+        }
+
+        if (null !== $this->profiler) {
+            $this->profiler->finish();
         }
 
         return $this;

@@ -33,28 +33,16 @@ abstract class AbstractProfiler implements ProfilerInterface
     protected $start = null;
 
     /**
-     * Profiler execution time
+     * Profiler finish time
      * @var int
      */
-    protected $execution = null;
-
-    /**
-     * Profiler end time
-     * @var int
-     */
-    protected $end = null;
+    protected $finish = null;
 
     /**
      * Query SQL
      * @var string
      */
     protected $query = null;
-
-    /**
-     * Statement SQL
-     * @var string
-     */
-    protected $statement = null;
 
     /**
      * Statement parameters
@@ -75,7 +63,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      */
     public function __construct()
     {
-        $this->start = microtime();
+        $this->start = microtime(true);
     }
 
     /**
@@ -96,8 +84,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      */
     public function setQuery($sql)
     {
-        $this->query     = $sql;
-        $this->execution = microtime();
+        $this->query = $sql;
         return $this;
     }
 
@@ -122,38 +109,6 @@ abstract class AbstractProfiler implements ProfilerInterface
     }
 
     /**
-     * Set statement
-     *
-     * @param  string $sql
-     * @return AbstractProfiler
-     */
-    public function setStatement($sql)
-    {
-        $this->statement = $sql;
-        return $this;
-    }
-
-    /**
-     * Determine if the profiler has statement
-     *
-     * @return boolean
-     */
-    public function hasStatement()
-    {
-        return (null !== $this->statement);
-    }
-
-    /**
-     * Get statement
-     *
-     * @return string
-     */
-    public function getStatement()
-    {
-        return $this->statement;
-    }
-
-    /**
      * Add param
      *
      * @param  string $name
@@ -162,7 +117,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      */
     public function addParam($name, $value)
     {
-        $param[$name] = $value;
+        $this->params[$name] = $value;
         return $this;
     }
 
@@ -201,37 +156,6 @@ abstract class AbstractProfiler implements ProfilerInterface
     }
 
     /**
-     * Set execution time
-     *
-     * @return AbstractProfiler
-     */
-    public function setExecution()
-    {
-        $this->execution = microtime();
-        return $this;
-    }
-
-    /**
-     * Determine if the profiler has execution time
-     *
-     * @return boolean
-     */
-    public function hasExecution()
-    {
-        return (null !== $this->execution);
-    }
-
-    /**
-     * Get execution
-     *
-     * @return int
-     */
-    public function getExecution()
-    {
-        return $this->execution;
-    }
-
-    /**
      * Add error
      *
      * @param  string $error
@@ -240,7 +164,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      */
     public function addError($error, $number = null)
     {
-        $this->errors[microtime()] = [
+        $this->errors[microtime(true)] = [
             'error'  => $error,
             'number' => $number
         ];
@@ -275,18 +199,18 @@ abstract class AbstractProfiler implements ProfilerInterface
      */
     public function finish()
     {
-        $this->end = microtime();
+        $this->finish = microtime(true);
         return $this;
     }
 
     /**
-     * Get end
+     * Get finish
      *
      * @return int
      */
-    public function getEnd()
+    public function getFinish()
     {
-        return $this->end;
+        return $this->finish;
     }
 
     /**
@@ -296,7 +220,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      */
     public function getElapsed()
     {
-        return ($this->end - $this->start);
+        return ($this->finish - $this->start);
     }
 
     /**
@@ -326,8 +250,8 @@ abstract class AbstractProfiler implements ProfilerInterface
             case 'execution':
                 return $this->execution;
                 break;
-            case 'end':
-                return $this->end;
+            case 'finish':
+                return $this->finish;
                 break;
             case 'elapsed':
                 return $this->getElapsed();
