@@ -12,8 +12,6 @@
  * @namespace
  */
 namespace Pop\Db\Adapter;
-use Pop\Db\Adapter\Profiler\Profiler;
-use Pop\Db\Adapter\Profiler\ProfilerInterface;
 
 /**
  * Db adapter interface
@@ -147,15 +145,15 @@ interface AdapterInterface
     /**
      * Set query profiler
      *
-     * @param  ProfilerInterface $profiler
+     * @param  Profiler\Profiler $profiler
      * @return AdapterInterface
      */
-    public function setProfiler(ProfilerInterface $profiler);
+    public function setProfiler(Profiler\Profiler $profiler);
 
     /**
      * Get query profiler
      *
-     * @return ProfilerInterface
+     * @return Profiler\Profiler
      */
     public function getProfiler();
 

@@ -201,16 +201,22 @@ class Pdo extends AbstractAdapter
 
         if (!($sth->execute())) {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($this->getErrorMessage($sth->errorInfo()), $sth->errorCode());
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($this->getErrorMessage($sth->errorInfo()), $sth->errorCode());
             }
             $this->buildError($sth->errorCode(), $sth->errorInfo())
                  ->throwError();
         } else {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
             }
             $this->result = $sth;
+        }
+
+        if (null !== $this->profiler) {
+            $this->profiler->current->finish();
         }
 
         return $this;
@@ -236,7 +242,8 @@ class Pdo extends AbstractAdapter
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
         }
 
         if ((null !== $attribs) && is_array($attribs)) {
@@ -257,7 +264,7 @@ class Pdo extends AbstractAdapter
     public function bindParams(array $params)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParams($params);
+            $this->profiler->current->addParams($params);
         }
 
         if ($this->placeholder == '?') {
@@ -289,7 +296,7 @@ class Pdo extends AbstractAdapter
     public function bindParam($param, &$value, $dataType = \PDO::PARAM_STR, $length = null, $options = null)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParam($param, $value);
+            $this->profiler->current->addParam($param, $value);
         }
         $this->statement->bindParam($param, $value, $dataType, $length, $options);
         return $this;
@@ -306,7 +313,7 @@ class Pdo extends AbstractAdapter
     public function bindValue($param, $value, $dataType = \PDO::PARAM_STR)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParam($param, $value);
+            $this->profiler->current->addParam($param, $value);
         }
         $this->statement->bindValue($param, $value, $dataType);
         return $this;
@@ -341,14 +348,14 @@ class Pdo extends AbstractAdapter
 
         if ($this->statement->errorCode() != 0) {
             if (null !== $this->profiler) {
-                $this->profiler->addError($this->getErrorMessage($this->statement->errorInfo()), $this->statement->errorCode());
+                $this->profiler->current->addError($this->getErrorMessage($this->statement->errorInfo()), $this->statement->errorCode());
             }
             $this->buildError($this->statement->errorCode(), $this->statement->errorInfo())
                  ->throwError();
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->finish();
+            $this->profiler->current->finish();
         }
 
         return $this;

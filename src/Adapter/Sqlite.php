@@ -108,13 +108,20 @@ class Sqlite extends AbstractAdapter
 
         if (!($this->result = $this->connection->query($sql))) {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
         }
+
+        if (null !== $this->profiler) {
+            $this->profiler->current->finish();
+        }
+
         return $this;
     }
 
@@ -134,12 +141,14 @@ class Sqlite extends AbstractAdapter
 
         if ($this->statement === false) {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
             $this->throwError('SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
         }
         return $this;
     }
@@ -153,7 +162,7 @@ class Sqlite extends AbstractAdapter
     public function bindParams(array $params)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParams($params);
+            $this->profiler->current->addParams($params);
         }
 
         foreach ($params as $dbColumnName => $dbColumnValue) {
@@ -176,7 +185,7 @@ class Sqlite extends AbstractAdapter
     public function bindParam($param, $value, $type = SQLITE3_BLOB)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParam($param, $value);
+            $this->profiler->current->addParam($param, $value);
         }
 
         if ($this->statement->bindParam($param, $value, $type) === false) {
@@ -196,7 +205,7 @@ class Sqlite extends AbstractAdapter
     public function bindValue($param, $value, $type = SQLITE3_BLOB)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParam($param, $value);
+            $this->profiler->current->addParam($param, $value);
         }
 
         if ($this->statement->bindValue($param, $value, $type) === false) {
@@ -220,13 +229,13 @@ class Sqlite extends AbstractAdapter
 
         if ($this->result === false) {
             if (null !== $this->profiler) {
-                $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
+                $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->finish();
+            $this->profiler->current->finish();
         }
 
         return $this;

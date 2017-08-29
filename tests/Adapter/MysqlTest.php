@@ -2,6 +2,7 @@
 
 namespace Pop\Db\Test\Adapter;
 
+use Pop\Db\Adapter\Profiler\Profiler;
 use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Mysql;
@@ -246,6 +247,36 @@ TABLE;
             ->execute();
 
         $this->assertEquals(3, $db->getNumberOfRows());
+    }
+
+    public function testListener()
+    {
+        $db = new Mysql([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password
+        ]);
+
+        $listener = $db->listen('Pop\Db\Test\TestAsset\QueryHandler');
+
+        $db->query('SELECT * FROM ph_users');
+
+        $db->prepare('SELECT * FROM ph_users WHERE id != ?')
+           ->bindParams([0])
+           ->execute();
+
+        $listener->getProfiler()->finish();
+
+        $this->assertEquals(2, count($listener->getProfiler()->getSteps()));
+        $this->assertGreaterThan(0, $listener->getProfiler()->getElapsed());
+        foreach ($listener->getProfiler()->getSteps() as $step) {
+            $this->assertGreaterThan(0, $step->getElapsed());
+        }
+
+        $db->setProfiler(new Profiler());
+        $this->assertInstanceOf('Pop\Db\Adapter\Profiler\Profiler', $db->getProfiler());
+        $db->clearProfiler();
+        $this->assertNull($db->getProfiler());
     }
 
 }

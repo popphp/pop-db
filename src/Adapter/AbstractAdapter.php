@@ -13,7 +13,6 @@
  */
 namespace Pop\Db\Adapter;
 
-use Pop\Db\Adapter\Profiler\ProfilerInterface;
 use Pop\Db\Sql;
 
 /**
@@ -61,7 +60,7 @@ abstract class AbstractAdapter implements AdapterInterface
 
     /**
      * Query profiler
-     * @var ProfilerInterface
+     * @var Profiler\Profiler
      */
     protected $profiler = null;
 
@@ -224,24 +223,41 @@ abstract class AbstractAdapter implements AdapterInterface
      * Add query listener to the adapter
      *
      * @param  mixed $listener
-     * @return AbstractAdapter
+     * @return mixed
      */
     public function listen($listener)
     {
         if (null === $this->profiler) {
             $this->profiler = new Profiler\Profiler();
         }
-        call_user_func_array($listener, [$this->profiler]);
-        return $this;
+
+        $obj    = null;
+        $params = [$this->profiler];
+
+        if (is_array($listener) || ($listener instanceof \Closure) || (is_string($listener) && (strpos($listener, '::') !== false))) {
+            $obj = call_user_func_array($listener, $params);
+        } else if (is_string($listener) && (strpos($listener, '->') !== false)) {
+            $ary    = explode('->', $listener);
+            $class  = $ary[0];
+            $method = $ary[1];
+            if (class_exists($class) && method_exists($class, $method)) {
+                $obj = call_user_func_array([new $class(), $method], $params);
+            }
+        } else if (class_exists($listener)) {
+            $reflect = new \ReflectionClass($listener);
+            $obj     = $reflect->newInstanceArgs($params);
+        }
+
+        return $obj;
     }
 
     /**
      * Set query profiler
      *
-     * @param  ProfilerInterface $profiler
+     * @param  Profiler\Profiler $profiler
      * @return AbstractAdapter
      */
-    public function setProfiler(ProfilerInterface $profiler)
+    public function setProfiler(Profiler\Profiler $profiler)
     {
         $this->profiler = $profiler;
         return $this;
@@ -250,7 +266,7 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Get query profiler
      *
-     * @return ProfilerInterface
+     * @return Profiler\Profiler
      */
     public function getProfiler()
     {

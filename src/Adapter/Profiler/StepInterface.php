@@ -14,7 +14,7 @@
 namespace Pop\Db\Adapter\Profiler;
 
 /**
- * Db adapter profiler interface
+ * Db adapter profiler step interface
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,13 +23,13 @@ namespace Pop\Db\Adapter\Profiler;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-interface ProfilerInterface
+interface StepInterface
 {
 
     /**
      * Get start
      *
-     * @return int
+     * @return float
      */
     public function getStart();
 
@@ -37,7 +37,7 @@ interface ProfilerInterface
      * Set query
      *
      * @param  string $sql
-     * @return ProfilerInterface
+     * @return StepInterface
      */
     public function setQuery($sql);
 
@@ -60,7 +60,7 @@ interface ProfilerInterface
      *
      * @param  string $name
      * @param  mixed  $value
-     * @return ProfilerInterface
+     * @return StepInterface
      */
     public function addParam($name, $value);
 
@@ -68,7 +68,7 @@ interface ProfilerInterface
      * Add params
      *
      * @param  array $params
-     * @return ProfilerInterface
+     * @return StepInterface
      */
     public function addParams(array $params);
 
@@ -91,7 +91,7 @@ interface ProfilerInterface
      *
      * @param  string $error
      * @param  mixed  $number
-     * @return ProfilerInterface
+     * @return StepInterface
      */
     public function addError($error, $number = null);
 
@@ -112,21 +112,21 @@ interface ProfilerInterface
     /**
      * Finish profiler
      *
-     * @return ProfilerInterface
+     * @return StepInterface
      */
     public function finish();
 
     /**
      * Get end
      *
-     * @return int
+     * @return float
      */
     public function getFinish();
 
     /**
      * Get elapsed time
      *
-     * @return int
+     * @return string
      */
     public function getElapsed();
 

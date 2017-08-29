@@ -121,6 +121,27 @@ class PdoTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($db->inTransaction());
         $db->exec("INSERT INTO ph_users (username, password, email) VALUES ('testuser', '12test34', 'test@test.com')");
         $db->rollback();
+    }
+
+    public function testListener()
+    {
+        $db = new Pdo(['database' => __DIR__  . '/../tmp/db.sqlite', 'type' => 'sqlite']);
+
+        $listener = $db->listen('Pop\Db\Test\TestAsset\QueryHandler');
+
+        $db->query('SELECT * FROM ph_users');
+
+        $db->prepare('SELECT * FROM ph_users WHERE id != :id')
+           ->bindParams(['id' => 0])
+           ->execute();
+
+        $listener->getProfiler()->finish();
+
+        $this->assertEquals(2, count($listener->getProfiler()->getSteps()));
+        $this->assertGreaterThan(0, $listener->getProfiler()->getElapsed());
+        foreach ($listener->getProfiler()->getSteps() as $step) {
+            $this->assertGreaterThan(0, $step->getElapsed());
+        }
 
         if (file_exists(__DIR__  . '/../tmp/db.sqlite')) {
             unlink(__DIR__  . '/../tmp/db.sqlite');

@@ -133,15 +133,21 @@ class Sqlsrv extends AbstractAdapter
 
         if (!($this->result = sqlsrv_query($this->connection, $sql))) {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
                 $errors = $this->getSqlSrvErrors(false);
                 foreach ($errors as $code => $error) {
-                    $this->profiler->addError($error, $code);
+                    $this->profiler->current->addError($error, $code);
                 }
             }
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
+        }
+
+        if (null !== $this->profiler) {
+            $this->profiler->current->finish();
         }
 
         return $this;
@@ -165,15 +171,17 @@ class Sqlsrv extends AbstractAdapter
             $this->statement = sqlsrv_prepare($this->connection, $this->statementString);
             if ($this->statement === false) {
                 if (null !== $this->profiler) {
-                    $this->profiler->setQuery($sql);
+                    $this->profiler->addStep();
+                    $this->profiler->current->setQuery($sql);
                     $errors = $this->getSqlSrvErrors(false);
                     foreach ($errors as $code => $error) {
-                        $this->profiler->addError($error, $code);
+                        $this->profiler->current->addError($error, $code);
                     }
                 }
                 $this->throwError('SQL Server Statement Error: ' . $this->getSqlSrvErrors());
             } else if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
             }
         }
 
@@ -190,7 +198,7 @@ class Sqlsrv extends AbstractAdapter
     public function bindParams(array $params, $options = null)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParams($params);
+            $this->profiler->current->addParams($params);
         }
 
         $bindParams = [];
@@ -232,14 +240,14 @@ class Sqlsrv extends AbstractAdapter
             if (null !== $this->profiler) {
                 $errors = $this->getSqlSrvErrors(false);
                 foreach ($errors as $code => $error) {
-                    $this->profiler->addError($error, $code);
+                    $this->profiler->current->addError($error, $code);
                 }
             }
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->finish();
+            $this->profiler->current->finish();
         }
 
         return $this;

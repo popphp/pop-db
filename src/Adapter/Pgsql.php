@@ -151,12 +151,18 @@ class Pgsql extends AbstractAdapter
         if (!($this->result = pg_query($this->connection, $sql))) {
             $pgError = pg_last_error($this->connection);
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($pgError);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($pgError);
             }
             $this->throwError($pgError);
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
+        }
+
+        if (null !== $this->profiler) {
+            $this->profiler->current->finish();
         }
 
         return $this;
@@ -181,12 +187,14 @@ class Pgsql extends AbstractAdapter
         if ($this->statement === false) {
             $pgError = pg_last_error();
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($pgError);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($pgError);
             }
             $this->throwError('PostgreSQL Statement Error: ' . $pgError);
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
         }
 
         return $this;
@@ -201,7 +209,7 @@ class Pgsql extends AbstractAdapter
     public function bindParams(array $params)
     {
         if (null !== $this->profiler) {
-            $this->profiler->addParams($params);
+            $this->profiler->current->addParams($params);
         }
 
         $this->parameters = [];
@@ -232,7 +240,7 @@ class Pgsql extends AbstractAdapter
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->finish();
+            $this->profiler->current->finish();
         }
 
         return $this;

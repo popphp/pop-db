@@ -14,7 +14,7 @@
 namespace Pop\Db\Adapter\Profiler;
 
 /**
- * Db abstract adapter profiler class
+ * Db abstract adapter profiler step class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,18 +23,18 @@ namespace Pop\Db\Adapter\Profiler;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-abstract class AbstractProfiler implements ProfilerInterface
+abstract class AbstractStep implements StepInterface
 {
 
     /**
-     * Profiler start time
-     * @var int
+     * Step start time
+     * @var float
      */
     protected $start = null;
 
     /**
-     * Profiler finish time
-     * @var int
+     * Step finish time
+     * @var float
      */
     protected $finish = null;
 
@@ -69,7 +69,7 @@ abstract class AbstractProfiler implements ProfilerInterface
     /**
      * Get start
      *
-     * @return int
+     * @return float
      */
     public function getStart()
     {
@@ -80,7 +80,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      * Set query
      *
      * @param  string $sql
-     * @return AbstractProfiler
+     * @return AbstractStep
      */
     public function setQuery($sql)
     {
@@ -113,7 +113,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      *
      * @param  string $name
      * @param  mixed  $value
-     * @return AbstractProfiler
+     * @return AbstractStep
      */
     public function addParam($name, $value)
     {
@@ -125,7 +125,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      * Add params
      *
      * @param  array $params
-     * @return AbstractProfiler
+     * @return AbstractStep
      */
     public function addParams(array $params)
     {
@@ -160,7 +160,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      *
      * @param  string $error
      * @param  mixed  $number
-     * @return AbstractProfiler
+     * @return AbstractStep
      */
     public function addError($error, $number = null)
     {
@@ -195,7 +195,7 @@ abstract class AbstractProfiler implements ProfilerInterface
     /**
      * Finish profiler
      *
-     * @return ProfilerInterface
+     * @return AbstractStep
      */
     public function finish()
     {
@@ -206,7 +206,7 @@ abstract class AbstractProfiler implements ProfilerInterface
     /**
      * Get finish
      *
-     * @return int
+     * @return float
      */
     public function getFinish()
     {
@@ -216,11 +216,14 @@ abstract class AbstractProfiler implements ProfilerInterface
     /**
      * Get elapsed time
      *
-     * @return int
+     * @return string
      */
     public function getElapsed()
     {
-        return ($this->finish - $this->start);
+        if (null === $this->finish) {
+            $this->finish();
+        }
+        return number_format(($this->finish - $this->start), 5);
     }
 
     /**
@@ -235,9 +238,6 @@ abstract class AbstractProfiler implements ProfilerInterface
             case 'query':
                 return $this->query;
                 break;
-            case 'statement':
-                return $this->statement;
-                break;
             case 'params':
                 return $this->params;
                 break;
@@ -246,9 +246,6 @@ abstract class AbstractProfiler implements ProfilerInterface
                 break;
             case 'start':
                 return $this->start;
-                break;
-            case 'execution':
-                return $this->execution;
                 break;
             case 'finish':
                 return $this->finish;

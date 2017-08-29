@@ -142,13 +142,20 @@ class Mysql extends AbstractAdapter
 
         if (!($this->result = $this->connection->query($sql))) {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($this->connection->error, $this->connection->errno);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($this->connection->error, $this->connection->errno);
             }
             $this->throwError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error);
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
         }
+
+        if (null !== $this->profiler) {
+            $this->profiler->current->finish();
+        }
+
         return $this;
     }
 
@@ -167,12 +174,14 @@ class Mysql extends AbstractAdapter
         $this->statement = $this->connection->stmt_init();
         if (!$this->statement->prepare($sql)) {
             if (null !== $this->profiler) {
-                $this->profiler->setQuery($sql);
-                $this->profiler->addError($this->statement->error, $this->statement->errno);
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($this->statement->error, $this->statement->errno);
             }
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
         } else if (null !== $this->profiler) {
-            $this->profiler->setQuery($sql);
+            $this->profiler->addStep();
+            $this->profiler->current->setQuery($sql);
         }
 
         return $this;
@@ -189,7 +198,7 @@ class Mysql extends AbstractAdapter
         $bindParams = [''];
 
         if (null !== $this->profiler) {
-            $this->profiler->addParams($params);
+            $this->profiler->current->addParams($params);
         }
 
         $i = 1;
@@ -235,13 +244,13 @@ class Mysql extends AbstractAdapter
 
         if (!empty($this->statement->error)) {
             if (null !== $this->profiler) {
-                $this->profiler->addError($this->statement->error, $this->statement->errno);
+                $this->profiler->current->addError($this->statement->error, $this->statement->errno);
             }
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
         }
 
         if (null !== $this->profiler) {
-            $this->profiler->finish();
+            $this->profiler->current->finish();
         }
 
         return $this;

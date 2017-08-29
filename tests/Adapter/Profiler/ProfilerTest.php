@@ -11,6 +11,7 @@ class ProfilerTest extends \PHPUnit_Framework_TestCase
     {
         $profiler = new Profiler();
         $this->assertInstanceOf('Pop\Db\Adapter\Profiler\Profiler', $profiler);
+        $this->assertNull($profiler->current);
     }
 
     public function testGetStart()
@@ -20,34 +21,13 @@ class ProfilerTest extends \PHPUnit_Framework_TestCase
         $this->assertGreaterThan(0, $profiler->start);
     }
 
-    public function testSetQuery()
+    public function testAddStep()
     {
         $profiler = new Profiler();
-        $profiler->setQuery('SELECT * FROM users');
-        $this->assertTrue($profiler->hasQuery());
-        $this->assertEquals('SELECT * FROM users', $profiler->getQuery());
-        $this->assertEquals('SELECT * FROM users', $profiler->query);
-    }
-
-    public function testAddParams()
-    {
-        $profiler = new Profiler();
-        $profiler->addParams([
-            'foo' => 'bar',
-            'baz' => 123
-        ]);
-        $this->assertTrue($profiler->hasParams());
-        $this->assertEquals(2, count($profiler->getParams()));
-        $this->assertEquals(2, count($profiler->params));
-    }
-
-    public function testAddError()
-    {
-        $profiler = new Profiler();
-        $profiler->addError('Some error.', 1);
-        $this->assertTrue($profiler->hasErrors());
-        $this->assertEquals(1, count($profiler->getErrors()));
-        $this->assertEquals(1, count($profiler->errors));
+        $profiler->addStep();
+        $profiler->addStep();
+        $this->assertEquals(2, count($profiler->getSteps()));
+        $this->assertInstanceOf('Pop\Db\Adapter\Profiler\Step', $profiler->current);
     }
 
     public function testFinish()
@@ -58,6 +38,8 @@ class ProfilerTest extends \PHPUnit_Framework_TestCase
         $this->assertGreaterThan(0, $profiler->getFinish());
         $this->assertGreaterThan(0, $profiler->finish);
         $this->assertGreaterThan(0, $profiler->getElapsed());
+        $this->assertGreaterThan(0, $profiler->elapsed);
+        $this->assertNull($profiler->foo);
     }
 
 }
