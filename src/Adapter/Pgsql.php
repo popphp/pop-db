@@ -149,8 +149,16 @@ class Pgsql extends AbstractAdapter
         }
 
         if (!($this->result = pg_query($this->connection, $sql))) {
-            $this->throwError(pg_last_error($this->connection));
+            $pgError = pg_last_error($this->connection);
+            if (null !== $this->profiler) {
+                $this->profiler->setQuery($sql);
+                $this->profiler->addError($pgError);
+            }
+            $this->throwError($pgError);
+        } else if (null !== $this->profiler) {
+            $this->profiler->setQuery($sql);
         }
+
         return $this;
     }
 
@@ -171,8 +179,16 @@ class Pgsql extends AbstractAdapter
         $this->statement       = pg_prepare($this->connection, $this->statementName, $this->statementString);
 
         if ($this->statement === false) {
-            $this->throwError('PostgreSQL Statement Error: ' . pg_last_error());
+            $pgError = pg_last_error();
+            if (null !== $this->profiler) {
+                $this->profiler->setStatement($sql);
+                $this->profiler->addError($pgError);
+            }
+            $this->throwError('PostgreSQL Statement Error: ' . $pgError);
+        } else if (null !== $this->profiler) {
+            $this->profiler->setStatement($sql);
         }
+
         return $this;
     }
 
@@ -184,6 +200,10 @@ class Pgsql extends AbstractAdapter
      */
     public function bindParams(array $params)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParams($params);
+        }
+
         $this->parameters = [];
 
         foreach ($params as $param) {
@@ -202,6 +222,10 @@ class Pgsql extends AbstractAdapter
     {
         if ((null === $this->statement) || (null === $this->statementString) || (null === $this->statementName)) {
             $this->throwError('Error: The database statement resource is not currently set.');
+        }
+
+        if (null !== $this->profiler) {
+            $this->profiler->setExecution();
         }
 
         if (count($this->parameters) > 0)  {

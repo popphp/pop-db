@@ -12,6 +12,8 @@
  * @namespace
  */
 namespace Pop\Db\Adapter;
+use Pop\Db\Adapter\Profiler\Profiler;
+use Pop\Db\Adapter\Profiler\ProfilerInterface;
 
 /**
  * Db adapter interface
@@ -133,6 +135,36 @@ interface AdapterInterface
      * @return mixed
      */
     public function getResult();
+
+    /**
+     * Add query listener to the adapter
+     *
+     * @param  mixed $listener
+     * @return AdapterInterface
+     */
+    public function listen($listener);
+
+    /**
+     * Set query profiler
+     *
+     * @param  ProfilerInterface $profiler
+     * @return AdapterInterface
+     */
+    public function setProfiler(ProfilerInterface $profiler);
+
+    /**
+     * Get query profiler
+     *
+     * @return ProfilerInterface
+     */
+    public function getProfiler();
+
+    /**
+     * Clear query profiler
+     *
+     * @return AdapterInterface
+     */
+    public function clearProfiler();
 
     /**
      * Determine whether or not there is an error

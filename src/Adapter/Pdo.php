@@ -200,9 +200,16 @@ class Pdo extends AbstractAdapter
         $sth = $this->connection->prepare($sql);
 
         if (!($sth->execute())) {
+            if (null !== $this->profiler) {
+                $this->profiler->setQuery($sql);
+                $this->profiler->addError($this->getErrorMessage($sth->errorInfo()), $sth->errorCode());
+            }
             $this->buildError($sth->errorCode(), $sth->errorInfo())
                  ->throwError();
         } else {
+            if (null !== $this->profiler) {
+                $this->profiler->setQuery($sql);
+            }
             $this->result = $sth;
         }
 
@@ -228,6 +235,10 @@ class Pdo extends AbstractAdapter
             $this->placeholder = ':';
         }
 
+        if (null !== $this->profiler) {
+            $this->profiler->setStatement($sql);
+        }
+
         if ((null !== $attribs) && is_array($attribs)) {
             $this->statement = $this->connection->prepare($sql, $attribs);
         } else {
@@ -245,6 +256,10 @@ class Pdo extends AbstractAdapter
      */
     public function bindParams(array $params)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParams($params);
+        }
+
         if ($this->placeholder == '?') {
             $i = 1;
             foreach ($params as $dbColumnName => $dbColumnValue) {
@@ -273,6 +288,9 @@ class Pdo extends AbstractAdapter
      */
     public function bindParam($param, &$value, $dataType = \PDO::PARAM_STR, $length = null, $options = null)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParam($param, $value);
+        }
         $this->statement->bindParam($param, $value, $dataType, $length, $options);
         return $this;
     }
@@ -287,6 +305,9 @@ class Pdo extends AbstractAdapter
      */
     public function bindValue($param, $value, $dataType = \PDO::PARAM_STR)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParam($param, $value);
+        }
         $this->statement->bindValue($param, $value, $dataType);
         return $this;
     }
@@ -316,7 +337,19 @@ class Pdo extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
+        if (null !== $this->profiler) {
+            $this->profiler->setExecution();
+        }
+
         $this->statementResult = $this->statement->execute();
+
+        if ($this->statement->errorCode() != 0) {
+            if (null !== $this->profiler) {
+                $this->profiler->addError($this->getErrorMessage($this->statement->errorInfo()), $this->statement->errorCode());
+            }
+            $this->buildError($this->statement->errorCode(), $this->statement->errorInfo())
+                 ->throwError();
+        }
         return $this;
     }
 
@@ -461,25 +494,13 @@ class Pdo extends AbstractAdapter
     }
 
     /**
-     * Build the error
+     * Get the error message
      *
-     * @param  string $code
-     * @param  array  $info
-     * @throws Exception
-     * @return Pdo
+     * @param  mixed $errorInfo
+     * @return string
      */
-    protected function buildError($code = null, $info = null)
+    protected function getErrorMessage($errorInfo)
     {
-        $errorMessage = null;
-
-        if ((null === $code) && (null === $info)) {
-            $errorCode = $this->connection->errorCode();
-            $errorInfo = $this->connection->errorInfo();
-        } else {
-            $errorCode = $code;
-            $errorInfo = $info;
-        }
-
         if (is_array($errorInfo)) {
             $errorMessage = null;
             if (isset($errorInfo[1])) {
@@ -492,7 +513,28 @@ class Pdo extends AbstractAdapter
             $errorMessage = $errorInfo;
         }
 
-        $this->setError('Error: ' . $errorCode . ' => ' . $errorMessage);
+        return $errorMessage;
+    }
+
+    /**
+     * Build the error
+     *
+     * @param  string $code
+     * @param  array  $info
+     * @throws Exception
+     * @return Pdo
+     */
+    protected function buildError($code = null, $info = null)
+    {
+        if ((null === $code) && (null === $info)) {
+            $errorCode = $this->connection->errorCode();
+            $errorInfo = $this->connection->errorInfo();
+        } else {
+            $errorCode = $code;
+            $errorInfo = $info;
+        }
+
+        $this->setError('Error: ' . $errorCode . ' => ' . $this->getErrorMessage($errorInfo));
         return $this;
     }
 

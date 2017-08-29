@@ -141,7 +141,13 @@ class Mysql extends AbstractAdapter
         }
 
         if (!($this->result = $this->connection->query($sql))) {
+            if (null !== $this->profiler) {
+                $this->profiler->setQuery($sql);
+                $this->profiler->addError($this->connection->error, $this->connection->errno);
+            }
             $this->throwError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error);
+        } else if (null !== $this->profiler) {
+            $this->profiler->setQuery($sql);
         }
         return $this;
     }
@@ -160,7 +166,13 @@ class Mysql extends AbstractAdapter
 
         $this->statement = $this->connection->stmt_init();
         if (!$this->statement->prepare($sql)) {
+            if (null !== $this->profiler) {
+                $this->profiler->setStatement($sql);
+                $this->profiler->addError($this->statement->error, $this->statement->errno);
+            }
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
+        } else if (null !== $this->profiler) {
+            $this->profiler->setStatement($sql);
         }
 
         return $this;
@@ -175,6 +187,10 @@ class Mysql extends AbstractAdapter
     public function bindParams(array $params)
     {
         $bindParams = [''];
+
+        if (null !== $this->profiler) {
+            $this->profiler->addParams($params);
+        }
 
         $i = 1;
         foreach ($params as $dbColumnName => $dbColumnValue) {
@@ -215,7 +231,19 @@ class Mysql extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set');
         }
 
+        if (null !== $this->profiler) {
+            $this->profiler->setExecution();
+        }
+
         $this->statementResult = $this->statement->execute();
+
+        if (!empty($this->statement->error)) {
+            if (null !== $this->profiler) {
+                $this->profiler->addError($this->statement->error, $this->statement->errno);
+            }
+            $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
+        }
+
         return $this;
     }
 

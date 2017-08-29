@@ -107,7 +107,13 @@ class Sqlite extends AbstractAdapter
         $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
 
         if (!($this->result = $this->connection->query($sql))) {
+            if (null !== $this->profiler) {
+                $this->profiler->setQuery($sql);
+                $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
+            }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
+        } else if (null !== $this->profiler) {
+            $this->profiler->setQuery($sql);
         }
         return $this;
     }
@@ -127,7 +133,13 @@ class Sqlite extends AbstractAdapter
         $this->statement = $this->connection->prepare($sql);
 
         if ($this->statement === false) {
+            if (null !== $this->profiler) {
+                $this->profiler->setStatement($sql);
+                $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
+            }
             $this->throwError('SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
+        } else if (null !== $this->profiler) {
+            $this->profiler->setStatement($sql);
         }
         return $this;
     }
@@ -140,6 +152,10 @@ class Sqlite extends AbstractAdapter
      */
     public function bindParams(array $params)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParams($params);
+        }
+
         foreach ($params as $dbColumnName => $dbColumnValue) {
             ${$dbColumnName} = $dbColumnValue;
             if ($this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName}) === false) {
@@ -159,6 +175,10 @@ class Sqlite extends AbstractAdapter
      */
     public function bindParam($param, $value, $type = SQLITE3_BLOB)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParam($param, $value);
+        }
+
         if ($this->statement->bindParam($param, $value, $type) === false) {
             $this->throwError('Error: There was an error binding the parameter');
         }
@@ -175,6 +195,10 @@ class Sqlite extends AbstractAdapter
      */
     public function bindValue($param, $value, $type = SQLITE3_BLOB)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParam($param, $value);
+        }
+
         if ($this->statement->bindValue($param, $value, $type) === false) {
             $this->throwError('Error: There was an error binding the value');
         }
@@ -192,9 +216,16 @@ class Sqlite extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
+        if (null !== $this->profiler) {
+            $this->profiler->setExecution();
+        }
+
         $this->result = $this->statement->execute();
 
         if ($this->result === false) {
+            if (null !== $this->profiler) {
+                $this->profiler->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
+            }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         }
         return $this;

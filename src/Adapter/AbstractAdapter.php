@@ -13,6 +13,7 @@
  */
 namespace Pop\Db\Adapter;
 
+use Pop\Db\Adapter\Profiler\ProfilerInterface;
 use Pop\Db\Sql;
 
 /**
@@ -51,6 +52,18 @@ abstract class AbstractAdapter implements AdapterInterface
      * @var mixed
      */
     protected $error = null;
+
+    /**
+     * Query listener object/resource
+     * @var mixed
+     */
+    protected $listener = null;
+
+    /**
+     * Query profiler
+     * @var ProfilerInterface
+     */
+    protected $profiler = null;
 
     /**
      * Constructor
@@ -205,6 +218,55 @@ abstract class AbstractAdapter implements AdapterInterface
     public function getResult()
     {
         return $this->result;
+    }
+
+    /**
+     * Add query listener to the adapter
+     *
+     * @param  mixed $listener
+     * @return AbstractAdapter
+     */
+    public function listen($listener)
+    {
+        if (null === $this->profiler) {
+            $this->profiler = new Profiler\Profiler();
+        }
+        call_user_func_array($listener, [$this->profiler]);
+        return $this;
+    }
+
+    /**
+     * Set query profiler
+     *
+     * @param  ProfilerInterface $profiler
+     * @return AbstractAdapter
+     */
+    public function setProfiler(ProfilerInterface $profiler)
+    {
+        $this->profiler = $profiler;
+        return $this;
+    }
+
+    /**
+     * Get query profiler
+     *
+     * @return ProfilerInterface
+     */
+    public function getProfiler()
+    {
+        return $this->profiler;
+    }
+
+    /**
+     * Clear query profiler
+     *
+     * @return AbstractAdapter
+     */
+    public function clearProfiler()
+    {
+        unset($this->profiler);
+        $this->profiler = null;
+        return $this;
     }
 
     /**

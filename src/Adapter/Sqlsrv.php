@@ -132,7 +132,16 @@ class Sqlsrv extends AbstractAdapter
         $this->statementResult = false;
 
         if (!($this->result = sqlsrv_query($this->connection, $sql))) {
+            if (null !== $this->profiler) {
+                $this->profiler->setQuery($sql);
+                $errors = $this->getSqlSrvErrors(false);
+                foreach ($errors as $code => $error) {
+                    $this->profiler->addError($error, $code);
+                }
+            }
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
+        } else if (null !== $this->profiler) {
+            $this->profiler->setQuery($sql);
         }
 
         return $this;
@@ -151,10 +160,20 @@ class Sqlsrv extends AbstractAdapter
         }
 
         $this->statementString = $sql;
+
         if (strpos($this->statementString, '?') === false) {
             $this->statement = sqlsrv_prepare($this->connection, $this->statementString);
             if ($this->statement === false) {
+                if (null !== $this->profiler) {
+                    $this->profiler->setStatement($sql);
+                    $errors = $this->getSqlSrvErrors(false);
+                    foreach ($errors as $code => $error) {
+                        $this->profiler->addError($error, $code);
+                    }
+                }
                 $this->throwError('SQL Server Statement Error: ' . $this->getSqlSrvErrors());
+            } else if (null !== $this->profiler) {
+                $this->profiler->setStatement($sql);
             }
         }
 
@@ -170,6 +189,10 @@ class Sqlsrv extends AbstractAdapter
      */
     public function bindParams(array $params, $options = null)
     {
+        if (null !== $this->profiler) {
+            $this->profiler->addParams($params);
+        }
+
         $bindParams = [];
 
         $i = 1;
@@ -203,9 +226,19 @@ class Sqlsrv extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
+        if (null !== $this->profiler) {
+            $this->profiler->setExecution();
+        }
+
         $this->statementResult = sqlsrv_execute($this->statement);
 
         if ($this->statementResult === false) {
+            if (null !== $this->profiler) {
+                $errors = $this->getSqlSrvErrors(false);
+                foreach ($errors as $code => $error) {
+                    $this->profiler->addError($error, $code);
+                }
+            }
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
         }
 
@@ -268,15 +301,17 @@ class Sqlsrv extends AbstractAdapter
      */
     public function getSqlSrvErrors($asString = true)
     {
-        $errors   = null;
-        $errorAry = sqlsrv_errors();
+        $errors       = '';
+        $errorsAry    = [];
+        $sqlSrvErrors = sqlsrv_errors();
 
-        foreach ($errorAry as $value) {
+        foreach ($sqlSrvErrors as $value) {
+            $errorsAry[$value['code']] = stripslashes($value['message']);
             $errors .= 'SQLSTATE: ' . $value['SQLSTATE'] . ', CODE: ' .
                 $value['code'] . ' => ' . stripslashes($value['message']) . PHP_EOL;
         }
 
-        return ($asString) ? $errors : $errorAry;
+        return ($asString) ? $errors : $errorsAry;
     }
 
     /**
