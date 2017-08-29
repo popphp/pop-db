@@ -23,20 +23,8 @@ namespace Pop\Db\Adapter\Profiler;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.0.0
  */
-class Profiler
+class Profiler extends AbstractProfiler
 {
-
-    /**
-     * Profiler start time
-     * @var float
-     */
-    protected $start = null;
-
-    /**
-     * Profiler finish time
-     * @var float
-     */
-    protected $finish = null;
 
     /**
      * Profiler current index
@@ -49,26 +37,6 @@ class Profiler
      * @var array
      */
     protected $steps = [];
-
-    /**
-     * Constructor
-     *
-     * Instantiate the profiler object
-     */
-    public function __construct()
-    {
-        $this->start = microtime(true);
-    }
-
-    /**
-     * Get start
-     *
-     * @return float
-     */
-    public function getStart()
-    {
-        return $this->start;
-    }
 
     /**
      * Add step
@@ -105,40 +73,6 @@ class Profiler
     public function getCurrentStep()
     {
         return (isset($this->steps[$this->current])) ? $this->steps[$this->current] : null;
-    }
-
-    /**
-     * Finish profiler
-     *
-     * @return Profiler
-     */
-    public function finish()
-    {
-        $this->finish = microtime(true);
-        return $this;
-    }
-
-    /**
-     * Get finish
-     *
-     * @return float
-     */
-    public function getFinish()
-    {
-        return $this->finish;
-    }
-
-    /**
-     * Get elapsed time
-     *
-     * @return string
-     */
-    public function getElapsed()
-    {
-        if (null === $this->finish) {
-            $this->finish();
-        }
-        return number_format(($this->finish - $this->start), 5);
     }
 
     /**
