@@ -372,6 +372,7 @@ class Record extends Record\AbstractRecord
 
         $params = null;
         $where  = null;
+        $select = (isset($options['select'])) ? $options['select'] : null;
 
         if (null !== $columns) {
             $db  = Db::getDb($this->getFullTable());
@@ -382,7 +383,7 @@ class Record extends Record\AbstractRecord
             $where         = $parsedColumns['where'];
         }
 
-        $rows = $this->getTableGateway()->select(null, $where, $params, $options);
+        $rows  = $this->getTableGateway()->select($select, $where, $params, $options);
 
         if (isset($rows[0])) {
             $this->setColumns($rows[0]);
@@ -410,6 +411,7 @@ class Record extends Record\AbstractRecord
     {
         $params = null;
         $where  = null;
+        $select = (isset($options['select'])) ? $options['select'] : null;
 
         if (null !== $columns) {
             $db  = Db::getDb($this->getFullTable());
@@ -420,7 +422,7 @@ class Record extends Record\AbstractRecord
             $where         = $parsedColumns['where'];
         }
 
-        $rows = $this->getTableGateway()->select(null, $where, $params, $options);
+        $rows = $this->getTableGateway()->select($select, $where, $params, $options);
 
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
