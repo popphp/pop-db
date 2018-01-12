@@ -65,7 +65,7 @@ class Column
                     $where[] = $column . ' IS NULL' . $combine;
                 }
             // IN or NOT IN
-            } else if (is_array($value)) {
+            } else if (is_array($value) && ($operator['op'] == '=')) {
                 if (substr($column, -1) == '-') {
                     $column  = substr($column, 0, -1);
                     $where[] = $column . ' NOT IN (' . implode(', ', $value) . ')' . $combine;
@@ -73,7 +73,7 @@ class Column
                     $where[] = $column . ' IN (' . implode(', ', $value) . ')' . $combine;
                 }
             // BETWEEN or NOT BETWEEN
-            } else if ((substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
+            } else if (!is_array($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
                 (strpos($value, ',') !== false)) {
                 if (substr($column, -1) == '-') {
                     $column  = substr($column, 0, -1);
@@ -123,23 +123,46 @@ class Column
                 }
             // Standard operators
             } else {
-                $column  = $operator['column'];
-                $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
-                if (isset($params[$column])) {
-                    if (is_array($params[$column])) {
-                        if ($placeholder == ':') {
-                            $where[count($where) - 1] .= $i;
+                $column = $operator['column'];
+
+                if (!is_array($value)) {
+                    $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
+                    if (isset($params[$column])) {
+                        if (is_array($params[$column])) {
+                            if ($placeholder == ':') {
+                                $where[count($where) - 1] .= $i;
+                            }
+                            $params[$column][] = $value;
+                        } else {
+                            if ($placeholder == ':') {
+                                $where[0] .= ($i - 1);
+                                $where[1] .= $i;
+                            }
+                            $params[$column] = [$params[$column], $value];
                         }
-                        $params[$column][] = $value;
                     } else {
-                        if ($placeholder == ':') {
-                            $where[0] .= ($i - 1);
-                            $where[1] .= $i;
-                        }
-                        $params[$column] = [$params[$column], $value];
+                        $params[$column] = $value;
                     }
                 } else {
-                    $params[$column] = $value;
+                    foreach ($value as $i => $val) {
+                        $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
+                        if (isset($params[$column])) {
+                            if (is_array($params[$column])) {
+                                if ($placeholder == ':') {
+                                    $where[count($where) - 1] .= $i;
+                                }
+                                $params[$column][] = $val;
+                            } else {
+                                if ($placeholder == ':') {
+                                    $where[0] .= ($i - 1);
+                                    $where[1] .= $i;
+                                }
+                                $params[$column] = [$params[$column], $val];
+                            }
+                        } else {
+                            $params[$column . ($i + 1)] = $val;
+                        }
+                    }
                 }
             }
 
