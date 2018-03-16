@@ -625,6 +625,10 @@ class Record extends Record\AbstractRecord
                 foreach ($foreignKeys as $i => $key) {
                     $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
                 }
+                if ((null !== $options) && isset($options['columns'])) {
+                    $columns = array_merge($columns, $options['columns']);
+                    unset($options['columns']);
+                }
                 $this->hasMany[$class] = new Record\Collection($class::findBy($columns, $options));
                 $result = $this->hasMany[$class];
             }
