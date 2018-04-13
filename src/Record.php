@@ -12,6 +12,8 @@
  * @namespace
  */
 namespace Pop\Db;
+use Pop\Db\Record\Collection;
+use Pop\Db\Sql\Where;
 
 /**
  * Record class
@@ -174,7 +176,7 @@ class Record extends Record\AbstractRecord
      * Find by ID static method
      *
      * @param  mixed  $id
-     * @return static
+     * @return static|Collection
      */
     public static function findById($id)
     {
@@ -196,6 +198,50 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Find one or create static method
+     *
+     * @param  array  $columns
+     * @param  array  $options
+     * @return static
+     */
+    public static function findOneOrCreate(array $columns = null, array $options = null)
+    {
+        $record = new static();
+        $result = $record->getOneBy($columns, $options);
+
+        if (empty($result->toArray())) {
+            $newRecord = new static($columns);
+            $newRecord->save();
+            return $newRecord;
+        } else {
+            return $result;
+        }
+    }
+
+    /**
+     * Find latest static method
+     *
+     * @param  string $by
+     * @param  array  $columns
+     * @param  array  $options
+     * @return static
+     */
+    public static function findLatest($by = null, array $columns = null, array $options = null)
+    {
+        $record = new static();
+
+        if ((null === $by) && (count($record->getPrimaryKeys()) == 1)) {
+            $by = $record->getPrimaryKeys()[0];
+        }
+        if (null === $options) {
+            $options = ['order' => $by . ' DESC'];
+        } else {
+            $options['order'] = $by . ' DESC';
+        }
+        return $record->getOneBy($columns, $options);
+    }
+
+    /**
      * Find by static method
      *
      * @param  array  $columns
@@ -207,6 +253,28 @@ class Record extends Record\AbstractRecord
     {
         $record = new static();
         return $record->getBy($columns, $options, $resultAs);
+    }
+
+    /**
+     * Find by or create static method
+     *
+     * @param  array  $columns
+     * @param  array  $options
+     * @param  string $resultAs
+     * @return Record\Collection
+     */
+    public static function findByOrCreate(array $columns = null, array $options = null, $resultAs = Record::AS_RECORD)
+    {
+        $record = new static();
+        $result = $record->getBy($columns, $options, $resultAs);
+
+        if ($result->count() == 0) {
+            $newRecord = new static($columns);
+            $newRecord->save();
+            return $newRecord;
+        } else {
+            return $result;
+        }
     }
 
     /**
@@ -339,19 +407,40 @@ class Record extends Record\AbstractRecord
      * Get by ID method
      *
      * @param  mixed  $id
-     * @return static
+     * @return static|Collection
      */
     public function getById($id)
     {
-        $this->setColumns($this->getRowGateway()->find($id));
+        if (is_array($id) && (count($this->primaryKeys) == 1)) {
+            $record      = new static();
+            $db          = Db::getDb($record->getFullTable());
+            $sql         = $db->createSql();
+            $placeholder = $sql->getPlaceholder();
+            $params      = [];
 
-        if (null !== $this->with) {
-            $r = $this->getWith($this->with, $this->withOptions);
-            if (is_array($r) && (count($r) == 1)) {
-                return $r[0];
+            $sql->select()->from($record->getFullTable());
+
+            foreach ($id as $i) {
+                $sql->select()->orWhere($this->primaryKeys[0] . ' IN ' . $placeholder);
+                $params[] = $i;
             }
+
+            $db->prepare((string)$sql)
+               ->bindParams($params)
+               ->execute();
+
+            return new Collection($db->fetchAll());
         } else {
-            return $this;
+            $this->setColumns($this->getRowGateway()->find($id));
+
+            if (null !== $this->with) {
+                $r = $this->getWith($this->with, $this->withOptions);
+                if (is_array($r) && (count($r) == 1)) {
+                    return $r[0];
+                }
+            } else {
+                return $this;
+            }
         }
     }
 
@@ -448,6 +537,62 @@ class Record extends Record\AbstractRecord
     public function getAll(array $options = null, $resultAs = Record::AS_RECORD)
     {
         return $this->getBy(null, $options, $resultAs);
+    }
+
+    /**
+     * Increment the record column and save
+     *
+     * @param  string $column
+     * @param  int    $amount
+     * @return void
+     */
+    public function increment($column, $amount = 1)
+    {
+        $this->{$column} += (int)$amount;
+        $this->save();
+    }
+
+    /**
+     * Decrement the record column and save
+     *
+     * @param  string $column
+     * @param  int    $amount
+     * @return void
+     */
+    public function decrement($column, $amount = 1)
+    {
+        $this->{$column} -= (int)$amount;
+        $this->save();
+    }
+
+    /**
+     * Replicate the record
+     *
+     * @param  array $replace
+     * @return static
+     */
+    public function replicate(array $replace = [])
+    {
+        $fields = $this->toArray();
+
+        foreach ($this->primaryKeys as $key) {
+            if (isset($fields[$key])) {
+                unset($fields[$key]);
+            }
+        }
+
+        if (!empty($replace)) {
+            foreach ($replace as $key => $value) {
+                if (isset($fields[$key])) {
+                    $fields[$key] = $value;
+                }
+            }
+        }
+
+        $newRecord = new static($fields);
+        $newRecord->save();
+
+        return $newRecord;
     }
 
     /**
@@ -749,6 +894,23 @@ class Record extends Record\AbstractRecord
         }
 
         return $result;
+    }
+
+    /**
+     * Call static method
+     *
+     * @param  string $name
+     * @param  array  $arguments
+     * @return mixed
+     */
+    public static function __callStatic($name, $arguments)
+    {
+        if (substr($name, 0, 9) == 'findWhere') {
+            $column = Parser\Table::parse(substr($name, 9));
+            if (count($arguments) == 1) {
+                return static::findBy([$column => $arguments[0]]);
+            }
+        }
     }
 
 }

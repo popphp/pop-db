@@ -298,6 +298,9 @@ class Select extends AbstractClause
      */
     public function andWhere($where = null)
     {
+        if (empty($this->where)) {
+            $this->where = new Where($this);
+        }
         if ($this->where->hasPredicates()) {
             $this->where->getLastPredicateSet()->setCombine('AND');
         }
@@ -313,6 +316,9 @@ class Select extends AbstractClause
      */
     public function orWhere($where = null)
     {
+        if (empty($this->where)) {
+            $this->where = new Where($this);
+        }
         if ($this->where->hasPredicates()) {
             $this->where->getLastPredicateSet()->setCombine('OR');
         }
