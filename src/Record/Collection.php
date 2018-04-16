@@ -117,28 +117,6 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     }
 
     /**
-     * Get the diff between the two sets
-     *
-     * @param  mixed  $items
-     * @return Collection
-     */
-    public function diff($items)
-    {
-        return new static(array_diff($this->items, $this->getItemsAsArray($items)));
-    }
-
-    /**
-     * Get the diff keys between the two sets
-     *
-     * @param  mixed  $items
-     * @return Collection
-     */
-    public function diffKeys($items)
-    {
-        return new static(array_diff_key($this->items, $this->getItemsAsArray($items)));
-    }
-
-    /**
      * Execute a callback over each item
      *
      * @param  callable $callback

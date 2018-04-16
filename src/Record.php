@@ -886,6 +886,9 @@ class Record extends Record\AbstractRecord
                 }
             }
             if (count($id) > 0) {
+                if (count($id) == 1) {
+                    $id = $id[0];
+                }
                 $this->doesBelong[$class] = $class::findById($id);
                 $result = $this->doesBelong[$class];
             }

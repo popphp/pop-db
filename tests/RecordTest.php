@@ -90,6 +90,23 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $u['username'] = 'testuser1';
         $u->save();
 
+        $u->increment('verified');
+        $this->assertEquals(2, $u->verified);
+
+        $u->decrement('verified');
+        $this->assertEquals(1, $u->verified);
+
+        $newU = $u->replicate();
+        $this->assertEquals(2, TestAsset\Users::getTotal(['id >=' => 0]));
+
+        $latest = TestAsset\Users::findLatest();
+        $this->assertEquals($newU->id, $latest->id);
+        $newU->delete();
+
+        $newU2 = TestAsset\Users::findOneOrCreate(['username' => 'newuser']);
+        $this->assertEquals(2, TestAsset\Users::getTotal(['id >=' => 0]));
+        $newU2->delete();
+
         //unset($u->id);
         //unset($u['id']);
 
