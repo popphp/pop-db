@@ -163,7 +163,7 @@ class Db
      * @throws Exception
      * @return void
      */
-    public static function install($sql, $adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function install($sql, $adapter, array $options = [], $prefix = '\Pop\Db\Adapter\\')
     {
         if (is_string($adapter)) {
             $adapter = ucfirst(strtolower($adapter));
