@@ -157,7 +157,7 @@ class Db
      * Install a database schema
      *
      * @param  string $sql
-     * @param  string $adapter
+     * @param  mixed $adapter
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
@@ -165,25 +165,30 @@ class Db
      */
     public static function install($sql, $adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
     {
-        $adapter = ucfirst(strtolower($adapter));
-        $class   = $prefix . $adapter;
+        if (is_string($adapter)) {
+            $adapter = ucfirst(strtolower($adapter));
+            $class   = $prefix . $adapter;
 
-        if (!class_exists($class)) {
-            throw new Exception('Error: The database adapter ' . $class . ' does not exist.');
+            if (!class_exists($class)) {
+                throw new Exception('Error: The database adapter ' . $class . ' does not exist.');
+            }
+
+            // If Sqlite
+            if (($adapter == 'Sqlite') || (($adapter == 'Pdo') && isset($options['type'])) && (strtolower($options['type']) == 'sqlite')) {
+                if (!file_exists($options['database'])) {
+                    touch($options['database']);
+                    chmod($options['database'], 0777);
+                }
+                if (!file_exists($options['database'])) {
+                    throw new Exception('Error: Could not create the database file.');
+                }
+            }
+
+            $db = new $class($options);
+        } else {
+            $db = $adapter;
         }
 
-        // If Sqlite
-        if (($adapter == 'Sqlite') || (($adapter == 'Pdo') && isset($options['type'])) && (strtolower($options['type']) == 'sqlite')) {
-            if (!file_exists($options['database'])) {
-                touch($options['database']);
-                chmod($options['database'], 0777);
-            }
-            if (!file_exists($options['database'])) {
-                throw new Exception('Error: Could not create the database file.');
-            }
-        }
-
-        $db    = new $class($options);
         $lines = (file_exists($sql)) ? file($sql) : explode("\n", $sql);
 
         // Remove comments, execute queries
