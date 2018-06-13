@@ -166,7 +166,7 @@ class Migrator extends Migration\AbstractMigrator
 
         if (isset($i) && isset($stepsToRun[$i])) {
             file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $stepsToRun[$i]);
-        } else {
+        } else if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
             unlink($this->path . DIRECTORY_SEPARATOR . '.current');
         }
 
