@@ -117,15 +117,15 @@ abstract class AbstractRecord implements \ArrayAccess
 
     /**
      * Eager with
-     * @var string
+     * @var array
      */
-    protected $with = null;
+    protected $with = [];
 
     /**
      * Eager with options
      * @var array
      */
-    protected $withOptions = null;
+    protected $withOptions = [];
 
     /**
      * Set the table
@@ -216,49 +216,63 @@ abstract class AbstractRecord implements \ArrayAccess
      * @param  int $id
      * @return array
      */
-    public function getRelationships($id)
+    public function getRelationships($id = null)
     {
-        return (isset($this->relationships[$id])) ? $this->relationships[$id] : null;
-    }
-
-    /**
-     * Set eager with options
-     *
-     * @param  array $options
-     * @return AbstractRecord
-     */
-    public function setWithOptions(array $options = null)
-    {
-        $this->withOptions = $options;
-        return $this;
+        if (null !== $id) {
+            return (isset($this->relationships[$id])) ? $this->relationships[$id] : null;
+        } else {
+            return $this->relationships;
+        }
     }
 
     /**
      * Set eager with
      *
      * @param  string $name
+     * @param  array  $options
      * @return AbstractRecord
      */
-    public function setWith($name)
+    public function addWith($name, array $options = null)
     {
-        $this->with = $name;
+        $this->with[]        = $name;
+        $this->withOptions[] = $options;
+
         return $this;
     }
 
     /**
      * With a 1:many relationship (eager-loading)
      *
-     * @param  string $name
-     * @param  array  $options
-     * @return mixed
+     * @return static
      */
-    public function getWith($name, array $options = null)
+    public function getWith()
     {
-        if (method_exists($this, $name)) {
-            return $this->{$name}($options, true);
-        } else {
-            return null;
+        foreach ($this->with as $i => $name) {
+            $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
+
+            if (method_exists($this, $name)) {
+                $results = $this->{$name}($options, true);
+                foreach ($results as $result) {
+                    if (method_exists($result, 'getRelationships')) {
+                        $relationships = $result->getRelationships();
+                        if (empty($this->relationships)) {
+                            $this->relationships = $relationships;
+                        } else {
+                            foreach ($relationships as $key => $value) {
+                                if (!isset($this->relationships[$key])) {
+                                    $this->relationships[$key] = [];
+                                }
+                                foreach ($value as $v) {
+                                    $this->relationships[$key][] = $v;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        return $this;
     }
 
     /**

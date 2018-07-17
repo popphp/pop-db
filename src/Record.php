@@ -354,15 +354,25 @@ class Record extends Record\AbstractRecord
     /**
      * With a 1:many relationship (eager-loading)
      *
-     * @param  string $name
+     * @param  mixed $name
      * @param  array  $options
      * @return mixed
      */
     public static function with($name, array $options = null)
     {
         $record = new static();
-        $record->setWith($name);
-        $record->setWithOptions($options);
+
+        if (is_array($name)) {
+            foreach ($name as $key => $value) {
+                if (is_numeric($key) && is_string($value)) {
+                    $record->addWith($value);
+                } else if (!is_numeric($key) && is_array($value)) {
+                    $record->addWith($key, $value);
+                }
+            }
+        } else {
+            $record->addWith($name, $options);
+        }
         return $record;
     }
 
@@ -434,13 +444,21 @@ class Record extends Record\AbstractRecord
             $this->setColumns($this->getRowGateway()->find($id));
 
             if (null !== $this->with) {
-                $r = $this->getWith($this->with, $this->withOptions);
+                $this->getWith();
+            }
+
+            return $this;
+
+            /*
+            if (null !== $this->with) {
+                $r = $this->getWith();
                 if (is_array($r) && (count($r) == 1)) {
                     return $r[0];
                 }
             } else {
                 return $this;
             }
+            */
         }
     }
 
@@ -479,7 +497,7 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $this->with) {
-            $r = $this->getWith($this->with, $this->withOptions);
+            $r = $this->getWith();
             if (is_array($r) && (count($r) == 1)) {
                 return $r[0];
             }
@@ -515,16 +533,15 @@ class Record extends Record\AbstractRecord
 
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
+            if ((null !== $this->with) && ($rows[$i] instanceof Record)) {
+                $r = $rows[$i]->getWith();
+                if (is_array($r) && (count($r) == 1)) {
+                    $rows[$i] = $r[0];
+                }
+            }
         }
 
-        if (null !== $this->with) {
-            $r = $this->getWith($this->with, $this->withOptions);
-            if (is_array($r)) {
-                return new Record\Collection($r);
-            }
-        } else {
-            return new Record\Collection($rows);
-        }
+        return new Record\Collection($rows);
     }
 
     /**
