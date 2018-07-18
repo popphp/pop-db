@@ -448,17 +448,6 @@ class Record extends Record\AbstractRecord
             }
 
             return $this;
-
-            /*
-            if (null !== $this->with) {
-                $r = $this->getWith();
-                if (is_array($r) && (count($r) == 1)) {
-                    return $r[0];
-                }
-            } else {
-                return $this;
-            }
-            */
         }
     }
 
@@ -497,13 +486,10 @@ class Record extends Record\AbstractRecord
         }
 
         if (null !== $this->with) {
-            $r = $this->getWith();
-            if (is_array($r) && (count($r) == 1)) {
-                return $r[0];
-            }
-        } else {
-            return $this;
+            $this->getWith();
         }
+
+        return $this;
     }
 
     /**
@@ -534,10 +520,7 @@ class Record extends Record\AbstractRecord
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
             if ((null !== $this->with) && ($rows[$i] instanceof Record)) {
-                $r = $rows[$i]->getWith();
-                if (is_array($r) && (count($r) == 1)) {
-                    $rows[$i] = $r[0];
-                }
+                $rows[$i]->getWith();
             }
         }
 
@@ -777,7 +760,13 @@ class Record extends Record\AbstractRecord
         $id     = (count($this->primaryKeys) == 1) ? $this->rowGateway[$this->primaryKeys[0]] : null;
 
         if ((null !== $id) && isset($this->relationships[$id])) {
-            $this->hasMany[$class] = new Record\Collection($this->relationships[$id]);
+            $many = [];
+            foreach ($this->relationships[$id] as $relationship) {
+                if ($relationship instanceof $class) {
+                    $many[] = $relationship;
+                }
+            }
+            $this->hasMany[$class] = new Record\Collection($many);
             $result = $this->hasMany[$class];
         } else if (!isset($this->hasMany[$class])) {
             $foreignKeys = (!is_array($this->oneToMany[$class])) ? [$this->oneToMany[$class]] : $this->oneToMany[$class];
