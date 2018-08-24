@@ -47,6 +47,15 @@ class Row extends AbstractGateway implements \ArrayAccess
     protected $columns = [];
 
     /**
+     * Row fields that have been changed
+     * @var array
+     */
+    protected $dirty = [
+        'old' => [],
+        'new' => []
+    ];
+
+    /**
      * Constructor
      *
      * Instantiate the row gateway object.
@@ -149,6 +158,26 @@ class Row extends AbstractGateway implements \ArrayAccess
     }
 
     /**
+     * Check if row data is dirty
+     *
+     * @return boolean
+     */
+    public function isDirty()
+    {
+        return ($this->dirty['old'] !== $this->dirty['new']);
+    }
+
+    /**
+     * Get dirty columns
+     *
+     * @return array
+     */
+    public function getDirty()
+    {
+        return $this->dirty;
+    }
+
+    /**
      * Find row by primary key values
      *
      * @param  mixed $values
@@ -214,6 +243,9 @@ class Row extends AbstractGateway implements \ArrayAccess
         $sql    = $db->createSql();
         $values = [];
         $params = [];
+
+        $this->dirty['old'] = [];
+        $this->dirty['new'] = $this->columns;
 
         $i = 1;
         foreach ($this->columns as $column => $value) {
@@ -328,8 +360,11 @@ class Row extends AbstractGateway implements \ArrayAccess
             throw new Exception('Error: The primary key(s) have not been set.');
         }
 
-        $db     = Db::getDb($this->table);
-        $sql    = $db->createSql();
+        $this->dirty['old'] = $this->columns;
+        $this->dirty['new'] = [];
+
+        $db  = Db::getDb($this->table);
+        $sql = $db->createSql();
 
         $this->doesPrimaryCountMatch();
 
@@ -371,6 +406,10 @@ class Row extends AbstractGateway implements \ArrayAccess
      */
     public function __set($name, $value)
     {
+        if (!isset($this->dirty['old'][$name])) {
+            $this->dirty['old'][$name] = (isset($this->columns[$name])) ? $this->columns[$name] : null;
+            $this->dirty['new'][$name] = $value;
+        }
         $this->columns[$name] = $value;
     }
 
@@ -405,6 +444,10 @@ class Row extends AbstractGateway implements \ArrayAccess
     public function __unset($name)
     {
         if (isset($this->columns[$name])) {
+            if (!isset($this->dirty['old'][$name])) {
+                $this->dirty['old'][$name] = $this->columns[$name];
+                $this->dirty['new'][$name] = null;
+            }
             unset($this->columns[$name]);
         }
     }

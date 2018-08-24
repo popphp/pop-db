@@ -596,6 +596,26 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Check if row is dirty
+     *
+     * @return boolean
+     */
+    public function isDirty()
+    {
+        return $this->rowGateway->isDirty();
+    }
+
+    /**
+     * Get row's dirty columns
+     *
+     * @return array
+     */
+    public function getDirty()
+    {
+        return $this->rowGateway->getDirty();
+    }
+
+    /**
      * Save the record
      *
      * @param  array  $columns
