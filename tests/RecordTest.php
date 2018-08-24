@@ -186,4 +186,38 @@ class RecordTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(1, $users->count());
     }
 
+    public function testDirtyCreate()
+    {
+        $user = new TestAsset\Users([
+            'username' => 'newuser',
+            'password' => '12new34',
+            'email'    => 'test@test.com',
+            'active'   => 1,
+            'verified' => 1
+        ]);
+        $this->assertTrue($user->isDirty());
+        $dirty = $user->getDirty();
+        $this->assertEquals('newuser', $dirty['new']['username']);
+    }
+
+    public function testDirtyUpdate()
+    {
+        $user = TestAsset\Users::findOne(['username' => 'testuser']);
+        $user->username = 'testuser2';
+        $this->assertTrue($user->isDirty());
+        $dirty = $user->getDirty();
+        $this->assertEquals('testuser', $dirty['old']['username']);
+        $this->assertEquals('testuser2', $dirty['new']['username']);
+    }
+
+    public function testDirtyDelete()
+    {
+        $user = TestAsset\Users::findOne(['username' => 'testuser']);
+        unset($user->username);
+        $this->assertTrue($user->isDirty());
+        $dirty = $user->getDirty();
+        $this->assertEquals('testuser', $dirty['old']['username']);
+        $this->assertEquals(null, $dirty['new']['username']);
+    }
+
 }
