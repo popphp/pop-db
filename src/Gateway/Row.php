@@ -244,9 +244,6 @@ class Row extends AbstractGateway implements \ArrayAccess
         $values = [];
         $params = [];
 
-        $this->dirty['old'] = [];
-        $this->dirty['new'] = $this->columns;
-
         $i = 1;
         foreach ($this->columns as $column => $value) {
             $placeholder = $sql->getPlaceholder();
@@ -271,6 +268,9 @@ class Row extends AbstractGateway implements \ArrayAccess
             $this->columns[$this->primaryKeys[0]] = $db->getLastId();
             $this->primaryValues[] = $this->columns[$this->primaryKeys[0]];
         }
+
+        $this->dirty['old'] = [];
+        $this->dirty['new'] = $this->columns;
 
         return $this;
     }
@@ -360,9 +360,6 @@ class Row extends AbstractGateway implements \ArrayAccess
             throw new Exception('Error: The primary key(s) have not been set.');
         }
 
-        $this->dirty['old'] = $this->columns;
-        $this->dirty['new'] = [];
-
         $db  = Db::getDb($this->table);
         $sql = $db->createSql();
 
@@ -390,6 +387,9 @@ class Row extends AbstractGateway implements \ArrayAccess
         $db->prepare((string)$sql)
            ->bindParams($params)
            ->execute();
+
+        $this->dirty['old'] = $this->columns;
+        $this->dirty['new'] = [];
 
         $this->columns       = [];
         $this->primaryValues = [];
