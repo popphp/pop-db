@@ -410,8 +410,13 @@ class Row extends AbstractGateway implements \ArrayAccess
     public function __set($name, $value)
     {
         if (!isset($this->dirty['old'][$name])) {
-            $this->dirty['old'][$name] = (isset($this->columns[$name])) ? $this->columns[$name] : null;
-            $this->dirty['new'][$name] = $value;
+            if (isset($this->columns[$name]) && ($value != $this->columns[$name])) {
+                $this->dirty['old'][$name] = $this->columns[$name];
+                $this->dirty['new'][$name] = $value;
+            } else if (!isset($this->columns[$name])) {
+                $this->dirty['old'][$name] = null;
+                $this->dirty['new'][$name] = $value;
+            }
         }
         $this->columns[$name] = $value;
     }
