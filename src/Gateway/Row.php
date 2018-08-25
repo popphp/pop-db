@@ -145,8 +145,6 @@ class Row extends AbstractGateway implements \ArrayAccess
             }
         }
 
-        $this->dirty['new'] = $this->columns;
-
         return $this;
     }
 
