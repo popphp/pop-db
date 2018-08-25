@@ -24,7 +24,7 @@ use Pop\Db\Parser;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2018 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    4.1.3
+ * @version    4.3.0
  */
 class Migrator extends Migration\AbstractMigrator
 {
