@@ -166,9 +166,19 @@ class Sqlite extends AbstractAdapter
         }
 
         foreach ($params as $dbColumnName => $dbColumnValue) {
-            ${$dbColumnName} = $dbColumnValue;
-            if ($this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName}) === false) {
-                $this->throwError('Error: There was an error binding the parameters');
+            if (is_array($dbColumnValue)) {
+                foreach ($dbColumnValue as $k => $dbColumnVal) {
+                    ${$dbColumnName . ($k + 1)} = $dbColumnVal;
+                    if ($this->statement->bindParam(':' . $dbColumnName . ($k + 1), ${$dbColumnName . ($k + 1)}) === false) {
+                        $this->throwError('Error: There was an error binding the parameters');
+                    }
+
+                }
+            } else {
+                ${$dbColumnName} = $dbColumnValue;
+                if ($this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName}) === false) {
+                    $this->throwError('Error: There was an error binding the parameters');
+                }
             }
         }
         return $this;

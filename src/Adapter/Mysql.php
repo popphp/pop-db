@@ -203,22 +203,44 @@ class Mysql extends AbstractAdapter
 
         $i = 1;
         foreach ($params as $dbColumnName => $dbColumnValue) {
-            ${$dbColumnName . $i} = $dbColumnValue;
+            if (is_array($dbColumnValue)) {
+                foreach ($dbColumnValue as $dbColumnVal) {
+                    ${$dbColumnName . $i} = $dbColumnVal;
 
-            if (is_int($dbColumnValue)) {
-                $bindParams[0] .= 'i';
-            } else if (is_double($dbColumnValue)) {
-                $bindParams[0] .= 'd';
-            } else if (is_string($dbColumnValue)) {
-                $bindParams[0] .= 's';
-            } else if (is_null($dbColumnValue)) {
-                $bindParams[0] .= 's';
+                    if (is_int($dbColumnVal)) {
+                        $bindParams[0] .= 'i';
+                    } else if (is_double($dbColumnVal)) {
+                        $bindParams[0] .= 'd';
+                    } else if (is_string($dbColumnVal)) {
+                        $bindParams[0] .= 's';
+                    } else if (is_null($dbColumnVal)) {
+                        $bindParams[0] .= 's';
+                    } else {
+                        $bindParams[0] .= 'b';
+                    }
+
+                    $bindParams[] = &${$dbColumnName . $i};
+                    $i++;
+                }
             } else {
-                $bindParams[0] .= 'b';
+                ${$dbColumnName . $i} = $dbColumnValue;
+
+                if (is_int($dbColumnValue)) {
+                    $bindParams[0] .= 'i';
+                } else if (is_double($dbColumnValue)) {
+                    $bindParams[0] .= 'd';
+                } else if (is_string($dbColumnValue)) {
+                    $bindParams[0] .= 's';
+                } else if (is_null($dbColumnValue)) {
+                    $bindParams[0] .= 's';
+                } else {
+                    $bindParams[0] .= 'b';
+                }
+
+                $bindParams[] = &${$dbColumnName . $i};
+                $i++;
             }
 
-            $bindParams[] = &${$dbColumnName . $i};
-            $i++;
         }
 
         if (call_user_func_array([$this->statement, 'bind_param'], $bindParams) === false) {

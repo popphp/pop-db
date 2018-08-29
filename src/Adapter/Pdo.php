@@ -270,14 +270,30 @@ class Pdo extends AbstractAdapter
         if ($this->placeholder == '?') {
             $i = 1;
             foreach ($params as $dbColumnName => $dbColumnValue) {
-                ${$dbColumnName} = $dbColumnValue;
-                $this->statement->bindParam($i, ${$dbColumnName});
-                $i++;
+                if (is_array($dbColumnValue)) {
+                    foreach ($dbColumnValue as $k => $dbColumnVal) {
+                        ${$dbColumnName . ($k + 1)} = $dbColumnVal;
+                        $this->statement->bindParam($i, ${$dbColumnName . ($k + 1)});
+                        $i++;
+
+                    }
+                } else {
+                    ${$dbColumnName} = $dbColumnValue;
+                    $this->statement->bindParam($i, ${$dbColumnName});
+                    $i++;
+                }
             }
         } else if ($this->placeholder == ':') {
             foreach ($params as $dbColumnName => $dbColumnValue) {
-                ${$dbColumnName} = $dbColumnValue;
-                $this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName});
+                if (is_array($dbColumnValue)) {
+                    foreach ($dbColumnValue as $k => $dbColumnVal) {
+                        ${$dbColumnName} = $dbColumnVal;
+                        $this->statement->bindParam(':' . $dbColumnName . ($k + 1), ${$dbColumnName});
+                    }
+                } else {
+                    ${$dbColumnName} = $dbColumnValue;
+                    $this->statement->bindParam(':' . $dbColumnName, ${$dbColumnName});
+                }
             }
         }
         return $this;
