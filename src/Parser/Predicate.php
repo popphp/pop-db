@@ -133,4 +133,67 @@ class Predicate
         return $value;
     }
 
+    /**
+     * Convert to string of conditions to array of values
+     *
+     * @param  mixed $conditions
+     * @return array
+     */
+    public static function convertToArray($conditions)
+    {
+        $columns = [];
+        if (!is_array($conditions)) {
+            $conditions = [$conditions];
+        }
+
+        foreach ($conditions as $condition) {
+            $p = self::parse($condition);
+            $column = $p[0];
+            $op     = $p[1];
+            $value  = $p[2];
+
+            switch ($op) {
+                case '>=':
+                case '<=':
+                case '!=':
+                case '>':
+                case '<':
+                    $columns[$column . $op] = $value;
+                    break;
+                case 'LIKE':
+                    if (substr($value, 0, 1) == '%') {
+                        $column = '%' . $column;
+                        $value  = substr($value, 1);
+                    }
+                    if (substr($value, -1) == '%') {
+                        $column .= '%';
+                        $value   = substr($value, 0, -1);
+                    }
+                    $columns[$column] = $value;
+                    break;
+                case 'NOT LIKE':
+                    if (substr($value, 0, 1) == '%') {
+                        $column = '-%' . $column;
+                        $value  = substr($value, 1);
+                    }
+                    if (substr($value, -1) == '%') {
+                        $column .= '%-';
+                        $value   = substr($value, 0, -1);
+                    }
+                    $columns[$column] = $value;
+                    break;
+                case 'IS NULL':
+                    $columns[$column] = null;
+                    break;
+                case 'IS NOT NULL':
+                    $columns[$column . '-'] = null;
+                    break;
+                default:
+                    $columns[$column] = $value;
+            }
+        }
+
+        return $columns;
+    }
+
 }
