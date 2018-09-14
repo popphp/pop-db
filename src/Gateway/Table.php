@@ -103,7 +103,7 @@ class Table extends AbstractGateway
             $order = Parser\Order::parse($options['order']);
             $sql->select()->orderBy($order['by'], $db->escape($order['order']));
         }
-$s = (string)$sql;
+
         $db->prepare((string)$sql);
         if ((null !== $parameters) && (count($parameters) > 0)) {
             $db->bindParams($parameters);
