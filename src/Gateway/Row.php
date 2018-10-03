@@ -411,7 +411,7 @@ class Row extends AbstractGateway implements \ArrayAccess
             if (isset($this->columns[$name]) && ($value != $this->columns[$name])) {
                 $this->dirty['old'][$name] = $this->columns[$name];
                 $this->dirty['new'][$name] = $value;
-            } else if (!isset($this->columns[$name])) {
+            } else if (!isset($this->columns[$name]) && !empty($value)) {
                 $this->dirty['old'][$name] = null;
                 $this->dirty['new'][$name] = $value;
             }
