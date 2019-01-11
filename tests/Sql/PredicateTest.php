@@ -4,8 +4,9 @@ namespace Pop\Db\Test\Sql;
 
 use Pop\Db\Db;
 use Pop\Db\Sql;
+use PHPUnit\Framework\TestCase;
 
-class PredicateTest extends \PHPUnit_Framework_TestCase
+class PredicateTest extends TestCase
 {
 
     public function testNotEqual()

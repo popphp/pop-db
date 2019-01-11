@@ -4,8 +4,9 @@ namespace Pop\Db\Test\Sql;
 
 use Pop\Db\Db;
 use Pop\Db\Sql;
+use PHPUnit\Framework\TestCase;
 
-class SelectTest extends \PHPUnit_Framework_TestCase
+class SelectTest extends TestCase
 {
 
     public function testRenderWithValues()

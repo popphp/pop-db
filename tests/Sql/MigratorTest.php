@@ -4,8 +4,9 @@ namespace Pop\Db\Test\Sql;
 
 use Pop\Db\Db;
 use Pop\Db\Sql\Migrator;
+use PHPUnit\Framework\TestCase;
 
-class MigratorTest extends \PHPUnit_Framework_TestCase
+class MigratorTest extends TestCase
 {
 
     public function testConstructor()
