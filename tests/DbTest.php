@@ -3,8 +3,9 @@
 namespace Pop\Db\Test;
 
 use Pop\Db\Db;
+use PHPUnit\Framework\TestCase;
 
-class DbTest extends \PHPUnit_Framework_TestCase
+class DbTest extends TestCase
 {
 
     public function testInstallBadAdapterException()

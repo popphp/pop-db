@@ -3,8 +3,9 @@
 namespace Pop\Db\Test;
 
 use Pop\Db\Record;
+use PHPUnit\Framework\TestCase;
 
-class CollectionTest extends \PHPUnit_Framework_TestCase
+class CollectionTest extends TestCase
 {
 
     public function testConstructor()

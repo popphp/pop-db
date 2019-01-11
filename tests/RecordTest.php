@@ -4,8 +4,9 @@ namespace Pop\Db\Test;
 
 use Pop\Db\Db;
 use Pop\Db\Record;
+use PHPUnit\Framework\TestCase;
 
-class RecordTest extends \PHPUnit_Framework_TestCase
+class RecordTest extends TestCase
 {
     public function testSetDbException()
     {

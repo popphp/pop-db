@@ -4,8 +4,9 @@ namespace Pop\Db\Test\Adapter;
 
 use Pop\Db\Db;
 use Pop\Db\Adapter\Sqlite;
+use PHPUnit\Framework\TestCase;
 
-class SqliteTest extends \PHPUnit_Framework_TestCase
+class SqliteTest extends TestCase
 {
 
     public function testConstructorDbNotPassedException()

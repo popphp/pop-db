@@ -3,8 +3,9 @@
 namespace Pop\Db\Test;
 
 use Pop\Db\Parser;
+use PHPUnit\Framework\TestCase;
 
-class ParserTest extends \PHPUnit_Framework_TestCase
+class ParserTest extends TestCase
 {
 
     public function testParserColumn1()

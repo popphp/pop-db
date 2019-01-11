@@ -4,8 +4,9 @@ namespace Pop\Db\Test;
 
 use Pop\Db\Db;
 use Pop\Db\Sql;
+use PHPUnit\Framework\TestCase;
 
-class SqlTest extends \PHPUnit_Framework_TestCase
+class SqlTest extends TestCase
 {
 
     public function testConstructor()

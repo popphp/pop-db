@@ -4,8 +4,9 @@ namespace Pop\Db\Test\Adapter;
 
 use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
+use PHPUnit\Framework\TestCase;
 
-class PdoTest extends \PHPUnit_Framework_TestCase
+class PdoTest extends TestCase
 {
 
     public function testConstructorDbNotPassedException()

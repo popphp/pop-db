@@ -7,8 +7,9 @@ use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Mysql;
 use Pop\Db\Adapter\Pdo;
+use PHPUnit\Framework\TestCase;
 
-class MysqlTest extends \PHPUnit_Framework_TestCase
+class MysqlTest extends TestCase
 {
 
     protected $password = '';

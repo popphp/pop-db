@@ -3,8 +3,9 @@
 namespace Pop\Db\Test\Adapter\Profiler;
 
 use Pop\Db\Adapter\Profiler\Step;
+use PHPUnit\Framework\TestCase;
 
-class StepTest extends \PHPUnit_Framework_TestCase
+class StepTest extends TestCase
 {
 
     public function testConstructor()

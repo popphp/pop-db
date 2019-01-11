@@ -6,8 +6,9 @@ use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Pgsql;
 use Pop\Db\Adapter\Pdo;
+use PHPUnit\Framework\TestCase;
 
-class PgsqlTest extends \PHPUnit_Framework_TestCase
+class PgsqlTest extends TestCase
 {
 
     protected $password = '';

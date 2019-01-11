@@ -5,8 +5,9 @@ namespace Pop\Db\Test;
 use Pop\Db\Db;
 use Pop\Db\Record;
 use Pop\Db\Adapter\Mysql;
+use PHPUnit\Framework\TestCase;
 
-class RelationshipTest extends \PHPUnit_Framework_TestCase
+class RelationshipTest extends TestCase
 {
 
     protected $password = '';
