@@ -140,16 +140,6 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function fetchAll();
 
     /**
-     * Determine whether or not connected
-     *
-     * @return boolean
-     */
-    public function isConnected()
-    {
-        return (null !== $this->connection);
-    }
-
-    /**
      * Create SQL builder
      *
      * @return Sql
@@ -167,6 +157,16 @@ abstract class AbstractAdapter implements AdapterInterface
     public function createSchema()
     {
         return new Sql\Schema($this);
+    }
+
+    /**
+     * Determine whether or not connected
+     *
+     * @return boolean
+     */
+    public function isConnected()
+    {
+        return (null !== $this->connection);
     }
 
     /**

@@ -64,7 +64,7 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return Adapter\Mysql
+     * @return Adapter\Mysql|Adapter\AbstractAdapter
      */
     public static function mysqlConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
     {
@@ -77,7 +77,7 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return Adapter\Pdo
+     * @return Adapter\Pdo|Adapter\AbstractAdapter
      */
     public static function pdoConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
     {
@@ -90,7 +90,7 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return Adapter\Pgsql
+     * @return Adapter\Pgsql|Adapter\AbstractAdapter
      */
     public static function pgsqlConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
     {
@@ -103,7 +103,7 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return Adapter\Sqlsrv
+     * @return Adapter\Sqlsrv|Adapter\AbstractAdapter
      */
     public static function sqlsrvConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
     {
@@ -116,7 +116,7 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return Adapter\Sqlite
+     * @return Adapter\Sqlite|Adapter\AbstractAdapter
      */
     public static function sqliteConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
     {
@@ -309,8 +309,8 @@ class Db
         }
 
         if ((!$result) && (null !== $class) && in_array($class, self::$classToTable)) {
-            $class = array_search($class, self::$classToTable);
-            if (isset(self::$db[$class])) {
+            $table = array_search($class, self::$classToTable);
+            if (isset(self::$db[$table])) {
                 $result = true;
             }
         }

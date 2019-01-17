@@ -61,7 +61,10 @@ class Mysql extends AbstractAdapter
         );
 
         if ($this->connection->connect_error != '') {
-            $this->throwError('MySQL Connection Error: ' . $this->connection->connect_error . ' (#' . $this->connection->connect_errno . ')');
+            $this->throwError(
+                'MySQL Connection Error: ' . $this->connection->connect_error .
+                ' (#' . $this->connection->connect_errno . ')'
+            );
         }
     }
 

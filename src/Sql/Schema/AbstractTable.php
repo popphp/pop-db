@@ -56,7 +56,7 @@ abstract class AbstractTable extends AbstractSql
         parent::__construct($db);
 
         $tableGateway = new Gateway\Table($table);
-        $this->info = $tableGateway->getTableInfo($db);
+        $this->info   = $tableGateway->getTableInfo($db);
     }
 
     /**

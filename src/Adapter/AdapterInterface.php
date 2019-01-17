@@ -93,6 +93,20 @@ interface AdapterInterface
     public function fetchAll();
 
     /**
+     * Create SQL builder
+     *
+     * @return \Pop\Db\Sql
+     */
+    public function createSql();
+
+    /**
+     * Create Schema builder
+     *
+     * @return \Pop\Db\Sql\Schema
+     */
+    public function createSchema();
+
+    /**
      * Determine whether or not connected
      *
      * @return boolean

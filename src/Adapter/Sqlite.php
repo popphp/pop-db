@@ -145,11 +145,14 @@ class Sqlite extends AbstractAdapter
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
-            $this->throwError('SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
+            $this->throwError(
+                'SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
+            );
         } else if (null !== $this->profiler) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
+
         return $this;
     }
 
@@ -172,7 +175,6 @@ class Sqlite extends AbstractAdapter
                     if ($this->statement->bindParam(':' . $dbColumnName . ($k + 1), ${$dbColumnName . ($k + 1)}) === false) {
                         $this->throwError('Error: There was an error binding the parameters');
                     }
-
                 }
             } else {
                 ${$dbColumnName} = $dbColumnValue;
@@ -181,6 +183,7 @@ class Sqlite extends AbstractAdapter
                 }
             }
         }
+
         return $this;
     }
 
@@ -201,6 +204,7 @@ class Sqlite extends AbstractAdapter
         if ($this->statement->bindParam($param, $value, $type) === false) {
             $this->throwError('Error: There was an error binding the parameter');
         }
+
         return $this;
     }
 
@@ -221,6 +225,7 @@ class Sqlite extends AbstractAdapter
         if ($this->statement->bindValue($param, $value, $type) === false) {
             $this->throwError('Error: There was an error binding the value');
         }
+
         return $this;
     }
 
@@ -303,7 +308,7 @@ class Sqlite extends AbstractAdapter
      */
     public function escape($value)
     {
-        return $this->connection->escapeString($value);;
+        return $this->connection->escapeString($value);
     }
 
     /**
@@ -327,7 +332,9 @@ class Sqlite extends AbstractAdapter
             return $this->connection->changes();
         } else {
             if (!($this->lastResult = $this->connection->query($this->lastSql))) {
-                $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
+                $this->throwError(
+                    'Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
+                );
             } else {
                 $num = 0;
                 while (($row = $this->lastResult->fetcharray(SQLITE3_ASSOC)) != false) {
@@ -357,7 +364,8 @@ class Sqlite extends AbstractAdapter
     public function getTables()
     {
         $tables = [];
-        $sql = "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' UNION ALL SELECT name FROM sqlite_temp_master WHERE type IN ('table', 'view') ORDER BY 1";
+        $sql    = "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' " .
+            "UNION ALL SELECT name FROM sqlite_temp_master WHERE type IN ('table', 'view') ORDER BY 1";
 
         $this->query($sql);
         while (($row = $this->fetch())) {

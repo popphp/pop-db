@@ -28,7 +28,7 @@ class Rename extends AbstractTable
 
     /**
      * Rename table name
-     * @var array
+     * @var string
      */
     protected $to = null;
 
@@ -62,8 +62,8 @@ class Rename extends AbstractTable
     public function render()
     {
         return ($this->isMysql()) ?
-                'RENAME TABLE ' . $this->quoteId($this->table) . ' TO ' . $this->quoteId($this->to) . ';' . PHP_EOL :
-                'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME TO ' . $this->quoteId($this->to) . ';' . PHP_EOL;
+            'RENAME TABLE ' . $this->quoteId($this->table) . ' TO ' . $this->quoteId($this->to) . ';' . PHP_EOL :
+            'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME TO ' . $this->quoteId($this->to) . ';' . PHP_EOL;
     }
 
     /**

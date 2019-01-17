@@ -510,7 +510,9 @@ class Select extends AbstractClause
         // Account for LIMIT and OFFSET clauses if the database is SQLSRV
         if (($this->isSqlsrv()) && ((null !== $this->limit) || (null !== $this->offset))) {
             if (null === $this->orderBy) {
-                throw new Exception('Error: You must set an order by clause to execute a limit clause on the SQL server database.');
+                throw new Exception(
+                    'Error: You must set an order by clause to execute a limit clause on the SQL server database.'
+                );
             }
             $sql .= $this->buildSqlSrvLimitAndOffset();
         // Else, if there is a nested SELECT statement.

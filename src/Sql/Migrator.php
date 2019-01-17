@@ -71,8 +71,10 @@ class Migrator extends Migration\AbstractMigrator
      */
     public static function create($class, $path = null)
     {
-        $file = date('YmdHis') . '_' . Parser\Table::parse($class) . '.php';
-        $classContents = str_replace('MigrationTemplate', $class, file_get_contents(__DIR__ . '/Migration/Template/MigrationTemplate.php'));
+        $file          = date('YmdHis') . '_' . Parser\Table::parse($class) . '.php';
+        $classContents = str_replace(
+            'MigrationTemplate', $class, file_get_contents(__DIR__ . '/Migration/Template/MigrationTemplate.php')
+        );
 
         if (null !== $path) {
             if (!is_dir($path)) {

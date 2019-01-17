@@ -28,7 +28,6 @@ use Pop\Db\Adapter\AbstractAdapter;
 class Alter extends AbstractStructure
 {
 
-
     /**
      * Existing columns in the table
      * @var array
@@ -222,9 +221,11 @@ class Alter extends AbstractStructure
         // Drop constraints
         foreach ($this->dropConstraints as $constraint) {
             if ($this->isMysql()) {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' . $this->quoteId($constraint) . ';' . PHP_EOL;
+                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' .
+                    $this->quoteId($constraint) . ';' . PHP_EOL;
             } else {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP CONSTRAINT ' . $this->quoteId($constraint) . ';' . PHP_EOL;
+                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP CONSTRAINT ' .
+                    $this->quoteId($constraint) . ';' . PHP_EOL;
             }
         }
 

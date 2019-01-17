@@ -81,7 +81,8 @@ class Create extends AbstractStructure
             if ($this->isPgsql()) {
                 $increment = $this->getIncrement();
                 foreach ($increment as $name) {
-                    $sql .= 'CREATE SEQUENCE ' . $this->table . '_' . $name . '_seq START ' . (int)$this->columns[$name]['increment'] . ';';
+                    $sql .= 'CREATE SEQUENCE ' . $this->table . '_' . $name . '_seq START ' .
+                        (int)$this->columns[$name]['increment'] . ';';
                 }
                 $sql .= PHP_EOL . PHP_EOL;
             }
@@ -99,16 +100,15 @@ class Create extends AbstractStructure
             if ($column['increment'] !== false) {
                 $inc = $column['increment'];
             }
-            $sql .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->quoteId($name) . ' ' . $this->getColumnType($name, $column);
+            $sql .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->quoteId($name) . ' ' .
+                $this->getColumnType($name, $column);
             $i++;
         }
 
         if (($this->hasPrimary()) && ($this->dbType !== self::SQLSRV)) {
-            if ($this->isSqlite()) {
-                $sql .= ',' . PHP_EOL . '  UNIQUE (' . implode(', ', $this->getPrimary(true)) . ')';
-            } else {
-                $sql .= ',' . PHP_EOL . '  PRIMARY KEY (' . implode(', ', $this->getPrimary(true)) . ')';
-            }
+            $sql .= ($this->isSqlite()) ?
+               ',' . PHP_EOL . '  UNIQUE (' . implode(', ', $this->getPrimary(true)) . ')' :
+               ',' . PHP_EOL . '  PRIMARY KEY (' . implode(', ', $this->getPrimary(true)) . ')';
         }
 
         $sql .= PHP_EOL . ')';
@@ -133,7 +133,8 @@ class Create extends AbstractStructure
             $increment = $this->getIncrement();
             if ($this->isPgsql()) {
                 foreach ($increment as $name) {
-                    $sql .= 'ALTER SEQUENCE ' . $this->table . '_' . $name . '_seq OWNED BY ' . $this->quoteId($this->table . '.' . $name) . ';' . PHP_EOL;
+                    $sql .= 'ALTER SEQUENCE ' . $this->table . '_' . $name . '_seq OWNED BY ' .
+                        $this->quoteId($this->table . '.' . $name) . ';' . PHP_EOL;
                 }
                 $sql .= PHP_EOL;
             } else if ($this->isSqlite()) {

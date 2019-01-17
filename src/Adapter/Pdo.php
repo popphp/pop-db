@@ -296,6 +296,7 @@ class Pdo extends AbstractAdapter
                 }
             }
         }
+
         return $this;
     }
 
@@ -364,7 +365,9 @@ class Pdo extends AbstractAdapter
 
         if ($this->statement->errorCode() != 0) {
             if (null !== $this->profiler) {
-                $this->profiler->current->addError($this->getErrorMessage($this->statement->errorInfo()), $this->statement->errorCode());
+                $this->profiler->current->addError(
+                    $this->getErrorMessage($this->statement->errorInfo()), $this->statement->errorCode()
+                );
             }
             $this->buildError($this->statement->errorCode(), $this->statement->errorInfo())
                  ->throwError();
@@ -404,16 +407,6 @@ class Pdo extends AbstractAdapter
     public function fetchAll($dataType = \PDO::FETCH_ASSOC)
     {
         return $this->statement->fetchAll($dataType);
-    }
-
-    /**
-     * Disconnect from the database
-     *
-     * @return void
-     */
-    public function disconnect()
-    {
-        parent::disconnect();
     }
 
     /**
