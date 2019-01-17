@@ -427,7 +427,6 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
         return $items;
     }
 
-
     /**
      * Magic method to set the property to the value of $this->items[$name]
      *
