@@ -15,6 +15,7 @@ namespace Pop\Db\Record;
 
 use Pop\Db\Gateway;
 use Pop\Db\Parser;
+use Pop\Db\Record;
 
 /**
  * Abstract record class
@@ -74,58 +75,22 @@ abstract class AbstractRecord implements \ArrayAccess
     protected $isNew = false;
 
     /**
-     * 1:1 associations
-     * @var array
-     */
-    protected $oneToOne = [];
-
-    /**
-     * 1:1 association objects
-     * @var array
-     */
-    protected $hasOne = [];
-
-    /**
-     * 1:Many associations
-     * @var array
-     */
-    protected $oneToMany = [];
-
-    /**
-     * 1:many association objects
-     * @var array
-     */
-    protected $hasMany = [];
-
-    /**
-     * 1:1 belongs to associations
-     * @var array
-     */
-    protected $belongsTo = [];
-
-    /**
-     * 1:1 belongs to association object
-     * @var array
-     */
-    protected $doesBelong = [];
-
-    /**
-     * Eager relationships
-     * @var array
-     */
-    protected $relationships = [];
-
-    /**
-     * Eager with
+     * With relationships
      * @var array
      */
     protected $with = [];
 
     /**
-     * Eager with options
+     * With relationship options
      * @var array
      */
     protected $withOptions = [];
+
+    /**
+     * Relationships
+     * @var array
+     */
+    protected $relationships = [];
 
     /**
      * Set the table
@@ -182,51 +147,7 @@ abstract class AbstractRecord implements \ArrayAccess
     }
 
     /**
-     * Add eager relationship
-     *
-     * @param  int            $id
-     * @param  AbstractRecord $row
-     * @return AbstractRecord
-     */
-    public function addRelationship($id, $row = null)
-    {
-        if (!isset($this->relationships[$id])) {
-            $this->relationships[$id] = [];
-        }
-        if (null !== $row) {
-            $this->relationships[$id][] = $row;
-        }
-        return $this;
-    }
-
-    /**
-     * Has eager relationships
-     *
-     * @param  int $id
-     * @return boolean
-     */
-    public function hasRelationships($id)
-    {
-        return (isset($this->relationships[$id]) && (count($this->relationships[$id]) > 0));
-    }
-
-    /**
-     * Get eager relationships
-     *
-     * @param  int $id
-     * @return array
-     */
-    public function getRelationships($id = null)
-    {
-        if (null !== $id) {
-            return (isset($this->relationships[$id])) ? $this->relationships[$id] : null;
-        } else {
-            return $this->relationships;
-        }
-    }
-
-    /**
-     * Set eager with
+     * Set with relationships
      *
      * @param  string $name
      * @param  array  $options
@@ -241,9 +162,19 @@ abstract class AbstractRecord implements \ArrayAccess
     }
 
     /**
-     * With a 1:many relationship (eager-loading)
+     * Determine if there are with relationships
      *
-     * @return static
+     * @return boolean
+     */
+    public function hasWith()
+    {
+        return (count($this->with) > 0);
+    }
+
+    /**
+     * Get with relationships
+     *
+     * @return AbstractRecord
      */
     public function getWith()
     {
@@ -251,24 +182,7 @@ abstract class AbstractRecord implements \ArrayAccess
             $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
 
             if (method_exists($this, $name)) {
-                $results = $this->{$name}($options, true);
-                foreach ($results as $result) {
-                    if (method_exists($result, 'getRelationships')) {
-                        $relationships = $result->getRelationships();
-                        if (empty($this->relationships)) {
-                            $this->relationships = $relationships;
-                        } else {
-                            foreach ($relationships as $key => $value) {
-                                if (!isset($this->relationships[$key])) {
-                                    $this->relationships[$key] = [];
-                                }
-                                foreach ($value as $v) {
-                                    $this->relationships[$key][] = $v;
-                                }
-                            }
-                        }
-                    }
-                }
+                $this->relationships[$name] = $this->{$name}($options);
             }
         }
 
@@ -316,6 +230,17 @@ abstract class AbstractRecord implements \ArrayAccess
     }
 
     /**
+     * Get the primary values
+     *
+     * @return array
+     */
+    public function getPrimaryValues()
+    {
+        return (null !== $this->rowGateway) ?
+            array_intersect_key($this->rowGateway->getColumns(), array_flip($this->primaryKeys)) : [];
+    }
+
+    /**
      * Get the row gateway
      *
      * @return Gateway\Row
@@ -342,7 +267,16 @@ abstract class AbstractRecord implements \ArrayAccess
      */
     public function toArray()
     {
-        return $this->rowGateway->getColumns();
+        $result = $this->rowGateway->getColumns();
+
+        if (!empty($this->relationships)) {
+            foreach ($this->relationships as $name => $relationship) {
+                $result[$name] = (is_object($relationship) && method_exists($relationship, 'toArray')) ?
+                    $relationship->toArray() : $relationship;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -352,7 +286,7 @@ abstract class AbstractRecord implements \ArrayAccess
      */
     public function toArrayObject()
     {
-        return new \ArrayObject($this->rowGateway->getColumns(), \ArrayObject::ARRAY_AS_PROPS);
+        return new \ArrayObject($this->toArray(), \ArrayObject::ARRAY_AS_PROPS);
     }
 
     /**
@@ -502,7 +436,9 @@ abstract class AbstractRecord implements \ArrayAccess
     {
         $result = null;
 
-        if (isset($this->rowGateway[$name])) {
+        if ($this->relationships[$name]) {
+            $result = $this->relationships[$name];
+        } else if (isset($this->rowGateway[$name])) {
             $result = $this->rowGateway[$name];
         } else if (method_exists($this, $name)) {
             $result = $this->{$name}();

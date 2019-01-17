@@ -12,8 +12,8 @@
  * @namespace
  */
 namespace Pop\Db;
+
 use Pop\Db\Record\Collection;
-use Pop\Db\Sql\Where;
 
 /**
  * Record class
@@ -59,16 +59,12 @@ class Record extends Record\AbstractRecord
         if (null !== $table) {
             $this->setTable($table);
         }
-
-        // Set the table name from the class name
         if (null === $this->table) {
             $this->setTableFromClassName($class);
         }
-
         if (null !== $db) {
             Db::setDb($db, $class, null, ($class === __CLASS__));
         }
-
         if (!Db::hasDb($class)) {
             throw new Exception('Error: A database connection has not been set.');
         } else if (!Db::hasClassToTable($class)) {
@@ -180,8 +176,7 @@ class Record extends Record\AbstractRecord
      */
     public static function findById($id)
     {
-        $record = new static();
-        return $record->getById($id);
+        return (new static())->getById($id);
     }
 
     /**
@@ -193,8 +188,7 @@ class Record extends Record\AbstractRecord
      */
     public static function findOne(array $columns = null, array $options = null)
     {
-        $record = new static();
-        return $record->getOneBy($columns, $options);
+        return (new static())->getOneBy($columns, $options);
     }
 
     /**
@@ -206,8 +200,7 @@ class Record extends Record\AbstractRecord
      */
     public static function findOneOrCreate(array $columns = null, array $options = null)
     {
-        $record = new static();
-        $result = $record->getOneBy($columns, $options);
+        $result = (new static())->getOneBy($columns, $options);
 
         if (empty($result->toArray())) {
             $newRecord = new static($columns);
@@ -251,8 +244,7 @@ class Record extends Record\AbstractRecord
      */
     public static function findBy(array $columns = null, array $options = null, $resultAs = Record::AS_RECORD)
     {
-        $record = new static();
-        return $record->getBy($columns, $options, $resultAs);
+        return (new static())->getBy($columns, $options, $resultAs);
     }
 
     /**
@@ -261,12 +253,11 @@ class Record extends Record\AbstractRecord
      * @param  array  $columns
      * @param  array  $options
      * @param  string $resultAs
-     * @return Record\Collection
+     * @return Record\Collection|Record
      */
     public static function findByOrCreate(array $columns = null, array $options = null, $resultAs = Record::AS_RECORD)
     {
-        $record = new static();
-        $result = $record->getBy($columns, $options, $resultAs);
+        $result = (new static())->getBy($columns, $options, $resultAs);
 
         if ($result->count() == 0) {
             $newRecord = new static($columns);
@@ -306,7 +297,6 @@ class Record extends Record\AbstractRecord
         }
 
         $db = Db::getDb($record->getFullTable());
-
         $db->prepare($sql)
            ->bindParams($params)
            ->execute();
@@ -338,7 +328,6 @@ class Record extends Record\AbstractRecord
         }
 
         $db = Db::getDb($record->getFullTable());
-
         $db->query($sql);
 
         $rows = [];
@@ -356,7 +345,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed $name
      * @param  array  $options
-     * @return mixed
+     * @return static
      */
     public static function with($name, array $options = null)
     {
@@ -373,6 +362,7 @@ class Record extends Record\AbstractRecord
         } else {
             $record->addWith($name, $options);
         }
+
         return $record;
     }
 
@@ -385,14 +375,12 @@ class Record extends Record\AbstractRecord
     public static function getTotal(array $columns = null)
     {
         $record = new static();
-
         $params = null;
         $where  = null;
 
         if (null !== $columns) {
-            $db  = Db::getDb($record->getFullTable());
-            $sql = $db->createSql();
-
+            $db            = Db::getDb($record->getFullTable());
+            $sql           = $db->createSql();
             $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $params        = $parsedColumns['params'];
             $where         = $parsedColumns['where'];
@@ -443,10 +431,9 @@ class Record extends Record\AbstractRecord
         } else {
             $this->setColumns($this->getRowGateway()->find($id));
 
-            if (null !== $this->with) {
+            if ($this->hasWith()) {
                 $this->getWith();
             }
-
             return $this;
         }
     }
@@ -471,21 +458,19 @@ class Record extends Record\AbstractRecord
         $select = (isset($options['select'])) ? $options['select'] : null;
 
         if (null !== $columns) {
-            $db  = Db::getDb($this->getFullTable());
-            $sql = $db->createSql();
-
+            $db            = Db::getDb($this->getFullTable());
+            $sql           = $db->createSql();
             $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $params        = $parsedColumns['params'];
             $where         = $parsedColumns['where'];
         }
 
-        $rows  = $this->getTableGateway()->select($select, $where, $params, $options);
+        $rows = $this->getTableGateway()->select($select, $where, $params, $options);
 
         if (isset($rows[0])) {
             $this->setColumns($rows[0]);
         }
-
-        if (null !== $this->with) {
+        if ($this->hasWith()) {
             $this->getWith();
         }
 
@@ -507,9 +492,8 @@ class Record extends Record\AbstractRecord
         $select = (isset($options['select'])) ? $options['select'] : null;
 
         if (null !== $columns) {
-            $db  = Db::getDb($this->getFullTable());
-            $sql = $db->createSql();
-
+            $db            = Db::getDb($this->getFullTable());
+            $sql           = $db->createSql();
             $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $params        = $parsedColumns['params'];
             $where         = $parsedColumns['where'];
@@ -519,7 +503,7 @@ class Record extends Record\AbstractRecord
 
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
-            if ((null !== $this->with) && ($rows[$i] instanceof Record)) {
+            if (($rows[$i] instanceof Record) && ($rows[$i]->hasWith())) {
                 $rows[$i]->getWith();
             }
         }
@@ -537,6 +521,47 @@ class Record extends Record\AbstractRecord
     public function getAll(array $options = null, $resultAs = Record::AS_RECORD)
     {
         return $this->getBy(null, $options, $resultAs);
+    }
+
+    /**
+     * Has one relationship
+     *
+     * @param  string $foreignTable
+     * @param  string $foreignKey
+     * @param  array  $options
+     * @return Record
+     */
+    public function hasOne($foreignTable, $foreignKey, array $options = null)
+    {
+        $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey);
+        return $relationship->getChild($options);
+    }
+
+    /**
+     * Has many relationship
+     *
+     * @param  string $foreignTable
+     * @param  string $foreignKey
+     * @param  array  $options
+     * @return Collection
+     */
+    public function hasMany($foreignTable, $foreignKey, array $options = null)
+    {
+        $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey);
+        return $relationship->getChildren($options);
+    }
+
+    /**
+     * Belongs to relationship
+     *
+     * @param  string $foreignTable
+     * @param  string $foreignKey
+     * @return Record
+     */
+    public function belongsTo($foreignTable, $foreignKey)
+    {
+        $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey);
+        return $relationship->getParent();
     }
 
     /**
@@ -650,279 +675,14 @@ class Record extends Record\AbstractRecord
             $this->rowGateway->delete();
         // Delete multiple rows
         } else {
-            $db  = Db::getDb($this->getFullTable());
-            $sql = $db->createSql();
-
+            $db            = Db::getDb($this->getFullTable());
+            $sql           = $db->createSql();
             $parsedColumns = Parser\Column::parse($columns, $sql->getPlaceholder());
             $this->tableGateway->delete($parsedColumns['where'], $parsedColumns['params']);
         }
 
         $this->setRows();
         $this->setColumns();
-    }
-
-    /**
-     * Add a 1:1 relationship
-     *
-     * @param  string $class
-     * @param  mixed  $foreignKey
-     * @return mixed
-     */
-    public function hasOne($class, $foreignKey = null)
-    {
-        if (null === $foreignKey) {
-            $class = get_class($this);
-            if (strpos($class, '\\') !== false) {
-                $class = substr($class, (strrpos($class, '\\') + 1));
-            } else if (strpos($class, '_') !== false) {
-                $class = substr($class, (strrpos($class, '_') + 1));
-            }
-            $foreignKey = strtolower($class) . '_id';
-        }
-        $this->oneToOne[$class] = $foreignKey;
-
-        return $this->getOne($class);
-    }
-
-    /**
-     * Add a 1:many relationship
-     *
-     * @param  string  $class
-     * @param  mixed   $foreignKey
-     * @param  array   $options
-     * @param  boolean $eager
-     * @return mixed
-     */
-    public function hasMany($class, $foreignKey = null, array $options = null, $eager = false)
-    {
-        if (null === $foreignKey) {
-            $class = get_class($this);
-            if (strpos($class, '\\') !== false) {
-                $class = substr($class, (strrpos($class, '\\') + 1));
-            } else if (strpos($class, '_') !== false) {
-                $class = substr($class, (strrpos($class, '_') + 1));
-            }
-            $foreignKey = strtolower($class) . '_id';
-        }
-        $this->oneToMany[$class] = $foreignKey;
-
-        if ($eager) {
-            return $this->getManyEager($class, $options);
-        } else {
-            return $this->getMany($class, $options);
-        }
-    }
-
-    /**
-     * Add a 1:1 belongs to relationship
-     *
-     * @param  string $class
-     * @param  mixed  $foreignKey
-     * @return mixed
-     */
-    public function belongsTo($class, $foreignKey = null)
-    {
-        if (null === $foreignKey) {
-            $class = get_class($this);
-            if (strpos($class, '\\') !== false) {
-                $class = substr($class, (strrpos($class, '\\') + 1));
-            } else if (strpos($class, '_') !== false) {
-                $class = substr($class, (strrpos($class, '_') + 1));
-            }
-            $foreignKey = strtolower($class) . '_id';
-        }
-        $this->belongsTo[$class] = $foreignKey;
-
-        return $this->getBelong($class);
-    }
-
-    /**
-     * Get a 1:1 relationship
-     *
-     * @param  string $class
-     * @return mixed
-     */
-    public function getOne($class)
-    {
-        $result = null;
-
-        if (!isset($this->hasOne[$class])) {
-            $foreignKeys = (!is_array($this->oneToOne[$class])) ? [$this->oneToOne[$class]] : $this->oneToOne[$class];
-
-            if (count($foreignKeys) == count($this->primaryKeys)) {
-                $columns = [];
-                foreach ($foreignKeys as $i => $key) {
-                    $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
-                }
-                $collection = $class::findBy($columns, ['limit' => 1], Record::AS_RECORD);
-                if (isset($collection[0])) {
-                    $this->hasOne[$class] = $collection[0];
-                    $result = $this->hasOne[$class];
-                }
-            }
-        } else {
-            $result = $this->hasOne[$class];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get a 1:many relationship
-     *
-     * @param  string $class
-     * @param  array  $options
-     * @return mixed
-     */
-    public function getMany($class, array $options = null)
-    {
-        $result = null;
-        $id     = (count($this->primaryKeys) == 1) ? $this->rowGateway[$this->primaryKeys[0]] : null;
-
-        if ((null !== $id) && isset($this->relationships[$id])) {
-            $many = [];
-            foreach ($this->relationships[$id] as $relationship) {
-                if ($relationship instanceof $class) {
-                    $many[] = $relationship;
-                }
-            }
-            $this->hasMany[$class] = new Record\Collection($many);
-            $result = $this->hasMany[$class];
-        } else if (!isset($this->hasMany[$class])) {
-            $foreignKeys = (!is_array($this->oneToMany[$class])) ? [$this->oneToMany[$class]] : $this->oneToMany[$class];
-
-            if (count($foreignKeys) == count($this->primaryKeys)) {
-                $columns = [];
-                foreach ($foreignKeys as $i => $key) {
-                    $columns[$key] = $this->rowGateway[$this->primaryKeys[$i]];
-                }
-                if ((null !== $options) && isset($options['columns'])) {
-                    $columns = array_merge($columns, $options['columns']);
-                    unset($options['columns']);
-                }
-                $this->hasMany[$class] = new Record\Collection($class::findBy($columns, $options));
-                $result = $this->hasMany[$class];
-            }
-        } else {
-            $result = $this->hasMany[$class];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get a 1:many eager relationship
-     *
-     * @param  string $class
-     * @param  array  $options
-     * @return array
-     */
-    public function getManyEager($class, array $options = null)
-    {
-        $record = new $class();
-        $db     = Db::getDb($record->getFullTable());
-        $sql    = $db->createSql();
-        $rows   = $this->tableGateway->rows();
-        $ids    = [];
-        $values = [];
-
-        if (count($rows) == 0) {
-            $rows = [$this->rowGateway->getColumns()];
-        }
-
-        foreach ($rows as $row) {
-            foreach ($this->primaryKeys as $key) {
-                $ids[]    = $row[$key];
-                $values[] = $sql->getPlaceholder();
-            }
-        }
-
-        $sql->select()->from($record->getFullTable());
-        $foreignKeys = (!is_array($this->oneToMany[$class])) ? [$this->oneToMany[$class]] : $this->oneToMany[$class];
-        if (count($foreignKeys) == count($this->primaryKeys)) {
-            foreach ($foreignKeys as $i => $key) {
-                $sql->select()->where->in($key, $values);
-            }
-        }
-
-        if (isset($options['limit'])) {
-            $sql->select()->limit((int)$options['limit']);
-        }
-
-        if (isset($options['offset'])) {
-            $sql->select()->offset((int)$options['offset']);
-        }
-
-        if ((null !== $options) && isset($options['order'])) {
-            $order = Parser\Order::parse($options['order']);
-            $sql->select()->orderBy($order['by'], $db->escape($order['order']));
-        }
-
-        $db->prepare($sql)
-           ->bindParams($ids)
-           ->execute();
-
-        $rows       = $db->fetchAll();
-        $parentRows = $this->processRows($this->tableGateway->getRows(), Record::AS_RECORD);
-
-        if (count($parentRows) == 0) {
-            $parentRows = $this->processRows([$this->rowGateway->getColumns()], Record::AS_RECORD);
-        }
-
-        if ((count($this->primaryKeys) == 1) && (count($foreignKeys) == 1)) {
-            $foreignKey = $foreignKeys[0];
-            $primaryKey = $this->primaryKeys[0];
-
-            foreach ($parentRows as $parent) {
-                foreach ($rows as $row) {
-                    if ($row[$foreignKey] == $parent[$primaryKey]) {
-                        $r = new $class();
-                        $r->setColumns($row);
-                        if (!isset($options['limit']) ||
-                            (isset($options['limit']) && (count($parent->getRelationships($parent[$this->primaryKeys[$i]])) < (int)$options['limit']))) {
-                            $parent->addRelationship($parent[$this->primaryKeys[$i]], $r);
-                        }
-                    } else {
-                        $parent->addRelationship($parent[$this->primaryKeys[$i]]);
-                    }
-                }
-            }
-        }
-
-        return $parentRows;
-    }
-
-    /**
-     * Get a 1:1 belongs to relationship
-     *
-     * @param  string $class
-     * @return mixed
-     */
-    public function getBelong($class)
-    {
-        $result = null;
-
-        if (!isset($this->doesBelong[$class])) {
-            $foreignKeys = (!is_array($this->belongsTo[$class])) ? [$this->belongsTo[$class]] : $this->belongsTo[$class];
-
-            $id = [];
-            foreach ($foreignKeys as $i => $key) {
-                if (isset($this->rowGateway[$key])) {
-                    $id[] = $this->rowGateway[$key];
-                }
-            }
-            if (count($id) > 0) {
-                if (count($id) == 1) {
-                    $id = $id[0];
-                }
-                $this->doesBelong[$class] = $class::findById($id);
-                $result = $this->doesBelong[$class];
-            }
-        } else {
-            $result = $this->doesBelong[$class];
-        }
-
-        return $result;
     }
 
     /**

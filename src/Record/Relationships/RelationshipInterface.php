@@ -11,10 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Record;
+namespace Pop\Db\Record\Relationships;
 
 /**
- * Record exception class
+ * Relationship class for "has one" relationships
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,4 +23,21 @@ namespace Pop\Db\Record;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.4.0
  */
-class Exception extends \Exception {}
+interface RelationshipInterface
+{
+
+    /**
+     * Get foreign table
+     *
+     * @return string
+     */
+    public function getForeignTable();
+
+    /**
+     * Get foreign key
+     *
+     * @return string
+     */
+    public function getForeignKey();
+
+}

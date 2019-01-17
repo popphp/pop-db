@@ -11,10 +11,10 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Record;
+namespace Pop\Db\Record\Relationships;
 
 /**
- * Record exception class
+ * Relationships exception class
  *
  * @category   Pop
  * @package    Pop\Db
