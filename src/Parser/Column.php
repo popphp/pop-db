@@ -37,8 +37,8 @@ class Column
     {
         $params = [];
         $where  = [];
+        $i      = 1;
 
-        $i = 1;
         foreach ($columns as $column => $value) {
             if (!is_array($column) && (substr($column, -3) == ' OR')) {
                 $column  = substr($column, 0, -3);
@@ -48,6 +48,7 @@ class Column
             }
 
             $operator = Operator::parse($column);
+
             if ($placeholder == ':') {
                 $pHolder = $placeholder . $operator['column'];
             } else if ($placeholder == '$') {
@@ -58,109 +59,86 @@ class Column
 
             // IS NULL or IS NOT NULL
             if (null === $value) {
-                if (substr($column, -1) == '-') {
-                    $column  = substr($column, 0, -1);
-                    $where[] = $column . ' IS NOT NULL' . $combine;
-                } else {
-                    $where[] = $column . ' IS NULL' . $combine;
-                }
+                $where[] = ($operator['op'] == 'NOT') ?
+                    $operator['column'] . ' IS NOT NULL' . $combine :
+                    $operator['column'] . ' IS NULL' . $combine;
             // IN or NOT IN
             } else if (is_array($value) && ($operator['op'] == '=')) {
-                if (substr($column, -1) == '-') {
-                    $column  = substr($column, 0, -1);
-                    $where[] = $column . ' NOT IN (' . implode(', ', $value) . ')' . $combine;
-                } else {
-                    $where[] = $column . ' IN (' . implode(', ', $value) . ')' . $combine;
-                }
+                $where[] = ($operator['op'] == 'NOT') ?
+                    $column . ' NOT IN (' . implode(', ', $value) . ')' . $combine :
+                    $column . ' IN (' . implode(', ', $value) . ')' . $combine;
             // BETWEEN or NOT BETWEEN
             } else if (!is_array($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
                 (strpos($value, ',') !== false)) {
-                if (substr($column, -1) == '-') {
-                    $column  = substr($column, 0, -1);
-                    $where[] = $column . ' NOT BETWEEN ' . $value . $combine;
-                } else {
-                    $where[] = $column . ' BETWEEN ' . $value . $combine;
-                }
+                $where[] = ($operator['op'] == 'NOT') ?
+                    $where[] = $operator['column'] . ' NOT BETWEEN ' . $value . $combine :
+                    $where[] = $operator['column'] . ' BETWEEN ' . $value . $combine;
             // LIKE or NOT LIKE
-            } else if ((substr($column, 0, 2) == '-%') || (substr($column, -2) == '%-') ||
-                (substr($column, 0, 1) == '%') || (substr($column, -1) == '%')) {
-                $op = ((substr($column, 0, 2) == '-%') || (substr($column, -2) == '%-')) ? 'NOT LIKE' : 'LIKE';
-
-                $realColumn = $column;
-                $realValue  = $value;
-                if (substr($realColumn, 0, 2) == '-%') {
-                    $realColumn = substr($realColumn, 2);
-                    $realValue  = '%' . $realValue;
-                } else if (substr($realColumn, 0, 1) == '%') {
-                    $realColumn = substr($realColumn, 1);
+            } else if (strpos($operator['op'], 'LIKE') !== false) {
+                $realValue = $value;
+                if (substr($operator['column'], 0, 1) == '%') {
                     $realValue  = '%' . $realValue;
                 }
-                if (substr($realColumn, -2) == '%-') {
-                    $realColumn = substr($realColumn, 0, -2);
-                    $realValue .= '%';
-                } else if (substr($realColumn, -1) == '%') {
-                    $realColumn = substr($realColumn, 0, -1);
+                if (substr($operator['column'], -1) == '%') {
                     $realValue .= '%';
                 }
 
-                $where[]  = $realColumn . ' ' . $op . ' ' .  $pHolder . $combine;
+                $where[] = $operator['column'] . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
 
-                if (isset($params[$realColumn])) {
-                    if (is_array($params[$realColumn])) {
+                if (isset($params[$operator['column']])) {
+                    if (is_array($params[$operator['column']])) {
                         if ($placeholder == ':') {
                             $where[count($where) - 1] .= $i;
                         }
-                        $params[$realColumn][] = $realValue;
+                        $params[$operator['column']][] = $realValue;
                     } else {
                         if ($placeholder == ':') {
                             $where[0] .= ($i - 1);
                             $where[1] .= $i;
                         }
-                        $params[$realColumn] = [$params[$realColumn], $realValue];
+                        $params[$operator['column']] = [$params[$operator['column']], $realValue];
                     }
                 } else {
-                    $params[$realColumn] = $realValue;
+                    $params[$operator['column']] = $realValue;
                 }
             // Standard operators
             } else {
-                $column = $operator['column'];
-
                 if (!is_array($value)) {
-                    $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
-                    if (isset($params[$column])) {
-                        if (is_array($params[$column])) {
+                    $where[] = $operator['column'] . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
+                    if (isset($params[$operator['column']])) {
+                        if (is_array($params[$operator['column']])) {
                             if ($placeholder == ':') {
                                 $where[count($where) - 1] .= $i;
                             }
-                            $params[$column][] = $value;
+                            $params[$operator['column']][] = $value;
                         } else {
                             if ($placeholder == ':') {
                                 $where[0] .= ($i - 1);
                                 $where[1] .= $i;
                             }
-                            $params[$column] = [$params[$column], $value];
+                            $params[$operator['column']] = [$params[$operator['column']], $value];
                         }
                     } else {
-                        $params[$column] = $value;
+                        $params[$operator['column']] = $value;
                     }
                 } else {
                     foreach ($value as $i => $val) {
-                        $where[] = $column . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
-                        if (isset($params[$column])) {
-                            if (is_array($params[$column])) {
+                        $where[] = $operator['column'] . ' ' . $operator['op'] . ' ' .  $pHolder . $combine;
+                        if (isset($params[$operator['column']])) {
+                            if (is_array($params[$operator['column']])) {
                                 if ($placeholder == ':') {
                                     $where[count($where) - 1] .= $i;
                                 }
-                                $params[$column][] = $val;
+                                $params[$operator['column']][] = $val;
                             } else {
                                 if ($placeholder == ':') {
                                     $where[0] .= ($i - 1);
                                     $where[1] .= $i;
                                 }
-                                $params[$column] = [$params[$column], $val];
+                                $params[$operator['column']] = [$params[$operator['column']], $val];
                             }
                         } else {
-                            $params[$column . ($i + 1)] = $val;
+                            $params[$operator['column'] . ($i + 1)] = $val;
                         }
                     }
                 }

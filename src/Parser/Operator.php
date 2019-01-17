@@ -27,7 +27,7 @@ class Operator
 {
 
     /**
-     * Method to get the operator from the column name
+     * Method to get the operator from the shorthand column name
      *
      * @param string $column
      * @return array
@@ -36,32 +36,44 @@ class Operator
     {
         $op = '=';
 
+        // LIKE/NOT LIKE shorthand
         if (substr($column, 0, 2) == '-%') {
             $column = substr($column, 2);
+            $op     = 'NOT LIKE';
         } else if (substr($column, 0, 1) == '%') {
             $column = substr($column, 1);
+            $op     = 'LIKE';
         }
         if (substr($column, -2) == '%-') {
             $column = substr($column, 0, -2);
+            $op     = 'NOT LIKE';
         } else if (substr($column, -1) == '%') {
             $column = substr($column, 0, -1);
+            $op     = 'LIKE';
         }
 
+        // NOT NULL/IN/BETWEEN shorthand
+        if (substr($column, -1) == '-') {
+            $column = trim(substr($column, 0, -1));
+            $op     = 'NOT';
+        }
+
+        // Basic comparison shorthand
         if (substr($column, -2) == '>=') {
-            $op = '>=';
             $column = trim(substr($column, 0, -2));
+            $op     = '>=';
         } else if (substr($column, -2) == '<=') {
-            $op = '<=';
             $column = trim(substr($column, 0, -2));
+            $op     = '<=';
         } else if (substr($column, -2) == '!=') {
-            $op = '!=';
             $column = trim(substr($column, 0, -2));
+            $op     = '!=';
         } else if (substr($column, -1) == '>') {
-            $op = '>';
             $column = trim(substr($column, 0, -1));
+            $op     = '>';
         } else if (substr($column, -1) == '<') {
-            $op = '<';
             $column = trim(substr($column, 0, -1));
+            $op     = '<';
         }
 
         return ['column' => $column, 'op' => $op];
