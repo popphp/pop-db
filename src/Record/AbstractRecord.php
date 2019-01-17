@@ -162,11 +162,22 @@ abstract class AbstractRecord implements \ArrayAccess
     }
 
     /**
+     * Determine if there is specific with relationship
+     *
+     * @param  string  $name
+     * @return boolean
+     */
+    public function hasWith($name)
+    {
+        return (isset($this->with[$name]));
+    }
+
+    /**
      * Determine if there are with relationships
      *
      * @return boolean
      */
-    public function hasWith()
+    public function hasWiths()
     {
         return (count($this->with) > 0);
     }
@@ -174,9 +185,19 @@ abstract class AbstractRecord implements \ArrayAccess
     /**
      * Get with relationships
      *
+     * @return array
+     */
+    public function getWiths()
+    {
+        return $this->with;
+    }
+
+    /**
+     * Get with relationships
+     *
      * @return AbstractRecord
      */
-    public function getWith()
+    public function getWithRelationships()
     {
         foreach ($this->with as $i => $name) {
             $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
@@ -187,6 +208,51 @@ abstract class AbstractRecord implements \ArrayAccess
         }
 
         return $this;
+    }
+
+    /**
+     * Set relationship
+     *
+     * @param  string $name
+     * @param  mixed  $relationship
+     * @return AbstractRecord
+     */
+    public function setRelationship($name, $relationship)
+    {
+        $this->relationships[$name] = $relationship;
+        return $this;
+    }
+
+    /**
+     * Get relationship
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    public function getRelationship($name)
+    {
+        return (isset($this->relationships[$name])) ? $this->relationships[$name] : null;
+    }
+
+    /**
+     * Has relationship
+     *
+     * @param  string $name
+     * @return boolean
+     */
+    public function hasRelationship($name)
+    {
+        return (isset($this->relationships[$name]));
+    }
+
+    /**
+     * Get relationships
+     *
+     * @return array
+     */
+    public function getRelationships()
+    {
+        return $this->relationships;
     }
 
     /**

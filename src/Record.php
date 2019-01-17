@@ -431,8 +431,8 @@ class Record extends Record\AbstractRecord
         } else {
             $this->setColumns($this->getRowGateway()->find($id));
 
-            if ($this->hasWith()) {
-                $this->getWith();
+            if ($this->hasWiths()) {
+                $this->getWithRelationships();
             }
             return $this;
         }
@@ -470,8 +470,8 @@ class Record extends Record\AbstractRecord
         if (isset($rows[0])) {
             $this->setColumns($rows[0]);
         }
-        if ($this->hasWith()) {
-            $this->getWith();
+        if ($this->hasWiths()) {
+            $this->getWithRelationships();
         }
 
         return $this;
@@ -503,10 +503,27 @@ class Record extends Record\AbstractRecord
 
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
-            if (($rows[$i] instanceof Record) && ($rows[$i]->hasWith())) {
-                $rows[$i]->getWith();
+            if (($rows[$i] instanceof Record) && ($rows[$i]->hasWiths())) {
+                $rows[$i]->getWithRelationships();
             }
         }
+        /*
+        $withIds = [];
+
+        foreach ($rows as $i => $row) {
+            $rows[$i] = $this->processRow($row, $resultAs);
+            if (($this->hasWith()) && ($rows[$i] instanceof Record)) {
+                $primaryValues = $rows[$i]->getPrimaryValues();
+                if (count($primaryValues) == 1) {
+                    $withIds[] = reset($primaryValues);
+                }
+            }
+        }
+
+        if (!empty($withIds) && (count($this->primaryKeys) == 1)) {
+            $sql = Db::getDb($this->getFullTable())->createSql();
+        }
+        */
 
         return new Record\Collection($rows);
     }
