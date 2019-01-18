@@ -63,10 +63,10 @@ class Column
                     $operator['column'] . ' IS NOT NULL' . $combine :
                     $operator['column'] . ' IS NULL' . $combine;
             // IN or NOT IN
-            } else if (is_array($value) && ($operator['op'] == '=')) {
+            } else if (is_array($value)) {
                 $where[] = ($operator['op'] == 'NOT') ?
-                    $column . ' NOT IN (' . implode(', ', $value) . ')' . $combine :
-                    $column . ' IN (' . implode(', ', $value) . ')' . $combine;
+                    $operator['column'] . ' NOT IN (' . implode(', ', $value) . ')' . $combine :
+                    $operator['column'] . ' IN (' . implode(', ', $value) . ')' . $combine;
             // BETWEEN or NOT BETWEEN
             } else if (!is_array($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
                 (strpos($value, ',') !== false)) {
@@ -76,10 +76,10 @@ class Column
             // LIKE or NOT LIKE
             } else if (strpos($operator['op'], 'LIKE') !== false) {
                 $realValue = $value;
-                if (substr($operator['column'], 0, 1) == '%') {
+                if ((substr($column, 0, 1) == '%') || (substr($column, 0, 2) == '-%')) {
                     $realValue  = '%' . $realValue;
                 }
-                if (substr($operator['column'], -1) == '%') {
+                if ((substr($column, -1) == '%') || (substr($column, -2) == '%-')) {
                     $realValue .= '%';
                 }
 

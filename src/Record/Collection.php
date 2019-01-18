@@ -174,7 +174,10 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function flip()
     {
-        return new static(array_flip($this->items));
+        foreach ($this->items as $i => $item) {
+            $this->items[$i] = array_flip($item);
+        }
+        return new static($this->items);
     }
 
     /**
@@ -186,18 +189,6 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     public function has($key)
     {
         return $this->offsetExists($key);
-    }
-
-
-    /**
-     * Intersect the collection with the passed items
-     *
-     * @param  mixed $items
-     * @return Collection
-     */
-    public function intersect($items)
-    {
-        return new static(array_intersect($this->items, $this->getItemsAsArray($items)));
     }
 
     /**
@@ -276,18 +267,6 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     {
         $this->offsetSet(null, $value);
         return $this;
-    }
-
-    /**
-     * Search the collection and return the key on success
-     *
-     * @param  mixed   $value
-     * @param  boolean $strict
-     * @return mixed
-     */
-    public function search($value, $strict = false)
-    {
-        return array_search($value, $this->items, $strict);
     }
 
     /**

@@ -91,6 +91,13 @@ class RecordTest extends TestCase
         $u['username'] = 'testuser1';
         $u->save();
 
+        $this->assertEquals(1, count($u->getRowGateway()->getPrimaryKeys()));
+        $this->assertEquals(1, count($u->getRowGateway()->getPrimaryValues()));
+
+        $this->assertEquals(0, count($u->getTableGateway()->getRows()));
+        $this->assertEquals(0, count($u->getTableGateway()->rows()));
+        $this->assertEquals(0, $u->getTableGateway()->getNumberOfRows());
+
         $u->increment('verified');
         $this->assertEquals(2, $u->verified);
 
@@ -100,6 +107,9 @@ class RecordTest extends TestCase
         $newU = $u->replicate();
         $this->assertEquals(2, TestAsset\Users::getTotal(['id >=' => 0]));
 
+        $findUsers = TestAsset\Users::findWhereUsername('testuser1');
+        $this->assertGreaterThan(0, $findUsers->count());
+
         $latest = TestAsset\Users::findLatest();
         $this->assertEquals($newU->id, $latest->id);
         $newU->delete();
@@ -107,6 +117,10 @@ class RecordTest extends TestCase
         $newU2 = TestAsset\Users::findOneOrCreate(['username' => 'newuser']);
         $this->assertEquals(2, TestAsset\Users::getTotal(['id >=' => 0]));
         $newU2->delete();
+
+        $newU3 = TestAsset\Users::findByOrCreate(['username' => 'newuser']);
+        $this->assertEquals(2, TestAsset\Users::getTotal(['id >=' => 0]));
+        $newU3->delete();
 
         //unset($u->id);
         //unset($u['id']);
@@ -205,6 +219,17 @@ class RecordTest extends TestCase
         $dirty = $user->getDirty();
         $this->assertEquals('testuser', $dirty['old']['username']);
         $this->assertEquals(null, $dirty['new']['username']);
+    }
+
+    public function testRelationships()
+    {
+        $user = TestAsset\Users::findOne(['username' => 'testuser']);
+        $this->assertFalse($user->hasWiths());
+        $this->assertFalse($user->hasWith('orders'));
+        $this->assertEquals(0, count($user->getWiths()));
+        $this->assertNull($user->getRelationship('orders'));
+        $this->assertFalse($user->hasRelationship('orders'));
+        $this->assertEquals(0, count($user->getRelationships()));
     }
 
 }

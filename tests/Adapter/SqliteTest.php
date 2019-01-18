@@ -63,15 +63,30 @@ class SqliteTest extends TestCase
     public function testBindParams()
     {
         $db = new Sqlite(['database' => __DIR__  . '/../tmp/db.sqlite']);
+
+        $db->beginTransaction();
         $db->prepare('UPDATE ph_users SET email = :email WHERE id > :id')
            ->bindParams(['id' => 0])
            ->execute();
+        $db->commit();
 
         $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(0, $db->getNumberOfRows());
 
         $db->disconnect();
+    }
+
+    public function testRollback()
+    {
+        $db = new Sqlite(['database' => __DIR__  . '/../tmp/db.sqlite']);
+
+        $db->beginTransaction();
+        $db->prepare('UPDATE ph_users SET email = :email WHERE id > :id')
+            ->bindParams(['id' => 0])
+            ->execute();
+        $db->rollback();
+        $this->assertEquals(0, $db->getNumberOfRows());
     }
 
 

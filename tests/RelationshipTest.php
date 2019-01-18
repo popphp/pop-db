@@ -2,8 +2,7 @@
 
 namespace Pop\Db\Test;
 
-use Pop\Db\Db;
-use Pop\Db\Record;
+use Pop\Db\Record\Relationships;
 use Pop\Db\Adapter\Mysql;
 use PHPUnit\Framework\TestCase;
 
@@ -111,8 +110,46 @@ TABLE;
     {
         $orders = TestAsset\Orders::with('products')->getAll();
         foreach ($orders as $order) {
-            $this->assertGreaterThan(0, $order->products->count());
+            $this->assertGreaterThan(0, count($order->products));
         }
+    }
+
+    public function testGetForeignTableAndKey()
+    {
+        $order = TestAsset\Orders::findById(2001);
+        $relationship = new Relationships\HasOne($order, 'Products', 'product_id');
+        $this->assertEquals('Products', $relationship->getForeignTable());
+        $this->assertEquals('product_id', $relationship->getForeignKey());
+    }
+
+    public function testRelationshipException()
+    {
+        $order = TestAsset\Orders::findById(2001);
+        $relationship = new Relationships\HasOne($order, null, null);
+
+        $this->expectException('Pop\Db\Record\Relationships\Exception');
+        $relationship->getEagerRelationships([1]);
+    }
+
+    public function testGetChild()
+    {
+        $product = TestAsset\Products::findById(3001);
+        $relationship = new Relationships\BelongsTo($product, 'Orders', 'order_id');
+        $this->assertInstanceOf('Pop\Db\Test\TestAsset\Products', $relationship->getChild());
+    }
+
+    public function testHasOneGetParent()
+    {
+        $order = TestAsset\Orders::findById(2001);
+        $relationship = new Relationships\HasOne($order, 'Products', 'product_id');
+        $this->assertInstanceOf('Pop\Db\Test\TestAsset\Orders', $relationship->getParent());
+    }
+
+    public function testHasManyGetParent()
+    {
+        $order = TestAsset\Orders::findById(2001);
+        $relationship = new Relationships\HasMany($order, 'Products', 'product_id');
+        $this->assertInstanceOf('Pop\Db\Test\TestAsset\Orders', $relationship->getParent());
     }
 
 }

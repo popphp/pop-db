@@ -112,7 +112,7 @@ class Row extends AbstractGateway implements \ArrayAccess
      */
     public function getPrimaryValues()
     {
-        return $this->primaryKeys;
+        return $this->primaryValues;
     }
 
     /**
