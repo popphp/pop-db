@@ -195,15 +195,16 @@ abstract class AbstractRecord implements \ArrayAccess
     /**
      * Get with relationships
      *
+     * @param  boolean $eager
      * @return AbstractRecord
      */
-    public function getWithRelationships()
+    public function getWithRelationships($eager = true)
     {
         foreach ($this->with as $i => $name) {
             $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
 
             if (method_exists($this, $name)) {
-                $this->relationships[$name] = $this->{$name}($options);
+                $this->relationships[$name] = $this->{$name}($options, $eager);
             }
         }
 
@@ -502,7 +503,7 @@ abstract class AbstractRecord implements \ArrayAccess
     {
         $result = null;
 
-        if ($this->relationships[$name]) {
+        if (isset($this->relationships[$name])) {
             $result = $this->relationships[$name];
         } else if (isset($this->rowGateway[$name])) {
             $result = $this->rowGateway[$name];

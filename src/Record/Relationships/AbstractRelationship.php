@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Record\Relationships;
 
+use Pop\Db\Record\Collection;
+
 /**
  * Relationship class for "has one" relationships
  *
@@ -70,6 +72,43 @@ abstract class AbstractRelationship implements RelationshipInterface
     public function getForeignKey()
     {
         return $this->foreignKey;
+    }
+
+    /**
+     * Get eager relationships
+     *
+     * @param  array $ids
+     * @throws Exception
+     * @return array
+     */
+    public function getEagerRelationships(array $ids)
+    {
+        if ((null === $this->foreignTable) || (null === $this->foreignKey)) {
+            throw new Exception('Error: The foreign table and key values have not been set.');
+        }
+
+        $results = [];
+        $table   = $this->foreignTable;
+        $db      = $table::db();
+        $sql     = $db->createSql();
+
+        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+        $sql->select()->from($table::table())->where->in($this->foreignKey, $placeholders);
+
+        $db->prepare($sql)
+           ->bindParams($ids)
+           ->execute();
+
+        $rows = $db->fetchAll();
+
+        foreach ($rows as $row) {
+            if (!isset($results[$row[$this->foreignKey]])) {
+                $results[$row[$this->foreignKey]] = [];
+            }
+            $results[$row[$this->foreignKey]][] = $row;
+        }
+
+        return $results;
     }
 
 }

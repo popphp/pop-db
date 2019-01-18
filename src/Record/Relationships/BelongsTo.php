@@ -62,9 +62,10 @@ class BelongsTo extends AbstractRelationship
     /**
      * Get parent
      *
+     * @param  array  $options
      * @return Record
      */
-    public function getParent()
+    public function getParent(array $options = null)
     {
         $table  = $this->foreignTable;
         $values = $this->child[$this->foreignKey];

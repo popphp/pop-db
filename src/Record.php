@@ -432,7 +432,7 @@ class Record extends Record\AbstractRecord
             $this->setColumns($this->getRowGateway()->find($id));
 
             if ($this->hasWiths()) {
-                $this->getWithRelationships();
+                $this->getWithRelationships(false);
             }
             return $this;
         }
@@ -471,7 +471,7 @@ class Record extends Record\AbstractRecord
             $this->setColumns($rows[0]);
         }
         if ($this->hasWiths()) {
-            $this->getWithRelationships();
+            $this->getWithRelationships(false);
         }
 
         return $this;
@@ -499,20 +499,12 @@ class Record extends Record\AbstractRecord
             $where         = $parsedColumns['where'];
         }
 
-        $rows = $this->getTableGateway()->select($select, $where, $params, $options);
-
-        foreach ($rows as $i => $row) {
-            $rows[$i] = $this->processRow($row, $resultAs);
-            if (($rows[$i] instanceof Record) && ($rows[$i]->hasWiths())) {
-                $rows[$i]->getWithRelationships();
-            }
-        }
-        /*
+        $rows    = $this->getTableGateway()->select($select, $where, $params, $options);
         $withIds = [];
 
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
-            if (($this->hasWith()) && ($rows[$i] instanceof Record)) {
+            if (($rows[$i] instanceof Record) && ($this->hasWiths())) {
                 $primaryValues = $rows[$i]->getPrimaryValues();
                 if (count($primaryValues) == 1) {
                     $withIds[] = reset($primaryValues);
@@ -520,10 +512,21 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        if (!empty($withIds) && (count($this->primaryKeys) == 1)) {
-            $sql = Db::getDb($this->getFullTable())->createSql();
+        if ($this->hasWiths()) {
+            $this->getWithRelationships();
+            $primaryKey = $this->getPrimaryKeys();
+            if (count($primaryKey) == 1) {
+                $primaryKey = reset($primaryKey);
+            }
+            foreach ($this->relationships as $name => $relationship) {
+                $results = $relationship->getEagerRelationships($withIds);
+                foreach ($rows as $i => $row) {
+                    if (isset($results[$row[$primaryKey]])) {
+                        $row->setRelationship($name, $results[$row[$primaryKey]]);
+                    }
+                }
+            }
         }
-        */
 
         return new Record\Collection($rows);
     }
@@ -543,29 +546,32 @@ class Record extends Record\AbstractRecord
     /**
      * Has one relationship
      *
-     * @param  string $foreignTable
-     * @param  string $foreignKey
-     * @param  array  $options
-     * @return Record
+     * @param  string  $foreignTable
+     * @param  string  $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Record|Record\Relationships\HasOne
      */
-    public function hasOne($foreignTable, $foreignKey, array $options = null)
+    public function hasOne($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey);
-        return $relationship->getChild($options);
+
+        return ($eager) ? $relationship : $relationship->getChild($options);
     }
 
     /**
      * Has many relationship
      *
-     * @param  string $foreignTable
-     * @param  string $foreignKey
-     * @param  array  $options
-     * @return Collection
+     * @param  string  $foreignTable
+     * @param  string  $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Collection|Record\Relationships\HasMany
      */
-    public function hasMany($foreignTable, $foreignKey, array $options = null)
+    public function hasMany($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey);
-        return $relationship->getChildren($options);
+        return ($eager) ? $relationship : $relationship->getChildren($options);
     }
 
     /**
@@ -573,12 +579,14 @@ class Record extends Record\AbstractRecord
      *
      * @param  string $foreignTable
      * @param  string $foreignKey
-     * @return Record
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Record|Record\Relationships\BelongsTo
      */
-    public function belongsTo($foreignTable, $foreignKey)
+    public function belongsTo($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey);
-        return $relationship->getParent();
+        return ($eager) ? $relationship : $relationship->getParent($options);
     }
 
     /**
