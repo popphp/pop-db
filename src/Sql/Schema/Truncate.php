@@ -21,10 +21,27 @@ namespace Pop\Db\Sql\Schema;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2019 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    4.4.0
+ * @version    4.4.1
  */
 class Truncate extends AbstractTable
 {
+
+    /**
+     * CASCADE flag
+     * @var boolean
+     */
+    protected $cascade  = false;
+
+    /**
+     * Set the CASCADE flag
+     *
+     * @return Truncate
+     */
+    public function cascade()
+    {
+        $this->cascade = true;
+        return $this;
+    }
 
     /**
      * Render the table schema
@@ -33,7 +50,8 @@ class Truncate extends AbstractTable
      */
     public function render()
     {
-        return 'TRUNCATE TABLE ' . $this->quoteId($this->table) . ';' . PHP_EOL;
+        return 'TRUNCATE TABLE ' . $this->quoteId($this->table) .
+            ((($this->isPgsql()) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
     }
 
     /**

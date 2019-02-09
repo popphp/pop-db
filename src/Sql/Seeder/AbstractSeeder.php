@@ -11,10 +11,12 @@
 /**
  * @namespace
  */
-namespace Pop\Db\Sql\Predicate;
+namespace Pop\Db\Sql\Seeder;
+
+use Pop\Db\Adapter\AbstractAdapter;
 
 /**
- * Abstract predicate set class
+ * Db SQL seeder abstract class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,20 +25,15 @@ namespace Pop\Db\Sql\Predicate;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.4.1
  */
-class GreaterThan extends AbstractPredicateSet
+abstract class AbstractSeeder implements SeederInterface
 {
 
     /**
-     * Constructor
+     * Run seed SQL
      *
-     * Instantiate the GREATER THAN predicate set object
-     *
-     * @param  array  $values
+     * @param  AbstractAdapter $db
+     * @return void
      */
-    public function __construct(array $values)
-    {
-        $this->format = '%1 > %2';
-        parent::__construct($values);
-    }
+    abstract public function run(AbstractAdapter $db);
 
 }
