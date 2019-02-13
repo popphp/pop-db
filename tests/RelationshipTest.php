@@ -92,6 +92,14 @@ TABLE;
         $this->assertEquals('LA', $info->state);
     }
 
+    public function testHasOneOf()
+    {
+        $info = TestAsset\UserInfo::findOne(['user_id' => 1001]);
+        $user = $info->user();
+        $this->assertEquals('admin', $user->username);
+        $this->assertEquals('12test34', $user->password);
+    }
+
     public function testHasMany()
     {
         $order = TestAsset\Orders::findById(2001);
@@ -142,6 +150,13 @@ TABLE;
     {
         $order = TestAsset\Orders::findById(2001);
         $relationship = new Relationships\HasOne($order, 'Products', 'product_id');
+        $this->assertInstanceOf('Pop\Db\Test\TestAsset\Orders', $relationship->getParent());
+    }
+
+    public function testHasOneOfGetParent()
+    {
+        $order = TestAsset\Orders::findById(2001);
+        $relationship = new Relationships\HasOneOf($order, 'Products', 'product_id');
         $this->assertInstanceOf('Pop\Db\Test\TestAsset\Orders', $relationship->getParent());
     }
 

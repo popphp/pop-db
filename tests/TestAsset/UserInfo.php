@@ -15,4 +15,9 @@ class UserInfo extends Record
         return $this->belongsTo('Pop\Db\Test\TestAsset\Users', 'id');
     }
 
+    public function user()
+    {
+        return $this->hasOneOf('Pop\Db\Test\TestAsset\Users', 'user_id');
+    }
+
 }
