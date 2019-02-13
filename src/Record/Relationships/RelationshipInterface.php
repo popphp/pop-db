@@ -40,4 +40,13 @@ interface RelationshipInterface
      */
     public function getForeignKey();
 
+    /**
+     * Get eager relationships
+     *
+     * @param  array $ids
+     * @throws Exception
+     * @return array
+     */
+    public function getEagerRelationships(array $ids);
+
 }

@@ -77,4 +77,38 @@ class HasOne extends AbstractRelationship
         return $table::findOne([$this->foreignKey => $values], $options);
     }
 
+    /**
+     * Get eager relationships
+     *
+     * @param  array $ids
+     * @throws Exception
+     * @return array
+     */
+    public function getEagerRelationships(array $ids)
+    {
+        if ((null === $this->foreignTable) || (null === $this->foreignKey)) {
+            throw new Exception('Error: The foreign table and key values have not been set.');
+        }
+
+        $results = [];
+        $table   = $this->foreignTable;
+        $db      = $table::db();
+        $sql     = $db->createSql();
+
+        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+        $sql->select()->from($table::table())->where->in($this->foreignKey, $placeholders);
+
+        $db->prepare($sql)
+            ->bindParams($ids)
+            ->execute();
+
+        $rows = $db->fetchAll();
+
+        foreach ($rows as $row) {
+            $results[$row[$this->foreignKey]] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
+        }
+
+        return $results;
+    }
+
 }

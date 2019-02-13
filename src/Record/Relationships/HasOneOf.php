@@ -16,7 +16,7 @@ namespace Pop\Db\Record\Relationships;
 use Pop\Db\Record;
 
 /**
- * Relationship class for "belongs to" relationships
+ * Relationship class for "has one of" relationships
  *
  * @category   Pop
  * @package    Pop\Db
@@ -25,52 +25,49 @@ use Pop\Db\Record;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.4.1
  */
-class BelongsTo extends AbstractRelationship
+class HasOneOf extends AbstractRelationship
 {
 
     /**
-     * Child record
+     * Parent record
      * @var Record
      */
-    protected $child;
+    protected $parent = null;
 
     /**
      * Constructor
      *
      * Instantiate the relationship object
      *
-     * @param Record $child
+     * @param Record $parent
      * @param string $foreignTable
      * @param string $foreignKey
      */
-    public function __construct(Record $child, $foreignTable, $foreignKey)
+    public function __construct(Record $parent, $foreignTable, $foreignKey)
     {
         parent::__construct($foreignTable, $foreignKey);
-        $this->child = $child;
+        $this->parent = $parent;
     }
 
     /**
-     * Get child record
+     * Get parent record
+     *
+     * @return Record
+     */
+    public function getParent()
+    {
+        return $this->parent;
+    }
+
+    /**
+     * Get child
      *
      * @return Record
      */
     public function getChild()
     {
-        return $this->child;
-    }
-
-    /**
-     * Get parent
-     *
-     * @param  array  $options
-     * @return Record
-     */
-    public function getParent(array $options = null)
-    {
-        $table  = $this->foreignTable;
-        $values = $this->child[$this->foreignKey];
-
-        return $table::findById($values);
+        $table = $this->foreignTable;
+        return $table::findById($this->parent[$this->foreignKey]);
     }
 
     /**
@@ -91,17 +88,22 @@ class BelongsTo extends AbstractRelationship
         $db      = $table::db();
         $sql     = $db->createSql();
 
+        $keys = (new $table())->getPrimaryKeys();
+
+        if (count($keys) == 1) {
+            $keys = $keys[0];
+        }
         $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select()->from($table::table())->where->in($this->foreignKey, $placeholders);
+        $sql->select()->from($table::table())->where->in($keys, $placeholders);
 
         $db->prepare($sql)
-            ->bindParams($ids)
-            ->execute();
+           ->bindParams($ids)
+           ->execute();
 
         $rows = $db->fetchAll();
 
         foreach ($rows as $row) {
-            $results[$row[$this->foreignKey]] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);;
+            $results[$row[$keys]] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
         }
 
         return $results;

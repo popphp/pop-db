@@ -522,7 +522,15 @@ abstract class AbstractRecord implements \ArrayAccess
      */
     public function __isset($name)
     {
-        return isset($this->rowGateway[$name]);
+        if (isset($this->relationships[$name])) {
+            return true;
+        } else if (isset($this->rowGateway[$name])) {
+            return true;
+        } else if (method_exists($this, $name)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**

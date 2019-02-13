@@ -499,30 +499,45 @@ class Record extends Record\AbstractRecord
             $where         = $parsedColumns['where'];
         }
 
-        $rows    = $this->getTableGateway()->select($select, $where, $params, $options);
-        $withIds = [];
+        $rows = $this->getTableGateway()->select($select, $where, $params, $options);
 
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $resultAs);
-            if (($rows[$i] instanceof Record) && ($this->hasWiths())) {
-                $primaryValues = $rows[$i]->getPrimaryValues();
-                if (count($primaryValues) == 1) {
-                    $withIds[] = reset($primaryValues);
-                }
-            }
         }
 
         if ($this->hasWiths()) {
             $this->getWithRelationships();
-            $primaryKey = $this->getPrimaryKeys();
-            if (count($primaryKey) == 1) {
-                $primaryKey = reset($primaryKey);
-            }
             foreach ($this->relationships as $name => $relationship) {
-                $results = $relationship->getEagerRelationships($withIds);
+                $withIds = [];
+                if ($relationship instanceof Record\Relationships\HasOneOf) {
+                    $primaryKey = $relationship->getForeignKey();
+                    foreach ($rows as $i => $row) {
+                        if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
+                            $withIds[] = $row[$primaryKey];
+                        }
+                    }
+                    $results = $relationship->getEagerRelationships($withIds);
+                } else {
+                    $primaryKey = $this->getPrimaryKeys();
+                    if (count($primaryKey) == 1) {
+                        $primaryKey = reset($primaryKey);
+                    }
+                    foreach ($rows as $i => $row) {
+                        $primaryValues = $rows[$i]->getPrimaryValues();
+                        if (count($primaryValues) == 1) {
+                            $withId = reset($primaryValues);
+                            if (!in_array($withId, $withIds)) {
+                                $withIds[] = $withId;
+                            }
+                        }
+                    }
+                    $results = $relationship->getEagerRelationships($withIds);
+                }
                 foreach ($rows as $i => $row) {
                     if (isset($results[$row[$primaryKey]])) {
                         $row->setRelationship($name, $results[$row[$primaryKey]]);
+                    } else {
+                        $row->setRelationship($name, new \ArrayObject([], \ArrayObject::ARRAY_AS_PROPS));
                     }
                 }
             }
@@ -557,6 +572,22 @@ class Record extends Record\AbstractRecord
         $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey);
 
         return ($eager) ? $relationship : $relationship->getChild($options);
+    }
+
+    /**
+     * Has one of relationship
+     *
+     * @param  string  $foreignTable
+     * @param  string  $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Record|Record\Relationships\HasOne
+     */
+    public function hasOneOf($foreignTable, $foreignKey, array $options = null, $eager = false)
+    {
+        $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey);
+
+        return ($eager) ? $relationship : $relationship->getChild();
     }
 
     /**
