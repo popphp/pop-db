@@ -127,4 +127,13 @@ class SchemaTest extends TestCase
         );
     }
 
+    public function testReset()
+    {
+        $db     = Db::connect('sqlite', ['database' => __DIR__  . '/../tmp/db.sqlite']);
+        $schema = $db->createSchema();
+        $schema->create('users');
+        $schema->reset();
+        $this->assertEmpty((string)$schema);
+    }
+
 }

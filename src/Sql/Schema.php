@@ -213,7 +213,25 @@ class Schema extends AbstractSql
             }
         }
 
+        $this->reset();
+
         return $sql;
+    }
+
+    /**
+     * Reset and clear the schema object
+     *
+     * @return Schema
+     */
+    public function reset()
+    {
+        $this->drop     = [];
+        $this->create   = [];
+        $this->alter    = [];
+        $this->rename   = [];
+        $this->truncate = [];
+
+        return $this;
     }
 
     /**

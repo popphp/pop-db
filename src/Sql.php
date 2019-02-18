@@ -226,6 +226,8 @@ class Sql extends AbstractSql
             $sql = $this->delete->render();
         }
 
+        $this->reset();
+
         return $sql;
     }
 
