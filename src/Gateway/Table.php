@@ -26,7 +26,7 @@ use Pop\Db\Parser;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.4.1
  */
-class Table extends AbstractGateway
+class Table extends AbstractGateway implements \Countable, \IteratorAggregate
 {
 
     /**
@@ -239,6 +239,26 @@ class Table extends AbstractGateway
     {
         $this->rows = $rows;
         return $this;
+    }
+
+    /**
+     * Method to get the count of items in the collection
+     *
+     * @return int
+     */
+    public function count()
+    {
+        return count($this->rows);
+    }
+
+    /**
+     * Method to iterate over the table rows
+     *
+     * @return \ArrayIterator
+     */
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->rows);
     }
 
 }

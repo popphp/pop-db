@@ -25,7 +25,7 @@ use Pop\Db\Db;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.4.1
  */
-class Row extends AbstractGateway implements \ArrayAccess
+class Row extends AbstractGateway implements \ArrayAccess, \Countable, \IteratorAggregate
 {
 
     /**
@@ -396,6 +396,26 @@ class Row extends AbstractGateway implements \ArrayAccess
         $this->primaryValues = [];
 
         return $this;
+    }
+
+    /**
+     * Method to get the count of items in the row
+     *
+     * @return int
+     */
+    public function count()
+    {
+        return count($this->columns);
+    }
+
+    /**
+     * Method to iterate over the columns
+     *
+     * @return \ArrayIterator
+     */
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->columns);
     }
 
     /**

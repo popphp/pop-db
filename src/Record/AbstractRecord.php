@@ -27,7 +27,7 @@ use Pop\Db\Record;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.4.1
  */
-abstract class AbstractRecord implements \ArrayAccess
+abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggregate
 {
 
     /**
@@ -357,6 +357,26 @@ abstract class AbstractRecord implements \ArrayAccess
     }
 
     /**
+     * Method to get count of fields in row gateway
+     *
+     * @return int
+     */
+    public function count()
+    {
+        return $this->rowGateway->count();
+    }
+
+    /**
+     * Method to iterate over the columns
+     *
+     * @return \ArrayIterator
+     */
+    public function getIterator()
+    {
+        return $this->rowGateway->getIterator();
+    }
+
+    /**
      * Get the rows
      *
      * @return Collection
@@ -381,7 +401,7 @@ abstract class AbstractRecord implements \ArrayAccess
      *
      * @return int
      */
-    public function count()
+    public function countRows()
     {
         return $this->tableGateway->getNumberOfRows();
     }
