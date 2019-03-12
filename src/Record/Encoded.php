@@ -45,6 +45,48 @@ class Encoded extends \Pop\Db\Record
     protected $base64Fields = [];
 
     /**
+     * Password-hashed fields
+     * @var array
+     */
+    protected $hashFields = [];
+
+    /**
+     * Encrypted fields
+     * @var array
+     */
+    protected $encryptedFields = [];
+
+    /**
+     * Hash algorithm
+     * @var string
+     */
+    protected $hashAlgorithm = PASSWORD_BCRYPT;
+
+    /**
+     * Hash options ('salt', 'cost')
+     * @var array
+     */
+    protected $hashOptions = [];
+
+    /**
+     * Cipher method
+     * @var string
+     */
+    protected $cipherMethod = null;
+
+    /**
+     * Encrypted field key
+     * @var string
+     */
+    protected $key = null;
+
+    /**
+     * Encrypted field IV (base64-encoded)
+     * @var string
+     */
+    protected $iv = null;
+
+    /**
      * Set all the table column values at once
      *
      * @param  mixed  $columns
@@ -91,6 +133,7 @@ class Encoded extends \Pop\Db\Record
      *
      * @param  string $key
      * @param  mixed  $value
+     * @throws Exception
      * @return string
      */
     public function encodeValue($key, $value)
@@ -107,6 +150,20 @@ class Encoded extends \Pop\Db\Record
             if (!(is_string($value) && (@base64_decode($value, true) !== false))) {
                 $value = base64_encode($value);
             }
+        } else if (in_array($key, $this->hashFields)) {
+            $info = password_get_info($value);
+            if (((int)$info['algo'] == 0) || (strtolower($info['algoName']) == 'unknown')) {
+                $value = password_hash($value, $this->hashAlgorithm, $this->hashOptions);
+            }
+        } else if (in_array($key, $this->encryptedFields)) {
+            if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
+                throw new Exception('Error: The encryption properties have not been set for this class.');
+            }
+            if (!(is_string($value) && (@base64_decode($value, true) !== false))) {
+                $value = base64_encode(
+                    openssl_encrypt($value, $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv))
+                );
+            }
         }
 
         return $value;
@@ -117,6 +174,7 @@ class Encoded extends \Pop\Db\Record
      *
      * @param  string $key
      * @param  string  $value
+     * @throws Exception
      * @return mixed
      */
     public function decodeValue($key, $value)
@@ -136,9 +194,31 @@ class Encoded extends \Pop\Db\Record
             if ($base64Value !== false) {
                 $value = $base64Value;
             }
+        } else if (in_array($key, $this->encryptedFields)) {
+            if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
+                throw new Exception('Error: The encryption properties have not been set for this class.');
+            }
+            $base64Value = @base64_decode($value, true);
+            if ($base64Value !== false) {
+                $value = openssl_decrypt(
+                    base64_decode($value), $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv)
+                );
+            }
         }
 
         return $value;
+    }
+
+    /**
+     * Verify value against hash
+     *
+     * @param  string $key
+     * @param  string  $value
+     * @return boolean
+     */
+    public function verify($key, $value)
+    {
+        return password_verify($value, $this->{$key});
     }
 
     /**
@@ -215,7 +295,8 @@ class Encoded extends \Pop\Db\Record
      */
     protected function isEncodedColumn($key)
     {
-        return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) || in_array($key, $this->base64Fields));
+        return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) ||
+            in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields));
     }
 
 }
