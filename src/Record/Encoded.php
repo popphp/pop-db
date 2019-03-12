@@ -227,7 +227,7 @@ class Encoded extends \Pop\Db\Record
      * @param  array $columns
      * @return array
      */
-    protected function encode(array $columns)
+    public function encode(array $columns)
     {
         foreach ($columns as $key => $value) {
             if ($this->isEncodedColumn($key)) {
@@ -244,7 +244,7 @@ class Encoded extends \Pop\Db\Record
      * @param  array $columns
      * @return array
      */
-    protected function decode(array $columns)
+    public function decode(array $columns)
     {
         foreach ($columns as $key => $value) {
             if ($this->isEncodedColumn($key)) {
@@ -253,6 +253,18 @@ class Encoded extends \Pop\Db\Record
         }
 
         return $columns;
+    }
+
+    /**
+     * Determine if column is an encoded column
+     *
+     * @param  string $key
+     * @return boolean
+     */
+    public function isEncodedColumn($key)
+    {
+        return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) ||
+            in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields));
     }
 
     /**
@@ -285,18 +297,6 @@ class Encoded extends \Pop\Db\Record
         }
 
         return $value;
-    }
-
-    /**
-     * Determine if column is an encoded column
-     *
-     * @param  string $key
-     * @return boolean
-     */
-    protected function isEncodedColumn($key)
-    {
-        return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) ||
-            in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields));
     }
 
 }

@@ -8,11 +8,6 @@ use PHPUnit\Framework\TestCase;
 
 class RecordTest extends TestCase
 {
-    public function testSetDbException()
-    {
-        $this->expectException('Pop\Db\Exception');
-        $db = TestAsset\Users::db();
-    }
 
     public function testSetDb()
     {

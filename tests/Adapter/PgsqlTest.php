@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 class PgsqlTest extends TestCase
 {
 
-    protected $password = '';
+    protected $password = '12post34';
 
     public function testConstructorException()
     {

@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 class MysqlTest extends TestCase
 {
 
-    protected $password = '';
+    protected $password = '12root34';
 
     public function testConstructorException()
     {
