@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 class RelationshipTest extends TestCase
 {
 
-    protected $password = '12root34';
+    protected $password = '';
 
     public function testSetup()
     {
