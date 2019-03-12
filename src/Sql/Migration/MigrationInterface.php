@@ -21,7 +21,7 @@ namespace Pop\Db\Sql\Migration;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2019 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    4.4.1
+ * @version    4.5.0
  */
 interface MigrationInterface
 {
