@@ -100,8 +100,16 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         }
 
         if (isset($options['order'])) {
-            $order = Parser\Order::parse($options['order']);
-            $sql->select()->orderBy($order['by'], $db->escape($order['order']));
+            if (!is_array($options['order'])) {
+                $orders = (strpos($options['order'], ',') !== false) ?
+                    explode(',', $options['order']) : [$options['order']];
+            } else {
+                $orders = $options['order'];
+            }
+            foreach ($orders as $order) {
+                $ord = Parser\Order::parse(trim($order));
+                $sql->select()->orderBy($ord['by'], $db->escape($ord['order']));
+            }
         }
 
         $db->prepare((string)$sql);

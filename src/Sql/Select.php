@@ -445,7 +445,7 @@ class Select extends AbstractClause
         $order = strtoupper($order);
 
         if (strpos($order, 'RAND') !== false) {
-            $this->orderBy = ($this->isSqlite()) ? ' RANDOM()' : ' RAND()';
+            $this->orderBy .= ($this->isSqlite()) ? ' RANDOM()' : ' RAND()';
         } else if (($order == 'ASC') || ($order == 'DESC')) {
             $this->orderBy .= ' ' . $order;
         }
