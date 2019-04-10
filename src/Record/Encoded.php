@@ -230,7 +230,7 @@ class Encoded extends \Pop\Db\Record
     public function encode(array $columns)
     {
         foreach ($columns as $key => $value) {
-            if ($this->isEncodedColumn($key)) {
+            if ((null !== $value) && ($this->isEncodedColumn($key))) {
                 $columns[$key] = $this->encodeValue($key, $value);
             }
         }
@@ -276,7 +276,7 @@ class Encoded extends \Pop\Db\Record
      */
     public function __set($name, $value)
     {
-        if ($this->isEncodedColumn($name)) {
+        if ((null !== $value) && ($this->isEncodedColumn($name))) {
             $value = $this->encodeValue($name, $value);
         }
         parent::__set($name, $value);
