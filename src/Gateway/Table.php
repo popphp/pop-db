@@ -99,6 +99,15 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             $sql->select()->offset((int)$options['offset']);
         }
 
+        if (isset($options['join'])) {
+            if (isset($options['join']['type']) && method_exists($sql->select(), $options['join']['type'])) {
+                $joinMethod = $options['join']['type'];
+                $sql->select()->{$joinMethod}($options['join']['table'], $options['join']['columns']);
+            } else {
+                $sql->select()->leftJoin($options['join']['table'], $options['join']['columns']);
+            }
+        }
+
         if (isset($options['order'])) {
             if (!is_array($options['order'])) {
                 $orders = (strpos($options['order'], ',') !== false) ?
