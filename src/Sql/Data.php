@@ -170,7 +170,9 @@ class Data extends AbstractSql
 
             switch ($this->divide) {
                 case 0:
-                    $this->sql .= $insert;
+                    if ($i == 0) {
+                        $this->sql .= $insert;
+                    }
                     $this->sql .= $value;
                     $this->sql .= ($i == (count($data) - 1)) ? ';' : ',';
                     $this->sql .= PHP_EOL;
@@ -180,10 +182,10 @@ class Data extends AbstractSql
                     break;
                 default:
                     if (($i % $this->divide) == 0) {
-                        $this->sql .= $insert . $value . ',' . PHP_EOL;
+                        $this->sql .= $insert . $value . (($i == (count($data) - 1)) ? ';' : ',') . PHP_EOL;
                     } else {
                         $this->sql .= $value;
-                        $this->sql .= ((($i + 1) % $this->divide) == 0) ? ';' : ',';
+                        $this->sql .= (((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? ';' : ',';
                         $this->sql .= PHP_EOL;
                     }
             }
@@ -265,7 +267,9 @@ class Data extends AbstractSql
 
             switch ($this->divide) {
                 case 0:
-                    fwrite($handle, $insert);
+                    if ($i == 0) {
+                        fwrite($handle, $insert);
+                    }
                     fwrite($handle, $value);
                     fwrite($handle, ($i == (count($data) - 1)) ? ';' : ',');
                     fwrite($handle, PHP_EOL);
@@ -275,10 +279,10 @@ class Data extends AbstractSql
                     break;
                 default:
                     if (($i % $this->divide) == 0) {
-                        fwrite($handle, $insert . $value . ',' . PHP_EOL);
+                        fwrite($handle, $insert . $value . (($i == (count($data) - 1)) ? ';' : ',') . PHP_EOL);
                     } else {
                         fwrite($handle, $value);
-                        fwrite($handle, ((($i + 1) % $this->divide) == 0) ? ';' : ',');
+                        fwrite($handle, ((((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? ';' : ','));
                         fwrite($handle, PHP_EOL);
                     }
             }
