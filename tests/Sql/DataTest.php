@@ -76,4 +76,24 @@ class DataTest extends TestCase
         $data->writeToFile(__DIR__ . '/../tmp/users.sql');
     }
 
+
+    public function testStreamToFile()
+    {
+        $db = Db::mysqlConnect([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => $this->password
+        ]);
+        $data    = new Sql\Data($db, 'users', 10);
+        $csvData = Csv::getDataFromFile(__DIR__. '/../tmp/users.csv');
+        $data->streamToFile($csvData, __DIR__ . '/../tmp/users_stream.sql', 'id', true);
+
+        $this->assertFileExists(__DIR__ . '/../tmp/users_stream.sql');
+        $this->assertContains('INSERT INTO `users`', file_get_contents(__DIR__ . '/../tmp/users_stream.sql'));
+
+        if (file_exists(__DIR__ . '/../tmp/users_stream.sql')) {
+            unlink(__DIR__ . '/../tmp/users_stream.sql');
+        }
+    }
+
 }
