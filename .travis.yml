@@ -1,9 +1,10 @@
 before_script:
-    - /etc/init.d/mysql start
     - mysql -e 'CREATE DATABASE IF NOT EXISTS travis_popdb;'
     - psql -c 'create database travis_popdb;' -U postgres
     - composer self-update
     - composer install
+services:
+    - mysql
 language: php
 branches:
   only:
