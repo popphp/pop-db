@@ -154,9 +154,8 @@ class Data extends AbstractSql
 
         $columns = array_map([$this, 'quoteId'], $columns);
         $insert  = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
-        $values  = [];
 
-        foreach ($data as $row) {
+        foreach ($data as $i => $row) {
             if (!empty($omit)) {
                 foreach ($omit as $o) {
                     if (isset($row[$o])) {
@@ -168,25 +167,18 @@ class Data extends AbstractSql
             if ($nullEmpty) {
                 $value = str_replace(["'', ", ", '')"], ['NULL, ', ', NULL)'], $value);
             }
-            $values[] = $value;
-        }
 
-        switch ($this->divide) {
-            case 0:
-                $this->sql .= $insert;
-                foreach ($values as $i => $value) {
+            switch ($this->divide) {
+                case 0:
+                    $this->sql .= $insert;
                     $this->sql .= $value;
-                    $this->sql .= ($i == (count($values) - 1)) ? ';' : ',';
+                    $this->sql .= ($i == (count($data) - 1)) ? ';' : ',';
                     $this->sql .= PHP_EOL;
-                }
-                break;
-            case 1:
-                foreach ($values as $i => $value) {
+                    break;
+                case 1:
                     $this->sql .= $insert . $value . ';' . PHP_EOL;
-                }
-                break;
-            default:
-                foreach ($values as $i => $value) {
+                    break;
+                default:
                     if (($i % $this->divide) == 0) {
                         $this->sql .= $insert . $value . ',' . PHP_EOL;
                     } else {
@@ -194,7 +186,7 @@ class Data extends AbstractSql
                         $this->sql .= ((($i + 1) % $this->divide) == 0) ? ';' : ',';
                         $this->sql .= PHP_EOL;
                     }
-                }
+            }
         }
 
         return $this->sql;
@@ -215,6 +207,89 @@ class Data extends AbstractSql
         }
 
         file_put_contents($to, $header . $this->sql . $footer);
+    }
+
+    /**
+     * Serialize the data into INSERT statements
+     *
+     * @param  array   $data
+     * @param  string  $to
+     * @param  mixed   $omit
+     * @param  boolean $nullEmpty
+     * @param  string  $header
+     * @param  string  $footer
+     * @return void
+     */
+    public function streamToFile(array $data, $to, $omit = null, $nullEmpty = false, $header = null, $footer = null)
+    {
+        if (!file_exists($to)) {
+            touch($to);
+        }
+
+        $handle = fopen($to, 'w+');
+
+        if (null !== $header) {
+            fwrite($handle, $header);
+        }
+
+        if (null !== $omit) {
+            $omit = (!is_array($omit)) ? [$omit] : $omit;
+        }
+
+        $table     = $this->quoteId($this->table);
+        $columns   = array_keys(reset($data));
+
+        if (!empty($omit)) {
+            foreach ($omit as $o) {
+                if (in_array($o, $columns)) {
+                    unset($columns[array_search($o, $columns)]);
+                }
+            }
+        }
+
+        $columns = array_map([$this, 'quoteId'], $columns);
+        $insert  = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
+
+        foreach ($data as $i => $row) {
+            if (!empty($omit)) {
+                foreach ($omit as $o) {
+                    if (isset($row[$o])) {
+                        unset($row[$o]);
+                    }
+                }
+            }
+            $value = "(" . implode(', ', array_map([$this, 'quote'], $row)) . ")";
+            if ($nullEmpty) {
+                $value = str_replace(["'', ", ", '')"], ['NULL, ', ', NULL)'], $value);
+            }
+
+            switch ($this->divide) {
+                case 0:
+                    fwrite($handle, $insert);
+                    fwrite($handle, $value);
+                    fwrite($handle, ($i == (count($data) - 1)) ? ';' : ',');
+                    fwrite($handle, PHP_EOL);
+                    break;
+                case 1:
+                    fwrite($handle, $insert . $value . ';' . PHP_EOL);
+                    break;
+                default:
+                    if (($i % $this->divide) == 0) {
+                        fwrite($handle, $insert . $value . ',' . PHP_EOL);
+                    } else {
+                        fwrite($handle, $value);
+                        fwrite($handle, ((($i + 1) % $this->divide) == 0) ? ';' : ',');
+                        fwrite($handle, PHP_EOL);
+                    }
+            }
+        }
+
+
+        if (null !== $footer) {
+            fwrite($handle, $footer);
+        }
+
+        fclose($handle);
     }
 
     /**
