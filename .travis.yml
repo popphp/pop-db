@@ -5,6 +5,7 @@ before_script:
     - composer install
 services:
     - mysql
+    - postgresql
 language: php
 branches:
   only:
