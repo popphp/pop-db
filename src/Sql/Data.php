@@ -16,7 +16,7 @@ namespace Pop\Db\Sql;
 use Pop\Db\Adapter\AbstractAdapter;
 
 /**
- * Date parser class
+ * Data parser class
  *
  * @category   Pop
  * @package    Pop\Db
