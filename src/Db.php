@@ -212,6 +212,9 @@ class Db
 
             $sqlString  = trim(implode('', $lines));
             $newLine    = (strpos($sqlString, ";\r\n") !== false) ? ";\r\n" : ";\n";
+            if (stripos($sqlString, ';INSERT INTO') !== false) {
+                $sqlString = str_ireplace(';INSERT INTO', ";" . $newLine . "INSERT INTO", $sqlString);
+            }
             $statements = explode($newLine, $sqlString);
 
             foreach ($statements as $statement) {
@@ -219,6 +222,7 @@ class Db
                     if (isset($options['prefix'])) {
                         $statement = str_replace('[{prefix}]', $options['prefix'], trim($statement));
                     }
+                    //echo $statement . PHP_EOL . PHP_EOL;
                     $db->query($statement);
                 }
             }
