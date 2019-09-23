@@ -132,9 +132,10 @@ class Data extends AbstractSql
      * @param  array   $data
      * @param  mixed   $omit
      * @param  boolean $nullEmpty
+     * @param  array   $updateColumns
      * @return string
      */
-    public function serialize(array $data, $omit = null, $nullEmpty = false)
+    public function serialize(array $data, $omit = null, $nullEmpty = false, array $updateColumns = [])
     {
         if (null !== $omit) {
             $omit = (!is_array($omit)) ? [$omit] : $omit;
@@ -152,8 +153,18 @@ class Data extends AbstractSql
             }
         }
 
-        $columns = array_map([$this, 'quoteId'], $columns);
-        $insert  = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
+        $columns  = array_map([$this, 'quoteId'], $columns);
+        $insert   = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
+        $onUpdate = null;
+
+        if (!empty($updateColumns)) {
+            $updates = [];
+            foreach ($updateColumns as $updateColumn) {
+                $updates[] = $this->quoteId($updateColumn) . ' = VALUES(' . $updateColumn .')';
+            }
+
+            $onUpdate = PHP_EOL . 'ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
+        }
 
         foreach ($data as $i => $row) {
             if (!empty($omit)) {
@@ -174,18 +185,18 @@ class Data extends AbstractSql
                         $this->sql .= $insert;
                     }
                     $this->sql .= $value;
-                    $this->sql .= ($i == (count($data) - 1)) ? ';' : ',';
+                    $this->sql .= ($i == (count($data) - 1)) ? $onUpdate . ';' : ',';
                     $this->sql .= PHP_EOL;
                     break;
                 case 1:
-                    $this->sql .= $insert . $value . ';' . PHP_EOL;
+                    $this->sql .= $insert . $value . $onUpdate . ';' . PHP_EOL;
                     break;
                 default:
                     if (($i % $this->divide) == 0) {
-                        $this->sql .= $insert . $value . (($i == (count($data) - 1)) ? ';' : ',') . PHP_EOL;
+                        $this->sql .= $insert . $value . (($i == (count($data) - 1)) ? $onUpdate . ';' : ',') . PHP_EOL;
                     } else {
                         $this->sql .= $value;
-                        $this->sql .= (((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? ';' : ',';
+                        $this->sql .= (((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? $onUpdate . ';' : ',';
                         $this->sql .= PHP_EOL;
                     }
             }
@@ -218,11 +229,12 @@ class Data extends AbstractSql
      * @param  string  $to
      * @param  mixed   $omit
      * @param  boolean $nullEmpty
+     * @param  array   $updateColumns
      * @param  string  $header
      * @param  string  $footer
      * @return void
      */
-    public function streamToFile(array $data, $to, $omit = null, $nullEmpty = false, $header = null, $footer = null)
+    public function streamToFile(array $data, $to, $omit = null, $nullEmpty = false, array $updateColumns = [], $header = null, $footer = null)
     {
         if (!file_exists($to)) {
             touch($to);
@@ -249,8 +261,18 @@ class Data extends AbstractSql
             }
         }
 
-        $columns = array_map([$this, 'quoteId'], $columns);
-        $insert  = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
+        $columns  = array_map([$this, 'quoteId'], $columns);
+        $insert   = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
+        $onUpdate = null;
+
+        if (!empty($updateColumns)) {
+            $updates = [];
+            foreach ($updateColumns as $updateColumn) {
+                $updates[] = $this->quoteId($updateColumn) . ' = VALUES(' . $updateColumn .')';
+            }
+
+            $onUpdate = PHP_EOL . 'ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
+        }
 
         foreach ($data as $i => $row) {
             if (!empty($omit)) {
@@ -271,7 +293,7 @@ class Data extends AbstractSql
                         fwrite($handle, $insert);
                     }
                     fwrite($handle, $value);
-                    fwrite($handle, ($i == (count($data) - 1)) ? ';' : ',');
+                    fwrite($handle, ($i == (count($data) - 1)) ? $onUpdate . ';' : ',');
                     fwrite($handle, PHP_EOL);
                     break;
                 case 1:
@@ -279,10 +301,10 @@ class Data extends AbstractSql
                     break;
                 default:
                     if (($i % $this->divide) == 0) {
-                        fwrite($handle, $insert . $value . (($i == (count($data) - 1)) ? ';' : ',') . PHP_EOL);
+                        fwrite($handle, $insert . $value . (($i == (count($data) - 1)) ? $onUpdate . ';' : ',') . PHP_EOL);
                     } else {
                         fwrite($handle, $value);
-                        fwrite($handle, ((((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? ';' : ','));
+                        fwrite($handle, ((((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? $onUpdate . ';' : ','));
                         fwrite($handle, PHP_EOL);
                     }
             }
