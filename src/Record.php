@@ -711,6 +711,11 @@ class Record extends Record\AbstractRecord
                 $this->isNew = false;
             } else {
                 $this->rowGateway->update();
+                $record = $this->getById($this->rowGateway->getPrimaryValues());
+                if (isset($record[0])) {
+                    $this->setColumns($record[0]);
+                    $this->rowGateway->resetDirty();
+                }
             }
         // Else, save multiple rows
         } else {

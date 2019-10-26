@@ -179,6 +179,18 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     }
 
     /**
+     * Reset dirty columns
+     *
+     * @return Row
+     */
+    public function resetDirty()
+    {
+        $this->dirty['old'] = [];
+        $this->dirty['new'] = [];
+        return $this;
+    }
+
+    /**
      * Find row by primary key values
      *
      * @param  mixed $values
@@ -289,9 +301,13 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
         $values = [];
         $params = [];
 
+        $oldKeys     = array_keys($this->dirty['old']);
+        $newKeys     = array_keys($this->dirty['new']);
+        $columnNames = ($oldKeys == $newKeys) ? $newKeys : [];
+
         $i = 1;
         foreach ($this->columns as $column => $value) {
-            if (!in_array($column, $this->primaryKeys)) {
+            if (!in_array($column, $this->primaryKeys) && ((empty($columnNames)) || (!empty($columnNames) && in_array($column, $columnNames)))) {
                 $placeholder = $sql->getPlaceholder();
 
                 if ($placeholder == ':') {
