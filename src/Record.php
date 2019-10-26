@@ -410,24 +410,33 @@ class Record extends Record\AbstractRecord
     public function getById($id)
     {
         if (is_array($id) && (count($this->primaryKeys) == 1)) {
-            $record      = new static();
-            $db          = Db::getDb($record->getFullTable());
-            $sql         = $db->createSql();
-            $placeholder = $sql->getPlaceholder();
-            $params      = [];
+            if (count($id) == 1) {
+                $this->setColumns($this->getRowGateway()->find($id));
+                $this->rowGateway->resetDirty();
+                return $this;
+            } else {
+                $record      = new static();
+                $db          = Db::getDb($record->getFullTable());
+                $sql         = $db->createSql();
+                $placeholder = $sql->getPlaceholder();
+                $params      = [];
 
-            $sql->select()->from($record->getFullTable());
+                $sql->select()->from($record->getFullTable());
+                $placeholders = [];
 
-            foreach ($id as $i) {
-                $sql->select()->orWhere($this->primaryKeys[0] . ' IN ' . $placeholder);
-                $params[] = $i;
+                foreach ($id as $i => $v) {
+                    $placeholders = ($placeholder == ':') ? ($placeholder . $this->primaryKeys[0] . ($i + 1)) : $placeholder;
+                    $params[]     = $v;
+                }
+
+                $sql->select()->where($this->primaryKeys[0] . ' IN (' . implode(', ', $placeholders) . ')');
+
+                $db->prepare((string)$sql)
+                    ->bindParams($params)
+                    ->execute();
+
+                return new Collection($db->fetchAll());
             }
-
-            $db->prepare((string)$sql)
-               ->bindParams($params)
-               ->execute();
-
-            return new Collection($db->fetchAll());
         } else {
             $this->setColumns($this->getRowGateway()->find($id));
 
