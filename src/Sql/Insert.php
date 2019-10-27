@@ -27,6 +27,12 @@ class Insert extends AbstractClause
 {
 
     /**
+     * Update columns
+     * @var array
+     */
+    protected $updateColumns = [];
+
+    /**
      * Set a value
      *
      * @param  array $values
@@ -35,6 +41,18 @@ class Insert extends AbstractClause
     public function values(array $values)
     {
         $this->setValues($values);
+        return $this;
+    }
+
+    /**
+     * Set update columns
+     *
+     * @param  array $updateColumns
+     * @return Insert
+     */
+    public function onDuplicateKeyUpdate(array $updateColumns)
+    {
+        $this->updateColumns = $updateColumns;
         return $this;
     }
 
@@ -61,7 +79,7 @@ class Insert extends AbstractClause
             if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) && ($dbType !== self::SQLITE)) {
                 if (($dbType == self::MYSQL) || ($dbType == self::SQLSRV)) {
                     $value = '?';
-                } else if (($dbType == self::PGSQL) && (!($this->db instanceof \Pop\Db\Adapter\Pdo))) {
+                } else if (($dbType == self::PGSQL) && !($this->db instanceof \Pop\Db\Adapter\Pdo)) {
                     $value = '$' . $paramCount;
                     $paramCount++;
                 }
@@ -70,8 +88,16 @@ class Insert extends AbstractClause
             $values[]  = (null === $value) ? 'NULL' : $this->quote($value);
         }
 
-        $sql .= '(' . implode(', ', $columns) . ') VALUES ';
-        $sql .= '(' . implode(', ', $values) . ')';
+        $sql .= '(' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ')';
+
+        if (!empty($this->updateColumns)) {
+            $updates = [];
+            foreach ($this->updateColumns as $updateColumn) {
+                $updates[] = $this->quoteId($updateColumn) . ' = VALUES(' . $updateColumn .')';
+            }
+
+            $sql .= ' ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
+        }
 
         return $sql;
     }

@@ -538,7 +538,6 @@ class Pdo extends AbstractAdapter
      *
      * @param  string $code
      * @param  array  $info
-     * @throws Exception
      * @return Pdo
      */
     protected function buildError($code = null, $info = null)

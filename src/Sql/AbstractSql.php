@@ -57,16 +57,28 @@ abstract class AbstractSql
     protected $dbType = null;
 
     /**
+     * SQL placeholder
+     * @var string
+     */
+    protected $placeholder = '?';
+
+    /**
      * ID quote type
      * @var string
      */
     protected $idQuoteType = 'NO_QUOTE';
 
     /**
-     * SQL placeholder
+     * ID open quote
      * @var string
      */
-    protected $placeholder = '?';
+    protected $openQuote = null;
+
+    /**
+     * ID close quote
+     * @var string
+     */
+    protected $closeQuote = null;
 
     /**
      * Constructor
@@ -78,38 +90,7 @@ abstract class AbstractSql
     public function __construct(Adapter\AbstractAdapter $db)
     {
         $this->db = $db;
-        $adapter  = strtolower(get_class($db));
-
-        if (strpos($adapter, 'mysql') !== false) {
-            $this->dbType      = self::MYSQL;
-            $this->idQuoteType = self::BACKTICK;
-            $this->placeholder = '?';
-        } else if (strpos($adapter, 'pgsql') !== false) {
-            $this->dbType      = self::PGSQL;
-            $this->idQuoteType = self::DOUBLE_QUOTE;
-            $this->placeholder = '$';
-        } else if (strpos($adapter, 'sqlite') !== false) {
-            $this->dbType      = self::SQLITE;
-            $this->idQuoteType = self::DOUBLE_QUOTE;
-            $this->placeholder = ':';
-        } else if (strpos($adapter, 'sqlsrv') !== false) {
-            $this->dbType      = self::SQLSRV;
-            $this->idQuoteType = self::BRACKET;
-            $this->placeholder = '?';
-        } else if (strpos($adapter, 'pdo') !== false) {
-            $this->placeholder = ':';
-            $type = $this->db->getType();
-            if ($type == 'sqlite') {
-                $this->dbType      = self::SQLITE;
-                $this->idQuoteType = self::DOUBLE_QUOTE;
-            } else if ($type == 'pgsql') {
-                $this->dbType      = self::PGSQL;
-                $this->idQuoteType = self::DOUBLE_QUOTE;
-            } else if ($type == 'mysql') {
-                $this->dbType      = self::MYSQL;
-                $this->idQuoteType = self::BACKTICK;
-            }
-        }
+        $this->init(strtolower(get_class($db)));
     }
 
     /**
@@ -182,6 +163,7 @@ abstract class AbstractSql
     {
         if (defined('Pop\Db\Sql::' . $type)) {
             $this->idQuoteType = $type;
+            $this->initQuoteType();
         }
         return $this;
     }
@@ -209,16 +191,6 @@ abstract class AbstractSql
     }
 
     /**
-     * Get the quote ID type
-     *
-     * @return int
-     */
-    public function getIdQuoteType()
-    {
-        return $this->idQuoteType;
-    }
-
-    /**
      * Get the SQL placeholder
      *
      * @return string
@@ -229,6 +201,36 @@ abstract class AbstractSql
     }
 
     /**
+     * Get the quote ID type
+     *
+     * @return int
+     */
+    public function getIdQuoteType()
+    {
+        return $this->idQuoteType;
+    }
+
+    /**
+     * Get open quote
+     *
+     * @return string
+     */
+    public function getOpenQuote()
+    {
+        return $this->openQuote;
+    }
+
+    /**
+     * Get close quote
+     *
+     * @return string
+     */
+    public function getCloseQuote()
+    {
+        return $this->closeQuote;
+    }
+
+    /**
      * Quote the identifier
      *
      * @param  string $identifier
@@ -236,33 +238,16 @@ abstract class AbstractSql
      */
     public function quoteId($identifier)
     {
-        $quotedId   = null;
-        $openQuote  = null;
-        $closeQuote = null;
-
-        switch ($this->idQuoteType) {
-            case self::BACKTICK:
-                $openQuote  = '`';
-                $closeQuote = '`';
-                break;
-            case self::BRACKET:
-                $openQuote  = '[';
-                $closeQuote = ']';
-                break;
-            case self::DOUBLE_QUOTE:
-                $openQuote  = '"';
-                $closeQuote = '"';
-                break;
-        }
+        $quotedId = null;
 
         if (strpos($identifier, '.') !== false) {
             $identifierAry = explode('.', $identifier);
             foreach ($identifierAry as $key => $val) {
-                $identifierAry[$key] = ($val != '*') ? $openQuote . $val . $closeQuote : $val;
+                $identifierAry[$key] = ($val != '*') ? $this->openQuote . $val . $this->closeQuote : $val;
             }
             $quotedId = implode('.', $identifierAry);
         } else {
-            $quotedId = ($identifier != '*') ? $openQuote . $identifier . $closeQuote : $identifier;
+            $quotedId = ($identifier != '*') ? $this->openQuote . $identifier . $this->closeQuote : $identifier;
         }
 
         return $quotedId;
@@ -281,6 +266,75 @@ abstract class AbstractSql
             $value = "'" . $this->db->escape($value) . "'";
         }
         return $value;
+    }
+
+    /**
+     * Initialize SQL object
+     *
+     * @param  string $adapter
+     * @return void
+     */
+    protected function init($adapter)
+    {
+        if (stripos($adapter, 'pdo') !== false) {
+            $adapter           = $this->db->getType();
+            $this->placeholder = ':';
+        }
+
+        if (stripos($adapter, 'mysql') !== false) {
+            $this->dbType      = self::MYSQL;
+            $this->idQuoteType = self::BACKTICK;
+            if (null === $this->placeholder) {
+                $this->placeholder = '?';
+            }
+        } else if (stripos($adapter, 'pgsql') !== false) {
+            $this->dbType      = self::PGSQL;
+            $this->idQuoteType = self::DOUBLE_QUOTE;
+            if (null === $this->placeholder) {
+                $this->placeholder = '$';
+            }
+        } else if (stripos($adapter, 'sqlite') !== false) {
+            $this->dbType      = self::SQLITE;
+            $this->idQuoteType = self::DOUBLE_QUOTE;
+            if (null === $this->placeholder) {
+                $this->placeholder = ':';
+            }
+        } else if (stripos($adapter, 'sqlsrv') !== false) {
+            $this->dbType      = self::SQLSRV;
+            $this->idQuoteType = self::BRACKET;
+            if (null === $this->placeholder) {
+                $this->placeholder = '?';
+            }
+        }
+
+        $this->initQuoteType();
+    }
+
+    /**
+     * Initialize quite type
+     *
+     * @return void
+     */
+    protected function initQuoteType()
+    {
+        switch ($this->idQuoteType) {
+            case (self::BACKTICK):
+                $this->openQuote   = '`';
+                $this->closeQuote  = '`';
+                break;
+            case (self::DOUBLE_QUOTE):
+                $this->openQuote   = '"';
+                $this->closeQuote  = '"';
+                break;
+            case (self::BRACKET):
+                $this->openQuote   = '[';
+                $this->closeQuote  = ']';
+                break;
+            case (self::NO_QUOTE):
+                $this->openQuote   = null;
+                $this->closeQuote  = null;
+                break;
+        }
     }
 
 }

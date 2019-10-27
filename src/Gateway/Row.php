@@ -521,7 +521,6 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @param  mixed $offset
      * @param  mixed $value
-     * @throws Exception
      * @return void
      */
     public function offsetSet($offset, $value)
@@ -533,7 +532,6 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * ArrayAccess offsetUnset
      *
      * @param  mixed $offset
-     * @throws Exception
      * @return void
      */
     public function offsetUnset($offset)

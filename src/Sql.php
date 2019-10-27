@@ -29,12 +29,6 @@ class Sql extends AbstractSql
 {
 
     /**
-     * Database object
-     * @var Adapter\AbstractAdapter
-     */
-    protected $db = null;
-
-    /**
      * Select object
      * @var Sql\Select
      */

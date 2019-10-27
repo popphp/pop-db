@@ -211,6 +211,7 @@ class Data extends AbstractSql
      * @param  string $to
      * @param  string $header
      * @param  string $footer
+     * @throws Exception
      * @return void
      */
     public function writeToFile($to, $header = null, $footer = null)
@@ -250,8 +251,8 @@ class Data extends AbstractSql
             $omit = (!is_array($omit)) ? [$omit] : $omit;
         }
 
-        $table     = $this->quoteId($this->table);
-        $columns   = array_keys(reset($data));
+        $table    = $this->quoteId($this->table);
+        $columns  = array_keys(reset($data));
 
         if (!empty($omit)) {
             foreach ($omit as $o) {
@@ -321,10 +322,14 @@ class Data extends AbstractSql
     /**
      * __toString magic method
      *
+     * @throws Exception
      * @return string
      */
     public function __toString()
     {
+        if (!$this->isSerialized()) {
+            throw new Exception('Error: The SQL data has not been serialized yet.');
+        }
         return $this->sql;
     }
 
