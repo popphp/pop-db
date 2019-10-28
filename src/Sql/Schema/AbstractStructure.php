@@ -721,7 +721,7 @@ abstract class AbstractStructure extends AbstractTable
     {
         $columnString = $this->getValidColumnType($column['type']);
 
-        if (!empty($column['size']) && !($this->dbType)) {
+        if (!empty($column['size']) && !($this->isSqlite())) {
             $columnString .= '(' . $column['size'];
             $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
         }
