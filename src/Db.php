@@ -343,10 +343,10 @@ class Db
 
         if (null !== $class) {
             self::$db[$class] = $db;
-            $record = new $class();
-            if ($record instanceof Record) {
-                self::$classToTable[$class] = $record->getFullTable();
-            }
+            //$record = new $class();
+            //if ($record instanceof Record) {
+            //    self::$classToTable[$class] = $record->getFullTable();
+            //}
         }
 
         if ($isDefault) {

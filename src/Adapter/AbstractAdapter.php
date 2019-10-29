@@ -237,9 +237,7 @@ abstract class AbstractAdapter implements AdapterInterface
         if (is_array($listener) || ($listener instanceof \Closure) || (is_string($listener) && (strpos($listener, '::') !== false))) {
             $obj = call_user_func_array($listener, $params);
         } else if (is_string($listener) && (strpos($listener, '->') !== false)) {
-            $ary    = explode('->', $listener);
-            $class  = $ary[0];
-            $method = $ary[1];
+            [$class, $method] = explode('->', $listener);
             if (class_exists($class) && method_exists($class, $method)) {
                 $obj = call_user_func_array([new $class(), $method], $params);
             }

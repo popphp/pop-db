@@ -14,7 +14,7 @@
 namespace Pop\Db\Gateway;
 
 use Pop\Db\Db;
-use Pop\Db\Parser;
+use Pop\Db\Sql\Parser;
 
 /**
  * Table gateway class
@@ -100,11 +100,14 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         }
 
         if (isset($options['join'])) {
-            if (isset($options['join']['type']) && method_exists($sql->select(), $options['join']['type'])) {
-                $joinMethod = $options['join']['type'];
-                $sql->select()->{$joinMethod}($options['join']['table'], $options['join']['columns']);
-            } else {
-                $sql->select()->leftJoin($options['join']['table'], $options['join']['columns']);
+            $joins = (!is_array($options['join'])) ? [$options['join']] : $options['join'];
+            foreach ($joins as $join) {
+                if (isset($join['type']) && method_exists($sql->select(), $join['type'])) {
+                    $joinMethod = $join['type'];
+                    $sql->select()->{$joinMethod}($join['table'], $join['columns']);
+                } else {
+                    $sql->select()->leftJoin($join['table'], $join['columns']);
+                }
             }
         }
 
@@ -187,8 +190,8 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         $sql    = $db->createSql();
         $values = [];
         $params = [];
+        $i      = 1;
 
-        $i = 1;
         foreach ($columns as $column => $value) {
             $placeholder = $sql->getPlaceholder();
 
