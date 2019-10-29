@@ -261,7 +261,8 @@ abstract class AbstractSql
      */
     public function quote($value)
     {
-        if (($value == '') || (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+        if (($value == '') ||
+            (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
             !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
             $value = "'" . $this->db->escape($value) . "'";
         }

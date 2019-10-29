@@ -29,26 +29,26 @@ class Order
     /**
      * Get the order by values
      *
-     * @param  string $order
+     * @param  string $orderBy
      * @return array
      */
-    public static function parse($order)
+    public static function parse($orderBy)
     {
-        $by  = null;
-        $ord = null;
+        $by    = null;
+        $order = null;
 
-        if (stripos($order, 'ASC') !== false) {
-            $by  = trim(str_replace('ASC', '', $order));
-            $ord = 'ASC';
-        } else if (stripos($order, 'DESC') !== false) {
-            $by  = trim(str_replace('DESC', '', $order));
-            $ord = 'DESC';
-        } else if (stripos($order, 'RAND()') !== false) {
-            $by  = trim(str_replace('RAND()', '', $order));
-            $ord = 'RAND()';
+        if (stripos($orderBy, 'ASC') !== false) {
+            $order = 'ASC';
+            $by    = trim(str_replace('ASC', '', $orderBy));
+        } else if (stripos($orderBy, 'DESC') !== false) {
+            $order = 'DESC';
+            $by    = trim(str_replace('DESC', '', $orderBy));
+        } else if (stripos($orderBy, 'RAND()') !== false) {
+            $order = 'RAND()';
+            $by    = trim(str_replace('RAND()', '', $orderBy));
         } else {
-            $by  = $order;
-            $ord = null;
+            $order = null;
+            $by    = $orderBy;
         }
 
         if (strpos($by, ',') !== false) {
@@ -56,7 +56,7 @@ class Order
             $by = explode(',', $by);
         }
 
-        return ['by' => $by, 'order' => $ord];
+        return ['by' => $by, 'order' => $order];
     }
 
 }
