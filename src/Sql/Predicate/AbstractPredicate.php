@@ -13,8 +13,10 @@
  */
 namespace Pop\Db\Sql\Predicate;
 
+use Pop\Db\Sql\AbstractSql;
+
 /**
- * Abstract predicate set class
+ * Abstract predicate class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,7 +25,7 @@ namespace Pop\Db\Sql\Predicate;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-abstract class AbstractPredicateSet
+abstract class AbstractPredicate
 {
 
     /**
@@ -34,26 +36,28 @@ abstract class AbstractPredicateSet
 
     /**
      * Values
-     * @var array
+     * @var mixed
      */
     protected $values = null;
 
     /**
-     * Combine
+     * Conjunction
      * @var string
      */
-    protected $combine = 'AND';
+    protected $conjunction = 'AND';
 
     /**
      * Constructor
      *
      * Instantiate the predicate set object
      *
-     * @param  array  $values
+     * @param  mixed  $values
+     * @param  string $conjunction
      */
-    public function __construct(array $values)
+    public function __construct($values, $conjunction = 'AND')
     {
-        $this->values = $values;
+        $this->setValues($values);
+        $this->setConjunction($conjunction);
     }
 
     /**
@@ -67,6 +71,18 @@ abstract class AbstractPredicateSet
     }
 
     /**
+     * Set values
+     *
+     * @param  mixed  $values
+     * @return AbstractPredicate
+     */
+    public function setValues($values)
+    {
+        $this->values = $values;
+        return $this;
+    }
+
+    /**
      * Get the values
      *
      * @return array
@@ -77,25 +93,38 @@ abstract class AbstractPredicateSet
     }
 
     /**
-     * Get the combine
+     * Get the conjunction
      *
-     * @return string
+     * @param  string $conjunction
+     * @return AbstractPredicate
      */
-    public function getCombine()
+    public function setConjunction($conjunction)
     {
-        return $this->combine;
+        if ((strtoupper($conjunction) != 'OR') && (strtoupper($conjunction) != 'AND')) {
+            throw new Exception("Error: The conjunction must be 'AND' or 'OR'. '" . $conjunction . "' is not allowed.");
+        }
+
+        $this->conjunction = $conjunction;
+
+        return $this;
     }
 
     /**
-     * Get the combine
+     * Get the conjunction
      *
-     * @param  string $combine
-     * @return AbstractPredicateSet
+     * @return string
      */
-    public function setCombine($combine)
+    public function getConjunction()
     {
-        $this->combine = $combine;
-        return $this;
+        return $this->conjunction;
     }
+
+    /**
+     * Render the predicate string
+     *
+     * @param  AbstractSql $sql
+     * @return string
+     */
+    abstract public function render(AbstractSql $sql);
 
 }

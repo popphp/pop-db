@@ -13,8 +13,10 @@
  */
 namespace Pop\Db\Sql\Predicate;
 
+use Pop\Db\Sql\AbstractSql;
+
 /**
- * Abstract predicate set class
+ * Between predicate class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,7 +25,7 @@ namespace Pop\Db\Sql\Predicate;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-class Between extends AbstractPredicateSet
+class Between extends AbstractPredicate
 {
 
     /**
@@ -32,11 +34,35 @@ class Between extends AbstractPredicateSet
      * Instantiate the BETWEEN predicate set object
      *
      * @param  array  $values
+     * @param  string $conjunction
      */
-    public function __construct(array $values)
+    public function __construct(array $values, $conjunction = 'AND')
     {
         $this->format = '%1 BETWEEN %2 AND %3';
-        parent::__construct($values);
+        parent::__construct($values, $conjunction);
+    }
+
+    /**
+     * Render the predicate string
+     *
+     *
+     * @param  AbstractSql $sql
+     * @throws Exception
+     * @return string
+     */
+    public function render(AbstractSql $sql)
+    {
+        if (count($this->values) != 3) {
+            throw new Exception('Error: The values array must have 3 values in it.');
+        }
+
+        [$column, $value1, $value2] = $this->values;
+
+        $predicate = str_replace(
+            ['%1', '%2', '%3'], [$sql->quoteId($column), $sql->quote($value1), $sql->quote($value2)], $this->format
+        );
+
+        return '(' . $predicate . ')';
     }
 
 }

@@ -23,7 +23,7 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-class Where extends Predicate
+class Where extends PredicateSet
 {
 
 }

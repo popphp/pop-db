@@ -13,8 +13,10 @@
  */
 namespace Pop\Db\Sql\Predicate;
 
+use Pop\Db\Sql\AbstractSql;
+
 /**
- * Abstract predicate set class
+ * Not In predicate class
  *
  * @category   Pop
  * @package    Pop\Db
@@ -23,7 +25,7 @@ namespace Pop\Db\Sql\Predicate;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-class NotIn extends AbstractPredicateSet
+class NotIn extends AbstractPredicate
 {
 
     /**
@@ -32,11 +34,36 @@ class NotIn extends AbstractPredicateSet
      * Instantiate the NOT IN predicate set object
      *
      * @param  array  $values
+     * @param  string $conjunction
      */
-    public function __construct(array $values)
+    public function __construct(array $values, $conjunction = 'AND')
     {
         $this->format = '%1 NOT IN (%2)';
-        parent::__construct($values);
+        parent::__construct($values, $conjunction);
+    }
+
+    /**
+     * Render the predicate string
+     *
+     *
+     * @param  AbstractSql $sql
+     * @throws Exception
+     * @return string
+     */
+    public function render(AbstractSql $sql)
+    {
+        if (count($this->values) != 2) {
+            throw new Exception('Error: The values array must have 2 values in it.');
+        }
+        if (!is_array($this->values[1])) {
+            throw new Exception('Error: The 2nd value must be an array of values.');
+        }
+
+        [$column, $values] = $this->values;
+
+        $values = array_map([$sql, 'quote'], $values);
+
+        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), implode(', ', $values)], $this->format) . ')';
     }
 
 }

@@ -23,7 +23,7 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-class Having extends Predicate
+class Having extends PredicateSet
 {
 
 }
