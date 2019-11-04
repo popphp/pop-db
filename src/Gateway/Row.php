@@ -292,6 +292,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
            ->bindParams($params)
            ->execute();
 
+        // Set the new ID created by the insert
         if ((count($this->primaryKeys) == 1) && !isset($this->columns[$this->primaryKeys[0]])) {
             $this->columns[$this->primaryKeys[0]] = $db->getLastId();
             $this->primaryValues[] = $this->columns[$this->primaryKeys[0]];
@@ -450,6 +451,16 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     public function getIterator()
     {
         return new \ArrayIterator($this->columns);
+    }
+
+    /**
+     * Method to convert row gateway to an array
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return $this->columns;
     }
 
     /**

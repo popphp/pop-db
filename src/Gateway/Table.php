@@ -66,24 +66,34 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     }
 
     /**
+     * Method to convert table gateway to an array (alias method)
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return $this->rows;
+    }
+
+    /**
      * Select rows from the table
      *
      * @param  array $columns
-     * @param  mixed $where
-     * @param  array $parameters
      * @param  array $options
      * @return array
      */
-    public function select(array $columns = null, $where = null, array $parameters = null, array $options = null)
+    public function select(array $columns = null, array $options = null)
     {
         $this->rows = [];
 
+        $db  = Db::getDb($this->table);
+        $sql = $db->createSql();
+/*
         if (null === $columns) {
             $columns = [$this->table . '.*'];
         }
 
-        $db  = Db::getDb($this->table);
-        $sql = $db->createSql();
+
 
         $sql->select($columns)->from($this->table);
 
@@ -128,7 +138,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         if ((null !== $parameters) && (count($parameters) > 0)) {
             $db->bindParams($parameters);
         }
-
+*/
         $db->execute();
 
         $this->rows = $db->fetchAll();
@@ -137,7 +147,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     }
 
     /**
-     * Insert values into the table
+     * Insert a row of values into the table
      *
      * @param  array $columns
      * @return Table
@@ -170,6 +180,42 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         $db->prepare((string)$sql)
            ->bindParams($params)
            ->execute();
+
+        return $this;
+    }
+
+    /**
+     * Insert rows of values into the table
+     *
+     * @param  array $columns
+     * @param  array $values
+     * @return Table
+     */
+    public function insertRows(array $columns, array $values)
+    {
+        $this->rows = [];
+
+        $db           = Db::getDb($this->table);
+        $sql          = $db->createSql();
+        $placeholders = [];
+
+        foreach ($columns as $i => $column) {
+            $placeholder = $sql->getPlaceholder();
+
+            if ($placeholder == ':') {
+                $placeholder .= $column;
+            } else if ($placeholder == '$') {
+                $placeholder .= ($i + 1);
+            }
+            $placeholders[$column] = $placeholder;
+        }
+
+        $sql->insert($this->table)->values($placeholders);
+        $db->prepare((string)$sql);
+
+        foreach ($values as $rowValues) {
+            $db->bindParams($rowValues)->execute();
+        }
 
         return $this;
     }
