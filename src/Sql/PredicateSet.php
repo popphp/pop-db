@@ -33,13 +33,13 @@ class PredicateSet
     protected $sql = null;
 
     /**
-     * Predicates array
+     * Predicates
      * @var array
      */
     protected $predicates = [];
 
     /**
-     * Nested predicate sets array
+     * Nested predicate sets
      * @var array
      */
     protected $predicateSets = [];
@@ -75,6 +75,43 @@ class PredicateSet
             $this->setConjunction($conjunction);
         }
     }
+
+    /**
+     * Add a predicate from a string expression
+     *
+     * @param  string $expression
+     * @return PredicateSet
+     */
+    public function add($expression)
+    {
+        ;
+
+        return $this;
+    }
+
+    /**
+     * Add AND predicate
+     *
+     * @param  Predicate\AbstractPredicate $predicate
+     * @return PredicateSet
+     */
+    //public function and(Predicate\AbstractPredicate $predicate)
+    //{
+    //    $predicate->setConjunction('AND');
+    //    return $this->addPredicate($predicate);
+    //}
+
+    /**
+     * Add OR predicate
+     *
+     * @param  Predicate\AbstractPredicate $predicate
+     * @return PredicateSet
+     */
+    //public function or(Predicate\AbstractPredicate $predicate)
+    //{
+    //    $predicate->setConjunction('OR');
+    //    return $this->addPredicate($predicate);
+    //}
 
     /**
      * Add predicate
