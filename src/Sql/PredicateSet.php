@@ -433,6 +433,39 @@ class PredicateSet
     }
 
     /**
+     * Add a nested predicate set
+     *
+     * @param  string $conjunction
+     * @return PredicateSet
+     */
+    public function nest($conjunction = 'AND')
+    {
+        $predicateSet = new self($this->sql, null, $conjunction);;
+        $this->addPredicateSet($predicateSet);
+        return $predicateSet;
+    }
+
+    /**
+     * Add a nested predicate set with the AND conjunction
+     *
+     * @return PredicateSet
+     */
+    public function andNest()
+    {
+        return $this->nest('AND');
+    }
+
+    /**
+     * Add a nested predicate set with the OR conjunction
+     *
+     * @return PredicateSet
+     */
+    public function orNest()
+    {
+        return $this->nest('OR');
+    }
+
+    /**
      * Get the conjunction
      *
      * @param  string $conjunction
@@ -480,7 +513,13 @@ class PredicateSet
             $predicateString .= ' ' . $predicateSet->getConjunction() . ' ' . $predicateSet->render();
         }
 
-        return '(' . $predicateString . ')';
+        if (((count($this->predicateSets) > 0) && (count($this->predicates) > 0)) ||
+            (count($this->predicateSets) > 1) || (count($this->predicates) > 1)) {
+            return '(' . $predicateString . ')';
+        } else {
+            return $predicateString;
+        }
+
     }
 
     /**
