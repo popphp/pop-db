@@ -233,9 +233,9 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             }
 
             if (null === $this->primaryValues[$i]) {
-                $sql->select()->where->isNull($primaryKey);
+                $sql->select()->where()->isNull($primaryKey);
             } else {
-                $sql->select()->where->equalTo($primaryKey, $placeholder);
+                $sql->select()->where()->equalTo($primaryKey, $placeholder);
                 $params[$primaryKey] = $this->primaryValues[$i];
             }
         }
@@ -351,9 +351,9 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
 
             if (array_key_exists($key, $this->primaryValues)) {
                 if (null === $this->primaryValues[$key]) {
-                    $sql->update()->where->isNull($primaryKey);
+                    $sql->update()->where()->isNull($primaryKey);
                 } else {
-                    $sql->update()->where->equalTo($primaryKey, $placeholder);
+                    $sql->update()->where()->equalTo($primaryKey, $placeholder);
                 }
             }
 
@@ -413,9 +413,9 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
                 $placeholder .= ($i + 1);
             }
             if (null === $this->primaryValues[$i]) {
-                $sql->delete()->where->isNull($primaryKey);
+                $sql->delete()->where()->isNull($primaryKey);
             } else {
-                $sql->delete()->where->equalTo($primaryKey, $placeholder);
+                $sql->delete()->where()->equalTo($primaryKey, $placeholder);
                 $params[$primaryKey] = $this->primaryValues[$i];
             }
         }

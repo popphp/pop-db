@@ -46,7 +46,22 @@ abstract class AbstractPredicateClause extends AbstractClause
 
         if (null !== $where) {
             if (is_string($where)) {
-                $this->where->add($where);
+                if ((stripos($where, ' AND ') !== false) || (stripos($where, ' OR ') !== false)) {
+                    $expressions = array_map('trim', preg_split(
+                        '/(AND|OR)/', $where, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
+                    ));
+                    foreach ($expressions as $i => $expression) {
+                        if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
+                            $this->where->and($expression);
+                        } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
+                            $this->where->or($expression);
+                        } else if (($expression != 'AND') && ($expression != 'OR')) {
+                            $this->where->add($expression);
+                        }
+                    }
+                } else {
+                    $this->where->add($where);
+                }
             } else if (is_array($where)) {
                 $this->where->addExpressions($where);
             }
