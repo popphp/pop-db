@@ -51,6 +51,12 @@ class PredicateSet
     protected $conjunction = null;
 
     /**
+     * Next conjunction
+     * @var string
+     */
+    protected $nextConjunction = 'AND';
+
+    /**
      * Constructor
      *
      * Instantiate the predicate set object
@@ -84,9 +90,253 @@ class PredicateSet
      */
     public function add($expression)
     {
-        ;
+        ['column' => $column, 'operator' => $operator, 'value' => $value] = Parser\Expression::parse($expression);
+
+        switch ($operator) {
+            case '=':
+                $this->equalTo($column, $value);
+                break;
+            case '!=':
+                $this->notEqualTo($column, $value);
+                break;
+            case '>':
+                $this->greaterThan($column, $value);
+                break;
+            case '>=':
+                $this->greaterThanOrEqualTo($column, $value);
+                break;
+            case '<=':
+                $this->lessThanOrEqualTo($column, $value);
+                break;
+            case '<':
+                $this->lessThan($column, $value);
+                break;
+            case 'LIKE':
+                $this->like($column, $value);
+                break;
+            case 'NOT LIKE':
+                $this->notLike($column, $value);
+                break;
+            case 'BETWEEN':
+                $this->between($column, $value[0], $value[1]);
+                break;
+            case 'NOT BETWEEN':
+                $this->notBetween($column, $value[0], $value[1]);
+                break;
+            case 'IN':
+                $this->in($column, $value);
+                break;
+            case 'NOT IN':
+                $this->notIn($column, $value);
+                break;
+            case 'IS NULL':
+                $this->isNull($column);
+                break;
+            case 'IS NOT NULL':
+                $this->isNotNull($column);
+                break;
+
+        }
 
         return $this;
+    }
+
+    /**
+     * Add an AND predicate from a string expression
+     *
+     * @param  string $expression
+     * @return PredicateSet
+     */
+    public function and($expression = null)
+    {
+        $this->nextConjunction = 'AND';
+        if (null !== $expression) {
+            $this->add($expression);
+        }
+        return $this;
+    }
+
+    /**
+     * Add an OR predicate from a string expression
+     *
+     * @param  string $expression
+     * @return PredicateSet
+     */
+    public function or($expression = null)
+    {
+        $this->nextConjunction = 'OR';
+        if (null !== $expression) {
+            $this->add($expression);
+        }
+        return $this;
+    }
+
+    /**
+     * Predicate for =
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function equalTo($column, $value)
+    {
+        return $this->addPredicate(new Predicate\EqualTo([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for !=
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function notEqualTo($column, $value)
+    {
+        return $this->addPredicate(new Predicate\NotEqualTo([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for >
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function greaterThan($column, $value)
+    {
+        return $this->addPredicate(new Predicate\GreaterThan([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for >=
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function greaterThanOrEqualTo($column, $value)
+    {
+        return $this->addPredicate(new Predicate\GreaterThanOrEqualTo([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for <
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function lessThan($column, $value)
+    {
+        return $this->addPredicate(new Predicate\LessThan([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for <=
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function lessThanOrEqualTo($column, $value)
+    {
+        return $this->addPredicate(new Predicate\LessThanOrEqualTo([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for LIKE
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function like($column, $value)
+    {
+        return $this->addPredicate(new Predicate\Like([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for NOT LIKE
+     *
+     * @param  string $column
+     * @param  string $value
+     * @return PredicateSet
+     */
+    public function notLike($column, $value)
+    {
+        return $this->addPredicate(new Predicate\NotLike([$column, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for BETWEEN
+     *
+     * @param  string $column
+     * @param  string $value1
+     * @param  string $value2
+     * @return PredicateSet
+     */
+    public function between($column, $value1, $value2)
+    {
+        return $this->addPredicate(new Predicate\Between([$column, $value1, $value2], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for NOT BETWEEN
+     *
+     * @param  string $column
+     * @param  string $value1
+     * @param  string $value2
+     * @return PredicateSet
+     */
+    public function notBetween($column, $value1, $value2)
+    {
+        return $this->addPredicate(new Predicate\NotBetween([$column, $value1, $value2], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for IN
+     *
+     * @param  string $column
+     * @param  mixed  $values
+     * @return PredicateSet
+     */
+    public function in($column, $values)
+    {
+        return $this->addPredicate(new Predicate\In([$column, $values], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for NOT IN
+     *
+     * @param  string $column
+     * @param  mixed  $values
+     * @return PredicateSet
+     */
+    public function notIn($column, $values)
+    {
+        return $this->addPredicate(new Predicate\NotIn([$column, $values], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for IS NULL
+     *
+     * @param  string $column
+     * @return PredicateSet
+     */
+    public function isNull($column)
+    {
+        return $this->addPredicate(new Predicate\IsNull($column, $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for IS NOT NULL
+     *
+     * @param  string $column
+     * @return PredicateSet
+     */
+    public function isNotNull($column)
+    {
+        return $this->addPredicate(new Predicate\IsNotNull($column, $this->nextConjunction));
     }
 
     /**
@@ -95,11 +345,11 @@ class PredicateSet
      * @param  Predicate\AbstractPredicate $predicate
      * @return PredicateSet
      */
-    //public function and(Predicate\AbstractPredicate $predicate)
-    //{
-    //    $predicate->setConjunction('AND');
-    //    return $this->addPredicate($predicate);
-    //}
+    public function andPredicate(Predicate\AbstractPredicate $predicate)
+    {
+        $predicate->setConjunction('AND');
+        return $this->addPredicate($predicate);
+    }
 
     /**
      * Add OR predicate
@@ -107,11 +357,11 @@ class PredicateSet
      * @param  Predicate\AbstractPredicate $predicate
      * @return PredicateSet
      */
-    //public function or(Predicate\AbstractPredicate $predicate)
-    //{
-    //    $predicate->setConjunction('OR');
-    //    return $this->addPredicate($predicate);
-    //}
+    public function orPredicate(Predicate\AbstractPredicate $predicate)
+    {
+        $predicate->setConjunction('OR');
+        return $this->addPredicate($predicate);
+    }
 
     /**
      * Add predicate

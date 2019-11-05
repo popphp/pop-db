@@ -52,7 +52,7 @@ class GreaterThanOrEqualTo extends AbstractPredicate
      */
     public function render(AbstractSql $sql)
     {
-        if (count($this->value) != 2) {
+        if (count($this->values) != 2) {
             throw new Exception('Error: The values array must have 2 values in it.');
         }
 
