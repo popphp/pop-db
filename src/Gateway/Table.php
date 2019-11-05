@@ -79,26 +79,26 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      * Select rows from the table
      *
      * @param  array $columns
+     * @param  mixed $where
+     * @param  array $parameters
      * @param  array $options
      * @return array
      */
-    public function select(array $columns = null, array $options = null)
+    public function select(array $columns = null, $where = null, array $parameters = null, array $options = null)
     {
         $this->rows = [];
 
         $db  = Db::getDb($this->table);
         $sql = $db->createSql();
-/*
+
         if (null === $columns) {
             $columns = [$this->table . '.*'];
         }
 
-
-
         $sql->select($columns)->from($this->table);
 
         if (null !== $where) {
-            $sql->select()->where->add($where);
+            $sql->select()->where($where);
         }
 
         if (isset($options['limit'])) {
@@ -135,10 +135,11 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         }
 
         $db->prepare((string)$sql);
+
         if ((null !== $parameters) && (count($parameters) > 0)) {
             $db->bindParams($parameters);
         }
-*/
+
         $db->execute();
 
         $this->rows = $db->fetchAll();
@@ -187,17 +188,16 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     /**
      * Insert rows of values into the table
      *
-     * @param  array $columns
      * @param  array $values
      * @return Table
      */
-    public function insertRows(array $columns, array $values)
+    public function insertRows($values)
     {
-        $this->rows = [];
-
+        $this->rows   = [];
         $db           = Db::getDb($this->table);
         $sql          = $db->createSql();
         $placeholders = [];
+        $columns      = array_keys($values[0]);
 
         foreach ($columns as $i => $column) {
             $placeholder = $sql->getPlaceholder();
@@ -254,7 +254,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         $sql->update($this->table)->values($values);
 
         if (null !== $where) {
-            $sql->update()->where->add($where);
+            $sql->update()->where($where);
         }
 
         $db->prepare((string)$sql)
@@ -281,7 +281,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         $sql->delete($this->table);
 
         if (null !== $where) {
-            $sql->delete()->where->add($where);
+            $sql->delete()->where($where);
         }
 
         $db->prepare((string)$sql);

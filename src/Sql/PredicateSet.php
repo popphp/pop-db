@@ -142,6 +142,21 @@ class PredicateSet
     }
 
     /**
+     * Add a predicates from string expressions
+     *
+     * @param  array $expressions
+     * @return PredicateSet
+     */
+    public function addExpressions(array $expressions)
+    {
+        foreach ($expressions as $expression) {
+            $this->add($expression);
+        }
+
+        return $this;
+    }
+
+    /**
      * Add an AND predicate from a string expression
      *
      * @param  string $expression

@@ -23,7 +23,7 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-class Select extends AbstractClause
+class Select extends AbstractPredicateClause
 {
 
     /**
@@ -45,12 +45,6 @@ class Select extends AbstractClause
      * @var array
      */
     protected $joins = [];
-
-    /**
-     * WHERE predicate object
-     * @var Where
-     */
-    protected $where = null;
 
     /**
      * HAVING predicate object
@@ -265,121 +259,78 @@ class Select extends AbstractClause
     }
 
     /**
-     * Access the WHERE clause
-     *
-     * @param  mixed $where
-     * @return Select
-     */
-    public function where($where = null)
-    {
-        if (null !== $where) {
-            if ($where instanceof Where) {
-                $this->where = $where;
-            } else {
-                if (null === $this->where) {
-                    $this->where = (new Where($this))->add($where);
-                } else {
-                    $this->where->add($where);
-                }
-            }
-        }
-        if (null === $this->where) {
-            $this->where = new Where($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Access the WHERE clause with AND
-     *
-     * @param  mixed $where
-     * @return Select
-     */
-    public function andWhere($where = null)
-    {
-        if (empty($this->where)) {
-            $this->where = new Where($this);
-        }
-        if ($this->where->hasPredicates()) {
-            $this->where->getLastPredicateSet()->setCombine('AND');
-        }
-        $this->where($where);
-        return $this;
-    }
-
-    /**
-     * Access the WHERE clause with OR
-     *
-     * @param  mixed $where
-     * @return Select
-     */
-    public function orWhere($where = null)
-    {
-        if (empty($this->where)) {
-            $this->where = new Where($this);
-        }
-        if ($this->where->hasPredicates()) {
-            $this->where->getLastPredicateSet()->setCombine('OR');
-        }
-        $this->where($where);
-        return $this;
-    }
-
-    /**
      * Access the HAVING clause
      *
      * @param  mixed $having
-     * @return Select
+     * @return Having
      */
     public function having($having = null)
     {
-        if (null !== $having) {
-            if ($having instanceof Having) {
-                $this->having = $having;
-            } else {
-                if (null === $this->having) {
-                    $this->having = (new Having($this))->add($having);
-                } else {
-                    $this->having->add($having);
-                }
-            }
-        }
         if (null === $this->having) {
             $this->having = new Having($this);
         }
 
-        return $this;
+        if (null !== $having) {
+            if (null !== $having) {
+                if (is_string($having)) {
+                    $this->having->add($having);
+                } else if (is_array($having)) {
+                    $this->having->addExpressions($having);
+                }
+            }
+        }
+
+        return $this->having;
     }
 
     /**
      * Access the HAVING clause with AND
      *
      * @param  mixed $having
-     * @return Select
+     * @return Having
      */
     public function andHaving($having = null)
     {
-        if ($this->having->hasPredicates()) {
-            $this->having->getLastPredicateSet()->setCombine('AND');
+        if (null === $this->having) {
+            $this->having = new Having($this);
         }
-        $this->having($having);
-        return $this;
+
+        if (null !== $having) {
+            if (is_string($having)) {
+                $this->having->and($having);
+            } else if (is_array($having)) {
+                foreach ($having as $h) {
+                    $this->having->and($h);
+                }
+            }
+        }
+
+        return $this->having;
     }
 
     /**
      * Access the HAVING clause with OR
      *
      * @param  mixed $having
-     * @return Select
+     * @return Having
      */
     public function orHaving($having = null)
     {
-        if ($this->having->hasPredicates()) {
-            $this->having->getLastPredicateSet()->setCombine('OR');
+        if (null === $this->having) {
+            $this->having = new Having($this);
         }
-        $this->having($having);
-        return $this;
+
+        if (null !== $having) {
+            if (is_string($having)) {
+                $this->having->or($having);
+            } else if (is_array($having)) {
+                foreach ($having as $h) {
+                    $this->having->or($h);
+                }
+            }
+        }
+
+        return $this->having;
     }
 
     /**
@@ -390,26 +341,14 @@ class Select extends AbstractClause
      */
     public function groupBy($by)
     {
-        $byColumns = null;
-
         if (is_array($by)) {
-            $quotedAry = [];
-            foreach ($by as $value) {
-                $quotedAry[] = $this->quoteId(trim($value));
-            }
-            $byColumns = implode(', ', $quotedAry);
+            $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
         } else if (strpos($by, ',') !== false) {
-            $ary = explode(',' , $by);
-            $quotedAry = [];
-            foreach ($ary as $value) {
-                $quotedAry[] = $this->quoteId(trim($value));
-            }
-            $byColumns = implode(', ', $quotedAry);
+            $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
-            $byColumns = $this->quoteId(trim($by));
+            $this->groupBy = $this->quoteId(trim($by));
         }
 
-        $this->groupBy = $byColumns;
         return $this;
     }
 
@@ -423,26 +362,17 @@ class Select extends AbstractClause
     public function orderBy($by, $order = 'ASC')
     {
         $byColumns = null;
+        $order     = strtoupper($order);
 
         if (is_array($by)) {
-            $quotedAry = [];
-            foreach ($by as $value) {
-                $quotedAry[] = $this->quoteId(trim($value));
-            }
-            $byColumns = implode(', ', $quotedAry);
+            $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
         } else if (strpos($by, ',') !== false) {
-            $ary = explode(',' , $by);
-            $quotedAry = [];
-            foreach ($ary as $value) {
-                $quotedAry[] = $this->quoteId(trim($value));
-            }
-            $byColumns = implode(', ', $quotedAry);
+            $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
             $byColumns = $this->quoteId(trim($by));
         }
 
         $this->orderBy .= ((null !== $this->orderBy) ? ', ' : '') . $byColumns;
-        $order = strtoupper($order);
 
         if (strpos($order, 'RAND') !== false) {
             $this->orderBy .= ($this->isSqlite()) ? ' RANDOM()' : ' RAND()';
@@ -456,12 +386,12 @@ class Select extends AbstractClause
     /**
      * Set the LIMIT value
      *
-     * @param mixed $limit
+     * @param int $limit
      * @return Select
      */
     public function limit($limit)
     {
-        $this->limit = $limit;
+        $this->limit = (int)$limit;
         return $this;
     }
 
@@ -511,7 +441,7 @@ class Select extends AbstractClause
         if (($this->isSqlsrv()) && ((null !== $this->limit) || (null !== $this->offset))) {
             if (null === $this->orderBy) {
                 throw new Exception(
-                    'Error: You must set an order by clause to execute a limit clause on the SQL server database.'
+                    'Error: You must set an order by clause to execute a limit clause on the MS SQL Server database.'
                 );
             }
             $sql .= $this->buildSqlSrvLimitAndOffset();
@@ -557,9 +487,9 @@ class Select extends AbstractClause
         if (!$this->isSqlsrv()) {
             if (null !== $this->limit) {
                 if ((strpos($this->limit, ',') !== false) && ($this->isPgsql())) {
-                    $ary = explode(',', $this->limit);
-                    $this->offset = (int)trim($ary[0]);
-                    $this->limit = (int)trim($ary[1]);
+                    [$offset, $limit] = explode(',', $this->limit);
+                    $this->offset     = (int)trim($offset);
+                    $this->limit      = (int)trim($limit);
                 }
                 $sql .= ' LIMIT ' . $this->limit;
             }
@@ -612,7 +542,7 @@ class Select extends AbstractClause
                 return $this->having;
                 break;
             default:
-                throw new Exception('Not a valid property for this object.');
+                throw new Exception("The property '" . $name ."' is not a valid property for this select object.");
         }
     }
 

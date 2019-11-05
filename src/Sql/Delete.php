@@ -23,70 +23,8 @@ namespace Pop\Db\Sql;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    4.5.0
  */
-class Delete extends AbstractClause
+class Delete extends AbstractPredicateClause
 {
-
-    /**
-     * WHERE predicate object
-     * @var Where
-     */
-    protected $where = null;
-
-    /**
-     * Access the WHERE clause
-     *
-     * @param  mixed $where
-     * @return Delete
-     */
-    public function where($where = null)
-    {
-        if (null !== $where) {
-            if ($where instanceof Where) {
-                $this->where = $where;
-            } else {
-                if (null === $this->where) {
-                    $this->where = (new Where($this))->add($where);
-                } else {
-                    $this->where->add($where);
-                }
-            }
-        }
-        if (null === $this->where) {
-            $this->where = new Where($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Access the WHERE clause with AND
-     *
-     * @param  mixed $where
-     * @return Delete
-     */
-    public function andWhere($where = null)
-    {
-        if ($this->where->hasPredicates()) {
-            $this->where->getLastPredicateSet()->setCombine('AND');
-        }
-        $this->where($where);
-        return $this;
-    }
-
-    /**
-     * Access the WHERE clause with OR
-     *
-     * @param  mixed $where
-     * @return Delete
-     */
-    public function orWhere($where = null)
-    {
-        if ($this->where->hasPredicates()) {
-            $this->where->getLastPredicateSet()->setCombine('OR');
-        }
-        $this->where($where);
-        return $this;
-    }
 
     /**
      * Render the DELETE statement
