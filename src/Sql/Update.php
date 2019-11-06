@@ -86,7 +86,7 @@ class Update extends AbstractPredicateClause
 
         // Build any WHERE clauses
         if (null !== $this->where) {
-            $sql .= ' WHERE ' . $this->where->render($paramCount);
+            $sql .= ' WHERE ' . $this->where;
         }
 
         return $sql;

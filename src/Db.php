@@ -174,7 +174,8 @@ class Db
             }
 
             // If Sqlite
-            if (($adapter == 'Sqlite') || (($adapter == 'Pdo') && isset($options['type'])) && (strtolower($options['type']) == 'sqlite')) {
+            if (($adapter == 'Sqlite') ||
+                (($adapter == 'Pdo') && isset($options['type'])) && (strtolower($options['type']) == 'sqlite')) {
                 if (!file_exists($options['database'])) {
                     touch($options['database']);
                     chmod($options['database'], 0777);
@@ -215,6 +216,7 @@ class Db
             if (stripos($sqlString, ';INSERT INTO') !== false) {
                 $sqlString = str_ireplace(';INSERT INTO', ";" . $newLine . "INSERT INTO", $sqlString);
             }
+
             $statements = explode($newLine, $sqlString);
 
             foreach ($statements as $statement) {
@@ -222,7 +224,6 @@ class Db
                     if (isset($options['prefix'])) {
                         $statement = str_replace('[{prefix}]', $options['prefix'], trim($statement));
                     }
-                    //echo $statement . PHP_EOL . PHP_EOL;
                     $db->query($statement);
                 }
             }
