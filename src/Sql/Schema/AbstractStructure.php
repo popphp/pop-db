@@ -280,7 +280,6 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $column
      * @param  string $name
      * @param  string $type
-     * @throws Exception
      * @return AbstractStructure
      */
     public function index($column, $name = null, $type = 'index')
@@ -400,7 +399,8 @@ abstract class AbstractStructure extends AbstractTable
     public function onDelete($action = null)
     {
         if (null !== $this->currentConstraint) {
-            $this->constraints[$this->currentConstraint]['delete'] = (strtolower($action) == 'cascade') ? 'CASCADE' : 'SET NULL';
+            $this->constraints[$this->currentConstraint]['delete'] = (strtolower($action) == 'cascade') ?
+                'CASCADE' : 'SET NULL';
         }
 
         return $this;

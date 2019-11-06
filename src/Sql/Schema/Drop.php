@@ -68,7 +68,7 @@ class Drop extends AbstractTable
     public function render()
     {
         return 'DROP TABLE ' . ((($this->ifExists) && ($this->dbType != self::SQLSRV)) ? 'IF EXISTS ' : null)
-        . $this->quoteId($this->table) . ((($this->isPgsql()) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
+            . $this->quoteId($this->table) . ((($this->isPgsql()) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
     }
 
     /**

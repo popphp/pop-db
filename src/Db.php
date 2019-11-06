@@ -141,7 +141,7 @@ class Db
 
         try {
             if (!class_exists($class)) {
-                $result = 'Error: The database adapter ' . $class . ' does not exist.';
+                $result = "Error: The database adapter '" . $class . "' does not exist.";
             } else {
                 $db = new $class($options);
             }
@@ -154,16 +154,16 @@ class Db
     }
 
     /**
-     * Install a database schema
+     * Execute SQL
      *
      * @param  string $sql
-     * @param  mixed $adapter
+     * @param  mixed  $adapter
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
      * @return void
      */
-    public static function install($sql, $adapter, array $options = [], $prefix = '\Pop\Db\Adapter\\')
+    public static function executeSql($sql, $adapter, array $options = [], $prefix = '\Pop\Db\Adapter\\')
     {
         if (is_string($adapter)) {
             $adapter = ucfirst(strtolower($adapter));
@@ -190,7 +190,7 @@ class Db
             $db = $adapter;
         }
 
-        $lines = (file_exists($sql)) ? file($sql) : explode("\n", $sql);
+        $lines = explode("\n", $sql);
 
         // Remove comments, execute queries
         if (count($lines) > 0) {
@@ -228,6 +228,25 @@ class Db
                 }
             }
         }
+    }
+
+    /**
+     * Execute SQL
+     *
+     * @param  string $sqlFile
+     * @param  mixed  $adapter
+     * @param  array  $options
+     * @param  string $prefix
+     * @throws Exception
+     * @return void
+     */
+    public static function executeSqlFile($sqlFile, $adapter, array $options = [], $prefix = '\Pop\Db\Adapter\\')
+    {
+        if (!file_exists($sqlFile)) {
+            throw new Exception("Error: The SQL file '" . $sqlFile . "' does not exist.");
+        }
+
+        self::executeSql(file_get_contents($sqlFile), $adapter, $options, $prefix);
     }
 
     /**
