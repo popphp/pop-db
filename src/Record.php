@@ -37,18 +37,60 @@ class Record extends Record\AbstractRecord
      */
     public function __construct()
     {
+        $args    = func_get_args();
+        $columns = null;
+        $table   = null;
+        $db      = null;
+        $class   = get_class($this);
 
+        foreach ($args as $arg) {
+            if (is_array($arg) || ($arg instanceof \ArrayAccess) || ($arg instanceof \ArrayObject)) {
+                $columns = $arg;
+            } else if ($arg instanceof Adapter\AbstractAdapter) {
+                $db = $arg;
+            } else if (is_string($arg)) {
+                $table = $arg;
+            }
+        }
+
+        if (null !== $table) {
+            $this->setTable($table);
+        } else {
+            $this->setTableFromClassName($class);
+        }
+
+        if (null !== $db) {
+            Db::setDb($db, $class, null, ($class === __CLASS__));
+        }
+
+        if (!Db::hasDb($class)) {
+            throw new Exception('Error: A database connection has not been set.');
+        } else if (!Db::hasClassToTable($class)) {
+            Db::addClassToTable($class, $this->getFullTable());
+        }
+
+        $this->tableGateway = new Gateway\Table($this->getFullTable());
+        $this->rowGateway   = new Gateway\Row($this->getFullTable(), $this->primaryKeys);
+
+        if (null !== $columns) {
+            $this->isNew = true;
+            $this->setColumns($columns);
+        }
     }
+
+/*
+ * Static methods
+ */
 
     /**
      * Find by ID static method
      *
      * @param  mixed  $id
-     * @return static|Collection
+     * @return static
      */
     public static function findById($id)
     {
-
+        return (new static())->getById($id);
     }
 
     /**
@@ -93,7 +135,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array  $columns
      * @param  array  $options
-     * @return Record\Collection
+     * @return static|Collection
      */
     public static function findBy(array $columns = null, array $options = null)
     {
@@ -105,7 +147,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array  $columns
      * @param  array  $options
-     * @return Record\Collection|Record
+     * @return static|Collection
      */
     public static function findByOrCreate(array $columns = null, array $options = null)
     {
@@ -116,7 +158,7 @@ class Record extends Record\AbstractRecord
      * Find all static method
      *
      * @param  array  $options
-     * @return Record\Collection
+     * @return static|Collection
      */
     public static function findAll(array $options = null)
     {
@@ -128,7 +170,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed  $sql
      * @param  array  $params
-     * @return Record\Collection
+     * @return static|Collection
      */
     public static function execute($sql, array $params)
     {
@@ -139,7 +181,7 @@ class Record extends Record\AbstractRecord
      * Static method to execute a custom SQL query.
      *
      * @param  mixed  $sql
-     * @return Record\Collection
+     * @return static|Collection
      */
     public static function query($sql)
     {
@@ -165,6 +207,80 @@ class Record extends Record\AbstractRecord
     public static function getTableInfo()
     {
 
+    }
+
+/*
+ * Instance methods
+ */
+
+    /**
+     * Get by ID method
+     *
+     * @param  mixed  $id
+     * @return static
+     */
+    public function getById($id)
+    {
+        $this->setColumns($this->getRowGateway()->find($id));
+        return $this;
+    }
+
+    /**
+     * Get one method
+     *
+     * @param  array  $columns
+     * @param  array  $options
+     * @return static
+     */
+    public function getOne(array $columns = null, array $options = null)
+    {
+        if (null === $options) {
+            $options = ['limit' => 1];
+        } else {
+            $options['limit'] = 1;
+        }
+
+        $expressions = null;
+        $params      = null;
+        $select      = $options['select'] ?? null;
+
+        if (null !== $columns) {
+            $db            = Db::getDb($this->getFullTable());
+            $sql           = $db->createSql();
+            ['expressions' => $expressions, 'params' => $params] =
+                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+        }
+
+        $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
+
+        if (isset($rows[0])) {
+            $this->setColumns($rows[0]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get by method
+     *
+     * @param  array  $columns
+     * @param  array  $options
+     * @return Collection
+     */
+    public function getBy(array $columns = null, array $options = null)
+    {
+
+    }
+
+    /**
+     * Get all method
+     *
+     * @param  array  $options
+     * @return Collection
+     */
+    public function getAll(array $options = null)
+    {
+        return $this->getBy(null, $options);
     }
 
     /**
@@ -273,4 +389,5 @@ class Record extends Record\AbstractRecord
             }
         }
     }
+
 }

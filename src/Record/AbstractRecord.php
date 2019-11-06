@@ -60,6 +60,12 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected $tableGateway = null;
 
     /**
+     * Is new record flag
+     * @var boolean
+     */
+    protected $isNew = false;
+
+    /**
      * Set the table
      *
      * @param  string $table
@@ -279,17 +285,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function __get($name)
     {
-        $result = null;
-
-        if (isset($this->relationships[$name])) {
-            $result = $this->relationships[$name];
-        } else if (isset($this->rowGateway[$name])) {
-            $result = $this->rowGateway[$name];
-        } else if (method_exists($this, $name)) {
-            $result = $this->{$name}();
-        }
-
-        return $result;
+        return (isset($this->rowGateway[$name])) ? $this->rowGateway[$name] : null;
     }
 
     /**
@@ -300,15 +296,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function __isset($name)
     {
-        if (isset($this->relationships[$name])) {
-            return true;
-        } else if (isset($this->rowGateway[$name])) {
-            return true;
-        } else if (method_exists($this, $name)) {
-            return true;
-        } else {
-            return false;
-        }
+        return isset($this->rowGateway[$name]);
     }
 
     /**

@@ -169,6 +169,147 @@ class Expression
     }
 
     /**
+     * Method to parse the shorthand columns to create expressions and their parameters
+     *
+     * @param  array  $columns
+     * @param  string $placeholder
+     * @return array
+     */
+    public static function parseShorthand($columns, $placeholder = null)
+    {
+        $expressions  = [];
+        $params = [];
+        $i      = 1;
+
+        foreach ($columns as $column => $value) {
+            ['column' => $parsedColumn, 'operator' => $operator] = Operator::parse($column);
+
+            if ($placeholder == ':') {
+                $pHolder = $placeholder . $parsedColumn;
+            } else if ($placeholder == '$') {
+                $pHolder = $placeholder . $i;
+            } else {
+                $pHolder = $placeholder;
+            }
+
+            // IS NULL/IS NOT NULL
+            if (null === $value) {
+                if ($placeholder == ':') {
+                    $expressions[$parsedColumn] = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
+                } else {
+                    $expressions[] = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
+                }
+                if ($placeholder == ':') {
+                    $params[$parsedColumn] = $value;
+                } else {
+                    $params[] = $value;
+                }
+                $i++;
+            // IN/NOT IN
+            } else if (is_array($value)) {
+                $p = [];
+                if ($placeholder == ':') {
+                    $pHolders = [];
+                    foreach ($value as $j => $val) {
+                        $ph         = $pHolder . ($j + 1);
+                        $pHolders[] = $ph;
+                        $p[]        = $val;
+                    }
+                } else if ($placeholder == '$') {
+                    $pHolders = [];
+                    foreach ($value as $val) {
+                        $pHolders[] = $placeholder . $i++;
+                        $p[]        = $val;
+                    }
+                } else {
+                    $pHolders = array_fill(0, count($value), $pHolder);
+                    $p        = $value;
+                    $i++;
+                }
+                if (null !== $placeholder) {
+                    if ($placeholder == ':') {
+                        $expressions[$parsedColumn] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
+                            implode(', ', $pHolders) . ')';
+                    } else {
+                        $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
+                            implode(', ', $pHolders) . ')';
+                    }
+                } else {
+                    $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
+                        implode(', ', array_map('Pop\Db\Sql\Parser\Expression::quote', $value)) . ')';
+                }
+                if ($placeholder == ':') {
+                    $params[$parsedColumn] = $p;
+                } else {
+                    $params[] = $p;
+                }
+            // BETWEEN/NOT BETWEEN
+            } else if (is_string($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
+                (strpos($value, ',') !== false)) {
+                $values = substr($value, (strpos($value, '(') + 1));
+                $values = substr($values, 0, strpos($values, ')'));
+                $p      = [];
+
+                [$value1, $value2] = array_map('trim', explode(',', $values));
+
+                if ($placeholder == ':') {
+                    $pHolder2 = $pHolder . 2;
+                    $pHolder .= 1;
+                    $p[substr($pHolder, 1)]  = $value1;
+                    $p[substr($pHolder2, 1)] = $value2;
+                } else if ($placeholder == '$') {
+                    $pHolder2 = $placeholder . ++$i;
+                    $p        = $values;
+                } else {
+                    $pHolder2 = $pHolder;
+                    $p        = $values;
+                }
+                $p = substr($value, (strpos($value, '(') + 1));
+                $p = substr($p, 0, strpos($p, ')'));
+                $p = array_map('trim', explode(',', $p));
+
+                if (null !== $placeholder) {
+                    if ($placeholder == ':') {
+                        $expressions[$parsedColumn] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
+                            'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
+                    } else {
+                        $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
+                            'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
+                    }
+                } else {
+                    $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
+                        'BETWEEN ' . self::quote($value1) . ' AND ' . self::quote($value2);
+                }
+                if ($placeholder == ':') {
+                    $params[$parsedColumn] = $p;
+                } else {
+                    $params[] = $p;
+                }
+                $i++;
+            // LIKE/NOT LIKE or Standard Operators
+            } else  {
+                if (null !== $placeholder) {
+                    if ($placeholder == ':') {
+                        $expressions[$parsedColumn] = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
+                    } else {
+                        $expressions[] = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
+                    }
+                } else {
+                    $expressions[] = $parsedColumn . ' ' . $operator . ' ' . self::quote($value);
+                }
+                if ($placeholder == ':') {
+                    $params[$parsedColumn] = $value;
+                } else {
+                    $params[] = $value;
+                }
+                $i++;
+            }
+        }
+
+        return ['expressions' => $expressions, 'params' => $params];
+    }
+
+    /**
      * Strip ID quotes
      *
      * @param  string $identifier
@@ -200,6 +341,24 @@ class Expression
             $value = substr($value, 0, -1);
         }
 
+        return $value;
+    }
+
+
+
+    /**
+     * Quote the value (if it is not a numeric value)
+     *
+     * @param  string $value
+     * @return string
+     */
+    public static function quote($value)
+    {
+        if (($value == '') ||
+            (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+                !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
+            $value = "'" . $value . "'";
+        }
         return $value;
     }
 
