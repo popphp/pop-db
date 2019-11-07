@@ -105,7 +105,9 @@ class HasOne extends AbstractRelationship
         $rows = $db->fetchAll();
 
         foreach ($rows as $row) {
-            $results[$row[$this->foreignKey]] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
+            $record = new $table();
+            $record->setColumns($row);
+            $results[$row[$this->foreignKey]] = $record;
         }
 
         return $results;

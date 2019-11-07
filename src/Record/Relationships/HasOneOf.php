@@ -103,7 +103,9 @@ class HasOneOf extends AbstractRelationship
         $rows = $db->fetchAll();
 
         foreach ($rows as $row) {
-            $results[$row[$keys]] = new \ArrayObject($row, \ArrayObject::ARRAY_AS_PROPS);
+            $record = new $table();
+            $record->setColumns($row);
+            $results[$row[$keys]] = $record;
         }
 
         return $results;
