@@ -83,6 +83,95 @@ class Record extends Record\AbstractRecord
  */
 
     /**
+     * Check for a DB adapter
+     *
+     * @return boolean
+     */
+    public static function hasDb()
+    {
+        return Db::hasDb(get_called_class());
+    }
+
+    /**
+     * Set DB adapter
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @param  string                  $prefix
+     * @param  boolean                 $isDefault
+     * @return void
+     */
+    public static function setDb(Adapter\AbstractAdapter $db, $prefix = null, $isDefault = false)
+    {
+        $class = get_called_class();
+        if ($class == 'Pop\Db\Record') {
+            Db::setDefaultDb($db);
+        } else {
+            Db::setDb($db, $class, $prefix, $isDefault);
+        }
+    }
+
+    /**
+     * Set DB adapter
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @return void
+     */
+    public static function setDefaultDb(Adapter\AbstractAdapter $db)
+    {
+        Db::setDb($db, null, null, true);
+    }
+
+    /**
+     * Get DB adapter
+     *
+     * @return Adapter\AbstractAdapter
+     */
+    public static function getDb()
+    {
+        return Db::getDb(get_called_class());
+    }
+
+    /**
+     * Get DB adapter (alias)
+     *
+     * @return Adapter\AbstractAdapter
+     */
+    public static function db()
+    {
+        return Db::db(get_called_class());
+    }
+
+    /**
+     * Get SQL builder
+     *
+     * @return Sql
+     */
+    public static function getSql()
+    {
+        return Db::db(get_called_class())->createSql();
+    }
+
+    /**
+     * Get SQL builder (alias)
+     *
+     * @return Sql
+     */
+    public static function sql()
+    {
+        return Db::db(get_called_class())->createSql();
+    }
+
+    /**
+     * Get table name
+     *
+     * @return string
+     */
+    public static function table()
+    {
+        return (new static())->getFullTable();
+    }
+
+    /**
      * Find by ID static method
      *
      * @param  mixed  $id
@@ -102,7 +191,7 @@ class Record extends Record\AbstractRecord
      */
     public static function findOne(array $columns = null, array $options = null)
     {
-
+        return (new static())->getOne($columns, $options);
     }
 
     /**
@@ -114,7 +203,15 @@ class Record extends Record\AbstractRecord
      */
     public static function findOneOrCreate(array $columns = null, array $options = null)
     {
+        $result = (new static())->getOne($columns, $options);
 
+        if (empty($result->toArray())) {
+            $newRecord = new static($columns);
+            $newRecord->save();
+            return $newRecord;
+        } else {
+            return $result;
+        }
     }
 
     /**
@@ -127,65 +224,129 @@ class Record extends Record\AbstractRecord
      */
     public static function findLatest($by = null, array $columns = null, array $options = null)
     {
+        $record = new static();
 
+        if ((null === $by) && (count($record->getPrimaryKeys()) == 1)) {
+            $by = $record->getPrimaryKeys()[0];
+        }
+
+        if (null !== $by) {
+            if (null === $options) {
+                $options = ['order' => $by . ' DESC'];
+            } else {
+                $options['order'] = $by . ' DESC';
+            }
+        }
+
+        return $record->getOne($columns, $options);
     }
 
     /**
      * Find by static method
      *
-     * @param  array  $columns
-     * @param  array  $options
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
      * @return static|Collection
      */
-    public static function findBy(array $columns = null, array $options = null)
+    public static function findBy(array $columns = null, array $options = null, $asArray = false)
     {
-
+        return (new static())->getBy($columns, $options, $asArray);
     }
 
     /**
      * Find by or create static method
      *
-     * @param  array  $columns
-     * @param  array  $options
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
      * @return static|Collection
      */
-    public static function findByOrCreate(array $columns = null, array $options = null)
+    public static function findByOrCreate(array $columns = null, array $options = null, $asArray = false)
     {
+        $result = (new static())->getBy($columns, $options, $asArray);
 
+        if ($result->count() == 0) {
+            $newRecord = new static($columns);
+            $newRecord->save();
+            return $newRecord;
+        } else {
+            return $result;
+        }
     }
 
     /**
      * Find all static method
      *
-     * @param  array  $options
+     * @param  array   $options
+     * @param  boolean $asArray
      * @return static|Collection
      */
-    public static function findAll(array $options = null)
+    public static function findAll(array $options = null, $asArray = false)
     {
-        return static::findBy(null, $options);
+        return static::findBy(null, $options, $asArray);
     }
 
     /**
      * Static method to execute a custom prepared SQL statement.
      *
-     * @param  mixed  $sql
-     * @param  array  $params
+     * @param  mixed   $sql
+     * @param  array   $params
+     * @param  boolean $asArray
      * @return static|Collection
      */
-    public static function execute($sql, array $params)
+    public static function execute($sql, array $params = [], $asArray = false)
     {
+        $record = new static();
 
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+
+        $db = Db::getDb($record->getFullTable());
+        $db->prepare($sql);
+        if (!empty($params)) {
+            $db->bindParams($params);
+        }
+        $db->execute();
+
+        $rows = [];
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $rows = $db->fetchAll();
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $record->processRow($row, $asArray);
+            }
+        }
+
+        return new Record\Collection($rows);
     }
 
     /**
      * Static method to execute a custom SQL query.
      *
-     * @param  mixed  $sql
+     * @param  mixed   $sql
+     * @param  boolean $asArray
      * @return static|Collection
      */
-    public static function query($sql)
+    public static function query($sql, $asArray = false)
     {
+        $record = new static();
 
+        if ($sql instanceof Sql) {
+            $sql = (string)$sql;
+        }
+
+        $db = Db::getDb($record->getFullTable());
+        $db->query($sql);
+
+        $rows = [];
+        if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            while (($row = $db->fetch())) {
+                $rows[] = $record->processRow($row, $asArray);
+            }
+        }
+
+        return new Record\Collection($rows);
     }
 
     /**
@@ -196,7 +357,20 @@ class Record extends Record\AbstractRecord
      */
     public static function getTotal(array $columns = null)
     {
+        $record      = new static();
+        $expressions = null;
+        $params      = null;
 
+        if (null !== $columns) {
+            $db            = Db::getDb($record->getFullTable());
+            $sql           = $db->createSql();
+            ['expressions' => $expressions, 'params' => $params] =
+                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+        }
+
+        $rows = $record->getTableGateway()->select(['total_count' => 'COUNT(1)'], $expressions, $params);
+
+        return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
 
     /**
@@ -206,7 +380,7 @@ class Record extends Record\AbstractRecord
      */
     public static function getTableInfo()
     {
-
+        return (new static())->getTableGateway()->getTableInfo();
     }
 
 /*
@@ -263,24 +437,43 @@ class Record extends Record\AbstractRecord
     /**
      * Get by method
      *
-     * @param  array  $columns
-     * @param  array  $options
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
      * @return Collection
      */
-    public function getBy(array $columns = null, array $options = null)
+    public function getBy(array $columns = null, array $options = null, $asArray = false)
     {
+        $expressions = null;
+        $params      = null;
+        $select      = $options['select'] ?? null;
 
+        if (null !== $columns) {
+            $db            = Db::getDb($this->getFullTable());
+            $sql           = $db->createSql();
+            ['expressions' => $expressions, 'params' => $params] =
+                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+        }
+
+        $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
+
+        foreach ($rows as $i => $row) {
+            $rows[$i] = $this->processRow($row, $asArray);
+        }
+
+        return new Record\Collection($rows);
     }
 
     /**
      * Get all method
      *
-     * @param  array  $options
+     * @param  array   $options
+     * @param  boolean $asArray
      * @return Collection
      */
-    public function getAll(array $options = null)
+    public function getAll(array $options = null, $asArray = false)
     {
-        return $this->getBy(null, $options);
+        return $this->getBy(null, $options, $asArray);
     }
 
     /**
@@ -292,7 +485,8 @@ class Record extends Record\AbstractRecord
      */
     public function increment($column, $amount = 1)
     {
-
+        $this->{$column} += (int)$amount;
+        $this->save();
     }
 
     /**
@@ -304,7 +498,8 @@ class Record extends Record\AbstractRecord
      */
     public function decrement($column, $amount = 1)
     {
-
+        $this->{$column} -= (int)$amount;
+        $this->save();
     }
 
     /**
@@ -315,7 +510,26 @@ class Record extends Record\AbstractRecord
      */
     public function replicate(array $replace = [])
     {
+        $fields = $this->toArray();
 
+        foreach ($this->primaryKeys as $key) {
+            if (isset($fields[$key])) {
+                unset($fields[$key]);
+            }
+        }
+
+        if (!empty($replace)) {
+            foreach ($replace as $key => $value) {
+                if (isset($fields[$key])) {
+                    $fields[$key] = $value;
+                }
+            }
+        }
+
+        $newRecord = new static($fields);
+        $newRecord->save();
+
+        return $newRecord;
     }
 
     /**
@@ -351,12 +565,31 @@ class Record extends Record\AbstractRecord
     /**
      * Save or update the record
      *
-     * @param  array  $columns
+     * @param  array $columns
      * @return void
      */
     public function save(array $columns = null)
     {
-
+        // Save or update the record
+        if (null === $columns) {
+            if ($this->isNew) {
+                $this->rowGateway->save();
+                $this->isNew = false;
+            } else {
+                $this->rowGateway->update();
+                $record = $this->getById($this->rowGateway->getPrimaryValues());
+                if (isset($record[0])) {
+                    $this->setColumns($record[0]);
+                }
+            }
+        // Else, save multiple rows
+        } else {
+            if (isset($columns[0])) {
+                $this->tableGateway->insertRows($columns);
+            } else {
+                $this->tableGateway->insert($columns);
+            }
+        }
     }
 
     /**
@@ -367,7 +600,26 @@ class Record extends Record\AbstractRecord
      */
     public function delete(array $columns = null)
     {
+        // Delete the record
+        if (null === $columns) {
+            $this->rowGateway->delete();
+        // Delete multiple rows
+        } else {
+            $expressions = null;
+            $params      = [];
 
+            if (null !== $columns) {
+                $db            = Db::getDb($this->getFullTable());
+                $sql           = $db->createSql();
+                ['expressions' => $expressions, 'params' => $params] =
+                    Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+            }
+
+            $this->tableGateway->delete($expressions, $params);
+        }
+
+        $this->setRows();
+        $this->setColumns();
     }
 
     /**

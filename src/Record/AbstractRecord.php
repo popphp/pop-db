@@ -266,6 +266,86 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     }
 
     /**
+     * Set all the table column values at once
+     *
+     * @param  mixed  $columns
+     * @throws Exception
+     * @return AbstractRecord
+     */
+    public function setColumns($columns = null)
+    {
+        if (null !== $columns) {
+            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
+                $this->rowGateway->setColumns((array)$columns);
+            } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
+                $this->rowGateway->setColumns($columns->toArray());
+            } else if ($columns instanceof AbstractRecord) {
+                $this->rowGateway->setColumns($columns->toArray());
+            } else {
+                throw new Exception('The parameter passed must be an arrayable object.');
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set all the table rows at once
+     *
+     * @param  array   $rows
+     * @param  boolean $asArray
+     * @return AbstractRecord
+     */
+    public function setRows(array $rows = null, $asArray = false)
+    {
+        $this->rowGateway->setColumns();
+        $this->tableGateway->setRows();
+
+        if (null !== $rows) {
+            $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $this->processRow($row, $asArray);
+            }
+            $this->tableGateway->setRows($rows);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Process table rows
+     *
+     * @param  array   $rows
+     * @param  boolean $asArray
+     * @return array
+     */
+    public function processRows(array $rows, $asArray = false)
+    {
+        foreach ($rows as $i => $row) {
+            $rows[$i] = $this->processRow($row, $asArray);
+        }
+        return $rows;
+    }
+
+    /**
+     * Process a table row
+     *
+     * @param  array   $row
+     * @param  boolean $asArray
+     * @return mixed
+     */
+    public function processRow(array $row, $asArray = false)
+    {
+        if ($asArray) {
+            return $row;
+        } else {
+            $record = new static();
+            $record->setColumns((array)$row);
+            return $record;
+        }
+    }
+
+    /**
      * Magic method to set the property to the value of $this->rowGateway[$name]
      *
      * @param  string $name

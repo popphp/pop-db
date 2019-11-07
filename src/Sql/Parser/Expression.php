@@ -177,32 +177,27 @@ class Expression
      */
     public static function parseShorthand($columns, $placeholder = null)
     {
-        $expressions  = [];
-        $params = [];
-        $i      = 1;
+        $expressions = [];
+        $params      = [];
+        $i           = 1;
 
         foreach ($columns as $column => $value) {
             ['column' => $parsedColumn, 'operator' => $operator] = Operator::parse($column);
 
+            $pHolder = $placeholder;
             if ($placeholder == ':') {
-                $pHolder = $placeholder . $parsedColumn;
+                $pHolder .= $parsedColumn;
             } else if ($placeholder == '$') {
-                $pHolder = $placeholder . $i;
-            } else {
-                $pHolder = $placeholder;
+                $pHolder .= $i;
             }
 
             // IS NULL/IS NOT NULL
             if (null === $value) {
+                $newExpression = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
                 if ($placeholder == ':') {
-                    $expressions[$parsedColumn] = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
+                    $expressions[$parsedColumn] = $newExpression;
                 } else {
-                    $expressions[] = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
-                }
-                if ($placeholder == ':') {
-                    $params[$parsedColumn] = $value;
-                } else {
-                    $params[] = $value;
+                    $expressions[] = $newExpression;
                 }
                 $i++;
             // IN/NOT IN
@@ -227,12 +222,12 @@ class Expression
                     $i++;
                 }
                 if (null !== $placeholder) {
+                    $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
+                        implode(', ', $pHolders) . ')';
                     if ($placeholder == ':') {
-                        $expressions[$parsedColumn] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
-                            implode(', ', $pHolders) . ')';
+                        $expressions[$parsedColumn] = $newExpression;
                     } else {
-                        $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
-                            implode(', ', $pHolders) . ')';
+                        $expressions[] = $newExpression;
                     }
                 } else {
                     $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
@@ -246,35 +241,27 @@ class Expression
             // BETWEEN/NOT BETWEEN
             } else if (is_string($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
                 (strpos($value, ',') !== false)) {
-                $values = substr($value, (strpos($value, '(') + 1));
-                $values = substr($values, 0, strpos($values, ')'));
-                $p      = [];
-
+                $values            = substr($value, (strpos($value, '(') + 1));
+                $values            = substr($values, 0, strpos($values, ')'));
                 [$value1, $value2] = array_map('trim', explode(',', $values));
+                $p                 = [$value1, $value2];
 
                 if ($placeholder == ':') {
                     $pHolder2 = $pHolder . 2;
                     $pHolder .= 1;
-                    $p[substr($pHolder, 1)]  = $value1;
-                    $p[substr($pHolder2, 1)] = $value2;
                 } else if ($placeholder == '$') {
                     $pHolder2 = $placeholder . ++$i;
-                    $p        = $values;
                 } else {
                     $pHolder2 = $pHolder;
-                    $p        = $values;
                 }
-                $p = substr($value, (strpos($value, '(') + 1));
-                $p = substr($p, 0, strpos($p, ')'));
-                $p = array_map('trim', explode(',', $p));
 
                 if (null !== $placeholder) {
+                    $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
+                        'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
                     if ($placeholder == ':') {
-                        $expressions[$parsedColumn] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
-                            'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
+                        $expressions[$parsedColumn] = $newExpression;
                     } else {
-                        $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
-                            'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
+                        $expressions[] = $newExpression;
                     }
                 } else {
                     $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
@@ -288,11 +275,18 @@ class Expression
                 $i++;
             // LIKE/NOT LIKE or Standard Operators
             } else  {
+                if ((substr($column, 0, 1) == '%') || (substr($column, 0, 2) == '-%')) {
+                    $value  = '%' . $value;
+                }
+                if ((substr($column, -1) == '%') || (substr($column, -2) == '%-')) {
+                    $value .= '%';
+                }
                 if (null !== $placeholder) {
+                    $newExpression = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
                     if ($placeholder == ':') {
-                        $expressions[$parsedColumn] = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
+                        $expressions[$parsedColumn] = $newExpression;
                     } else {
-                        $expressions[] = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
+                        $expressions[] = $newExpression;
                     }
                 } else {
                     $expressions[] = $parsedColumn . ' ' . $operator . ' ' . self::quote($value);
@@ -343,8 +337,6 @@ class Expression
 
         return $value;
     }
-
-
 
     /**
      * Quote the value (if it is not a numeric value)
