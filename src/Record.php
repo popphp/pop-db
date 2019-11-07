@@ -350,6 +350,32 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * With a 1:many relationship (eager-loading)
+     *
+     * @param  mixed $name
+     * @param  array  $options
+     * @return static
+     */
+    public static function with($name, array $options = null)
+    {
+        $record = new static();
+
+        if (is_array($name)) {
+            foreach ($name as $key => $value) {
+                if (is_numeric($key) && is_string($value)) {
+                    $record->addWith($value);
+                } else if (!is_numeric($key) && is_array($value)) {
+                    $record->addWith($key, $value);
+                }
+            }
+        } else {
+            $record->addWith($name, $options);
+        }
+
+        return $record;
+    }
+
+    /**
      * Static method to get the total count of a set from the DB table
      *
      * @param  array  $columns
@@ -396,6 +422,9 @@ class Record extends Record\AbstractRecord
     public function getById($id)
     {
         $this->setColumns($this->getRowGateway()->find($id));
+        if ($this->hasWiths()) {
+            $this->getWithRelationships(false);
+        }
         return $this;
     }
 
@@ -461,6 +490,44 @@ class Record extends Record\AbstractRecord
             $rows[$i] = $this->processRow($row, $asArray);
         }
 
+        if ($this->hasWiths()) {
+            $this->getWithRelationships();
+            foreach ($this->relationships as $name => $relationship) {
+                $withIds = [];
+                if ($relationship instanceof Record\Relationships\HasOneOf) {
+                    $primaryKey = $relationship->getForeignKey();
+                    foreach ($rows as $i => $row) {
+                        if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
+                            $withIds[] = $row[$primaryKey];
+                        }
+                    }
+                    $results = $relationship->getEagerRelationships($withIds);
+                } else {
+                    $primaryKey = $this->getPrimaryKeys();
+                    if (count($primaryKey) == 1) {
+                        $primaryKey = reset($primaryKey);
+                    }
+                    foreach ($rows as $i => $row) {
+                        $primaryValues = $rows[$i]->getPrimaryValues();
+                        if (count($primaryValues) == 1) {
+                            $withId = reset($primaryValues);
+                            if (!in_array($withId, $withIds)) {
+                                $withIds[] = $withId;
+                            }
+                        }
+                    }
+                    $results = $relationship->getEagerRelationships($withIds);
+                }
+                foreach ($rows as $i => $row) {
+                    if (isset($results[$row[$primaryKey]])) {
+                        $row->setRelationship($name, $results[$row[$primaryKey]]);
+                    } else {
+                        $row->setRelationship($name, new \ArrayObject([], \ArrayObject::ARRAY_AS_PROPS));
+                    }
+                }
+            }
+        }
+
         return new Record\Collection($rows);
     }
 
@@ -474,6 +541,70 @@ class Record extends Record\AbstractRecord
     public function getAll(array $options = null, $asArray = false)
     {
         return $this->getBy(null, $options, $asArray);
+    }
+
+
+
+    /**
+     * Has one relationship
+     *
+     * @param  string  $foreignTable
+     * @param  string  $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Record|Record\Relationships\HasOne
+     */
+    public function hasOne($foreignTable, $foreignKey, array $options = null, $eager = false)
+    {
+        $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey);
+
+        return ($eager) ? $relationship : $relationship->getChild($options);
+    }
+
+    /**
+     * Has one of relationship
+     *
+     * @param  string  $foreignTable
+     * @param  string  $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Record|Record\Relationships\HasOneOf
+     */
+    public function hasOneOf($foreignTable, $foreignKey, array $options = null, $eager = false)
+    {
+        $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey);
+
+        return ($eager) ? $relationship : $relationship->getChild();
+    }
+
+    /**
+     * Has many relationship
+     *
+     * @param  string  $foreignTable
+     * @param  string  $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Collection|Record\Relationships\HasMany
+     */
+    public function hasMany($foreignTable, $foreignKey, array $options = null, $eager = false)
+    {
+        $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey);
+        return ($eager) ? $relationship : $relationship->getChildren($options);
+    }
+
+    /**
+     * Belongs to relationship
+     *
+     * @param  string $foreignTable
+     * @param  string $foreignKey
+     * @param  array   $options
+     * @param  boolean $eager
+     * @return Record|Record\Relationships\BelongsTo
+     */
+    public function belongsTo($foreignTable, $foreignKey, array $options = null, $eager = false)
+    {
+        $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey);
+        return ($eager) ? $relationship : $relationship->getParent($options);
     }
 
     /**

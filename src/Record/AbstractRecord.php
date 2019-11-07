@@ -66,6 +66,24 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected $isNew = false;
 
     /**
+     * With relationships
+     * @var array
+     */
+    protected $with = [];
+
+    /**
+     * With relationship options
+     * @var array
+     */
+    protected $withOptions = [];
+
+    /**
+     * Relationships
+     * @var array
+     */
+    protected $relationships = [];
+
+    /**
      * Set the table
      *
      * @param  string $table
@@ -343,6 +361,116 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
             $record->setColumns((array)$row);
             return $record;
         }
+    }
+
+    /**
+     * Set with relationships
+     *
+     * @param  string $name
+     * @param  array  $options
+     * @return AbstractRecord
+     */
+    public function addWith($name, array $options = null)
+    {
+        $this->with[]        = $name;
+        $this->withOptions[] = $options;
+
+        return $this;
+    }
+
+    /**
+     * Determine if there is specific with relationship
+     *
+     * @param  string  $name
+     * @return boolean
+     */
+    public function hasWith($name)
+    {
+        return (isset($this->with[$name]));
+    }
+
+    /**
+     * Determine if there are with relationships
+     *
+     * @return boolean
+     */
+    public function hasWiths()
+    {
+        return (count($this->with) > 0);
+    }
+
+    /**
+     * Get with relationships
+     *
+     * @return array
+     */
+    public function getWiths()
+    {
+        return $this->with;
+    }
+
+    /**
+     * Get with relationships
+     *
+     * @param  boolean $eager
+     * @return AbstractRecord
+     */
+    public function getWithRelationships($eager = true)
+    {
+        foreach ($this->with as $i => $name) {
+            $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
+
+            if (method_exists($this, $name)) {
+                $this->relationships[$name] = $this->{$name}($options, $eager);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set relationship
+     *
+     * @param  string $name
+     * @param  mixed  $relationship
+     * @return AbstractRecord
+     */
+    public function setRelationship($name, $relationship)
+    {
+        $this->relationships[$name] = $relationship;
+        return $this;
+    }
+
+    /**
+     * Get relationship
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    public function getRelationship($name)
+    {
+        return (isset($this->relationships[$name])) ? $this->relationships[$name] : null;
+    }
+
+    /**
+     * Has relationship
+     *
+     * @param  string $name
+     * @return boolean
+     */
+    public function hasRelationship($name)
+    {
+        return (isset($this->relationships[$name]));
+    }
+
+    /**
+     * Get relationships
+     *
+     * @return array
+     */
+    public function getRelationships()
+    {
+        return $this->relationships;
     }
 
     /**
