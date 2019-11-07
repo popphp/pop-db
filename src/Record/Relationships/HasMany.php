@@ -14,7 +14,6 @@
 namespace Pop\Db\Record\Relationships;
 
 use Pop\Db\Record;
-use Pop\Db\Record\Collection;
 
 /**
  * Relationship class for "has many" relationships
@@ -81,11 +80,12 @@ class HasMany extends AbstractRelationship
     /**
      * Get eager relationships
      *
-     * @param  array $ids
+     * @param  array   $ids
+     * @param  boolean $asArray
      * @throws Exception
      * @return array
      */
-    public function getEagerRelationships(array $ids)
+    public function getEagerRelationships(array $ids, $asArray = false)
     {
         if ((null === $this->foreignTable) || (null === $this->foreignKey)) {
             throw new Exception('Error: The foreign table and key values have not been set.');
@@ -106,10 +106,19 @@ class HasMany extends AbstractRelationship
         $rows = $db->fetchAll();
 
         foreach ($rows as $row) {
-            if (!isset($results[$row[$this->foreignKey]])) {
-                $results[$row[$this->foreignKey]] = [];
+            if (!$asArray) {
+                if (!isset($results[$row[$this->foreignKey]])) {
+                    $results[$row[$this->foreignKey]] = new Record\Collection();
+                }
+                $record = new $table();
+                $record->setColumns($row);
+                $results[$row[$this->foreignKey]]->push($record);
+            } else {
+                if (!isset($results[$row[$this->foreignKey]])) {
+                    $results[$row[$this->foreignKey]] = [];
+                }
+                $results[$row[$this->foreignKey]][] = $row;
             }
-            $results[$row[$this->foreignKey]][] = $row;
         }
 
         return $results;

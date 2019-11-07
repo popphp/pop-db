@@ -474,6 +474,16 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     }
 
     /**
+     * Get relationships
+     *
+     * @return boolean
+     */
+    public function hasRelationships()
+    {
+        return (count($this->relationships) > 0);
+    }
+
+    /**
      * Magic method to set the property to the value of $this->rowGateway[$name]
      *
      * @param  string $name
@@ -493,7 +503,17 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function __get($name)
     {
-        return (isset($this->rowGateway[$name])) ? $this->rowGateway[$name] : null;
+        $result = null;
+
+        if (isset($this->relationships[$name])) {
+            $result = $this->relationships[$name];
+        } else if (isset($this->rowGateway[$name])) {
+            $result = $this->rowGateway[$name];
+        } else if (method_exists($this, $name)) {
+            $result = $this->{$name}();
+        }
+
+        return $result;
     }
 
     /**
@@ -504,7 +524,15 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function __isset($name)
     {
-        return isset($this->rowGateway[$name]);
+        if (isset($this->relationships[$name])) {
+            return true;
+        } else if (isset($this->rowGateway[$name])) {
+            return true;
+        } else if (method_exists($this, $name)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**

@@ -55,7 +55,7 @@ class Expression
             $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
             $operator = (stripos($expression, ' NOT IN ') !== false) ? 'NOT IN' : 'IN';
             $values   = substr($expression, (strpos($expression, '(') + 1));
-            $values   = substr($values, strpos($values, ')'));
+            $values   = substr($values, 0, strpos($values, ')'));
             $values   = array_map(function($value) {
                 return \Pop\Db\Sql\Parser\Expression::stripQuotes(trim($value));
             }, explode(',', $values));
@@ -300,7 +300,27 @@ class Expression
             }
         }
 
-        return ['expressions' => $expressions, 'params' => $params];
+        $flattenParams = [];
+
+        foreach ($params as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $k => $v) {
+                    if ($placeholder == ':') {
+                        $flattenParams[$key . ($k + 1)] = $v;
+                    } else {
+                        $flattenParams[] = $v;
+                    }
+                }
+            } else {
+                if ($placeholder == ':') {
+                    $flattenParams[$key] = $value;
+                } else {
+                    $flattenParams[] = $value;
+                }
+            }
+        }
+
+        return ['expressions' => $expressions, 'params' => $flattenParams];
     }
 
     /**

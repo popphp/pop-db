@@ -469,7 +469,7 @@ class Record extends Record\AbstractRecord
      * @param  array   $columns
      * @param  array   $options
      * @param  boolean $asArray
-     * @return Collection
+     * @return Collection|array
      */
     public function getBy(array $columns = null, array $options = null, $asArray = false)
     {
@@ -487,7 +487,7 @@ class Record extends Record\AbstractRecord
         $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
 
         foreach ($rows as $i => $row) {
-            $rows[$i] = $this->processRow($row, $asArray);
+            $rows[$i] = $this->processRow($row);
         }
 
         if ($this->hasWiths()) {
@@ -522,13 +522,14 @@ class Record extends Record\AbstractRecord
                     if (isset($results[$row[$primaryKey]])) {
                         $row->setRelationship($name, $results[$row[$primaryKey]]);
                     } else {
-                        $row->setRelationship($name, new \ArrayObject([], \ArrayObject::ARRAY_AS_PROPS));
+                        $row->setRelationship($name, []);
                     }
                 }
             }
         }
 
-        return new Record\Collection($rows);
+        $collection = new Record\Collection($rows);
+        return ($asArray) ? $collection->toArray() : $collection;
     }
 
     /**
@@ -542,8 +543,6 @@ class Record extends Record\AbstractRecord
     {
         return $this->getBy(null, $options, $asArray);
     }
-
-
 
     /**
      * Has one relationship

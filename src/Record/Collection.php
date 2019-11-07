@@ -373,6 +373,14 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
         foreach ($items as $key => $value) {
             if ($value instanceof AbstractRecord) {
                 $items[$key] = $value->toArray();
+                if ($value->hasRelationships()) {
+                    $relationships = $value->getRelationships();
+                    foreach ($relationships as $name => $relationship) {
+                        $items[$key][$name] = (is_object($relationship) && method_exists($relationship, 'toArray')) ?
+                            $relationship->toArray() : $relationship;
+                    }
+                }
+
             }
         }
         return $items;
@@ -417,7 +425,11 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function __set($name, $value)
     {
-        $this->items[$name] = $value;
+        if (null !== $name) {
+            $this->items[$name] = $value;
+        } else {
+            $this->items[] = $value;
+        }
     }
 
     /**
