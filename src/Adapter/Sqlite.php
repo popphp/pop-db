@@ -50,7 +50,7 @@ class Sqlite extends AbstractAdapter
         if (!isset($options['database'])) {
             $this->throwError('Error: The database file was not passed.');
         } else if (!file_exists($options['database'])) {
-            $this->throwError('Error: The database file does not exists.');
+            $this->throwError("Error: The database file '" . $options['database'] . "'does not exists.");
         }
 
         $flags = (isset($options['flags'])) ? $options['flags'] : SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE;
