@@ -112,7 +112,7 @@ class Expression
      */
     public static function convertExpressionToShorthand($expression)
     {
-        [$column, $operator, $value] = self::parse($expression);
+        ['column' => $column, 'operator' => $operator, 'value' => $value] = self::parse($expression);
 
         switch ($operator) {
             case '>=':
@@ -148,6 +148,10 @@ class Expression
                 break;
         }
 
+        if (strpos($expression, ' BETWEEN ') !== false) {
+            $value = '(' . implode(', ', $value) . ')';
+        }
+
         return [$column => $value];
     }
 
@@ -162,7 +166,7 @@ class Expression
         $conditions = [];
 
         foreach ($expressions as $expression) {
-            $conditions[] = self::convertExpressionToShorthand($expression);
+            $conditions = array_merge($conditions, self::convertExpressionToShorthand($expression));
         }
 
         return $conditions;
@@ -199,7 +203,6 @@ class Expression
                 } else {
                     $expressions[] = $newExpression;
                 }
-                $i++;
             // IN/NOT IN
             } else if (is_array($value)) {
                 $p = [];

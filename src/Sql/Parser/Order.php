@@ -52,8 +52,7 @@ class Order
         }
 
         if (strpos($by, ',') !== false) {
-            $by = str_replace(', ', ',', $by);
-            $by = explode(',', $by);
+            $by = array_map('trim', explode(',', $by));
         }
 
         return ['by' => $by, 'order' => $order];
