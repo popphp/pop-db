@@ -63,7 +63,7 @@ class Expression
         } else if (stripos($expression, ' BETWEEN ') !== false) {
             $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
             $operator = (stripos($expression, ' NOT BETWEEN ') !== false) ? 'NOT BETWEEN' : 'BETWEEN';
-            $value1   = substr($expression, (strpos($expression, ' ') + 1));
+            $value1   = substr($expression, (strpos($expression, 'BETWEEN ') + 8));
             $value1   = trim(substr($value1, 0, strpos($value1, ' ')));
             $value2   = trim(substr($expression, (stripos($expression, ' AND ') + 5)));
             $value    = [self::stripQuotes($value1), self::stripQuotes($value2)];
