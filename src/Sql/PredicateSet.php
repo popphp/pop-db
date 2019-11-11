@@ -164,7 +164,7 @@ class PredicateSet
      */
     public function and($expression = null)
     {
-        $this->nextConjunction = 'AND';
+        $this->setNextConjunction('AND');
         if (null !== $expression) {
             $this->add($expression);
         }
@@ -179,7 +179,7 @@ class PredicateSet
      */
     public function or($expression = null)
     {
-        $this->nextConjunction = 'OR';
+        $this->setNextConjunction('OR');
         if (null !== $expression) {
             $this->add($expression);
         }
@@ -440,7 +440,7 @@ class PredicateSet
      */
     public function nest($conjunction = 'AND')
     {
-        $predicateSet = new self($this->sql, null, $conjunction);;
+        $predicateSet = new self($this->sql, null, $conjunction);
         $this->addPredicateSet($predicateSet);
         return $predicateSet;
     }
@@ -490,6 +490,73 @@ class PredicateSet
     public function getConjunction()
     {
         return $this->conjunction;
+    }
+
+    /**
+     * Get the next conjunction
+     *
+     * @param  string $conjunction
+     * @return PredicateSet
+     */
+    public function setNextConjunction($conjunction)
+    {
+        if ((strtoupper($conjunction) != 'OR') && (strtoupper($conjunction) != 'AND')) {
+            throw new Exception("Error: The conjunction must be 'AND' or 'OR'. '" . $conjunction . "' is not allowed.");
+        }
+
+        $this->nextConjunction = $conjunction;
+
+        return $this;
+    }
+
+    /**
+     * Get the next conjunction
+     *
+     * @return string
+     */
+    public function getNextConjunction()
+    {
+        return $this->nextConjunction;
+    }
+
+    /**
+     * Has predicates
+     *
+     * @return boolean
+     */
+    public function hasPredicates()
+    {
+        return (count($this->predicates) > 0);
+    }
+
+    /**
+     * Get predicates
+     *
+     * @return array
+     */
+    public function getPredicates()
+    {
+        return $this->predicates;
+    }
+
+    /**
+     * Has predicates
+     *
+     * @return boolean
+     */
+    public function hasPredicateSets()
+    {
+        return (count($this->predicateSets) > 0);
+    }
+
+    /**
+     * Get predicates
+     *
+     * @return array
+     */
+    public function getPredicateSets()
+    {
+        return $this->predicateSets;
     }
 
     /**
