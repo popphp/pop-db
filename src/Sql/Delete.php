@@ -27,6 +27,18 @@ class Delete extends AbstractPredicateClause
 {
 
     /**
+     * Set from table
+     *
+     * @param  mixed  $table
+     * @return Delete
+     */
+    public function from($table)
+    {
+        $this->setTable($table);
+        return $this;
+    }
+
+    /**
      * Render the DELETE statement
      *
      * @return string
