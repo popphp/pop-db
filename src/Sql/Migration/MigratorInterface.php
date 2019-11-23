@@ -16,7 +16,7 @@ namespace Pop\Db\Sql\Migration;
 use Pop\Db\Adapter\AbstractAdapter;
 
 /**
- * Db SQL migrator abstract class
+ * Db SQL migrator interface
  *
  * @category   Pop
  * @package    Pop\Db
@@ -25,45 +25,21 @@ use Pop\Db\Adapter\AbstractAdapter;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.0.0
  */
-abstract class AbstractMigrator implements MigratorInterface
+interface MigratorInterface
 {
-
-    /**
-     * Database adapter
-     * @var AbstractAdapter
-     */
-    protected $db = null;
-
-    /**
-     * Constructor
-     *
-     * Instantiate the migration object
-     *
-     * @param  AbstractAdapter $db
-     */
-    public function __construct(AbstractAdapter $db)
-    {
-        $this->db = $db;
-    }
 
     /**
      * Get the DB adapter
      *
      * @return AbstractAdapter
      */
-    public function getDb()
-    {
-        return $this->db;
-    }
+    public function getDb();
 
     /**
      * Get the DB adapter (alias method)
      *
      * @return AbstractAdapter
      */
-    public function db()
-    {
-        return $this->db;
-    }
+    public function db();
 
 }

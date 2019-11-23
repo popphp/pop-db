@@ -14,7 +14,7 @@
 namespace Pop\Db\Sql;
 
 use Pop\Db\Adapter\AbstractAdapter;
-use Pop\Db\Parser;
+use Pop\Db\Sql\Parser;
 
 /**
  * Sql migrator class

@@ -586,7 +586,6 @@ class PredicateSet
         } else {
             return $predicateString;
         }
-
     }
 
     /**
