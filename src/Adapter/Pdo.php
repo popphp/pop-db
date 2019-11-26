@@ -456,11 +456,16 @@ class Pdo extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (null === $this->result) {
+        $count = 0;
+
+        if (null !== $this->result) {
+            $count = $this->result->rowCount();
+        } else if (null !== $this->statement) {
+            $count = $this->statement->rowCount();
+        } else {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
-
-        return $this->result->rowCount();
+        return $count;
     }
 
     /**
@@ -562,11 +567,17 @@ class Pdo extends AbstractAdapter
      */
     public function getNumberOfFields()
     {
-        if (!isset($this->result)) {
-            throw new Exception('Error: The database result resource is not currently set.');
+        $count = 0;
+
+        if (null !== $this->result) {
+            $count = $this->result->columnCount();
+        } else if (null !== $this->statement) {
+            $count = $this->statement->columnCount();
+        } else {
+            $this->throwError('Error: The database statement resource is not currently set.');
         }
 
-        return $this->result->columnCount();
+        return $count;
     }
 
     /**

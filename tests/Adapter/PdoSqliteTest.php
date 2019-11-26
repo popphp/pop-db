@@ -6,7 +6,7 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
 
-class PdoTest extends TestCase
+class PdoSqliteTest extends TestCase
 {
     public function setUp()
     {
@@ -95,14 +95,21 @@ class PdoTest extends TestCase
             ])->execute();
 
         $debugResults = $profiler->prepareAsString();
+        $debugParams  = $db->debugDumpParams(true);
 
         $this->assertNull($db->getResult());
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
+        $this->assertNotNull($db->getNumberOfFields());
+        $this->assertNotNull($db->getCountOfFields());
+        $this->assertNotNull($db->getCountOfRows());
+        $this->assertNotNull($db->fetchColumn(1));
+        $this->assertNotNull($db->closeCursor());
         $this->assertContains('Start:', $debugResults);
         $this->assertContains('Finish:', $debugResults);
         $this->assertContains('Elapsed:', $debugResults);
         $this->assertContains('INSERT INTO "users"', $debugResults);
+        $this->assertContains('"username", "password", "email"', $debugParams);
     }
 
     public function testFetch()
@@ -207,7 +214,7 @@ class PdoTest extends TestCase
 
         $this->assertEquals(0, $db->getNumberOfRows());
     }
-/*
+
     public function testBindParam()
     {
         $db = Db::pdoConnect([
@@ -223,8 +230,9 @@ class PdoTest extends TestCase
             'username' => ':username'
         ]);
 
+        $username = 'testuser3';
         $db->prepare($sql)
-            ->bindParam(':username', 'testuser3')->execute();
+            ->bindParam(':username', $username)->execute();
 
         $debugResults = $profiler->prepareAsString();
 
@@ -259,7 +267,23 @@ class PdoTest extends TestCase
         $this->assertContains('Finish:', $debugResults);
         $this->assertContains('Elapsed:', $debugResults);
     }
-*/
+
+    public function testError()
+    {
+        $this->expectException('Error');
+        $db = Db::pdoConnect([
+            'database' => __DIR__ . '/../tmp/db.sqlite',
+            'type'     => 'sqlite'
+        ]);
+
+        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+
+        $sql = $db->createSql();
+
+        $sql->select()->from('bad_table');
+        $db->query($sql);
+    }
+
     public function testDropTable()
     {
         $db = Db::pdoConnect([
