@@ -5,7 +5,6 @@ namespace Pop\Db\Test\Adapter;
 use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Pgsql;
-use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
 
 class PgsqlTest extends TestCase
@@ -50,11 +49,13 @@ class PgsqlTest extends TestCase
             'type'            => PGSQL_CONNECT_FORCE_NEW
         ]);
 
-        $db->query('DROP TABLE IF EXISTS ph_users CASCADE');
+        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+
+        $db->query('DROP TABLE IF EXISTS users CASCADE');
         $db->query('CREATE SEQUENCE user_id_seq START 1001');
 
         $table = <<<TABLE
-CREATE TABLE IF NOT EXISTS "ph_users" (
+CREATE TABLE IF NOT EXISTS "users" (
   "id" integer NOT NULL DEFAULT nextval('user_id_seq'),
   "role_id" integer,
   "username" varchar(255) NOT NULL,
@@ -66,9 +67,15 @@ CREATE TABLE IF NOT EXISTS "ph_users" (
 )
 TABLE;
         $db->query($table);
-        $db->query('ALTER SEQUENCE user_id_seq OWNED BY "ph_users"."id";');
+        $db->query('ALTER SEQUENCE user_id_seq OWNED BY "users"."id";');
+
+        $debugResults = $profiler->prepareAsString();
         $this->assertInstanceOf('Pop\Db\Adapter\Pgsql', $db);
         $this->assertContains('PostgreSQL', $db->getVersion());
+        $this->assertContains('Start:', $debugResults);
+        $this->assertContains('Finish:', $debugResults);
+        $this->assertContains('Elapsed:', $debugResults);
+        $this->assertContains('CREATE TABLE IF NOT EXISTS "users"', $debugResults);
     }
 
     public function testExecuteException()
@@ -111,21 +118,7 @@ TABLE;
             'username' => 'postgres',
             'password' => $this->password
         ]);
-        $this->assertContains('ph_users', $db->getTables());
-    }
-
-    public function testLoadTablesFromPdo()
-    {
-        $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
-            'type'     => 'pgsql'
-        ]);
-
-        $sql = new Sql($db, 'ph_users');
-        $this->assertEquals(Sql::PGSQL, $sql->getDbType());
-        $this->assertContains('ph_users', $db->getTables());
+        $this->assertContains('users', $db->getTables());
     }
 
     public function testBindParams()
@@ -136,17 +129,44 @@ TABLE;
             'password' => $this->password
         ]);
 
-        $sql = new Sql($db, 'ph_users');
-        $this->assertEquals(Sql::PGSQL, $sql->getDbType());
+        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
 
-        $db->prepare('INSERT INTO ph_users ("username", "password", "email") VALUES ($1, $2, $3)')
+        $db->beginTransaction();
+
+        $db->prepare('INSERT INTO users ("username", "password", "email") VALUES ($1, $2, $3)')
            ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
            ->execute();
+
+        $db->commit();
+
+        $debugResults = $profiler->prepareAsString();
 
         $this->assertTrue($db->hasResult());
         $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
+        $this->assertEquals(0, $db->getNumberOfRows());
+        $this->assertContains('Start:', $debugResults);
+        $this->assertContains('Finish:', $debugResults);
+        $this->assertContains('Elapsed:', $debugResults);
+        $this->assertContains('INSERT INTO users', $debugResults);
+    }
+
+    public function testRollback()
+    {
+        $db = new Pgsql([
+            'database' => 'travis_popdb',
+            'username' => 'postgres',
+            'password' => $this->password
+        ]);
+
+        $db->beginTransaction();
+
+        $db->prepare('INSERT INTO users ("username", "password", "email") VALUES ($1, $2, $3)')
+            ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
+            ->execute();
+
+        $db->rollback();
         $this->assertEquals(0, $db->getNumberOfRows());
     }
 
@@ -157,7 +177,7 @@ TABLE;
             'username' => 'postgres',
             'password' => $this->password
         ]);
-        $db->query('SELECT * FROM ph_users');
+        $db->query('SELECT * FROM users');
 
         $rows = [];
 
@@ -175,13 +195,29 @@ TABLE;
             'username' => 'postgres',
             'password' => $this->password
         ]);
-        $db->prepare('SELECT * FROM "ph_users" WHERE id != $1')
+        $db->prepare('SELECT * FROM "users" WHERE id != $1')
            ->bindParams([0])
            ->execute();
 
         $rows = $db->fetchAll();
         $this->assertEquals(1, count($rows));
         $this->assertEquals(1, $db->getNumberOfRows());
+    }
+
+    public function testDropTable()
+    {
+        $db = new Pgsql([
+            'database' => 'travis_popdb',
+            'username' => 'postgres',
+            'password' => $this->password
+        ]);
+
+        $schema = $db->createSchema();
+        $schema->drop('users');
+
+        $this->assertTrue($db->hasTable('users'));
+        $db->query($schema);
+        $this->assertFalse($db->hasTable('users'));
 
         $db->disconnect();
     }

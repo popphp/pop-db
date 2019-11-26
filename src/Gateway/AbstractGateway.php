@@ -89,8 +89,8 @@ abstract class AbstractGateway implements GatewayInterface
                 case Sql::SQLSRV:
                     $sqlString = 'SELECT * FROM information_schema.columns ' .
                         'LEFT JOIN information_schema.table_constraints ' .
-                        'ON information_schema.columns.table_name = information_schema.table_constraints.table_name ' .
-                        'WHERE table_name = \'' . $this->table . '\' ORDER BY information_schema.ordinal_position ASC';
+                        'ON information_schema.table_constraints.table_name = information_schema.columns.table_name ' .
+                        'WHERE information_schema.columns.table_name = \'' . $this->table . '\'';
                     break;
                 case Sql::SQLITE:
                     $sqlString = 'PRAGMA table_info(\'' . $this->table . '\')';

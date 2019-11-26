@@ -33,6 +33,18 @@ class Insert extends AbstractClause
     protected $updateColumns = [];
 
     /**
+     * Set into table
+     *
+     * @param  mixed  $table
+     * @return Insert
+     */
+    public function into($table)
+    {
+        $this->setTable($table);
+        return $this;
+    }
+
+    /**
      * Set a value
      *
      * @param  array $values

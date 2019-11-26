@@ -106,8 +106,7 @@ class Pgsql extends AbstractAdapter
      */
     public function beginTransaction()
     {
-        $this->query('SET AUTOCOMMIT=OFF')
-             ->query('START TRANSACTION');
+        $this->query('BEGIN TRANSACTION');
 
         return $this;
     }
@@ -119,8 +118,7 @@ class Pgsql extends AbstractAdapter
      */
     public function commit()
     {
-        $this->query('COMMIT')
-             ->query('SET AUTOCOMMIT=ON');
+        $this->query('COMMIT');
 
         return $this;
     }
