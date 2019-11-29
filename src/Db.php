@@ -133,7 +133,7 @@ class Db
      */
     public static function check($adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
     {
-        $result = null;
+        $result = true;
         $class  = $prefix . ucfirst(strtolower($adapter));
         $error  = ini_get('error_reporting');
 
@@ -190,7 +190,7 @@ class Db
             $db = $adapter;
         }
 
-        $lines = explode("\n", $sql);
+        $lines = array_filter(array_map('trim', explode("\n", $sql)));
 
         // Remove comments, execute queries
         if (count($lines) > 0) {
