@@ -47,13 +47,44 @@ class DbTest extends TestCase
         $this->assertEquals("Error: The database adapter 'Bad\Namespace\Mysql' does not exist.", $check);
     }
 
-    public function testExecuteSqlFile()
+    public function testExecuteSqlFileException()
+    {
+        $this->expectException('Pop\Db\Exception');
+        Db::executeSqlFile(__DIR__ . '/tmp/bad.mysql.sql', 'mysql', [
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
+            'host'     => 'localhost',
+            'prefix'   => 'ph_'
+        ]);
+    }
+
+    public function testExecuteMysqlSqlFile()
+    {
+        Db::executeSqlFile(__DIR__ . '/tmp/users.mysql.sql', 'mysql', [
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
+            'host'     => 'localhost',
+            'prefix'   => 'ph_'
+        ]);
+        $db = Db::mysqlConnect([
+            'database' => 'travis_popdb',
+            'username' => 'root',
+            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
+            'host'     => 'localhost',
+        ]);
+        $this->assertTrue($db->hasTable('ph_users'));
+        $db->query('DROP TABLE `ph_users`');
+    }
+
+    public function testExecuteSqliteSqlFile()
     {
         chmod(__DIR__ . '/tmp', 0777);
         touch(__DIR__ . '/tmp/db.sqlite');
         chmod(__DIR__ . '/tmp/db.sqlite', 0777);
 
-        Db::executeSqlFile(__DIR__ . '/tmp/users.sql', 'sqlite', ['database' => __DIR__ . '/tmp/db.sqlite', 'prefix' => 'ph_']);
+        Db::executeSqlFile(__DIR__ . '/tmp/users.sqlite.sql', 'sqlite', ['database' => __DIR__ . '/tmp/db.sqlite', 'prefix' => 'ph_']);
         $db = Db::sqliteConnect(['database' => __DIR__ . '/tmp/db.sqlite']);
         $this->assertTrue($db->hasTable('ph_users'));
 

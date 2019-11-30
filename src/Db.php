@@ -190,14 +190,18 @@ class Db
             $db = $adapter;
         }
 
-        $lines = array_filter(array_map('trim', explode("\n", $sql)));
+        $lines      = explode("\n", $sql);
+        $statements = [];
 
-        // Remove comments, execute queries
         if (count($lines) > 0) {
+            // Remove any comments, parse prefix if available
             $insideComment = false;
             foreach ($lines as $i => $line) {
+                if (isset($options['prefix'])) {
+                    $lines[$i] = str_replace('[{prefix}]', $options['prefix'], trim($line));
+                }
                 if ($insideComment) {
-                    if (substr($line, 0, 2) == '*/') {
+                    if (substr($line, -2) == '*/') {
                         $insideComment = false;
                     }
                     unset($lines[$i]);
@@ -211,20 +215,23 @@ class Db
                 }
             }
 
-            $sqlString  = trim(implode('', $lines));
-            $newLine    = (strpos($sqlString, ";\r\n") !== false) ? ";\r\n" : ";\n";
-            if (stripos($sqlString, ';INSERT INTO') !== false) {
-                $sqlString = str_ireplace(';INSERT INTO', ";" . $newLine . "INSERT INTO", $sqlString);
+            $lines            = array_values(array_filter($lines));
+            $currentStatement = null;
+
+            // Assemble statements based on ; delimiter
+            foreach ($lines as $i => $line) {
+                $currentStatement .= (null !== $currentStatement) ? ' ' . $line : $line;
+                if (substr($line, -1) == ';') {
+                    $statements[]     = $currentStatement;
+                    $currentStatement = null;
+                }
             }
 
-            $statements = explode($newLine, $sqlString);
-
-            foreach ($statements as $statement) {
-                if (!empty($statement)) {
-                    if (isset($options['prefix'])) {
-                        $statement = str_replace('[{prefix}]', $options['prefix'], trim($statement));
+            if (!empty($statements)) {
+                foreach ($statements as $statement) {
+                    if (!empty($statement)) {
+                        $db->query($statement);
                     }
-                    $db->query($statement);
                 }
             }
         }
