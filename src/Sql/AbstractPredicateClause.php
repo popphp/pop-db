@@ -36,7 +36,7 @@ abstract class AbstractPredicateClause extends AbstractClause
      * Access the WHERE clause
      *
      * @param  mixed $where
-     * @return Where
+     * @return AbstractPredicateClause
      */
     public function where($where = null)
     {
@@ -67,14 +67,14 @@ abstract class AbstractPredicateClause extends AbstractClause
             }
         }
 
-        return $this->where;
+        return $this;
     }
 
     /**
      * Access the WHERE clause with AND
      *
      * @param  mixed $where
-     * @return Where
+     * @return AbstractPredicateClause
      */
     public function andWhere($where = null)
     {
@@ -92,14 +92,14 @@ abstract class AbstractPredicateClause extends AbstractClause
             }
         }
 
-        return $this->where;
+        return $this;
     }
 
     /**
      * Access the WHERE clause with OR
      *
      * @param  mixed $where
-     * @return Where
+     * @return AbstractPredicateClause
      */
     public function orWhere($where = null)
     {
@@ -117,7 +117,7 @@ abstract class AbstractPredicateClause extends AbstractClause
             }
         }
 
-        return $this->where;
+        return $this;
     }
 
 }

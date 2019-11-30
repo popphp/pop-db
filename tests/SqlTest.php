@@ -21,12 +21,38 @@ class SqlTest extends TestCase
         ]);
     }
 
+    public function testInitSqlConfig()
+    {
+        $sql = $this->db->createSql();
+        $sql->setIdQuoteType(Sql::BACKTICK);
+        $sql->setPlaceholder('?');
+        $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $sql->db());
+        $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $sql->getDb());
+        $this->assertEquals(Sql::BACKTICK, $sql->getIdQuoteType());
+        $this->assertEquals('?', $sql->getPlaceholder());
+        $this->assertEquals("`", $sql->getOpenQuote());
+        $this->assertEquals("`", $sql->getCloseQuote());
+        $this->assertEquals('`pop_users`.`id`', $sql->quoteId('pop_users.id'));
+    }
+
+    public function testInitSqlConfigNoQuote()
+    {
+        $sql = $this->db->createSql();
+        $sql->setIdQuoteType(Sql::NO_QUOTE);
+        $this->assertNull($sql->getOpenQuote());
+        $this->assertNull($sql->getCloseQuote());
+    }
+
     public function testSelectWithValues()
     {
         $sql = $this->db->createSql();
         $sql->select([
             'id', 'username', 'email'
         ])->from('users');
+
+        $this->assertEquals('users', $sql->select()->getTable());
+        $this->assertEquals(3, count($sql->select()->getValues()));
+        $this->assertEquals('id', $sql->select()->getValue(0));
         $this->assertEquals("SELECT `id`, `username`, `email` FROM `users`", $sql->render());
     }
 

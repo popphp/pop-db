@@ -320,40 +320,6 @@ class Db
     }
 
     /**
-     * Check for a DB adapter
-     *
-     * @param  string $class
-     * @return boolean
-     */
-    public static function hasDb($class = null)
-    {
-        $result = false;
-
-        if ((null !== $class) && isset(self::$db[$class])) {
-            $result = true;
-        } else if (null !== $class) {
-            foreach (self::$db as $prefix => $adapter) {
-                if (substr($class, 0, strlen($prefix)) == $prefix) {
-                    $result = true;
-                }
-            }
-        }
-
-        if ((!$result) && (null !== $class) && in_array($class, self::$classToTable)) {
-            $table = array_search($class, self::$classToTable);
-            if (isset(self::$db[$table])) {
-                $result = true;
-            }
-        }
-
-        if ((!$result) && isset(self::$db['default'])) {
-            $result = true;
-        }
-
-        return $result;
-    }
-
-    /**
      * Set DB adapter
      *
      * @param  Adapter\AbstractAdapter $db
@@ -370,51 +336,15 @@ class Db
 
         if (null !== $class) {
             self::$db[$class] = $db;
-            //$record = new $class();
-            //if ($record instanceof Record) {
-            //    self::$classToTable[$class] = $record->getFullTable();
-            //}
+            $record = new $class();
+            if ($record instanceof Record) {
+                self::$classToTable[$class] = $record->getFullTable();
+            }
         }
 
         if ($isDefault) {
             self::$db['default'] = $db;
         }
-    }
-
-    /**
-     * Add class-to-table relationship
-     *
-     * @param  string $class
-     * @param  string $table
-     * @return void
-     */
-    public static function addClassToTable($class, $table)
-    {
-        self::$classToTable[$class] = $table;
-    }
-
-    /**
-     * Check if class-to-table relationship exists
-     *
-     * @param  string $class
-     * @return boolean
-     */
-    public static function hasClassToTable($class)
-    {
-        return isset(self::$classToTable[$class]);
-    }
-
-    /**
-     * Set DB adapter
-     *
-     * @param  Adapter\AbstractAdapter $db
-     * @param  string                  $class
-     * @param  string                  $prefix
-     * @return void
-     */
-    public static function setDefaultDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null)
-    {
-        self::setDb($db, $class, $prefix, true);
     }
 
     /**
@@ -465,6 +395,76 @@ class Db
         }
 
         return $dbAdapter;
+    }
+
+    /**
+     * Check for a DB adapter
+     *
+     * @param  string $class
+     * @return boolean
+     */
+    public static function hasDb($class = null)
+    {
+        $result = false;
+
+        if ((null !== $class) && isset(self::$db[$class])) {
+            $result = true;
+        } else if (null !== $class) {
+            foreach (self::$db as $prefix => $adapter) {
+                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                    $result = true;
+                }
+            }
+        }
+
+        if ((!$result) && (null !== $class) && in_array($class, self::$classToTable)) {
+            $table = array_search($class, self::$classToTable);
+            if (isset(self::$db[$table])) {
+                $result = true;
+            }
+        }
+
+        if ((!$result) && isset(self::$db['default'])) {
+            $result = true;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Add class-to-table relationship
+     *
+     * @param  string $class
+     * @param  string $table
+     * @return void
+     */
+    public static function addClassToTable($class, $table)
+    {
+        self::$classToTable[$class] = $table;
+    }
+
+    /**
+     * Check if class-to-table relationship exists
+     *
+     * @param  string $class
+     * @return boolean
+     */
+    public static function hasClassToTable($class)
+    {
+        return isset(self::$classToTable[$class]);
+    }
+
+    /**
+     * Set DB adapter
+     *
+     * @param  Adapter\AbstractAdapter $db
+     * @param  string                  $class
+     * @param  string                  $prefix
+     * @return void
+     */
+    public static function setDefaultDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null)
+    {
+        self::setDb($db, $class, $prefix, true);
     }
 
     /**

@@ -27,10 +27,16 @@ class Insert extends AbstractClause
 {
 
     /**
-     * Update columns
+     * Conflict key for UPSERT
+     * @var string
+     */
+    protected $conflictKey = null;
+
+    /**
+     * Conflict columns for UPSERT
      * @var array
      */
-    protected $updateColumns = [];
+    protected $conflictColumns = [];
 
     /**
      * Set into table
@@ -57,14 +63,28 @@ class Insert extends AbstractClause
     }
 
     /**
-     * Set update columns
+     * Set what to do on a insert conflict (UPSERT - PostgreSQL & SQLite)
      *
-     * @param  array $updateColumns
+     * @param  array  $columns
+     * @param  string $key
      * @return Insert
      */
-    public function onDuplicateKeyUpdate(array $updateColumns)
+    public function onConflict(array $columns, $key = null)
     {
-        $this->updateColumns = $updateColumns;
+        $this->conflictColumns = $columns;
+        $this->conflictKey     = $key;
+        return $this;
+    }
+
+    /**
+     * Set columns to handle duplicates/conflicts (UPSERT - MySQL-ism)
+     *
+     * @param  array $columns
+     * @return Insert
+     */
+    public function onDuplicateKeyUpdate(array $columns)
+    {
+        $this->onConflict($columns);
         return $this;
     }
 
@@ -102,13 +122,25 @@ class Insert extends AbstractClause
 
         $sql .= '(' . implode(', ', $columns) . ') VALUES (' . implode(', ', $values) . ')';
 
-        if (!empty($this->updateColumns)) {
+        // Handle conflicts/duplicates (UPSERT)
+        if (!empty($this->conflictColumns)) {
             $updates = [];
-            foreach ($this->updateColumns as $updateColumn) {
-                $updates[] = $this->quoteId($updateColumn) . ' = VALUES(' . $updateColumn .')';
+            switch ($dbType) {
+                case self::MYSQL:
+                    foreach ($this->conflictColumns as $conflictColumn) {
+                        $updates[] = $this->quoteId($conflictColumn) . ' = VALUES(' . $conflictColumn .')';
+                    }
+                    $sql .= ' ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
+                    break;
+                case self::SQLITE:
+                case self::PGSQL:
+                    foreach ($this->conflictColumns as $conflictColumn) {
+                        $updates[] = $this->quoteId($conflictColumn) . ' = excluded.' . $conflictColumn;
+                    }
+                    $sql .= ' ON CONFLICT (' . $this->quoteId($this->conflictKey) . ') DO UPDATE SET '
+                        . implode(', ', $updates);
+                    break;
             }
-
-            $sql .= ' ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
         }
 
         return $sql;
