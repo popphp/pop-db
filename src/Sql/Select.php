@@ -262,7 +262,7 @@ class Select extends AbstractPredicateClause
      * Access the HAVING clause
      *
      * @param  mixed $having
-     * @return Having
+     * @return Select
      */
     public function having($having = null)
     {
@@ -295,14 +295,14 @@ class Select extends AbstractPredicateClause
             }
         }
 
-        return $this->having;
+        return $this;
     }
 
     /**
      * Access the HAVING clause with AND
      *
      * @param  mixed $having
-     * @return Having
+     * @return Select
      */
     public function andHaving($having = null)
     {
@@ -320,14 +320,14 @@ class Select extends AbstractPredicateClause
             }
         }
 
-        return $this->having;
+        return $this;
     }
 
     /**
      * Access the HAVING clause with OR
      *
      * @param  mixed $having
-     * @return Having
+     * @return Select
      */
     public function orHaving($having = null)
     {
@@ -345,7 +345,7 @@ class Select extends AbstractPredicateClause
             }
         }
 
-        return $this->having;
+        return $this;
     }
 
     /**
