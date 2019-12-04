@@ -3,7 +3,6 @@
 namespace Pop\Db\Test\Sql;
 
 use Pop\Db\Db;
-use Pop\Db\Sql\Where;
 use PHPUnit\Framework\TestCase;
 
 class ClauseTest extends TestCase

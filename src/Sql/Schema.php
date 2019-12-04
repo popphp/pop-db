@@ -225,11 +225,12 @@ class Schema extends AbstractSql
      */
     public function reset()
     {
-        $this->drop     = [];
-        $this->create   = [];
-        $this->alter    = [];
-        $this->rename   = [];
-        $this->truncate = [];
+        $this->drop            = [];
+        $this->create          = [];
+        $this->alter           = [];
+        $this->rename          = [];
+        $this->truncate        = [];
+        $this->foreignKeyCheck = true;
 
         return $this;
     }
@@ -237,9 +238,10 @@ class Schema extends AbstractSql
     /**
      * Execute the schema directly
      *
+     * @param  boolean $reset
      * @return void
      */
-    public function execute()
+    public function execute($reset = true)
     {
         if (!$this->foreignKeyCheck) {
             if ($this->isMysql()) {
@@ -295,6 +297,10 @@ class Schema extends AbstractSql
             } else if ($this->isSqlite()) {
                 $this->db->query('PRAGMA foreign_keys=on');
             }
+        }
+
+        if ($reset) {
+            $this->reset();
         }
     }
 

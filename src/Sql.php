@@ -55,10 +55,10 @@ class Sql extends AbstractSql
     /**
      * Access the select object
      *
-     * @param  array $columns
+     * @param  mixed $columns
      * @return Sql\Select
      */
-    public function select(array $columns = null)
+    public function select($columns = null)
     {
         $this->insert = null;
         $this->update = null;
@@ -68,6 +68,9 @@ class Sql extends AbstractSql
             $this->select = new Sql\Select($this->db);
         }
         if (null !== $columns) {
+            if (!is_array($columns)) {
+                $columns = [$columns];
+            }
             foreach ($columns as $name => $value) {
                 if (!is_numeric($name)) {
                     $this->select->addNamedValue($name, $value);

@@ -131,11 +131,30 @@ class SelectTest extends TestCase
         $this->assertEquals('SELECT * FROM `users` FULL INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
     }
 
+    public function testMagicException()
+    {
+        $this->expectException('Pop\Db\Sql\Exception');
+        $sql = $this->db->createSql();
+        $bad = $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->bad;
+    }
+
+    public function testWhereMagic()
+    {
+        $sql = $this->db->createSql();
+        $this->assertInstanceOf('Pop\Db\Sql\Where', $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->where);
+    }
+
     public function testHaving()
     {
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING (`total` > 1)', (string)$sql);
+    }
+
+    public function testHavingMagic()
+    {
+        $sql = $this->db->createSql();
+        $this->assertInstanceOf('Pop\Db\Sql\Having', $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having);
     }
 
     public function testAndHaving()
@@ -150,6 +169,55 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->orHaving('total = 0');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` = 0))', (string)$sql);
+    }
+
+    public function testHavingAnd()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1 AND total < 10');
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+    }
+
+    public function testHavingAndHaving()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->andHaving('total < 10');
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+    }
+
+    public function testHavingOr()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1 OR total < 10');
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` < 10))', (string)$sql);
+    }
+
+    public function testHavingOrHaving()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->orHaving('total < 10');
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` < 10))', (string)$sql);
+    }
+
+    public function testHavingArray()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having(['total > 1', 'total < 10']);
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+    }
+
+    public function testAndHavingArray()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->andHaving(['total > 1', 'total < 10']);
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+    }
+
+    public function testOrHavingArray()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->orHaving(['total > 1', 'total < 10']);
+        $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` < 10))', (string)$sql);
     }
 
     public function testGroupBy()
@@ -214,5 +282,26 @@ class SelectTest extends TestCase
         $sql->select()->from('users')->offset(25);
         $this->assertEquals('SELECT * FROM `users` OFFSET 25', (string)$sql->select());
     }
+
+    public function testNestedSql()
+    {
+        $sql1 = $this->db->createSql();
+        $sql2 = $this->db->createSql();
+        $sql2->select('username')->from('users');
+        $sql2->select()->setAlias('usernames');
+        $sql1->select()->from($sql2);
+        $this->assertEquals('SELECT * FROM (SELECT `username` FROM `users`) AS `usernames`', $sql1->render());
+    }
+
+    public function testNestedSelect()
+    {
+        $sql1 = $this->db->createSql();
+        $sql2 = $this->db->createSql();
+        $sql2->select('username')->from('users');
+        $sql2->select()->setAlias('usernames');
+        $sql1->select()->from($sql2->select());
+        $this->assertEquals('SELECT * FROM (SELECT `username` FROM `users`) AS `usernames`', $sql1->render());
+    }
+
 
 }
