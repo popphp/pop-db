@@ -213,10 +213,10 @@ class PredicateTest extends TestCase
 
     public function testNotLikeEx()
     {
-
         $this->expectException('Pop\Db\Sql\Predicate\Exception');
         $predicate = new Predicate\NotLike(['username']);
         $predicate->render($this->db->createSql());
+        $this->db->disconnect();
     }
 
 }

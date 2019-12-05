@@ -24,6 +24,7 @@ class SchemaStructureMysqlTest extends TestCase
     {
         $schema = $this->db->createSchema();
         $schema->create('users')
+            ->integer('email_id')
             ->bigInt('id')
             ->mediumInt('info_id')
             ->smallInt('active')
@@ -48,6 +49,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->char('gender');
 
         $sql = (string)$schema;
+        $this->assertContains('`email_id` INT', $sql);
         $this->assertContains('`id` BIGINT', $sql);
         $this->assertContains('`info_id` MEDIUMINT', $sql);
         $this->assertContains('`active` SMALLINT', $sql);
@@ -87,6 +89,125 @@ class SchemaStructureMysqlTest extends TestCase
         $this->assertContains('`info_id` INT', $sql);
         $this->assertContains('`email_id` BIGINT', $sql);
         $this->assertContains('`session_id` SMALLINT', $sql);
+    }
+
+    public function testCurrent()
+    {
+        $schema = $this->db->createSchema();
+        $create = $schema->create('users');
+        $create->column('id');
+        $create->constraint('user_id');
+        $this->assertEquals('id', $create->getColumn());
+        $this->assertEquals('user_id', $create->getConstraint());
+    }
+
+    public function testHasColumn()
+    {
+        $schema = $this->db->createSchema();
+        $create = $schema->create('users');
+        $create->int('id')->addColumnAttribute('AUTO_INCREMENT');
+        $this->assertTrue($create->hasColumn('id'));
+    }
+
+    public function testDefault()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->int('active')->defaultIs(0)
+            ->primary('id');
+        $this->assertContains("`active` INT DEFAULT '0'", (string)$schema);
+    }
+
+    public function testDefaultNull1()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->int('active')->defaultIs(null)
+            ->primary('id');
+        $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+    }
+
+    public function testDefaultNull2()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->int('active')->defaultIs('NULL')
+            ->primary('id');
+        $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+    }
+
+    public function testNullable()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->int('active')->nullable()
+            ->primary('id');
+        $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+    }
+
+    public function testNotNullable()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->int('active')->notNullable()
+            ->primary('id');
+        $this->assertContains("`active` INT NOT NULL", (string)$schema);
+    }
+
+    public function testUnsigned()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->int('active')->unsigned()
+            ->primary('id');
+        $this->assertContains("`active` INT UNSIGNED", (string)$schema);
+    }
+
+    public function testUnique()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)
+            ->varchar('username', 255)->unique()
+            ->int('active')
+            ->primary('id');
+        $this->assertContains("CREATE UNIQUE INDEX `index_username` ON `users` (`username`);", (string)$schema);
+    }
+
+    public function testPrimary()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)->primary()
+            ->varchar('username', 255)->unique()
+            ->int('active');
+        $this->assertContains("PRIMARY KEY (`id`)", (string)$schema);
+    }
+
+    public function testForeignKey()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)->primary()
+            ->int('info_id')
+            ->varchar('username', 255)->unique()
+            ->int('active')
+            ->foreignKey('info_id')->references('user_info')->on('id')->onDelete('CASCADE');
+        $this->assertContains("ALTER TABLE `users` ADD CONSTRAINT `fk_info_id` FOREIGN KEY (`info_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;", (string)$schema);
+
+        $this->db->disconnect();
     }
 
 }

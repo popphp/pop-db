@@ -232,6 +232,8 @@ class PdpMysqlTest extends TestCase
         $this->assertTrue($db->hasTable('users'));
         $db->query($schema);
         $this->assertFalse($db->hasTable('users'));
+
+        $db->disconnect();
     }
 
 }

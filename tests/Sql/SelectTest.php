@@ -301,6 +301,8 @@ class SelectTest extends TestCase
         $sql2->select()->setAlias('usernames');
         $sql1->select()->from($sql2->select());
         $this->assertEquals('SELECT * FROM (SELECT `username` FROM `users`) AS `usernames`', $sql1->render());
+
+        $this->db->disconnect();
     }
 
 

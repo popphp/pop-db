@@ -89,6 +89,8 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->orWhere('id = ?');
         $this->assertEquals("SELECT * FROM `users` WHERE (`id` = ?)", $sql->render());
+
+        $this->db->disconnect();
     }
 
 }

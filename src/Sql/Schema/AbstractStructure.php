@@ -59,25 +59,45 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Set the current column
      *
-     * @param  string $name
+     * @param  string $column
      * @return AbstractStructure
      */
-    public function column($name)
+    public function column($column)
     {
-        $this->currentColumn = $name;
+        $this->currentColumn = $column;
         return $this;
+    }
+
+    /**
+     * Get the current column
+     *
+     * @return string
+     */
+    public function getColumn()
+    {
+        return $this->currentColumn;
     }
 
     /**
      * Set the current constraint
      *
-     * @param  string $name
+     * @param  string $constraint
      * @return AbstractStructure
      */
-    public function constraint($name)
+    public function constraint($constraint)
     {
-        $this->currentConstraint = $name;
+        $this->currentConstraint = $constraint;
         return $this;
+    }
+
+    /**
+     * Get the current constraint
+     *
+     * @return string
+     */
+    public function getConstraint()
+    {
+        return $this->currentConstraint;
     }
 
     /**
@@ -740,10 +760,10 @@ abstract class AbstractStructure extends AbstractTable
 
         if ((null === $column['default']) && ($column['nullable'] === true)) {
             $columnString .= ' DEFAULT NULL';
-        } else if (!empty($column['default'])) {
-            if (strtoupper($column['default']) == 'NULL') {
+        } else if (strtoupper($column['default']) == 'NULL') {
                 $columnString .= ' DEFAULT NULL';
-            }
+        } else if (null !== $column['default']) {
+            $columnString .= " DEFAULT '" . $column['default'] . "'";
         }
 
         if ($column['increment'] !== false) {

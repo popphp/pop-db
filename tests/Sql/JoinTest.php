@@ -50,6 +50,7 @@ class JoinTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->leftJoin('user_info', ['user_info.user_id' => ['users.id', 'users.foo']]);
         $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id` AND `user_info`.`user_id` = `users`.`foo`)', $sql->render());
+        $this->db->disconnect();
     }
 
 }

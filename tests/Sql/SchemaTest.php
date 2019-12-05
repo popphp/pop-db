@@ -142,6 +142,8 @@ class SchemaTest extends TestCase
         $schema->drop('users_table');
         $schema->execute();
         $this->assertFalse($this->db->hasTable('users'));
+
+        $this->db->disconnect();
     }
 
     public function testCreateExecuteSqlite()

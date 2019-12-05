@@ -88,6 +88,8 @@ class DbTest extends TestCase
         ]);
         $this->assertTrue($db->hasTable('pop_users'));
         $db->query('DROP TABLE `pop_users`');
+
+        $db->disconnect();
     }
 
     public function testExecuteMysqlSqlFileWithAdapter()
@@ -101,6 +103,8 @@ class DbTest extends TestCase
         Db::executeSqlFile(__DIR__ . '/tmp/users.mysql.sql', $db, ['prefix'   => 'pop_']);
         $this->assertTrue($db->hasTable('pop_users'));
         $db->query('DROP TABLE `pop_users`');
+
+        $db->disconnect();
     }
 
     public function testExecuteSqliteSqlFile()
@@ -154,6 +158,8 @@ class DbTest extends TestCase
         $this->assertTrue(Db::hasDb('Pop\Db\Test\TestAsset\Users'));
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', Db::db('Pop\Db\Test\TestAsset\Users'));
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', Db::db('users'));
+
+        $db->disconnect();
     }
 
     public function testSetDbByClass()
@@ -173,6 +179,8 @@ class DbTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', Db::db('users'));
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', Db::db('Pop\Db\Test\TestAsset\Users'));
         $this->assertTrue(is_array(Db::getAll()));
+
+        $db->disconnect();
     }
 
 }

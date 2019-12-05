@@ -32,6 +32,7 @@ class InsertTest extends TestCase
         $sql = $this->db->createSql();
         $sql->insert()->into('users')->values(['username' => 'admin'])->onDuplicateKeyUpdate(['username']);
         $this->assertEquals("INSERT INTO `users` (`username`) VALUES ('admin') ON DUPLICATE KEY UPDATE `username` = VALUES(username)", (string)$sql->insert());
+        $this->db->disconnect();
     }
 
     public function testRenderPgsql()

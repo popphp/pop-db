@@ -33,6 +33,8 @@ class DeleteTest extends TestCase
         $this->expectException('Pop\Db\Sql\Exception');
         $sql = $this->db->createSql();
         $var = $sql->delete()->bad;
+
+        $this->db->disconnect();
     }
 
 }

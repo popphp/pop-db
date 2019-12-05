@@ -298,6 +298,7 @@ class PredicateSetTest extends TestCase
         $nested->add("(`username` = 'admin')")->add("(`username` = 'admin')");
         $predicateSet->addPredicateSet($nested);
         $string = $predicateSet->render();
+        $this->db->disconnect();
     }
 
 }

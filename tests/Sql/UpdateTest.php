@@ -41,6 +41,8 @@ class UpdateTest extends TestCase
         $sql = $this->db->createSql();
         $sql->update('users')->set('username', ':username')->where('id = ?');
         $this->assertEquals("UPDATE `users` SET `username` = ? WHERE (`id` = ?)", (string)$sql->update());
+
+        $this->db->disconnect();
     }
 
     public function testRenderPgsqlWithNamedValues()

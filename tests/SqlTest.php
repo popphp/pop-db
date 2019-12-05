@@ -119,6 +119,8 @@ class SqlTest extends TestCase
         $this->assertFalse($sql->hasInsert());
         $this->assertFalse($sql->hasUpdate());
         $this->assertFalse($sql->hasDelete());
+
+        $this->db->disconnect();
     }
 
 }
