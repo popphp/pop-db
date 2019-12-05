@@ -72,6 +72,7 @@ class SchemaStructureMysqlTest extends TestCase
         $this->assertContains('`bar` MEDIUMBLOB', $sql);
         $this->assertContains('`baz` LONGBLOB', $sql);
         $this->assertContains('`gender` CHAR', $sql);
+        $this->db->disconnect();
     }
 
     public function testAlternateTypes()
@@ -89,6 +90,7 @@ class SchemaStructureMysqlTest extends TestCase
         $this->assertContains('`info_id` INT', $sql);
         $this->assertContains('`email_id` BIGINT', $sql);
         $this->assertContains('`session_id` SMALLINT', $sql);
+        $this->db->disconnect();
     }
 
     public function testCurrent()
@@ -99,6 +101,7 @@ class SchemaStructureMysqlTest extends TestCase
         $create->constraint('user_id');
         $this->assertEquals('id', $create->getColumn());
         $this->assertEquals('user_id', $create->getConstraint());
+        $this->db->disconnect();
     }
 
     public function testHasColumn()
@@ -107,6 +110,7 @@ class SchemaStructureMysqlTest extends TestCase
         $create = $schema->create('users');
         $create->int('id')->addColumnAttribute('AUTO_INCREMENT');
         $this->assertTrue($create->hasColumn('id'));
+        $this->db->disconnect();
     }
 
     public function testDefault()
@@ -118,6 +122,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')->defaultIs(0)
             ->primary('id');
         $this->assertContains("`active` INT DEFAULT '0'", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testDefaultNull1()
@@ -129,6 +134,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')->defaultIs(null)
             ->primary('id');
         $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testDefaultNull2()
@@ -140,6 +146,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')->defaultIs('NULL')
             ->primary('id');
         $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testNullable()
@@ -151,6 +158,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')->nullable()
             ->primary('id');
         $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testNotNullable()
@@ -162,6 +170,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')->notNullable()
             ->primary('id');
         $this->assertContains("`active` INT NOT NULL", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testUnsigned()
@@ -173,6 +182,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')->unsigned()
             ->primary('id');
         $this->assertContains("`active` INT UNSIGNED", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testUnique()
@@ -184,6 +194,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('active')
             ->primary('id');
         $this->assertContains("CREATE UNIQUE INDEX `index_username` ON `users` (`username`);", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testPrimary()
@@ -194,6 +205,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)->unique()
             ->int('active');
         $this->assertContains("PRIMARY KEY (`id`)", (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testForeignKey()

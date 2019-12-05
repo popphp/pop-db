@@ -26,6 +26,7 @@ class ClauseTest extends TestCase
         $sql->select()->setAlias('users');
         $this->assertTrue($sql->select()->hasAlias());
         $this->assertEquals('users', $sql->select()->getAlias());
+        $this->db->disconnect();
     }
 
     public function testWhereAnd()
@@ -33,6 +34,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where('id = ? AND email = ?');
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) AND (`email` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testWhereOr()
@@ -40,6 +42,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where('id = ? OR email = ?');
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) OR (`email` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testWhereArray()
@@ -47,6 +50,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where(['id = ?', 'email = ?']);
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) AND (`email` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testAndWhere()
@@ -54,6 +58,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where('id = ?')->andWhere('email = ?');
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) AND (`email` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testOrWhere()
@@ -61,6 +66,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where('id = ?')->orWhere('email = ?');
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) OR (`email` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testAndWhereArray()
@@ -68,6 +74,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where('id = ?')->andWhere(['email = ?', 'username = ?']);
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) AND (`email` = ?) AND (`username` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testOrWhereArray()
@@ -75,6 +82,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->where('id = ?')->orWhere(['email = ?', 'username = ?']);
         $this->assertEquals("SELECT * FROM `users` WHERE ((`id` = ?) OR (`email` = ?) OR (`username` = ?))", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testInitAndWhere()
@@ -82,6 +90,7 @@ class ClauseTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->andWhere('id = ?');
         $this->assertEquals("SELECT * FROM `users` WHERE (`id` = ?)", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testInitOrWhere()

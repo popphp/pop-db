@@ -742,8 +742,10 @@ abstract class AbstractStructure extends AbstractTable
         $columnString = $this->getValidColumnType($column['type']);
 
         if (!empty($column['size']) && !($this->isSqlite())) {
-            $columnString .= '(' . $column['size'];
-            $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
+            if (($this->isMysql()) || ($this->isPgsql()) && (strpos($columnString, 'INT') === false)) {
+                $columnString .= '(' . $column['size'];
+                $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
+            }
         }
 
         if (($this->isMysql()) && ($column['unsigned'] !== false)) {
@@ -814,14 +816,18 @@ abstract class AbstractStructure extends AbstractTable
             }
         } else if ($this->isPgsql()) {
             switch ($type) {
-                case 'TINYINT':
-                    $type = 'INT';
-                    break;
+                case 'INT':
                 case 'MEDIUMINT':
-                    $type = 'INT';
+                    $type = 'INTEGER';
+                    break;
+                case 'TINYINT':
+                    $type = 'SMALLINT';
                     break;
                 case 'DATETIME':
                     $type = 'TIMESTAMP';
+                    break;
+                case 'DOUBLE':
+                    $type = 'DOUBLE PRECISION';
                     break;
                 case 'VARBINARY':
                     $type = 'BYTEA';

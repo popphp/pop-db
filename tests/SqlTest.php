@@ -33,6 +33,7 @@ class SqlTest extends TestCase
         $this->assertEquals("`", $sql->getOpenQuote());
         $this->assertEquals("`", $sql->getCloseQuote());
         $this->assertEquals('`pop_users`.`id`', $sql->quoteId('pop_users.id'));
+        $this->db->disconnect();
     }
 
     public function testInitSqlConfigNoQuote()
@@ -41,6 +42,7 @@ class SqlTest extends TestCase
         $sql->setIdQuoteType(Sql::NO_QUOTE);
         $this->assertNull($sql->getOpenQuote());
         $this->assertNull($sql->getCloseQuote());
+        $this->db->disconnect();
     }
 
     public function testSelectWithValues()
@@ -54,6 +56,7 @@ class SqlTest extends TestCase
         $this->assertEquals(3, count($sql->select()->getValues()));
         $this->assertEquals('id', $sql->select()->getValue(0));
         $this->assertEquals("SELECT `id`, `username`, `email` FROM `users`", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testSelectWithNamedValues()
@@ -69,6 +72,7 @@ class SqlTest extends TestCase
         $this->assertFalse($sql->hasUpdate());
         $this->assertFalse($sql->hasDelete());
         $this->assertEquals("SELECT `id`, `username` AS `user_name`, `email` FROM `users`", $sql->render());
+        $this->db->disconnect();
     }
 
     public function testInsertWithTable()
@@ -82,6 +86,7 @@ class SqlTest extends TestCase
         $this->assertFalse($sql->hasUpdate());
         $this->assertFalse($sql->hasDelete());
         $this->assertEquals("INSERT INTO `users` (`username`) VALUES ('admin')", (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testUpdate()
@@ -93,6 +98,7 @@ class SqlTest extends TestCase
         $this->assertTrue($sql->hasUpdate());
         $this->assertFalse($sql->hasDelete());
         $this->assertEquals("UPDATE `users` SET `username` = 'admin2' WHERE (`id` = 1)", (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testDelete()
@@ -104,6 +110,7 @@ class SqlTest extends TestCase
         $this->assertFalse($sql->hasUpdate());
         $this->assertTrue($sql->hasDelete());
         $this->assertEquals("DELETE FROM `users` WHERE (`id` = 1)", (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testReset()

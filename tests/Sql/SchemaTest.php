@@ -28,6 +28,7 @@ class SchemaTest extends TestCase
             ->varchar('username', 255)
             ->primary('id');
         $this->assertContains('CREATE TABLE IF NOT EXISTS `users`', (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testDropIfExists()
@@ -35,6 +36,7 @@ class SchemaTest extends TestCase
         $schema = $this->db->createSchema();
         $schema->dropIfExists('users');
         $this->assertContains('DROP TABLE IF EXISTS `users`', (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testAlter()
@@ -42,6 +44,7 @@ class SchemaTest extends TestCase
         $schema = $this->db->createSchema();
         $schema->alter('users')->addColumn('email', 'varchar', 255);
         $this->assertContains('ALTER TABLE `users`', (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testRename()
@@ -49,6 +52,7 @@ class SchemaTest extends TestCase
         $schema = $this->db->createSchema();
         $schema->rename('users')->to('users_table');
         $this->assertContains('RENAME TABLE `users` TO `users_table`', (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testTruncate()
@@ -56,6 +60,7 @@ class SchemaTest extends TestCase
         $schema = $this->db->createSchema();
         $schema->truncate('users');
         $this->assertContains('TRUNCATE TABLE `users`', (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testForeignKeyCheck()
@@ -68,6 +73,7 @@ class SchemaTest extends TestCase
             ->varchar('username', 255)
             ->primary('id');
         $this->assertContains('SET foreign_key_checks = 0', (string)$schema);
+        $this->db->disconnect();
     }
 
     public function testForeignKeyCheckSqlite()
@@ -99,6 +105,7 @@ class SchemaTest extends TestCase
             ->primary('id');
         $schema->execute();
         $this->assertTrue($this->db->hasTable('users'));
+        $this->db->disconnect();
     }
 
     public function testAlterExecute()
@@ -116,6 +123,7 @@ class SchemaTest extends TestCase
         $this->assertEquals('users', $alter->getTable());
         $this->assertTrue(isset($info['columns']['email']));
         $schema->reset();
+        $this->db->disconnect();
     }
 
     public function testTruncateExecute()
@@ -133,6 +141,7 @@ class SchemaTest extends TestCase
         $schema->execute();
         $this->assertFalse($this->db->hasTable('users'));
         $this->assertTrue($this->db->hasTable('users_table'));
+        $this->db->disconnect();
     }
 
     public function testDropExecute()

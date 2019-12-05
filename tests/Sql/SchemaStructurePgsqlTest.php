@@ -52,7 +52,7 @@ class SchemaStructurePgsqlTest extends TestCase
         $this->assertContains('"id" BIGINT', $sql);
         $this->assertContains('"info_id" INT', $sql);
         $this->assertContains('"active" SMALLINT', $sql);
-        $this->assertContains('"verified" INT', $sql);
+        $this->assertContains('"verified" SMALLINT', $sql);
         $this->assertContains('"worked" FLOAT', $sql);
         $this->assertContains('"time_off" REAL', $sql);
         $this->assertContains('"hourly" DOUBLE', $sql);
