@@ -177,21 +177,21 @@ class Alter extends AbstractStructure
      */
     public function render()
     {
-        $sql = '';
+        $schema = '';
 
         // Modify existing columns
         foreach ($this->existingColumns as $name => $column) {
             if (null !== $column['modify']) {
                 if ($this->isMysql()) {
-                    $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
+                    $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) .
                         ' CHANGE COLUMN ' . $this->quoteId($name) . ' ' .
-                        $this->quoteId($column['modify']) . ' ' . $this->getColumnType($column['modify'], $column) . ';' . PHP_EOL;
+                        $this->quoteId($column['modify']) . ' ' . $this->getColumnSchema($column['modify'], $column) . ';' . PHP_EOL;
                 } else {
                     if ($column['modify'] == $name) {
-                        $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ALTER COLUMN ' .
-                            $this->quoteId($name) . ' ' . $this->getColumnType($column['modify'], $column) . ';' . PHP_EOL;
+                        $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ALTER COLUMN ' .
+                            $this->quoteId($name) . ' ' . $this->getColumnSchema($column['modify'], $column) . ';' . PHP_EOL;
                     } else {
-                        $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME COLUMN ' .
+                        $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME COLUMN ' .
                             $this->quoteId($name) . ' ' . $this->quoteId($column['modify']) . ';' . PHP_EOL;
                     }
                 }
@@ -200,63 +200,46 @@ class Alter extends AbstractStructure
 
         // Add new columns
         foreach ($this->columns as $name => $column) {
-            $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' .
-                $this->quoteId($name) . ' ' . $this->getColumnType($name, $column) . ';' . PHP_EOL;
+            $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' .
+                $this->quoteId($name) . ' ' . $this->getColumnSchema($name, $column) . ';' . PHP_EOL;
         }
 
         // Drop columns
         foreach ($this->dropColumns as $name => $column) {
-            $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP COLUMN ' . $this->quoteId($column) . ';' . PHP_EOL;
+            $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP COLUMN ' . $this->quoteId($column) . ';' . PHP_EOL;
         }
 
         // Drop indices
         foreach ($this->dropIndices as $index) {
             if ($this->isMysql()) {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP INDEX ' . $this->quoteId($index) . ';' . PHP_EOL;
+                $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP INDEX ' . $this->quoteId($index) . ';' . PHP_EOL;
             } else {
-                $sql .= 'DROP INDEX ' . $this->quoteId($this->table . '.' . $index) . ';' . PHP_EOL;
+                $schema .= 'DROP INDEX ' . $this->quoteId($this->table . '.' . $index) . ';' . PHP_EOL;
             }
         }
 
         // Drop constraints
         foreach ($this->dropConstraints as $constraint) {
             if ($this->isMysql()) {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' .
+                $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' .
                     $this->quoteId($constraint) . ';' . PHP_EOL;
             } else {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP CONSTRAINT ' .
+                $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP CONSTRAINT ' .
                     $this->quoteId($constraint) . ';' . PHP_EOL;
             }
         }
 
         // Add indices
         if (count($this->indices) > 0) {
-            $sql .= PHP_EOL;
-            foreach ($this->indices as $name => $index) {
-                foreach ($index['column'] as $i => $column) {
-                    $index['column'][$i] = $this->quoteId($column);
-                }
-
-                if ($index['type'] != 'primary') {
-                    $sql .= 'CREATE ' . (($index['type'] == 'unique') ? 'UNIQUE ' : null) . 'INDEX ' . $this->quoteId($name) .
-                        ' ON ' . $this->quoteId($this->table) . ' (' . implode(', ', $index['column']) . ');' . PHP_EOL;
-                }
-            }
+            $schema .= Formatter\Table::createIndices($this->indices, $this->table, $this);
         }
 
         // Add constraints
         if (count($this->constraints) > 0) {
-            $sql .= PHP_EOL;
-            foreach ($this->constraints as $name => $constraint) {
-                $sql .= 'ALTER TABLE ' . $this->quoteId($this->table) .
-                    ' ADD CONSTRAINT ' . $this->quoteId($name) .
-                    ' FOREIGN KEY (' . $this->quoteId($constraint['column']) . ')' .
-                    ' REFERENCES ' . $this->quoteId($constraint['references']) . ' (' . $this->quoteId($constraint['on']) . ')' .
-                    ' ON DELETE ' . $constraint['delete'] . ' ON UPDATE CASCADE;' . PHP_EOL;
-            }
+            $schema .= Formatter\Table::createConstraints($this->constraints, $this->table, $this);
         }
 
-        return $sql . PHP_EOL;
+        return $schema . PHP_EOL;
     }
 
     /**

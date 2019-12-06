@@ -107,9 +107,10 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $type
      * @param  mixed  $size
      * @param  mixed  $precision
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function addColumn($name, $type, $size = null, $precision = null)
+    public function addColumn($name, $type, $size = null, $precision = null, array $attributes = [])
     {
         $this->currentColumn  = $name;
         $this->columns[$name] = [
@@ -121,7 +122,7 @@ abstract class AbstractStructure extends AbstractTable
             'increment'  => false,
             'primary'    => false,
             'unsigned'   => false,
-            'attributes' => []
+            'attributes' => (!empty($attributes)) ? $attributes : []
         ];
 
         return $this;
@@ -427,7 +428,7 @@ abstract class AbstractStructure extends AbstractTable
     }
 
     /*
-     * NUMERIC TYPES
+     * INTEGER TYPES
      */
 
     /**
@@ -435,11 +436,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function integer($name, $size = null)
+    public function integer($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'integer', $size);
+        return $this->addColumn($name, 'integer', $size, null, $attributes);
     }
 
     /**
@@ -447,11 +449,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function int($name, $size = null)
+    public function int($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'int', $size);
+        return $this->addColumn($name, 'int', $size, null, $attributes);
     }
 
     /**
@@ -459,11 +462,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function bigInt($name, $size = null)
+    public function bigInt($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'bigint', $size);
+        return $this->addColumn($name, 'bigint', $size, null, $attributes);
     }
 
     /**
@@ -471,11 +475,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function mediumInt($name, $size = null)
+    public function mediumInt($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'mediumint', $size);
+        return $this->addColumn($name, 'mediumint', $size, null, $attributes);
     }
 
     /**
@@ -483,11 +488,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function smallInt($name, $size = null)
+    public function smallInt($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'smallint', $size);
+        return $this->addColumn($name, 'smallint', $size, null, $attributes);
     }
 
     /**
@@ -495,12 +501,17 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function tinyInt($name, $size = null)
+    public function tinyInt($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'tinyint', $size);
+        return $this->addColumn($name, 'tinyint', $size, null, $attributes);
     }
+
+    /*
+     * NUMERIC TYPES
+     */
 
     /**
      * Add a FLOAT column
@@ -508,22 +519,26 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $name
      * @param  mixed  $size
      * @param  mixed  $precision
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function float($name, $size = null, $precision = null)
+    public function float($name, $size = null, $precision = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'float', $size, $precision);
+        return $this->addColumn($name, 'float', $size, $precision, $attributes);
     }
 
     /**
      * Add a REAL column
      *
      * @param  string $name
+     * @param  mixed  $size
+     * @param  mixed  $precision
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function real($name)
+    public function real($name, $size = null, $precision = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'real');
+        return $this->addColumn($name, 'real', $size, $precision, $attributes);
     }
 
     /**
@@ -532,11 +547,12 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $name
      * @param  mixed  $size
      * @param  mixed  $precision
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function double($name, $size = null, $precision = null)
+    public function double($name, $size = null, $precision = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'double', $size, $precision);
+        return $this->addColumn($name, 'double', $size, $precision, $attributes);
     }
 
     /**
@@ -545,11 +561,12 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $name
      * @param  mixed  $size
      * @param  mixed  $precision
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function decimal($name, $size = null, $precision = null)
+    public function decimal($name, $size = null, $precision = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'decimal', $size, $precision);
+        return $this->addColumn($name, 'decimal', $size, $precision, $attributes);
     }
 
     /**
@@ -558,11 +575,12 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $name
      * @param  mixed  $size
      * @param  mixed  $precision
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function numeric($name, $size = null, $precision = null)
+    public function numeric($name, $size = null, $precision = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'numeric', $size, $precision);
+        return $this->addColumn($name, 'numeric', $size, $precision, $attributes);
     }
 
     /*
@@ -573,44 +591,48 @@ abstract class AbstractStructure extends AbstractTable
      * Add a DATE column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function date($name)
+    public function date($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'date');
+        return $this->addColumn($name, 'date', null, null, $attributes);
     }
 
     /**
      * Add a TIME column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function time($name)
+    public function time($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'time');
+        return $this->addColumn($name, 'time', null, null, $attributes);
     }
 
     /**
      * Add a DATETIME column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function datetime($name)
+    public function datetime($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'datetime');
+        return $this->addColumn($name, 'datetime', null, null, $attributes);
     }
 
     /**
      * Add a TIMESTAMP column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function timestamp($name)
+    public function timestamp($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'timestamp');
+        return $this->addColumn($name, 'timestamp', null, null, $attributes);
     }
 
     /**
@@ -618,11 +640,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  mixed  $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function year($name, $size = null)
+    public function year($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'year', $size);
+        return $this->addColumn($name, 'year', $size, null, $attributes);
     }
 
     /*
@@ -633,77 +656,84 @@ abstract class AbstractStructure extends AbstractTable
      * Add a TEXT column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function text($name)
+    public function text($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'text');
+        return $this->addColumn($name, 'text', null, null, $attributes);
     }
 
     /**
      * Add a TINYTEXT column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function tinyText($name)
+    public function tinyText($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'tinytext');
+        return $this->addColumn($name, 'tinytext', null, null, $attributes);
     }
 
     /**
      * Add a MEDIUMTEXT column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function mediumText($name)
+    public function mediumText($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'mediumtext');
+        return $this->addColumn($name, 'mediumtext', null, null, $attributes);
     }
 
     /**
      * Add a LONGTEXT column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function longText($name)
+    public function longText($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'longtext');
+        return $this->addColumn($name, 'longtext', null, null, $attributes);
     }
 
     /**
      * Add a BLOB column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function blob($name)
+    public function blob($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'blob');
+        return $this->addColumn($name, 'blob', null, null, $attributes);
     }
 
     /**
      * Add a MEDIUMBLOB column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function mediumBlob($name)
+    public function mediumBlob($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'mediumblob');
+        return $this->addColumn($name, 'mediumblob', null, null, $attributes);
     }
 
     /**
      * Add a LONGBLOB column
      *
      * @param  string $name
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function longBlob($name)
+    public function longBlob($name, array $attributes = [])
     {
-        return $this->addColumn($name, 'longblob');
+        return $this->addColumn($name, 'longblob', null, null, $attributes);
     }
 
     /**
@@ -711,11 +741,12 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  int    $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function char($name, $size = null)
+    public function char($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'char', $size);
+        return $this->addColumn($name, 'char', $size, null, $attributes);
     }
 
     /**
@@ -723,176 +754,24 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @param  string $name
      * @param  int    $size
+     * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function varchar($name, $size = null)
+    public function varchar($name, $size = null, array $attributes = [])
     {
-        return $this->addColumn($name, 'varchar', $size);
+        return $this->addColumn($name, 'varchar', $size, null, $attributes);
     }
 
     /**
-     * Format column data type and parameters
+     * Format column schema
      *
      * @param  string $name
      * @param  array $column
      * @return string
      */
-    protected function getColumnType($name, array $column)
+    protected function getColumnSchema($name, array $column)
     {
-        $columnString = $this->getValidColumnType($column['type']);
-
-        if (!empty($column['size']) && !($this->isSqlite())) {
-            if (($this->isMysql()) || ($this->isPgsql()) && (strpos($columnString, 'INT') === false)) {
-                $columnString .= '(' . $column['size'];
-                $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
-            }
-        }
-
-        if (($this->isMysql()) && ($column['unsigned'] !== false)) {
-            $columnString .= ' UNSIGNED';
-        }
-
-        if (count($column['attributes']) > 0) {
-            $columnString .= ' ' . implode(' ', $column['attributes']);
-        }
-
-        if (($column['nullable'] === false) || (strtoupper($column['default']) == 'NOT NULL')) {
-            $columnString .= ' NOT NULL';
-        }
-
-        if ((null === $column['default']) && ($column['nullable'] === true)) {
-            $columnString .= ' DEFAULT NULL';
-        } else if (strtoupper($column['default']) == 'NULL') {
-                $columnString .= ' DEFAULT NULL';
-        } else if (null !== $column['default']) {
-            $columnString .= " DEFAULT '" . $column['default'] . "'";
-        }
-
-        if ($column['increment'] !== false) {
-            switch ($this->dbType) {
-                case (self::MYSQL):
-                    $columnString .= ' AUTO_INCREMENT';
-                    break;
-                case (self::SQLITE):
-                    $columnString .= (($column['primary'] !== false) ? ' PRIMARY KEY' : null) . ' AUTOINCREMENT';
-                    break;
-                case (self::PGSQL):
-                    $columnString .= ' nextval(\'' . $this->table . '_' . $name . '_seq\')';
-                    break;
-                case (self::SQLSRV):
-                    $columnString .= (($column['primary'] !== false) ? ' PRIMARY KEY' : null) .
-                        ' IDENTITY(' . (int)$column['increment'] . ', 1)';
-                    break;
-            }
-        }
-
-        return $columnString;
-    }
-
-    /**
-     * Get valid column type
-     *
-     * @param  string $type
-     * @return string
-     */
-    protected function getValidColumnType($type)
-    {
-        $type = strtoupper($type);
-
-        if ($this->isMysql()) {
-            switch ($type) {
-                case 'INTEGER':
-                    $type = 'INT';
-                    break;
-                case 'SERIAL':
-                    $type = 'INT';
-                    break;
-                case 'BIGSERIAL':
-                    $type = 'BIGINT';
-                    break;
-                case 'SMALLSERIAL':
-                    $type = 'SMALLINT';
-                    break;
-            }
-        } else if ($this->isPgsql()) {
-            switch ($type) {
-                case 'INT':
-                case 'MEDIUMINT':
-                    $type = 'INTEGER';
-                    break;
-                case 'TINYINT':
-                    $type = 'SMALLINT';
-                    break;
-                case 'DATETIME':
-                    $type = 'TIMESTAMP';
-                    break;
-                case 'DOUBLE':
-                    $type = 'DOUBLE PRECISION';
-                    break;
-                case 'VARBINARY':
-                    $type = 'BYTEA';
-                    break;
-                case 'BLOB':
-                case 'TINYBLOB':
-                case 'MEDIUMBLOB':
-                case 'LONGBLOB':
-                case 'TINYTEXT':
-                case 'MEDIUMTEXT':
-                case 'LONGTEXT':
-                    $type = 'TEXT';
-                    break;
-            }
-        } else if ($this->isSqlsrv()) {
-            switch ($type) {
-                case 'INTEGER':
-                    $type = 'INT';
-                    break;
-                case 'MEDIUMINT':
-                    $type = 'INT';
-                    break;
-                case 'SERIAL':
-                    $type = 'INT';
-                    break;
-                case 'BIGSERIAL':
-                    $type = 'BIGINT';
-                    break;
-                case 'SMALLSERIAL':
-                    $type = 'SMALLINT';
-                    break;
-                case 'TIMESTAMP':
-                    $type = 'DATETIME2';
-                    break;
-                case 'BLOB':
-                case 'TINYBLOB':
-                case 'MEDIUMBLOB':
-                case 'LONGBLOB':
-                case 'TINYTEXT':
-                case 'MEDIUMTEXT':
-                case 'LONGTEXT':
-                    $type = 'TEXT';
-                    break;
-            }
-        } else if ($this->isSqlite()) {
-            switch ($type) {
-                case 'INT':
-                    $type = 'INTEGER';
-                    break;
-                case 'SERIAL':
-                    $type = 'INT';
-                    break;
-                case 'BIGSERIAL':
-                    $type = 'BIGINT';
-                    break;
-                case 'SMALLSERIAL':
-                    $type = 'SMALLINT';
-                    break;
-                case 'TIMESTAMP':
-                    $type = 'DATETIME';
-                    break;
-            }
-        }
-
-        return $type;
+        return Formatter\Column::getColumnSchema($this->getDbType(), $this->quoteId($name), $column, $this->table);
     }
 
 }
