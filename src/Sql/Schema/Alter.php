@@ -185,11 +185,11 @@ class Alter extends AbstractStructure
                 if ($this->isMysql()) {
                     $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) .
                         ' CHANGE COLUMN ' . $this->quoteId($name) . ' ' .
-                        $this->quoteId($column['modify']) . ' ' . $this->getColumnSchema($column['modify'], $column) . ';' . PHP_EOL;
+                        $this->getColumnSchema($column['modify'], $column) . ';' . PHP_EOL;
                 } else {
                     if ($column['modify'] == $name) {
                         $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ALTER COLUMN ' .
-                            $this->quoteId($name) . ' ' . $this->getColumnSchema($column['modify'], $column) . ';' . PHP_EOL;
+                            $this->getColumnSchema($column['modify'], $column) . ';' . PHP_EOL;
                     } else {
                         $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' RENAME COLUMN ' .
                             $this->quoteId($name) . ' ' . $this->quoteId($column['modify']) . ';' . PHP_EOL;
@@ -200,8 +200,7 @@ class Alter extends AbstractStructure
 
         // Add new columns
         foreach ($this->columns as $name => $column) {
-            $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' .
-                $this->quoteId($name) . ' ' . $this->getColumnSchema($name, $column) . ';' . PHP_EOL;
+            $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' . $this->getColumnSchema($name, $column) . ';' . PHP_EOL;
         }
 
         // Drop columns

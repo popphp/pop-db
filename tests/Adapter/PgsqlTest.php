@@ -51,24 +51,22 @@ class PgsqlTest extends TestCase
 
         $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
 
-        $db->query('DROP TABLE IF EXISTS users CASCADE');
-        $db->query('CREATE SEQUENCE user_id_seq START 1001');
+        $db->query('DROP TABLE IF EXISTS "users" CASCADE');
 
-        $table = <<<TABLE
-CREATE TABLE IF NOT EXISTS "users" (
-  "id" integer NOT NULL DEFAULT nextval('user_id_seq'),
-  "role_id" integer,
-  "username" varchar(255) NOT NULL,
-  "password" varchar(255) NOT NULL,
-  "email" varchar(255) NOT NULL,
-  "active" integer,
-  "verified" integer,
-  PRIMARY KEY ("id")
-)
-TABLE;
-        $db->query($table);
-        $db->query('ALTER SEQUENCE user_id_seq OWNED BY "users"."id";');
+        $schema = $db->createSchema();
+        $schema->createIfNotExists('users')
+            ->int('id', 16)->notNullable()->increment()
+            ->varchar('username', 255)
+            ->varchar('password', 255)
+            ->varchar('email', 255)
+            ->int('active', 1)
+            ->int('verified', 1)
+            ->primary('id');
 
+        $this->assertFalse($db->hasTable('users'));
+        $db->query($schema);
+
+        $this->assertTrue($db->hasTable('users'));
         $debugResults = $profiler->prepareAsString();
         $this->assertInstanceOf('Pop\Db\Adapter\Pgsql', $db);
         $this->assertContains('PostgreSQL', $db->getVersion());

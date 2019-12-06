@@ -40,7 +40,7 @@ class Column extends AbstractFormatter
      */
     public static function getColumnSchema($dbType, $name, array $column, $table)
     {
-        if (isset($column['type'])) {
+        if (!isset($column['type'])) {
             throw new Exception('Error: The column type was not set.');
         }
 
@@ -182,6 +182,16 @@ class Column extends AbstractFormatter
             case 'DECIMAL':
                 $type = 'NUMERIC';
                 break;
+            case 'TINYBLOB':
+            case 'MEDIUMBLOB':
+            case 'LONGBLOB':
+                $type = 'BLOB';
+                break;
+            case 'TINYTEXT':
+            case 'MEDIUMTEXT':
+            case 'LONGTEXT':
+                $type = 'TEXT';
+                break;
             case 'TIMESTAMP':
                 $type = 'DATETIME';
                 break;
@@ -275,10 +285,14 @@ class Column extends AbstractFormatter
     public static function formatMysqlColumn($name, $dataType, array $column)
     {
         $columnString = $name . ' ' . $dataType;
+        $sizeAllowed  = ['DECIMAL', 'NUMERIC', 'FLOAT', 'DOUBLE', 'REAL', 'DOUBLE PRECISION'];
 
-        if (!empty($column['size'])) {
+        if (!empty($column['size']) &&
+            ((stripos($dataType, 'INT') !== false) || (stripos($dataType, 'CHAR') !== false) ||
+                (stripos($dataType, 'BINARY') !== false) || in_array($dataType, $sizeAllowed))) {
             $columnString .= '(' . $column['size'];
-            $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
+            $columnString .= (!empty($column['precision']) && in_array($dataType, $sizeAllowed)) ?
+                ', ' . $column['precision'] . ')' : ')';
         }
 
         if ($column['unsigned'] !== false) {
@@ -305,17 +319,22 @@ class Column extends AbstractFormatter
      */
     public static function formatPgsqlColumn($name, $dataType, array $column, $table)
     {
-        $columnString = $name . ' ' . $dataType;
+        $columnString     = $name . ' ' . $dataType;
+        $unquotedName     = self::unquoteId($name);
+        $sizeAllowed      = ['DECIMAL', 'NUMERIC', 'FLOAT', 'REAL'];
+        $precisionAllowed = ['DECIMAL', 'NUMERIC'];
 
-        if (!empty($column['size'])) {
+        if (!empty($column['size']) &&
+            ((stripos($dataType, 'CHAR') !== false) || in_array($dataType, $sizeAllowed))) {
             $columnString .= '(' . $column['size'];
-            $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
+            $columnString .= (!empty($column['precision']) && in_array($dataType, $precisionAllowed)) ?
+                ', ' . $column['precision'] . ')' : ')';
         }
 
         $columnString = self::formatCommonParameters($columnString, $column);
 
         if ($column['increment'] !== false) {
-            $columnString .= ' nextval(\'' . $table . '_' . self::unquoteId($name) . '_seq\')';
+            $columnString .= ' DEFAULT nextval(\'' . $table . '_' . $unquotedName . '_seq\')';
         }
 
         return $columnString;
@@ -352,10 +371,15 @@ class Column extends AbstractFormatter
     public static function formatSqlsrvColumn($name, $dataType, array $column)
     {
         $columnString = $name . ' ' . $dataType;
+        $sizeAllowed      = ['DECIMAL', 'NUMERIC', 'FLOAT', 'REAL'];
+        $precisionAllowed = ['DECIMAL', 'NUMERIC'];
 
-        if (!empty($column['size'])) {
+        if (!empty($column['size']) &&
+            ((stripos($dataType, 'CHAR') !== false) || (stripos($dataType, 'BINARY') !== false) ||
+              in_array($dataType, $sizeAllowed))) {
             $columnString .= '(' . $column['size'];
-            $columnString .= (!empty($column['precision'])) ? ', ' . $column['precision'] . ')' : ')';
+            $columnString .= (!empty($column['precision']) && in_array($dataType, $precisionAllowed)) ?
+                ', ' . $column['precision'] . ')' : ')';
         }
 
         $columnString = self::formatCommonParameters($columnString, $column);

@@ -20,6 +20,18 @@ class SchemaStructureMysqlTest extends TestCase
         ]);
     }
 
+    public function testEngineAndCharset()
+    {
+        $schema = $this->db->createSchema();
+
+        $create = $schema->create('users');
+        $create->setEngine('MyISAM');
+        $create->setCharset('iso-8859-1');
+        $this->assertEquals('MyISAM', $create->getEngine());
+        $this->assertEquals('iso-8859-1', $create->getCharset());
+        $this->db->disconnect();
+    }
+
     public function testTypes()
     {
         $schema = $this->db->createSchema();
@@ -140,12 +152,12 @@ class SchemaStructureMysqlTest extends TestCase
     public function testDefaultNull2()
     {
         $schema = $this->db->createSchema();
-        $schema->create('users')
-            ->int('id', 16)
+        $create = $schema->create('users');
+        $create->int('id', 16)
             ->varchar('username', 255)
             ->int('active')->defaultIs('NULL')
             ->primary('id');
-        $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+        $this->assertContains("`active` INT DEFAULT NULL", (string)$create);
         $this->db->disconnect();
     }
 

@@ -47,6 +47,20 @@ class AlterMysqlTest extends TestCase
         $this->assertContains('ALTER TABLE `users` CHANGE COLUMN `price` `product_price` DECIMAL(16, 2) DEFAULT NULL;', $alter->render());
     }
 
+    public function testAlterWithIndex()
+    {
+        $schema = $this->db->createSchema();
+        $alter = $schema->alter('users')->index('price', 'price_index');
+        $this->assertContains('CREATE INDEX `price_index` ON `users` (`price`);', $alter->render());
+    }
+
+    public function testAlterWithConstraint()
+    {
+        $schema = $this->db->createSchema();
+        $alter = $schema->alter('users')->foreignKey('info_id')->references('user_info')->on('id')->onDelete('CASCADE');
+        $this->assertContains('ALTER TABLE `users` ADD CONSTRAINT `fk_info_id` FOREIGN KEY (`info_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;', $alter->render());
+    }
+
     public function testDropColumn()
     {
         $schema = $this->db->createSchema();

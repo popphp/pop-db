@@ -3,6 +3,7 @@
 namespace Pop\Db\Test\Sql;
 
 use Pop\Db\Db;
+use Pop\Db\Sql\Schema\Formatter;
 use PHPUnit\Framework\TestCase;
 
 class SchemaTest extends TestCase
@@ -34,8 +35,8 @@ class SchemaTest extends TestCase
     public function testDropIfExists()
     {
         $schema = $this->db->createSchema();
-        $schema->dropIfExists('users');
-        $this->assertContains('DROP TABLE IF EXISTS `users`', (string)$schema);
+        $drop   = $schema->dropIfExists('users')->cascade();
+        $this->assertContains('DROP TABLE IF EXISTS `users`', (string)$drop);
         $this->db->disconnect();
     }
 
@@ -50,16 +51,18 @@ class SchemaTest extends TestCase
     public function testRename()
     {
         $schema = $this->db->createSchema();
-        $schema->rename('users')->to('users_table');
-        $this->assertContains('RENAME TABLE `users` TO `users_table`', (string)$schema);
+        $rename = $schema->rename('users');
+        $rename->to('users_table');
+        $this->assertEquals('users_table', $rename->getTo());
+        $this->assertContains('RENAME TABLE `users` TO `users_table`', (string)$rename);
         $this->db->disconnect();
     }
 
     public function testTruncate()
     {
-        $schema = $this->db->createSchema();
-        $schema->truncate('users');
-        $this->assertContains('TRUNCATE TABLE `users`', (string)$schema);
+        $schema   = $this->db->createSchema();
+        $truncate = $schema->truncate('users')->cascade();
+        $this->assertContains('TRUNCATE TABLE `users`', (string)$truncate);
         $this->db->disconnect();
     }
 

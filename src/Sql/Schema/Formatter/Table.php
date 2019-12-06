@@ -61,7 +61,7 @@ class Table extends AbstractFormatter
         $primarySchema = '';
 
         if ($dbType != Sql::SQLSRV) {
-            $primarySchema .= ($dbType != Sql::SQLITE) ?
+            $primarySchema .= ($dbType == Sql::SQLITE) ?
                 ',' . PHP_EOL . '  UNIQUE (' . implode(', ', $primary) . ')' :
                 ',' . PHP_EOL . '  PRIMARY KEY (' . implode(', ', $primary) . ')';
         }

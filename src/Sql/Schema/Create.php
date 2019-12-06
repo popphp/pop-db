@@ -56,7 +56,7 @@ class Create extends AbstractStructure
     }
 
     /**
-     * Set the IF NOT EXISTS flag
+     * Set the table engine (MySQL only)
      *
      * @param  string $engine
      * @return Create
@@ -65,6 +65,38 @@ class Create extends AbstractStructure
     {
         $this->engine = $engine;
         return $this;
+    }
+
+    /**
+     * Get the table engine (MySQL only)
+     *
+     * @return string
+     */
+    public function getEngine()
+    {
+        return $this->engine;
+    }
+
+    /**
+     * Set the table charset (MySQL only)
+     *
+     * @param  string $charset
+     * @return Create
+     */
+    public function setCharset($charset)
+    {
+        $this->charset = $charset;
+        return $this;
+    }
+
+    /**
+     * Get the table charset (MySQL only)
+     *
+     * @return string
+     */
+    public function getCharset()
+    {
+        return $this->charset;
     }
 
     /**
@@ -94,8 +126,7 @@ class Create extends AbstractStructure
             if ($column['increment'] !== false) {
                 $increment = $column['increment'];
             }
-            $schema .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->quoteId($name) . ' ' .
-                $this->getColumnSchema($name, $column);
+            $schema .= (($i != 0) ? ',' . PHP_EOL : null) . '  ' . $this->getColumnSchema($name, $column);
             $i++;
         }
 

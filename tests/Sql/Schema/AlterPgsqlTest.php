@@ -36,17 +36,30 @@ class AlterPgsqlTest extends TestCase
     {
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users');
-        $alter->modifyColumn('email', 'email_address', 'varchar', 255);
-        $this->assertContains('ALTER TABLE "users" RENAME COLUMN "email" "email_address";', $alter->render());
+        $alter->modifyColumn('email', 'email', 'varchar', 255);
+        $this->assertContains('ALTER TABLE "users" ALTER COLUMN "email" VARCHAR(255);', $alter->render());
     }
-/*
-    public function testAlterWithPrecision()
+
+    public function testRename()
     {
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users');
-        $alter->modifyColumn('price', 'product_price', 'decimal', 16, 2);
-        $this->assertContains('ALTER TABLE `users` CHANGE COLUMN `price` `product_price` DECIMAL(16, 2) DEFAULT NULL;', $alter->render());
+        $alter->modifyColumn('email', 'email_address');
+        $this->assertContains('ALTER TABLE "users" RENAME COLUMN "email" "email_address";', $alter->render());
     }
-*/
+
+    public function testDropIndex()
+    {
+        $schema = $this->db->createSchema();
+        $alter = $schema->alter('users')->dropIndex('product_price');
+        $this->assertContains('DROP INDEX "users"."product_price";', $alter->render());
+    }
+
+    public function testDropConstraint()
+    {
+        $schema = $this->db->createSchema();
+        $alter = $schema->alter('users')->dropConstraint('product_price');
+        $this->assertContains('ALTER TABLE "users" DROP CONSTRAINT "product_price";', $alter->render());
+    }
 
 }
