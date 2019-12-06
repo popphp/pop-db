@@ -154,7 +154,7 @@ class DbTest extends TestCase
             'host'     => 'localhost',
         ]);
         Db::setDb($db, null, 'Pop\Db\Test\TestAsset\\');
-        Db::addClassToTable('Pop\Db\Test\TestAsset\User', 'users');
+        Db::addClassToTable('Pop\Db\Test\TestAsset\Users', 'users');
         $this->assertTrue(Db::hasDb('Pop\Db\Test\TestAsset\Users'));
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', Db::db('Pop\Db\Test\TestAsset\Users'));
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', Db::db('users'));

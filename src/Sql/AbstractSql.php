@@ -60,7 +60,7 @@ abstract class AbstractSql
      * SQL placeholder
      * @var string
      */
-    protected $placeholder = '?';
+    protected $placeholder = null;
 
     /**
      * ID quote type

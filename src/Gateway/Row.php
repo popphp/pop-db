@@ -119,12 +119,14 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * Determine if number of primary keys and primary values match
      *
      * @throws Exception
-     * @return void
+     * @return boolean
      */
     public function doesPrimaryCountMatch()
     {
         if (count($this->primaryKeys) != count($this->primaryValues)) {
             throw new Exception('Error: The number of primary keys and primary values do not match.');
+        } else {
+            return true;
         }
     }
 

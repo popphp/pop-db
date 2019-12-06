@@ -56,6 +56,16 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     }
 
     /**
+     * Has rows
+     *
+     * @return boolean
+     */
+    public function hasRows()
+    {
+        return (count($this->rows) > 0);
+    }
+
+    /**
      * Get the result rows (alias method)
      *
      * @return array
@@ -161,8 +171,8 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         $sql    = $db->createSql();
         $values = [];
         $params = [];
+        $i      = 1;
 
-        $i = 1;
         foreach ($columns as $column => $value) {
             $placeholder = $sql->getPlaceholder();
 
@@ -172,7 +182,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
                 $placeholder .= $i;
             }
             $values[$column] = $placeholder;
-            $params[]        = $value;
+            $params[$column] = $value;
             $i++;
         }
 
@@ -244,7 +254,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             if ($placeholder == ':') {
                 $placeholder .= $column;
             } else if ($placeholder == '$') {
-                $placeholder .= ($i + 1);
+                $placeholder .= $i;
             }
             $values[$column] = $placeholder;
             $params[$column] = $value;
@@ -258,7 +268,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         }
 
         $db->prepare((string)$sql)
-           ->bindParams(array_merge($params, $parameters))
+           ->bindParams($params + $parameters)
            ->execute();
 
         return $this;
