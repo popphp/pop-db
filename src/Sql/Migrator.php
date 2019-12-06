@@ -67,7 +67,7 @@ class Migrator extends Migration\AbstractMigrator
      * @param  string $class
      * @param  string $path
      * @throws Exception
-     * @return void
+     * @return string
      */
     public static function create($class, $path = null)
     {
@@ -84,6 +84,8 @@ class Migrator extends Migration\AbstractMigrator
         }
 
         file_put_contents($file, $classContents);
+
+        return $file;
     }
 
     /**
