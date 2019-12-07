@@ -34,7 +34,6 @@ class TablePgsqlTest extends TestCase
 
         $schema->execute();
 
-
         \Pop\Db\Test\TestAsset\PgUsers::setDb($this->db);
     }
 
