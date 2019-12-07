@@ -755,6 +755,8 @@ class Record extends Record\AbstractRecord
     /**
      * Call static method for 'findWhere'
      *
+     *      $users = Users::findWhereUsername('testuser');
+     *
      * @param  string $name
      * @param  array  $arguments
      * @return mixed|void

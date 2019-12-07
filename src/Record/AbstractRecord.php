@@ -295,9 +295,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
         if (null !== $columns) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
                 $this->rowGateway->setColumns((array)$columns);
-            } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
-                $this->rowGateway->setColumns($columns->toArray());
             } else if ($columns instanceof AbstractRecord) {
+                $this->rowGateway->setColumns($columns->toArray());
+            } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
                 $this->rowGateway->setColumns($columns->toArray());
             } else {
                 throw new Exception('The parameter passed must be an arrayable object.');
