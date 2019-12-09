@@ -293,7 +293,7 @@ class Record extends Record\AbstractRecord
      * @param  mixed   $sql
      * @param  array   $params
      * @param  boolean $asArray
-     * @return static|Collection
+     * @return mixed
      */
     public static function execute($sql, array $params = [], $asArray = false)
     {
@@ -310,15 +310,22 @@ class Record extends Record\AbstractRecord
         }
         $db->execute();
 
-        $rows = [];
+        $rows     = [];
+        $isSelect = false;
+
         if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
-            $rows = $db->fetchAll();
+            $isSelect = true;
+            $rows     = $db->fetchAll();
             foreach ($rows as $i => $row) {
                 $rows[$i] = $record->processRow($row, $asArray);
             }
         }
 
-        return new Record\Collection($rows);
+        if ($isSelect) {
+            return new Record\Collection($rows);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -326,7 +333,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed   $sql
      * @param  boolean $asArray
-     * @return static|Collection
+     * @return mixed
      */
     public static function query($sql, $asArray = false)
     {
@@ -339,14 +346,21 @@ class Record extends Record\AbstractRecord
         $db = Db::getDb($record->getFullTable());
         $db->query($sql);
 
-        $rows = [];
+        $rows     = [];
+        $isSelect = false;
+
         if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+            $isSelect = true;
             while (($row = $db->fetch())) {
                 $rows[] = $record->processRow($row, $asArray);
             }
         }
 
-        return new Record\Collection($rows);
+        if ($isSelect) {
+            return new Record\Collection($rows);
+        } else {
+            return null;
+        }
     }
 
     /**

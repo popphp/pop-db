@@ -32,6 +32,7 @@ class RecordTest extends TestCase
             ->varchar('username', 255)
             ->varchar('password', 255)
             ->varchar('email', 255)
+            ->int('logins', 16)->defaultIs(0)
             ->primary('id');
 
         $schema->execute();
@@ -267,6 +268,358 @@ class RecordTest extends TestCase
         unset($user['password']);
         $this->assertFalse(isset($user->username));
         $this->assertFalse(isset($user['password']));
+        $this->db->disconnect();
+    }
+
+    public function testFindOne()
+    {
+        $user = new Users([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com'
+        ]);
+
+        $user->save();
+        $uId = $user->id;
+
+        $user2 = Users::findOne(['id' => $uId]);
+        $this->assertTrue(isset($user2->id));
+        $this->assertEquals('testuser1', $user2->username);
+        $this->assertEquals('password1', $user2->password);
+        $this->assertEquals('testuser1@test.com', $user2->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindOneOrCreate()
+    {
+        $user = Users::findOne([
+            'username' => 'testuser2',
+            'password' => 'password2',
+            'email'    => 'testuser2@test.com'
+        ]);
+
+        $this->assertFalse(isset($user->id));
+
+        $user = Users::findOneOrCreate([
+            'username' => 'testuser2',
+            'password' => 'password2',
+            'email'    => 'testuser2@test.com'
+        ]);
+
+        $user = Users::findOne([
+            'username' => 'testuser2',
+            'password' => 'password2',
+            'email'    => 'testuser2@test.com'
+        ]);
+
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('testuser2', $user->username);
+        $this->assertEquals('password2', $user->password);
+        $this->assertEquals('testuser2@test.com', $user->email);
+
+        $user = Users::findOneOrCreate([
+            'username' => 'testuser2',
+            'password' => 'password2',
+            'email'    => 'testuser2@test.com'
+        ]);
+
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('testuser2', $user->username);
+        $this->assertEquals('password2', $user->password);
+        $this->assertEquals('testuser2@test.com', $user->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindLatest()
+    {
+        $user = new Users([
+            'username' => 'testuser3',
+            'password' => 'password3',
+            'email'    => 'testuser3@test.com'
+        ]);
+
+        $user->save();
+
+        $user = Users::findLatest();
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('testuser3', $user->username);
+        $this->assertEquals('password3', $user->password);
+        $this->assertEquals('testuser3@test.com', $user->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindLatestWithOrder()
+    {
+        $user = new Users([
+            'username' => 'testuser4',
+            'password' => 'password4',
+            'email'    => 'testuser4@test.com'
+        ]);
+
+        $user->save();
+
+        $user = Users::findLatest(null, null, ['order' => 'id DESC']);
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('testuser4', $user->username);
+        $this->assertEquals('password4', $user->password);
+        $this->assertEquals('testuser4@test.com', $user->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindBy()
+    {
+        $user = new Users([
+            'username' => 'testuser5',
+            'password' => 'password5',
+            'email'    => 'testuser5@test.com'
+        ]);
+
+        $user->save();
+
+        $user = Users::findBy(['username' => 'testuser5']);
+        $this->assertEquals(1, $user->count());
+        $this->assertEquals('testuser5', $user[0]->username);
+        $this->assertEquals('password5', $user[0]->password);
+        $this->assertEquals('testuser5@test.com', $user[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrCreate()
+    {
+        $user = Users::findBy([
+            'username' => 'testuser6',
+            'password' => 'password6',
+            'email'    => 'testuser6@test.com'
+        ]);
+
+        $this->assertEquals(0, $user->count());
+
+        $user = Users::findByOrCreate([
+            'username' => 'testuser6',
+            'password' => 'password6',
+            'email'    => 'testuser6@test.com'
+        ]);
+
+        $user = Users::findBy([
+            'username' => 'testuser6',
+            'password' => 'password6',
+            'email'    => 'testuser6@test.com'
+        ]);
+
+        $this->assertEquals(1, $user->count());
+        $this->assertEquals('testuser6', $user[0]->username);
+        $this->assertEquals('password6', $user[0]->password);
+        $this->assertEquals('testuser6@test.com', $user[0]->email);
+
+        $user = Users::findByOrCreate([
+            'username' => 'testuser6',
+            'password' => 'password6',
+            'email'    => 'testuser6@test.com'
+        ]);
+
+        $this->assertEquals(1, $user->count());
+        $this->assertEquals('testuser6', $user[0]->username);
+        $this->assertEquals('password6', $user[0]->password);
+        $this->assertEquals('testuser6@test.com', $user[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindAll()
+    {
+        $user = new Users([
+            'username' => 'testuser7',
+            'password' => 'password7',
+            'email' => 'testuser7@test.com'
+        ]);
+        $user->save();
+
+        $users = Users::findAll();
+        $this->assertGreaterThan(0, $users->count());
+        $this->db->disconnect();
+    }
+
+    public function testQuery1()
+    {
+        $sql = Users::sql();
+        $sql->insert()
+            ->into(Users::table())
+            ->values([
+                'username' => 'testuser8',
+                'password' => 'password8',
+                'email'    => 'testuser8@test.com'
+            ]);
+
+        Users::query($sql);
+
+        $sql->reset();
+        $sql->select()->from(Users::table())->where("username = 'testuser8'");
+
+        $users = Users::query($sql);
+
+        $this->assertTrue(isset($users[0]->id));
+        $this->assertEquals('testuser8', $users[0]->username);
+        $this->assertEquals('password8', $users[0]->password);
+        $this->assertEquals('testuser8@test.com', $users[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testQuery2()
+    {
+        $sql = Users::sql();
+        $sql->insert()
+            ->into(Users::table())
+            ->values([
+                'username' => 'testuser9',
+                'password' => 'password9',
+                'email'    => 'testuser9@test.com'
+            ]);
+
+        Users::query($sql);
+
+        $sql->reset();
+
+        $sql->insert()
+            ->into(Users::table())
+            ->values([
+                'username' => 'testuser10',
+                'password' => 'password10',
+                'email'    => 'testuser10@test.com'
+            ]);
+
+        Users::query($sql);
+
+        $sql->reset();
+        $sql->select()->from(Users::table())->where("username LIKE 'testuser%'");
+
+        $users = Users::query($sql);
+
+        $this->assertGreaterThan(1, $users->count());
+        $this->db->disconnect();
+    }
+
+    public function testExecute1()
+    {
+        $sql = Users::sql();
+        $sql->insert()
+            ->into(Users::table())
+            ->values([
+                'username' => '?',
+                'password' => '?',
+                'email'    => '?'
+            ]);
+
+        $params = [
+            'username' => 'testuser11',
+            'password' => 'password11',
+            'email'    => 'testuser11@test.com'
+        ];
+
+        Users::execute($sql, $params);
+
+        $sql->reset();
+        $sql->select()->from(Users::table())->where("username = ?");
+
+        $users = Users::execute($sql, ['username' => 'testuser11']);
+
+        $this->assertTrue(isset($users[0]->id));
+        $this->assertEquals('testuser11', $users[0]->username);
+        $this->assertEquals('password11', $users[0]->password);
+        $this->assertEquals('testuser11@test.com', $users[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testExecute2()
+    {
+        $sql = Users::sql();
+        $sql->insert()
+            ->into(Users::table())
+            ->values([
+                'username' => '?',
+                'password' => '?',
+                'email'    => '?',
+            ]);
+
+        $params = [
+            'username' => 'testuser12',
+            'password' => 'password12',
+            'email'    => 'testuser12@test.com'
+        ];
+
+        Users::execute($sql, $params);
+
+        $sql->reset();
+
+        $sql->insert()
+            ->into(Users::table())
+            ->values([
+                'username' => '?',
+                'password' => '?',
+                'email'    => '?',
+            ]);
+
+        $params = [
+            'username' => 'testuser13',
+            'password' => 'password13',
+            'email'    => 'testuser13@test.com'
+        ];
+
+        Users::execute($sql, $params);
+
+        $sql->reset();
+        $sql->select()->from(Users::table())->where("username LIKE ?");
+
+        $users = Users::execute($sql, ['username' => 'testuser%']);
+
+        $this->assertGreaterThan(1, $users->count());
+        $this->db->disconnect();
+    }
+
+    public function testIncrement()
+    {
+        $user = new Users([
+            'username' => 'testuser14',
+            'password' => 'password14',
+            'email'    => 'testuser14@test.com',
+            'logins'   => 1
+        ]);
+
+        $user->save();
+
+        $uId = $user->id;
+
+        $user->increment('logins');
+
+        $user = Users::findById($uId);
+        $this->assertEquals(2, $user->logins);
+
+        $user->decrement('logins');
+
+        $user = Users::findById($uId);
+        $this->assertEquals(1, $user->logins);
+        $this->db->disconnect();
+    }
+
+    public function testReplicate()
+    {
+        $user = new Users([
+            'username' => 'testuser15',
+            'password' => 'password15',
+            'email'    => 'testuser15@test.com',
+            'logins'   => 1
+        ]);
+
+        $user->save();
+
+
+        $newUser = $user->replicate(['password' => '123456']);
+        $this->assertEquals('testuser15', $newUser->username);
+        $this->assertEquals('123456', $newUser->password);
+        $this->assertEquals('testuser15@test.com', $newUser->email);
+
+        $users = Users::findBy(['username' => 'testuser15']);
+        $this->assertEquals(2, $users->count());
+        $this->db->disconnect();
+
     }
 
 }
