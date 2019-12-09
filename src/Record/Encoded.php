@@ -63,10 +63,10 @@ class Encoded extends \Pop\Db\Record
     protected $hashAlgorithm = PASSWORD_BCRYPT;
 
     /**
-     * Hash options ('salt', 'cost')
+     * Hash options
      * @var array
      */
-    protected $hashOptions = [];
+    protected $hashOptions = ['cost' => 10];
 
     /**
      * Cipher method
@@ -147,7 +147,7 @@ class Encoded extends \Pop\Db\Record
                 $value = serialize($value);
             }
         } else if (in_array($key, $this->base64Fields)) {
-            if (!(is_string($value) && (@base64_decode($value, true) !== false))) {
+            if (!(is_string($value) && (base64_encode(base64_decode($value)) === $value))) {
                 $value = base64_encode($value);
             }
         } else if (in_array($key, $this->hashFields)) {
