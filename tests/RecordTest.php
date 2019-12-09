@@ -610,7 +610,6 @@ class RecordTest extends TestCase
 
         $user->save();
 
-
         $newUser = $user->replicate(['password' => '123456']);
         $this->assertEquals('testuser15', $newUser->username);
         $this->assertEquals('123456', $newUser->password);
@@ -619,7 +618,170 @@ class RecordTest extends TestCase
         $users = Users::findBy(['username' => 'testuser15']);
         $this->assertEquals(2, $users->count());
         $this->db->disconnect();
+    }
 
+    public function testDirty()
+    {
+        $user = new Users([
+            'username' => 'testuser16',
+            'password' => 'password16',
+            'email'    => 'testuser16@test.com',
+            'logins'   => 1
+        ]);
+
+        $user->save();
+
+        $uId = $user->id;
+
+        $newUser = Users::findById($uId);
+        $this->assertFalse($newUser->isDirty());
+        $newUser->username = 'testuser16-rev';
+        $this->assertTrue($newUser->isDirty());
+
+        $dirty = $newUser->getDirty();
+        $this->assertTrue(isset($dirty['old']));
+        $this->assertTrue(isset($dirty['old']['username']));
+        $this->assertTrue(isset($dirty['new']));
+        $this->assertTrue(isset($dirty['new']['username']));
+        $this->assertEquals('testuser16', $dirty['old']['username']);
+        $this->assertEquals('testuser16-rev', $dirty['new']['username']);
+
+        $newUser->resetDirty();
+        $this->assertFalse($newUser->isDirty());
+
+        $this->db->disconnect();
+    }
+
+    public function testUpdate()
+    {
+        $user = new Users([
+            'username' => 'testuser17',
+            'password' => 'password17',
+            'email'    => 'testuser17@test.com',
+            'logins'   => 1
+        ]);
+
+        $user->save();
+
+        $uId = $user->id;
+        $newUser1 = Users::findById($uId);
+        $newUser1->username = 'testuser17-rev';
+        $newUser1->save();
+
+        $newUser2 = Users::findById($uId);
+        $this->assertEquals('testuser17-rev', $newUser2->username);
+
+        $this->db->disconnect();
+    }
+
+    public function testSave()
+    {
+        $user = new Users();
+        $user->save([
+            'username' => 'testuser18',
+            'password' => 'password18',
+            'email'    => 'testuser18@test.com',
+            'logins'   => 1
+        ]);
+
+        $newUser = Users::findOne(['username' => 'testuser18']);
+        $this->assertTrue(isset($newUser->id));
+        $this->assertEquals('testuser18', $newUser->username);
+
+        $this->db->disconnect();
+    }
+
+    public function testSaveMultiple()
+    {
+        $user = new Users();
+        $user->save([
+            [
+                'username' => 'testuser20',
+                'password' => 'password20',
+                'email'    => 'testuser20@test.com',
+                'logins'   => 1
+            ],
+            [
+                'username' => 'testuser21',
+                'password' => 'password21',
+                'email'    => 'testuser21@test.com',
+                'logins'   => 1
+            ]
+        ]);
+
+        $newUsers = Users::findBy(['username%' => 'testuser2']);
+        $this->assertEquals(2, $newUsers->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testDelete()
+    {
+        $user = new Users([
+            'username' => 'testuser19',
+            'password' => 'password19',
+            'email'    => 'testuser19@test.com',
+            'logins'   => 1
+        ]);
+        $user->save();
+
+        $uId = $user->id;
+
+        $newUser1 = Users::findById($uId);
+        $this->assertTrue(isset($newUser1->id));
+        $newUser1->delete();
+
+        $newUser2 = Users::findById($uId);
+        $this->assertFalse(isset($newUser2->id));
+
+        $this->db->disconnect();
+    }
+
+    public function testDeleteMultiple()
+    {
+        $user = new Users();
+        $user->save([
+            [
+                'username' => 'testuser22',
+                'password' => 'password22',
+                'email'    => 'testuser22@test.com',
+                'logins'   => 1
+            ],
+            [
+                'username' => 'testuser23',
+                'password' => 'password23',
+                'email'    => 'testuser23@test.com',
+                'logins'   => 1
+            ]
+        ]);
+
+        $newUsers = Users::findBy(['username%' => 'testuser2']);
+        $this->assertEquals(2, $newUsers->count());
+
+        $newUser = new Users();
+        $newUser->delete(['username%' => 'testuser2']);
+
+        $newUsers = Users::findBy(['username%' => 'testuser2']);
+        $this->assertEquals(0, $newUsers->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testFindWhere()
+    {
+        $user = new Users([
+            'username' => 'testuser24',
+            'password' => 'password24',
+            'email'    => 'testuser24@test.com',
+            'logins'   => 1
+        ]);
+        $user->save();
+
+        $newUsers = Users::findWhereUsername('testuser24');
+        $this->assertEquals(1, $newUsers->count());
+        $this->assertEquals('testuser24', $newUsers[0]->username);
+
+        $this->db->disconnect();
     }
 
 }
