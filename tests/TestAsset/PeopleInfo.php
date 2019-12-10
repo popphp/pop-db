@@ -14,4 +14,9 @@ class PeopleInfo extends Record
         return $this->belongsTo('Pop\Db\Test\TestAsset\People', 'people_id');
     }
 
+    public function people(array $options = null, $eager = false)
+    {
+        return $this->hasOneOf('Pop\Db\Test\TestAsset\People', 'people_id', $options, $eager);
+    }
+
 }
