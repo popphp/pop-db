@@ -773,19 +773,23 @@ class Record extends Record\AbstractRecord
      *
      * @param  string $name
      * @param  array  $arguments
-     * @return mixed|void
+     * @return mixed
      */
     public static function __callStatic($name, $arguments)
     {
+        $record = null;
+
         if (substr($name, 0, 9) == 'findWhere') {
             $column = Sql\Parser\Table::parse(substr($name, 9));
             $arg1   = $arguments[0] ?? null;
             $arg2   = $arguments[1] ?? null;
 
             if (null !== $arg1) {
-                return static::findBy([$column => $arg1], $arg2);
+                $record = static::findBy([$column => $arg1], $arg2);
             }
         }
+
+        return $record;
     }
 
 }

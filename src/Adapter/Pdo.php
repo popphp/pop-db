@@ -57,43 +57,102 @@ class Pdo extends AbstractAdapter
      *
      * @param  array $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->connect($options);
+        }
+    }
+
+    /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return Pdo
+     */
+    public function connect(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        } else if (!$this->hasOptions()) {
+            $this->throwError('Error: The proper database credentials were not passed.');
+        }
+
+        try {
+            if ($this->type == 'sqlite') {
+                $this->connection = (isset($this->options['options']) && is_array($this->options['options'])) ?
+                    new \PDO($this->dsn, null, null, $this->options['options']) : new \PDO($this->dsn);
+            } else {
+                $this->connection = (isset($this->options['options']) && is_array($this->options['options'])) ?
+                    new \PDO($this->dsn, $this->options['username'], $this->options['password'], $this->options['options']) :
+                    new \PDO($this->dsn, $this->options['username'], $this->options['password']);
+            }
+        } catch (\PDOException $e) {
+            $this->throwError('PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')');
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return Pdo
+     */
+    public function setOptions(array $options)
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
         }
 
-        if (!isset($options['type']) || !isset($options['database'])) {
+        $this->options = $options;
+
+        if (!$this->hasOptions()) {
             $this->throwError('Error: The proper database credentials were not passed.');
         }
 
-        try {
-            $this->type = strtolower($options['type']);
-            if ($this->type == 'sqlite') {
-                $this->dsn = $this->type . ':' . $options['database'];
-                if (isset($options['options']) && is_array($options['options'])) {
-                    $this->connection = new \PDO($this->dsn, null, null, $options['options']);
-                } else {
-                    $this->connection = new \PDO($this->dsn);
-                }
-            } else {
-                if (!isset($options['host']) || !isset($options['username']) || !isset($options['password'])) {
-                    $this->throwError('Error: The proper database credentials were not passed.');
-                }
+        $this->type = strtolower($this->options['type']);
 
-                $this->dsn = ($this->type == 'sqlsrv') ?
-                    $this->type . ':Server=' . $options['host'] . ';Database=' . $options['database'] :
-                    $this->type . ':host=' . $options['host'] . ';dbname=' . $options['database'];
-
-                if (isset($options['options']) && is_array($options['options'])) {
-                    $this->connection = new \PDO($this->dsn, $options['username'], $options['password'], $options['options']);
-                } else {
-                    $this->connection = new \PDO($this->dsn, $options['username'], $options['password']);
-                }
+        if ($this->type == 'sqlite') {
+            if (!$this->dbFileExists()) {
+                $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
             }
-        } catch (\PDOException $e) {
-            $this->throwError('PDO Connection Error: ' . $e->getMessage() . ' (#' . $e->getCode() . ')');
+            $this->dsn = $this->type . ':' . $this->options['database'];
+        } else {
+            $this->dsn = ($this->type == 'sqlsrv') ?
+                $this->type . ':Server=' . $this->options['host'] . ';Database=' . $this->options['database'] :
+                $this->type . ':host=' . $this->options['host'] . ';dbname=' . $this->options['database'];
         }
+
+        return $this;
+    }
+
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    public function hasOptions()
+    {
+        if (!isset($this->options['type'])) {
+            return false;
+        } else {
+            return (strtolower($this->options['type']) == 'sqlite') ?
+                (isset($this->options['database'])) :
+                (isset($this->options['database']) && isset($this->options['host']) &&
+                    isset($this->options['username']) && isset($this->options['password']));
+        }
+    }
+
+    /**
+     * Does the database file exist
+     *
+     * @return boolean
+     */
+    public function dbFileExists()
+    {
+        return (isset($this->options['database']) && file_exists($this->options['database']));
     }
 
     /**

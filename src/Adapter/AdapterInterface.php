@@ -27,6 +27,36 @@ interface AdapterInterface
 {
 
     /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return AdapterInterface
+     */
+    public function connect(array $options = []);
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return AdapterInterface
+     */
+    public function setOptions(array $options);
+
+    /**
+     * Get database connection options
+     *
+     * @return array
+     */
+    public function getOptions();
+
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    public function hasOptions();
+
+    /**
      * Begin a transaction
      *
      * @return AdapterInterface

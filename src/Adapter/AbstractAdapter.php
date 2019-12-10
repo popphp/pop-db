@@ -29,6 +29,12 @@ abstract class AbstractAdapter implements AdapterInterface
 {
 
     /**
+     * Database connection options
+     * @var mixed
+     */
+    protected $options = [];
+
+    /**
      * Database connection object/resource
      * @var mixed
      */
@@ -71,7 +77,40 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @param  array $options
      */
-    abstract public function __construct(array $options);
+    abstract public function __construct(array $options = []);
+
+    /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return AbstractAdapter
+     */
+    abstract public function connect(array $options = []);
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return AdapterInterface
+     */
+    abstract public function setOptions(array $options);
+
+    /**
+     * Get database connection options
+     *
+     * @return array
+     */
+    public function getOptions()
+    {
+        return $this->options;
+    }
+
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    abstract public function hasOptions();
 
     /**
      * Begin a transaction

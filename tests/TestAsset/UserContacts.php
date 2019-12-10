@@ -4,7 +4,7 @@ namespace Pop\Db\Test\TestAsset;
 
 use Pop\Db\Record;
 
-class UserInfo extends Record
+class UserContacts extends Record
 {
 
     protected $primaryKeys = ['user_id'];

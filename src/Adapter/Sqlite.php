@@ -27,6 +27,18 @@ class Sqlite extends AbstractAdapter
 {
 
     /**
+     * SQLite flags
+     * @var int
+     */
+    protected $flags = null;
+
+    /**
+     * SQLite key
+     * @var string
+     */
+    protected $key = null;
+
+    /**
      * Last SQL query
      * @var string
      */
@@ -45,18 +57,78 @@ class Sqlite extends AbstractAdapter
      *
      * @param  array $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options = [])
     {
-        if (!isset($options['database'])) {
+        if (!empty($options)) {
+            $this->connect($options);
+        }
+    }
+
+    /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return Sqlite
+     */
+    public function connect(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        } else if (!$this->hasOptions()) {
             $this->throwError('Error: The database file was not passed.');
-        } else if (!file_exists($options['database'])) {
-            $this->throwError("Error: The database file '" . $options['database'] . "'does not exists.");
+        } else if (!$this->dbFileExists()) {
+            $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
         }
 
-        $flags = (isset($options['flags'])) ? $options['flags'] : SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE;
-        $key   = (isset($options['key']))   ? $options['key']   : null;
+        $this->connection = new \SQLite3($this->options['database'], $this->flags, $this->key);
 
-        $this->connection = new \SQLite3($options['database'], $flags, $key);
+        return $this;
+    }
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return Sqlite
+     */
+    public function setOptions(array $options)
+    {
+        if (!isset($options['host'])) {
+            $options['host'] = 'localhost';
+        }
+
+        $this->options = $options;
+
+        if (!$this->hasOptions()) {
+            $this->throwError('Error: The database file was not passed.');
+        } else if (!$this->dbFileExists()) {
+            $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
+        }
+
+        $this->flags = (isset($this->options['flags'])) ? $this->options['flags'] : SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE;
+        $this->key   = (isset($this->options['key']))   ? $this->options['key']   : null;
+
+        return $this;
+    }
+
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    public function hasOptions()
+    {
+        return (isset($this->options['database']));
+    }
+
+    /**
+     * Does the database file exist
+     *
+     * @return boolean
+     */
+    public function dbFileExists()
+    {
+        return (isset($this->options['database']) && file_exists($this->options['database']));
     }
 
     /**

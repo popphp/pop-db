@@ -781,6 +781,10 @@ class RecordTest extends TestCase
         $this->assertEquals(1, $newUsers->count());
         $this->assertEquals('testuser24', $newUsers[0]->username);
 
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('users');
+        $schema->execute();
+
         $this->db->disconnect();
     }
 

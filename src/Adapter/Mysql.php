@@ -39,7 +39,49 @@ class Mysql extends AbstractAdapter
      *
      * @param  array $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->connect($options);
+        }
+    }
+
+    /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return Mysql
+     */
+    public function connect(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        } else if (!$this->hasOptions()) {
+            $this->throwError('Error: The proper database credentials were not passed.');
+        }
+
+        $this->connection = new \mysqli(
+            $this->options['host'],     $this->options['username'], $this->options['password'],
+            $this->options['database'], $this->options['port'],     $this->options['socket']
+        );
+
+        if ($this->connection->connect_error != '') {
+            $this->throwError(
+                'MySQL Connection Error: ' . $this->connection->connect_error .
+                ' (#' . $this->connection->connect_errno . ')'
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return Mysql
+     */
+    public function setOptions(array $options)
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
@@ -51,21 +93,23 @@ class Mysql extends AbstractAdapter
             $options['socket'] = ini_get('mysqli.default_socket');
         }
 
-        if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
+        $this->options = $options;
+
+        if (!$this->hasOptions()) {
             $this->throwError('Error: The proper database credentials were not passed.');
         }
 
-        $this->connection = new \mysqli(
-            $options['host'],     $options['username'], $options['password'],
-            $options['database'], $options['port'],     $options['socket']
-        );
+        return $this;
+    }
 
-        if ($this->connection->connect_error != '') {
-            $this->throwError(
-                'MySQL Connection Error: ' . $this->connection->connect_error .
-                ' (#' . $this->connection->connect_errno . ')'
-            );
-        }
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    public function hasOptions()
+    {
+        return (isset($this->options['database']) && isset($this->options['username']) && isset($this->options['password']));
     }
 
     /**

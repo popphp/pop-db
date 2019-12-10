@@ -25,6 +25,13 @@ class MysqlTest extends TestCase
         ]);
     }
 
+    public function testConnectException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Mysql();
+        $db->connect();
+    }
+
     public function testMysqlConnect()
     {
         $db = Db::mysqlConnect([
@@ -35,6 +42,8 @@ class MysqlTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $db);
         $this->assertInstanceOf('Pop\Db\Sql', $db->createSql());
         $this->assertInstanceOf('Pop\Db\Sql\Schema', $db->createSchema());
+        $this->assertIsArray($db->getOptions());
+        $this->assertEquals('travis_popdb', $db->getOptions()['database']);
     }
 
     public function testCreateTable()

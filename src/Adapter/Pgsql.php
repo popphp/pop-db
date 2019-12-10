@@ -33,6 +33,12 @@ class Pgsql extends AbstractAdapter
     protected static $statementIndex = 0;
 
     /**
+     * Connection string
+     * @var string
+     */
+    protected $connectionString = null;
+
+    /**
      * Prepared statement name
      * @var string
      */
@@ -57,46 +63,87 @@ class Pgsql extends AbstractAdapter
      *
      * @param  array $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->connect($options);
+        }
+    }
+
+    /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return Pgsql
+     */
+    public function connect(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        } else if (!$this->hasOptions()) {
+            $this->throwError('Error: The proper database credentials were not passed.');
+        }
+
+        $pg_connect = (isset($this->options['persist']) && ($this->options['persist'])) ? 'pg_pconnect' : 'pg_connect';
+
+        $this->connection = (isset($this->options['type'])) ?
+            $pg_connect($this->connectionString, $this->options['type']) : $pg_connect($this->connectionString);
+
+        if (!$this->connection) {
+            $this->throwError('PostgreSQL Connection Error: Unable to connect to the database.');
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return Pgsql
+     */
+    public function setOptions(array $options)
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
         }
 
-        if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
+        $this->options = $options;
+
+        if (!$this->hasOptions()) {
             $this->throwError('Error: The proper database credentials were not passed.');
         }
 
-        $connectionString = "host=" . $options['host'] . " dbname=" . $options['database'] .
-            " user=" . $options['username'] . " password=" . $options['password'];
+        $this->connectionString = "host=" . $this->options['host'] . " dbname=" . $this->options['database'] .
+            " user=" . $this->options['username'] . " password=" . $this->options['password'];
 
-        if (isset($options['port'])) {
-            $connectionString .= " port=" . $options['port'];
+        if (isset($this->options['port'])) {
+            $this->connectionString .= " port=" . $this->options['port'];
         }
-        if (isset($options['hostaddr'])) {
-            $connectionString .= " hostaddr=" . $options['hostaddr'];
+        if (isset($this->options['hostaddr'])) {
+            $this->connectionString .= " hostaddr=" . $this->options['hostaddr'];
         }
-        if (isset($options['connect_timeout'])) {
-            $connectionString .= " connect_timeout=" . $options['connect_timeout'];
+        if (isset($this->options['connect_timeout'])) {
+            $this->connectionString .= " connect_timeout=" . $this->options['connect_timeout'];
         }
-        if (isset($options['options'])) {
-            $connectionString .= " options=" . $options['options'];
+        if (isset($this->options['options'])) {
+            $this->connectionString .= " options=" . $this->options['options'];
         }
-        if (isset($options['sslmode'])) {
-            $connectionString .= " sslmode=" . $options['sslmode'];
-        }
-
-        $pg_connect = (isset($options['persist']) && ($options['persist'])) ? 'pg_pconnect' : 'pg_connect';
-
-        if (isset($options['type'])) {
-            $this->connection = $pg_connect($connectionString, $options['type']);
-        } else {
-            $this->connection = $pg_connect($connectionString);
+        if (isset($this->options['sslmode'])) {
+            $this->connectionString .= " sslmode=" . $this->options['sslmode'];
         }
 
-        if (!$this->connection) {
-            $this->throwError('PostgreSQL Connection Error: Unable to connect to the database.');
-        }
+        return $this;
+    }
+
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    public function hasOptions()
+    {
+        return (isset($this->options['database']) && isset($this->options['username']) && isset($this->options['password']));
     }
 
     /**

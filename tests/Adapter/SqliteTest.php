@@ -32,6 +32,13 @@ class SqliteTest extends TestCase
         ]);
     }
 
+    public function testConstructorException3()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Sqlite();
+        $db->connect();
+    }
+
     public function testSqliteConnect()
     {
         $db = Db::sqliteConnect([

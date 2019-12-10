@@ -26,6 +26,13 @@ class PgsqlTest extends TestCase
         ]);
     }
 
+    public function testConnectException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Pgsql();
+        $db->connect();
+    }
+
     public function testPgsqlConnect()
     {
         $db = Db::pgsqlConnect([

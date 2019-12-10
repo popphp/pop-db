@@ -26,6 +26,13 @@ class PdpMysqlTest extends TestCase
         ]);
     }
 
+    public function testConnectException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Pdo();
+        $db->connect();
+    }
+
     public function testMysqlConnect()
     {
         $db = Db::pdoConnect([

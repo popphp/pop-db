@@ -33,6 +33,12 @@ class Sqlsrv extends AbstractAdapter
     protected $database = null;
 
     /**
+     * Database info
+     * @var array
+     */
+    protected $info = [];
+
+    /**
      * Prepared statement string
      * @var string
      */
@@ -51,36 +57,77 @@ class Sqlsrv extends AbstractAdapter
      *
      * @param  array $options
      */
-    public function __construct(array $options)
+    public function __construct(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->connect($options);
+        }
+    }
+
+    /**
+     * Connect to the database
+     *
+     * @param  array $options
+     * @return Sqlsrv
+     */
+    public function connect(array $options = [])
+    {
+        if (!empty($options)) {
+            $this->setOptions($options);
+        } else if (!$this->hasOptions()) {
+            $this->throwError('Error: The proper database credentials were not passed.');
+        }
+
+        $this->connection = sqlsrv_connect($this->options['host'], $this->info);
+
+        if ($this->connection == false) {
+            $this->throwError('SQL Server Connection Error: ' . $this->getSqlSrvErrors());
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set database connection options
+     *
+     * @param  array $options
+     * @return Sqlsrv
+     */
+    public function setOptions(array $options)
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
         }
 
-        if (!isset($options['database']) || !isset($options['username']) || !isset($options['password'])) {
-            $this->throwError('Error: The proper database credentials were not passed.');
-        }
+        $this->options = $options;
 
-        $info = [
-            'Database' => $options['database'],
-            'UID'      => $options['username'],
-            'PWD'      => $options['password']
+        $this->info = [
+            'Database' => $this->options['database'],
+            'UID'      => $this->options['username'],
+            'PWD'      => $this->options['password']
         ];
 
-        if (isset($options['info']) && is_array($options['info'])) {
-            $info = array_merge($info, $options['info']);
+        if (isset($this->options['info']) && is_array($this->options['info'])) {
+            $info = array_merge($this->info, $this->options['info']);
         }
 
         if (!isset($info['ReturnDatesAsStrings'])) {
-            $info['ReturnDatesAsStrings'] = true;
+            $this->info['ReturnDatesAsStrings'] = true;
         }
 
-        $this->connection = sqlsrv_connect($options['host'], $info);
-        $this->database   = $options['database'];
+        $this->database = $this->options['database'];
 
-        if ($this->connection == false) {
-            $this->throwError('SQL Server Connection Error: ' . $this->getSqlSrvErrors());
-        }
+        return $this;
+    }
+
+    /**
+     * Has database connection options
+     *
+     * @return boolean
+     */
+    public function hasOptions()
+    {
+        return (isset($this->options['database']) && isset($this->options['username']) && isset($this->options['password']));
     }
 
     /**
