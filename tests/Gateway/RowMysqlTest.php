@@ -81,6 +81,7 @@ class RowMysqlTest extends TestCase
 
         $this->assertEquals('1testuser1password1', $string);
         $this->assertEquals(3, $i);
+        $this->db->disconnect();
     }
 
     public function testGetDirty()
@@ -94,6 +95,7 @@ class RowMysqlTest extends TestCase
         $dirty = $row->getDirty();
         $this->assertEquals('testuser1', $dirty['old']['username']);
         $this->assertEquals('testuser2', $dirty['new']['username']);
+        $this->db->disconnect();
     }
 
     public function testSettersAndGetters()
@@ -109,6 +111,7 @@ class RowMysqlTest extends TestCase
         unset($row['password']);
         $this->assertFalse(isset($row->username));
         $this->assertFalse(isset($row['password']));
+        $this->db->disconnect();
     }
 
     public function testFindException()
@@ -146,6 +149,7 @@ class RowMysqlTest extends TestCase
 
         $newRow->find(null);
         $this->assertFalse(isset($newRow->id));
+        $this->db->disconnect();
     }
 
     public function testUpdate()
@@ -181,6 +185,7 @@ class RowMysqlTest extends TestCase
         $this->assertEquals('testuser2', $newRow->username);
         $this->assertTrue(isset($newRow->password));
         $this->assertEquals('987654', $newRow->password);
+        $this->db->disconnect();
     }
 
     public function testDeleteException()
@@ -188,6 +193,7 @@ class RowMysqlTest extends TestCase
         $this->expectException('Pop\Db\Gateway\Exception');
         $row = new Gateway\Row('users');
         $row->delete();
+        $this->db->disconnect();
     }
 
     public function testDelete()

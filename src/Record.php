@@ -364,32 +364,6 @@ class Record extends Record\AbstractRecord
     }
 
     /**
-     * With a 1:many relationship (eager-loading)
-     *
-     * @param  mixed $name
-     * @param  array  $options
-     * @return static
-     */
-    public static function with($name, array $options = null)
-    {
-        $record = new static();
-
-        if (is_array($name)) {
-            foreach ($name as $key => $value) {
-                if (is_numeric($key) && is_string($value)) {
-                    $record->addWith($value);
-                } else if (!is_numeric($key) && is_array($value)) {
-                    $record->addWith($key, $value);
-                }
-            }
-        } else {
-            $record->addWith($name, $options);
-        }
-
-        return $record;
-    }
-
-    /**
      * Static method to get the total count of a set from the DB table
      *
      * @param  array  $columns
@@ -421,6 +395,32 @@ class Record extends Record\AbstractRecord
     public static function getTableInfo()
     {
         return (new static())->getTableGateway()->getTableInfo();
+    }
+
+    /**
+     * With a 1:many relationship (eager-loading)
+     *
+     * @param  mixed $name
+     * @param  array  $options
+     * @return static
+     */
+    public static function with($name, array $options = null)
+    {
+        $record = new static();
+
+        if (is_array($name)) {
+            foreach ($name as $key => $value) {
+                if (is_numeric($key) && is_string($value)) {
+                    $record->addWith($value);
+                } else if (!is_numeric($key) && is_array($value)) {
+                    $record->addWith($key, $value);
+                }
+            }
+        } else {
+            $record->addWith($name, $options);
+        }
+
+        return $record;
     }
 
 /*

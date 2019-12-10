@@ -433,8 +433,11 @@ class RecordTest extends TestCase
         ]);
         $user->save();
 
-        $users = Users::findAll();
-        $this->assertGreaterThan(0, $users->count());
+        $users1 = Users::findAll();
+        $this->assertGreaterThan(0, $users1->count());
+
+        $users2 = (new Users())->getAll();
+        $this->assertGreaterThan(0, $users2->count());
         $this->db->disconnect();
     }
 
@@ -763,6 +766,38 @@ class RecordTest extends TestCase
 
         $newUsers = Users::findBy(['username%' => 'testuser2']);
         $this->assertEquals(0, $newUsers->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testGetTotal()
+    {
+        $user = new Users();
+        $user->save([
+            [
+                'username' => 'testuser24',
+                'password' => 'password24',
+                'email'    => 'testuser24@test.com',
+                'logins'   => 1
+            ],
+            [
+                'username' => 'testuser25',
+                'password' => 'password25',
+                'email'    => 'testuser25@test.com',
+                'logins'   => 1
+            ]
+        ]);
+
+        $this->assertEquals(2, Users::getTotal(['username%' => 'testuser2']));
+
+        $this->db->disconnect();
+    }
+
+    public function testGetTableInfo()
+    {
+        $info = Users::getTableInfo();
+        $this->assertIsArray($info);
+        $this->assertEquals('users', $info['tableName']);
 
         $this->db->disconnect();
     }

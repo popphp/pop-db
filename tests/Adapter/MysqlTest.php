@@ -44,6 +44,7 @@ class MysqlTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Sql\Schema', $db->createSchema());
         $this->assertIsArray($db->getOptions());
         $this->assertEquals('travis_popdb', $db->getOptions()['database']);
+        $db->disconnect();
     }
 
     public function testCreateTable()
@@ -73,6 +74,7 @@ class MysqlTest extends TestCase
         $this->assertContains('Finish:', $debugResults);
         $this->assertContains('Elapsed:', $debugResults);
         $this->assertContains('CREATE TABLE `users`', $debugResults);
+        $db->disconnect();
     }
 
     public function testConstructor()
@@ -85,6 +87,7 @@ class MysqlTest extends TestCase
 
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $db);
         $this->assertContains('MySQL', $db->getVersion());
+        $db->disconnect();
     }
 
     public function testExecuteException1()
@@ -131,6 +134,7 @@ class MysqlTest extends TestCase
         ]);
         $this->assertContains('users', $db->getTables());
         $this->assertTrue($db->hasTable('users'));
+        $db->disconnect();
     }
 
     public function testBindParams()
@@ -164,6 +168,7 @@ class MysqlTest extends TestCase
         $this->assertContains('Finish:', $debugResults);
         $this->assertContains('Elapsed:', $debugResults);
         $this->assertContains('INSERT INTO `users`', $debugResults);
+        $db->disconnect();
     }
 
     public function testFetch()
@@ -182,6 +187,7 @@ class MysqlTest extends TestCase
         }
         $this->assertEquals(1, count($rows));
         $this->assertEquals(1, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testFetchResults()
@@ -224,6 +230,7 @@ class MysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(2, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testRollback()
@@ -245,6 +252,7 @@ class MysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(2, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testTransactionWithFlags()
@@ -266,6 +274,7 @@ class MysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(3, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testRollbackFlags()
@@ -287,6 +296,7 @@ class MysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(3, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testTransactionWithFlagsAndName()
@@ -308,6 +318,7 @@ class MysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(4, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testRollbackFlagsAndName()
@@ -329,6 +340,7 @@ class MysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(4, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testQueryException()

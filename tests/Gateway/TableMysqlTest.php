@@ -137,6 +137,7 @@ class TableMysqlTest extends TestCase
         $rows = $table->getRows();
         $this->assertEquals('123456', $rows[0]['password']);
         $this->assertEquals('testuser123456@test.com', $rows[0]['email']);
+        $this->db->disconnect();
     }
 
     public function testDelete()
@@ -152,6 +153,7 @@ class TableMysqlTest extends TestCase
 
         $table->select(null, "username = 'testuser7'");
         $this->assertFalse($table->hasRows());
+        $this->db->disconnect();
     }
 
     public function testDeleteWithParameters()
@@ -167,6 +169,7 @@ class TableMysqlTest extends TestCase
 
         $table->select(null, "username = 'testuser8'");
         $this->assertFalse($table->hasRows());
+        $this->db->disconnect();
     }
 
     public function testSelectWithParameters()
@@ -182,6 +185,7 @@ class TableMysqlTest extends TestCase
         $this->assertTrue($table->hasRows());
         $rows = $table->getRows();
         $this->assertEquals('testuser9', $rows[0]['username']);
+        $this->db->disconnect();
     }
 
     public function testSelectOrderArray()
@@ -197,6 +201,7 @@ class TableMysqlTest extends TestCase
         $this->assertTrue($table->hasRows());
         $rows = $table->getRows();
         $this->assertEquals('testuser9', $rows[0]['username']);
+        $this->db->disconnect();
     }
 
     public function testGetTableInfo()

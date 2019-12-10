@@ -81,6 +81,7 @@ class TableMysqlJoinTest extends TestCase
         $rows = $table->getRows();
         $this->assertEquals('testuser1', $rows[0]['username']);
         $this->assertEquals('Test notes', $rows[0]['notes']);
+        $this->db->disconnect();
     }
 
     public function testSelectJoin2()
@@ -115,10 +116,12 @@ class TableMysqlJoinTest extends TestCase
         $rows = $table->getRows();
         $this->assertEquals('testuser1', $rows[0]['username']);
         $this->assertEquals('Test notes', $rows[0]['notes']);
+        $this->db->disconnect();
     }
 
     public function tearDown()
     {
+        $this->db->connect();
         $schema = $this->db->createSchema();
         $schema->disableForeignKeyCheck();
         $schema->drop('user_info');

@@ -25,6 +25,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['username'])->distinct()->from('users');
         $this->assertEquals('SELECT DISTINCT `username` FROM `users`', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testAlias()
@@ -33,6 +34,7 @@ class SelectTest extends TestCase
         $sql->select(['username'])->from('users');
         $sql->select()->asAlias('test_table');
         $this->assertEquals('(SELECT `username` FROM `users`) AS `test_table`', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testJoin()
@@ -41,6 +43,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->join('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testLeftJoin()
@@ -49,6 +52,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->leftJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testRightJoin()
@@ -57,6 +61,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->rightJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` RIGHT JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testFullJoin()
@@ -65,6 +70,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->fullJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` FULL JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOuterJoin()
@@ -73,6 +79,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->outerJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testLeftOuterJoin()
@@ -81,6 +88,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->leftOuterJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` LEFT OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testRightOuterJoin()
@@ -89,6 +97,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->rightOuterJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` RIGHT OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testFullOuterJoin()
@@ -97,6 +106,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->fullOuterJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` FULL OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testInnerJoin()
@@ -105,6 +115,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->innerJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testLeftInnerJoin()
@@ -113,6 +124,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->leftInnerJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` LEFT INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testRightInnerJoin()
@@ -121,6 +133,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->rightInnerJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` RIGHT INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testFullInnerJoin()
@@ -129,6 +142,7 @@ class SelectTest extends TestCase
         $sql->select()->from('users')
             ->fullInnerJoin('user_info', ['user_info.user_id' => 'users.id']);
         $this->assertEquals('SELECT * FROM `users` FULL INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testMagicException()
@@ -142,6 +156,7 @@ class SelectTest extends TestCase
     {
         $sql = $this->db->createSql();
         $this->assertInstanceOf('Pop\Db\Sql\Where', $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->where);
+        $this->db->disconnect();
     }
 
     public function testHaving()
@@ -149,12 +164,14 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING (`total` > 1)', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testHavingMagic()
     {
         $sql = $this->db->createSql();
         $this->assertInstanceOf('Pop\Db\Sql\Having', $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having);
+        $this->db->disconnect();
     }
 
     public function testAndHaving()
@@ -162,6 +179,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->andHaving('total < 10');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOrHaving()
@@ -169,6 +187,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->orHaving('total = 0');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` = 0))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testHavingAnd()
@@ -176,6 +195,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1 AND total < 10');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testHavingAndHaving()
@@ -183,6 +203,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->andHaving('total < 10');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testHavingOr()
@@ -190,6 +211,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1 OR total < 10');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testHavingOrHaving()
@@ -197,6 +219,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having('total > 1')->orHaving('total < 10');
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testHavingArray()
@@ -204,6 +227,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->having(['total > 1', 'total < 10']);
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testAndHavingArray()
@@ -211,6 +235,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->andHaving(['total > 1', 'total < 10']);
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) AND (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOrHavingArray()
@@ -218,6 +243,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['email', 'total' => 'COUNT(1)'])->from('users')->orHaving(['total > 1', 'total < 10']);
         $this->assertEquals('SELECT `email`, COUNT(1) AS `total` FROM `users` HAVING ((`total` > 1) OR (`total` < 10))', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testGroupBy()
@@ -225,6 +251,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['username', 'total' => 'COUNT(1)'])->from('users')->groupBy('username');
         $this->assertEquals('SELECT `username`, COUNT(1) AS `total` FROM `users` GROUP BY `username`', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testGroupByArray()
@@ -232,6 +259,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['username', 'email', 'total' => 'COUNT(1)'])->from('users')->groupBy(['username', 'email']);
         $this->assertEquals('SELECT `username`, `email`, COUNT(1) AS `total` FROM `users` GROUP BY `username`, `email`', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testGroupByString()
@@ -239,6 +267,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select(['username', 'email', 'total' => 'COUNT(1)'])->from('users')->groupBy('username, email');
         $this->assertEquals('SELECT `username`, `email`, COUNT(1) AS `total` FROM `users` GROUP BY `username`, `email`', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOrderBy()
@@ -246,6 +275,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->orderBy('username', 'ASC');
         $this->assertEquals('SELECT * FROM `users` ORDER BY `username` ASC', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOrderByArray()
@@ -253,6 +283,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->orderBy(['username', 'email'], 'ASC');
         $this->assertEquals('SELECT * FROM `users` ORDER BY `username`, `email` ASC', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOrderByString()
@@ -260,6 +291,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->orderBy('username, email', 'ASC');
         $this->assertEquals('SELECT * FROM `users` ORDER BY `username`, `email` ASC', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOrderByRandom()
@@ -267,6 +299,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->orderBy('username', 'RAND');
         $this->assertEquals('SELECT * FROM `users` ORDER BY `username` RAND()', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testLimit()
@@ -274,6 +307,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->limit(1);
         $this->assertEquals('SELECT * FROM `users` LIMIT 1', (string)$sql);
+        $this->db->disconnect();
     }
 
     public function testOffset()
@@ -281,6 +315,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')->offset(25);
         $this->assertEquals('SELECT * FROM `users` OFFSET 25', (string)$sql->select());
+        $this->db->disconnect();
     }
 
     public function testNestedSql()
@@ -291,6 +326,7 @@ class SelectTest extends TestCase
         $sql2->select()->setAlias('usernames');
         $sql1->select()->from($sql2);
         $this->assertEquals('SELECT * FROM (SELECT `username` FROM `users`) AS `usernames`', $sql1->render());
+        $this->db->disconnect();
     }
 
     public function testNestedSelect()

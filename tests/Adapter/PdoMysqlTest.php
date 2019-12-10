@@ -44,6 +44,7 @@ class PdpMysqlTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
         $this->assertInstanceOf('Pop\Db\Sql', $db->createSql());
         $this->assertInstanceOf('Pop\Db\Sql\Schema', $db->createSchema());
+        $db->disconnect();
     }
 
     public function testCreateTable()
@@ -74,6 +75,7 @@ class PdpMysqlTest extends TestCase
         $this->assertContains('Finish:', $debugResults);
         $this->assertContains('Elapsed:', $debugResults);
         $this->assertContains('CREATE TABLE `users`', $debugResults);
+        $db->disconnect();
     }
 
     public function testConstructor()
@@ -87,6 +89,7 @@ class PdpMysqlTest extends TestCase
 
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
         $this->assertContains('PDO mysql', $db->getVersion());
+        $db->disconnect();
     }
 
     public function testGetTables()
@@ -99,6 +102,7 @@ class PdpMysqlTest extends TestCase
         ]);
         $this->assertContains('users', $db->getTables());
         $this->assertTrue($db->hasTable('users'));
+        $db->disconnect();
     }
 
     public function testBindParams()
@@ -137,6 +141,7 @@ class PdpMysqlTest extends TestCase
         $this->assertContains('Finish:', $debugResults);
         $this->assertContains('Elapsed:', $debugResults);
         $this->assertContains('INSERT INTO `users`', $debugResults);
+        $db->disconnect();
     }
 
     public function testFetch()
@@ -156,6 +161,7 @@ class PdpMysqlTest extends TestCase
         }
         $this->assertEquals(1, count($rows));
         $this->assertEquals(1, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testFetchResults()
@@ -200,6 +206,7 @@ class PdpMysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(2, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testRollback()
@@ -222,6 +229,7 @@ class PdpMysqlTest extends TestCase
             ->execute();
 
         $this->assertEquals(2, $db->getNumberOfRows());
+        $db->disconnect();
     }
 
     public function testDropTable()
