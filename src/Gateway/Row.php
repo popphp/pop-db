@@ -387,8 +387,6 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
         }
         $db->execute();
 
-        $this->resetDirty();
-
         return $this;
     }
 
