@@ -211,6 +211,10 @@ class Db
                     } else if (substr($line, 0, 2) == '/*') {
                         $insideComment = true;
                         unset($lines[$i]);
+                    } else if (strrpos($line, '--') !== false) {
+                        $lines[$i] = substr($line, 0, strrpos($line, '--'));
+                    } else if (strrpos($line, '/*') !== false) {
+                        $lines[$i] = substr($line, 0, strrpos($line, '/*'));
                     }
                 }
             }
