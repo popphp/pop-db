@@ -366,10 +366,11 @@ class Record extends Record\AbstractRecord
     /**
      * Static method to get the total count of a set from the DB table
      *
-     * @param  array  $columns
+     * @param  array $columns
+     * @param  array $options
      * @return int
      */
-    public static function getTotal(array $columns = null)
+    public static function getTotal(array $columns = null, array $options = null)
     {
         $record      = new static();
         $expressions = null;
@@ -382,7 +383,7 @@ class Record extends Record\AbstractRecord
                 Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
         }
 
-        $rows = $record->getTableGateway()->select(['total_count' => 'COUNT(1)'], $expressions, $params);
+        $rows = $record->getTableGateway()->select(['total_count' => 'COUNT(1)'], $expressions, $params, $options);
 
         return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
