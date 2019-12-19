@@ -120,7 +120,9 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         }
 
         if (isset($options['join'])) {
-            $joins = (!is_array($options['join'])) ? [$options['join']] : $options['join'];
+            $joins = (is_array($options['join']) && isset($options['join']['table'])) ?
+                [$options['join']] : $options['join'];
+
             foreach ($joins as $join) {
                 if (isset($join['type']) && method_exists($sql->select(), $join['type'])) {
                     $joinMethod = $join['type'];
