@@ -70,10 +70,11 @@ class Update extends AbstractPredicateClause
                 substr($column, (strpos($column, '.') + 1)) : $column;
 
             // Check for named parameters
-            if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) && ($dbType !== self::SQLITE)) {
+            if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) &&
+                ($dbType !== self::SQLITE) && (!($this->db instanceof \Pop\Db\Adapter\Pdo))) {
                 if (($dbType == self::MYSQL) || ($dbType == self::SQLSRV)) {
                     $value = '?';
-                } else if (($dbType == self::PGSQL) && (!($this->db instanceof \Pop\Db\Adapter\Pdo))) {
+                } else if ($dbType == self::PGSQL) {
                     $value = '$' . $paramCount;
                     $paramCount++;
                 }

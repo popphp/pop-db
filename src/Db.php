@@ -197,24 +197,31 @@ class Db
             // Remove any comments, parse prefix if available
             $insideComment = false;
             foreach ($lines as $i => $line) {
-                if (isset($options['prefix'])) {
-                    $lines[$i] = str_replace('[{prefix}]', $options['prefix'], trim($line));
-                }
-                if ($insideComment) {
-                    if (substr($line, -2) == '*/') {
-                        $insideComment = false;
-                    }
+                if (empty($line)) {
                     unset($lines[$i]);
                 } else {
-                    if ((substr($line, 0, 1) == '-') || (substr($line, 0, 1) == '#')) {
+                    if (isset($options['prefix'])) {
+                        $lines[$i] = str_replace('[{prefix}]', $options['prefix'], trim($line));
+                    }
+                    if ($insideComment) {
+                        if (substr($line, -2) == '*/') {
+                            $insideComment = false;
+                        }
                         unset($lines[$i]);
-                    } else if (substr($line, 0, 2) == '/*') {
-                        $insideComment = true;
-                        unset($lines[$i]);
-                    } else if (strrpos($line, '--') !== false) {
-                        $lines[$i] = substr($line, 0, strrpos($line, '--'));
-                    } else if (strrpos($line, '/*') !== false) {
-                        $lines[$i] = substr($line, 0, strrpos($line, '/*'));
+                    } else {
+                        if ((substr($line, 0, 1) == '-') || (substr($line, 0, 1) == '#')) {
+                            unset($lines[$i]);
+                        } else if (substr($line, 0, 2) == '/*') {
+                            $line = trim($line);
+                            if ((substr($line, -2) != '*/') && (substr($line, -3) != '*/;')) {
+                                $insideComment = true;
+                            }
+                            unset($lines[$i]);
+                        } else if (strrpos($line, '--') !== false) {
+                            $lines[$i] = substr($line, 0, strrpos($line, '--'));
+                        } else if (strrpos($line, '/*') !== false) {
+                            $lines[$i] = substr($line, 0, strrpos($line, '/*'));
+                        }
                     }
                 }
             }

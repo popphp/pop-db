@@ -366,13 +366,16 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             if (array_key_exists($key, $this->primaryValues)) {
                 if (null !== $this->primaryValues[$key]) {
                     $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
+                    $values[$this->primaryKeys[$key]] = $placeholder;
                 }
             } else if (array_key_exists($this->primaryKeys[$key], $this->columns)) {
                 if (null !== $this->primaryValues[$key]) {
                     if (substr($placeholder, 0, 1) == ':') {
                         $params[$this->primaryKeys[$key]] = $this->columns[$this->primaryKeys[$key]];
+                        $values[$this->primaryKeys[$key]] = $placeholder;
                     } else {
                         $params[$key] = $this->columns[$this->primaryKeys[$key]];
+                        $values[$key] = $placeholder;
                     }
                 }
             } else {
