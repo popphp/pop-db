@@ -85,6 +85,46 @@ class ExpressionTest extends TestCase
         $this->assertEquals('100', $components[6]['value'][1]);
     }
 
+
+    public function testNotFlattened()
+    {
+        $expressions = [
+            "username = 'admin'",
+            "email = 'test@test.com'",
+            "attempts >= 5",
+            "role IS NULL",
+            "title LIKE 'CEO%'",
+            "id IN (1, 2, 3)",
+            "logins BETWEEN 50 AND 100"
+        ];
+
+        $shortHand = Expression::convertExpressionsToShorthand($expressions);
+        $results   = Expression::parseShorthand($shortHand, '?', false);
+
+        $this->assertTrue(isset($results['expressions']));
+        $this->assertTrue(isset($results['params']));
+        $this->assertTrue(is_array($results['expressions']));
+        $this->assertTrue(is_array($results['params']));
+        $this->assertEquals(7, count($results['expressions']));
+        $this->assertEquals(6, count($results['params']));
+        $this->assertTrue(isset($results['expressions'][0]));
+        $this->assertTrue(isset($results['expressions'][1]));
+        $this->assertTrue(isset($results['expressions'][2]));
+        $this->assertTrue(isset($results['expressions'][3]));
+        $this->assertTrue(isset($results['expressions'][4]));
+        $this->assertTrue(isset($results['expressions'][5]));
+        $this->assertTrue(isset($results['expressions'][6]));
+        $this->assertFalse(isset($results['expressions'][7]));
+        $this->assertTrue(isset($results['params'][0]));
+        $this->assertTrue(isset($results['params'][1]));
+        $this->assertTrue(isset($results['params'][2]));
+        $this->assertFalse(isset($results['params'][3]));
+        $this->assertTrue(isset($results['params'][4]));
+        $this->assertTrue(isset($results['params'][5]));
+        $this->assertTrue(isset($results['params'][6]));
+        $this->assertFalse(isset($results['params'][7]));
+    }
+
     public function testParseException()
     {
         $this->expectException('Pop\Db\Sql\Parser\Exception');

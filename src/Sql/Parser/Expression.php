@@ -175,15 +175,17 @@ class Expression
     /**
      * Method to parse the shorthand columns to create expressions and their parameters
      *
-     * @param  array  $columns
-     * @param  string $placeholder
+     * @param  array   $columns
+     * @param  string  $placeholder
+     * @param  boolean $flatten
      * @return array
      */
-    public static function parseShorthand($columns, $placeholder = null)
+    public static function parseShorthand($columns, $placeholder = null, $flatten = true)
     {
         $expressions = [];
         $params      = [];
         $i           = 1;
+        $j           = 0;
 
         foreach ($columns as $column => $value) {
             ['column' => $parsedColumn, 'operator' => $operator] = Operator::parse($column);
@@ -239,7 +241,7 @@ class Expression
                 if ($placeholder == ':') {
                     $params[$parsedColumn] = $p;
                 } else {
-                    $params[] = $p;
+                    $params[$j] = $p;
                 }
             // BETWEEN/NOT BETWEEN
             } else if (is_string($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
@@ -273,7 +275,7 @@ class Expression
                 if ($placeholder == ':') {
                     $params[$parsedColumn] = $p;
                 } else {
-                    $params[] = $p;
+                    $params[$j] = $p;
                 }
                 $i++;
             // LIKE/NOT LIKE or Standard Operators
@@ -297,33 +299,39 @@ class Expression
                 if ($placeholder == ':') {
                     $params[$parsedColumn] = $value;
                 } else {
-                    $params[] = $value;
+                    $params[$j] = $value;
                 }
                 $i++;
             }
+            $j++;
         }
 
-        $flattenParams = [];
+        if ($flatten) {
+            $flattenParams = [];
 
-        foreach ($params as $key => $value) {
-            if (is_array($value)) {
-                foreach ($value as $k => $v) {
+            foreach ($params as $key => $value) {
+                if (is_array($value)) {
+                    foreach ($value as $k => $v) {
+                        if ($placeholder == ':') {
+                            $flattenParams[$key . ($k + 1)] = $v;
+                        } else {
+                            $flattenParams[] = $v;
+                        }
+                    }
+                } else {
                     if ($placeholder == ':') {
-                        $flattenParams[$key . ($k + 1)] = $v;
+                        $flattenParams[$key] = $value;
                     } else {
-                        $flattenParams[] = $v;
+                        $flattenParams[] = $value;
                     }
                 }
-            } else {
-                if ($placeholder == ':') {
-                    $flattenParams[$key] = $value;
-                } else {
-                    $flattenParams[] = $value;
-                }
             }
+
+            return ['expressions' => $expressions, 'params' => $flattenParams];
+        } else {
+            return ['expressions' => $expressions, 'params' => $params];
         }
 
-        return ['expressions' => $expressions, 'params' => $flattenParams];
     }
 
     /**
