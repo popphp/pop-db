@@ -45,6 +45,34 @@ abstract class AbstractClause extends AbstractSql
     protected $values = [];
 
     /**
+     * Supported standard SQL aggregate functions
+     * @var array
+     */
+    protected static $aggregateFunctions = [
+        'AVG', 'COUNT', 'MAX', 'MIN', 'SUM'
+    ];
+
+    /**
+     * Supported standard SQL math functions
+     * @var array
+     */
+    protected static $mathFunctions = [
+        'ABS', 'RAND', 'SQRT', 'POW', 'POWER', 'EXP', 'LN', 'LOG', 'LOG10', 'GREATEST', 'LEAST',
+        'DIV', 'MOD', 'ROUND', 'TRUNC', 'CEIL', 'CEILING', 'FLOOR', 'COS', 'ACOS', 'ACOSH', 'SIN',
+        'SINH', 'ASIN', 'ASINH', 'TAN', 'TANH', 'ATANH', 'ATAN2',
+    ];
+
+    /**
+     * Supported standard SQL string functions
+     * @var array
+     */
+    protected static $stringFunctions = [
+        'CONCAT', 'FORMAT', 'INSTR', 'LCASE', 'LEFT', 'LENGTH', 'LOCATE', 'LOWER', 'LPAD',
+        'LTRIM', 'POSITION', 'QUOTE', 'REGEXP', 'REPEAT', 'REPLACE', 'REVERSE', 'RIGHT', 'RPAD',
+        'RTRIM', 'SPACE', 'STRCMP', 'SUBSTRING', 'SUBSTR', 'TRIM', 'UCASE', 'UPPER'
+    ];
+
+    /**
      * Set the table
      *
      * @param  mixed $table
@@ -158,6 +186,24 @@ abstract class AbstractClause extends AbstractSql
     public function getValue($name)
     {
         return (isset($this->values[$name])) ? $this->values[$name] : null;
+    }
+
+    /**
+     * Check if value contains a standard SQL supported function
+     *
+     * @param  string $value
+     * @return boolean
+     */
+    public static function isSupportedFunction($value)
+    {
+        if (strpos($value, '(') !== false) {
+            $value = trim(substr($value, 0, strpos($value, '(')));
+        }
+        $value = strtoupper($value);
+
+        return (in_array($value, static::$aggregateFunctions) ||
+            in_array($value, static::$mathFunctions) ||
+            in_array($value, static::$stringFunctions));
     }
 
     /**

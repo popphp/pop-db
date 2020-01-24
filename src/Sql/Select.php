@@ -27,14 +27,6 @@ class Select extends AbstractPredicateClause
 {
 
     /**
-     * Allowed functions
-     * @var array
-     */
-    protected static $allowedFunctions = [
-        'AVG', 'COUNT', 'FIRST', 'LAST', 'MAX', 'MIN', 'SUM'
-    ];
-
-    /**
      * Distinct keyword
      * @var boolean
      */
@@ -437,8 +429,7 @@ class Select extends AbstractPredicateClause
             $cols = [];
             foreach ($this->values as $as => $col) {
                 // If column is a SQL function, don't quote it
-                $c = ((strpos($col, '(') !== false) && (in_array(substr($col, 0, strpos($col, '(')), self::$allowedFunctions))) ?
-                    $col : $this->quoteId($col);
+                $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);
                 if (!is_numeric($as)) {
                     $cols[] = $c . ' AS ' . $this->quoteId($as);
                 } else {
