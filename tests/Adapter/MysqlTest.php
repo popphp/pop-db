@@ -2,9 +2,11 @@
 
 namespace Pop\Db\Test\Adapter;
 
+use Pop\Db\Adapter\Profiler\Profiler;
 use Pop\Db\Db;
 use Pop\Db\Adapter\Mysql;
 use PHPUnit\Framework\TestCase;
+use Pop\Utils\CallableObject;
 
 class MysqlTest extends TestCase
 {
@@ -55,7 +57,7 @@ class MysqlTest extends TestCase
             'password' => $this->password
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler', ['name' => 'query-listener'], new Profiler());
 
         $schema = $db->createSchema();
         $schema->create('users')
@@ -146,7 +148,7 @@ class MysqlTest extends TestCase
         ]);
 
         $sql      = $db->createSql();
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(new CallableObject('Pop\Debug\Handler\QueryHandler'));
 
         $sql->insert()->into('users')->values([
             'username' => '?',

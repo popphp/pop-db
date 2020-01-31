@@ -14,6 +14,7 @@
 namespace Pop\Db\Adapter;
 
 use Pop\Db\Sql;
+use Pop\Utils\CallableObject;
 
 /**
  * Db abstract adapter class
@@ -60,7 +61,7 @@ abstract class AbstractAdapter implements AdapterInterface
 
     /**
      * Query listener object/resource
-     * @var mixed
+     * @var CallableObject
      */
     protected $listener = null;
 
@@ -261,31 +262,54 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Add query listener to the adapter
      *
-     * @param  mixed $listener
+     * @param  mixed             $listener
+     * @param  mixed             $params
+     * @param  Profiler\Profiler $profiler
      * @return mixed
      */
-    public function listen($listener)
+    public function listen($listener, $params = null, Profiler\Profiler $profiler = null)
     {
+        if (null !== $profiler) {
+            $this->profiler = $profiler;
+        }
         if (null === $this->profiler) {
             $this->profiler = new Profiler\Profiler();
         }
 
-        $obj    = null;
-        $params = [$this->profiler];
-
-        if (is_array($listener) || ($listener instanceof \Closure) || (is_string($listener) && (strpos($listener, '::') !== false))) {
-            $obj = call_user_func_array($listener, $params);
-        } else if (is_string($listener) && (strpos($listener, '->') !== false)) {
-            [$class, $method] = explode('->', $listener);
-            if (class_exists($class) && method_exists($class, $method)) {
-                $obj = call_user_func_array([new $class(), $method], $params);
+        if (!($listener instanceof CallableObject)) {
+            $this->listener = new CallableObject($listener, [$this->profiler]);
+            if (null !== $params) {
+                if (is_array($params)) {
+                    $this->listener->addParameters($params);
+                } else {
+                    $this->listener->addParameter($params);
+                }
             }
-        } else if (class_exists($listener)) {
-            $reflect = new \ReflectionClass($listener);
-            $obj     = $reflect->newInstanceArgs($params);
+        } else {
+            $this->listener = $listener;
+            if (null !== $params) {
+                if (is_array($params)) {
+                    array_unshift($params, $this->profiler);
+                } else {
+                    $params = [$this->profiler, $params];
+                }
+                $this->listener->addParameters($params);
+            } else {
+                $this->listener->addNamedParameter('profiler', $this->profiler);
+            }
         }
 
-        return $obj;
+        return $this->listener->call();
+    }
+
+    /**
+     * Get query listener
+     *
+     * @return CallableObject
+     */
+    public function getListener()
+    {
+        return $this->listener;
     }
 
     /**

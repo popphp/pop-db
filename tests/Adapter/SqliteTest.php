@@ -5,6 +5,7 @@ namespace Pop\Db\Test\Adapter;
 use Pop\Db\Db;
 use Pop\Db\Adapter\Sqlite;
 use PHPUnit\Framework\TestCase;
+use Pop\Utils\CallableObject;
 
 class SqliteTest extends TestCase
 {
@@ -54,7 +55,8 @@ class SqliteTest extends TestCase
             'database' => __DIR__ . '/../tmp/db.sqlite'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(new CallableObject('Pop\Debug\Handler\QueryHandler'), ['name' => 'query-listener']);
+        $this->assertInstanceOf('Pop\Utils\CallableObject', $db->getListener());
 
         $schema = $db->createSchema();
         $schema->create('users')
