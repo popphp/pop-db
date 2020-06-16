@@ -59,11 +59,15 @@ class Predicate
                 $column = self::stripIdQuotes($column);
 
                 // Create array of values if the value is a comma-separated list
-                if ((substr($value, 0, 1) == '(') && (substr($value, -1) == ')') && (strpos($value, ',') !== false)) {
+                if ((substr($value, 0, 1) == '(') && (substr($value, -1) == ')')) {
                     $value = substr($value, 1);
                     $value = substr($value, 0, -1);
-                    $value = str_replace(', ', ',', $value);
-                    $value = explode(',', $value);
+                    if (strpos($value, ',') !== false) {
+                        $value = str_replace(', ', ',', $value);
+                        $value = explode(',', $value);
+                    } else {
+                        $value = [$value];
+                    }
                 // Else, just strip quotes
                 } else {
                     $value = self::stripQuotes($value);
