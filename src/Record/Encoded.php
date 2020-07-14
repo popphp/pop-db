@@ -139,7 +139,7 @@ class Encoded extends \Pop\Db\Record
     public function encodeValue($key, $value)
     {
         if (in_array($key, $this->jsonFields)) {
-            if (!(is_string($value) && is_array(@json_decode($value, true)) && (json_last_error() == JSON_ERROR_NONE))) {
+            if (!((is_string($value) && (json_decode($value) !== false)) && (json_last_error() == JSON_ERROR_NONE))) {
                 $value = json_encode($value);
             }
         } else if (in_array($key, $this->phpFields)) {
