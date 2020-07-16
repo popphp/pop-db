@@ -39,9 +39,10 @@ class Collection extends Utils\Collection
     /**
      * Method to get collection object as an array
      *
+     * @param  array    $options
      * @return array
      */
-    public function toArray()
+    public function toArray($options = [])
     {
         $items = $this->data;
 
@@ -56,6 +57,27 @@ class Collection extends Utils\Collection
                     }
                 }
 
+            }
+        }
+
+        if (!empty($options)) {
+            if (array_key_exists('column', $options) && !empty($options['column'])) {
+                // return simple array of one column
+                $items = array_column($items, $options['column']);
+            } else if (array_key_exists('key', $options)) {
+                if (array_key_exists('isUnique', $options) && $options['isUnique'] == true) {
+                    // return associative array sorted by unique column
+                    $items = array_reduce($items, function($accumulator, $item) use ($options) {
+                        $accumulator[$item[$options['key']]] = $item;
+                        return $accumulator;
+                    });
+                } else {
+                    // return associative array of arrays sorted by non-unique column
+                    $items = array_reduce($items, function($accumulator, $item) use ($options, $items) {
+                        $accumulator[$item[$options['key']]][] = $item;
+                        return $accumulator;
+                    });
+                }
             }
         }
 
