@@ -365,14 +365,35 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     /**
      * Method to get collection object as an array
      *
+     * @param  array    $options
      * @return array
      */
-    public function toArray()
+    public function toArray($options = [])
     {
         $items = $this->items;
         foreach ($items as $key => $value) {
             if ($value instanceof AbstractRecord) {
                 $items[$key] = $value->toArray();
+            }
+        }
+        if (!empty($options)) {
+            if (array_key_exists('column', $options) && !empty($options['column'])) {
+                // return simple array of one column
+                $items = array_column($items, $options['column']);
+            } else if (array_key_exists('key', $options)) {
+                if (array_key_exists('isUnique', $options) && $options['isUnique'] == true) {
+                    // return associative array sorted by unique column
+                    $items = array_reduce($items, function($accumulator, $item, $idx) {
+                        $accumulator[$item['key']] = $item;
+                        return $accumulator;
+                    });
+                } else {
+                    // return associative array of arrays sorted by non-unique column
+                    $items = array_reduce($items, function($accumulator, $item, $idx) {
+                        $accumulator[$item['key']][] = $item;
+                        return $accumulator;
+                    });
+                }
             }
         }
         return $items;

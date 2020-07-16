@@ -322,6 +322,77 @@ class CollectionTest extends TestCase
         $this->assertEquals(2, $newCollection3->count());
     }
 
+    public function testToArray()
+    {
+        $collection = new Record\Collection([
+            [
+                'id'        => 1,
+                'firstName' => 'John',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 2,
+                'firstName' => 'Jane',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 3,
+                'firstName' => 'Tom',
+                'lastName'  => 'Washington',
+            ],
+        ]);
+
+        $array1 = $collection->toArray();
+        $array2 = $collection->toArray(['column' => 'id']);
+        $array3 = $collection->toArray(['key' => 'id']);
+        $array4 = $collection->toArray(['key' => 'lastName', 'isUnique' => false]);
+
+        $expected3 = [
+            1 => [
+                'id'        => 1,
+                'firstName' => 'John',
+                'lastName'  => 'Smith',
+            ],
+            2 => [
+                'id'        => 2,
+                'firstName' => 'Jane',
+                'lastName'  => 'Smith',
+            ],
+            3 => [
+                'id'        => 3,
+                'firstName' => 'Tom',
+                'lastName'  => 'Washington',
+            ],
+        ];
+        $expected4 = [
+            'Smith' => [
+                [
+                    'id'        => 1,
+                    'firstName' => 'John',
+                    'lastName'  => 'Smith',
+                ],
+                [
+                    'id'        => 2,
+                    'firstName' => 'Jane',
+                    'lastName'  => 'Smith',
+                ],
+            ],
+            [
+                'Washington' =>
+                [
+                    'id'        => 3,
+                    'firstName' => 'Tom',
+                    'lastName'  => 'Washington',
+                ],
+            ]
+        ];
+
+        $this->assertEquals(3, count($array1));
+        $this->assertTrue([1, 2, 3] === $array2);
+        $this->assertTrue($array3 === $expected3);
+        $this->assertTrue($array4 === $expected4);
+    }
+
     public function testUnset()
     {
         $collection = new Record\Collection([
