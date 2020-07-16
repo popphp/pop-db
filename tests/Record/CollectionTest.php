@@ -404,18 +404,89 @@ class CollectionTest extends TestCase
     {
         $collection = new Record\Collection([
             [
-                'id'   => 1,
-                'name' => 'John'
+                'id'        => 1,
+                'firstName' => 'John',
+                'lastName'  => 'Smith',
             ],
             [
-                'id'   => 2,
-                'name' => 'Jane'
-            ]
+                'id'        => 2,
+                'firstName' => 'Jane',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 3,
+                'firstName' => 'Tom',
+                'lastName'  => 'Washington',
+            ],
         ]);
 
-        $ary = $collection->toArray();
-        $this->assertTrue(is_array($ary));
-        $this->assertEquals(2, count($ary));
+        $array1 = $collection->toArray();
+        $array2 = $collection->toArray(['column' => 'id']);
+        $array3 = $collection->toArray(['key' => 'id', 'isUnique' => true]);
+        $array4 = $collection->toArray(['key' => 'lastName']);
+
+        $expected1 = [
+            [
+                'id'        => 1,
+                'firstName' => 'John',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 2,
+                'firstName' => 'Jane',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 3,
+                'firstName' => 'Tom',
+                'lastName'  => 'Washington',
+            ],
+        ];
+        $expected2 = [1, 2, 3];
+        $expected3 = [
+            1 => [
+                'id'        => 1,
+                'firstName' => 'John',
+                'lastName'  => 'Smith',
+            ],
+            2 => [
+                'id'        => 2,
+                'firstName' => 'Jane',
+                'lastName'  => 'Smith',
+            ],
+            3 => [
+                'id'        => 3,
+                'firstName' => 'Tom',
+                'lastName'  => 'Washington',
+            ],
+        ];
+        $expected4 = [
+            'Smith' => [
+                [
+                    'id'        => 1,
+                    'firstName' => 'John',
+                    'lastName'  => 'Smith',
+                ],
+                [
+                    'id'        => 2,
+                    'firstName' => 'Jane',
+                    'lastName'  => 'Smith',
+                ],
+            ],
+            'Washington' => [
+                [
+                    'id'        => 3,
+                    'firstName' => 'Tom',
+                    'lastName'  => 'Washington',
+                ],
+            ]
+        ];
+
+        $this->assertEquals(3, count($array1));
+        $this->assertTrue($array1 === $expected1);
+        $this->assertTrue($array2 === $expected2);
+        $this->assertTrue($array3 === $expected3);
+        $this->assertTrue($array4 === $expected4);
     }
 
     public function testIterator()
