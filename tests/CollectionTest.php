@@ -347,6 +347,24 @@ class CollectionTest extends TestCase
         $array3 = $collection->toArray(['key' => 'id']);
         $array4 = $collection->toArray(['key' => 'lastName', 'isUnique' => false]);
 
+        $expected1 = [
+            [
+                'id'        => 1,
+                'firstName' => 'John',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 2,
+                'firstName' => 'Jane',
+                'lastName'  => 'Smith',
+            ],
+            [
+                'id'        => 3,
+                'firstName' => 'Tom',
+                'lastName'  => 'Washington',
+            ],
+        ];
+        $expected2 = [1, 2, 3];
         $expected3 = [
             1 => [
                 'id'        => 1,
@@ -388,7 +406,8 @@ class CollectionTest extends TestCase
         ];
 
         $this->assertEquals(3, count($array1));
-        $this->assertTrue([1, 2, 3] === $array2);
+        $this->assertTrue($array1 === $expected1);
+        $this->assertTrue($array2 === $expected2);
         $this->assertTrue($array3 === $expected3);
         $this->assertTrue($array4 === $expected4);
     }
