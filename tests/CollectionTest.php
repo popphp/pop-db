@@ -344,8 +344,8 @@ class CollectionTest extends TestCase
 
         $array1 = $collection->toArray();
         $array2 = $collection->toArray(['column' => 'id']);
-        $array3 = $collection->toArray(['key' => 'id']);
-        $array4 = $collection->toArray(['key' => 'lastName', 'isUnique' => false]);
+        $array3 = $collection->toArray(['key' => 'id', 'isUnique' => true]);
+        $array4 = $collection->toArray(['key' => 'lastName']);
 
         $expected1 = [
             [
@@ -395,8 +395,7 @@ class CollectionTest extends TestCase
                     'lastName'  => 'Smith',
                 ],
             ],
-            [
-                'Washington' =>
+            'Washington' => [
                 [
                     'id'        => 3,
                     'firstName' => 'Tom',

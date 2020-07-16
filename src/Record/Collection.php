@@ -383,14 +383,14 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
             } else if (array_key_exists('key', $options)) {
                 if (array_key_exists('isUnique', $options) && $options['isUnique'] == true) {
                     // return associative array sorted by unique column
-                    $items = array_reduce($items, function($accumulator, $item, $idx) {
-                        $accumulator[$item['key']] = $item;
+                    $items = array_reduce($items, function($accumulator, $item) use ($options) {
+                        $accumulator[$item[$options['key']]] = $item;
                         return $accumulator;
                     });
                 } else {
                     // return associative array of arrays sorted by non-unique column
-                    $items = array_reduce($items, function($accumulator, $item, $idx) {
-                        $accumulator[$item['key']][] = $item;
+                    $items = array_reduce($items, function($accumulator, $item) use ($options, $items) {
+                        $accumulator[$item[$options['key']]][] = $item;
                         return $accumulator;
                     });
                 }
