@@ -81,6 +81,12 @@ abstract class AbstractSql
     protected $closeQuote = null;
 
     /**
+     * Parameter count
+     * @var int
+     */
+    protected $parameterCount = 0;
+
+    /**
      * Constructor
      *
      * Instantiate the SQL object
@@ -228,6 +234,97 @@ abstract class AbstractSql
     public function getCloseQuote()
     {
         return $this->closeQuote;
+    }
+
+    /**
+     * Get parameter count
+     *
+     * @return int
+     */
+    public function getParameterCount()
+    {
+        return $this->parameterCount;
+    }
+
+    /**
+     * Increment parameter count
+     *
+     * @return static
+     */
+    public function incrementParameterCount()
+    {
+        $this->parameterCount++;
+        return $this;
+    }
+
+    /**
+     * Decrement parameter count
+     *
+     * @return static
+     */
+    public function decrementParameterCount()
+    {
+        $this->parameterCount--;
+        return $this;
+    }
+
+    /**
+     * Check if value is parameter placeholder
+     *
+     * @param  mixed  $value
+     * @param  string $column
+     * @return boolean
+     */
+    public function isParameter($value, $column = null)
+    {
+        return (((null !== $column) && ((':' . $column) == $value)) ||
+                ((preg_match('/^\$\d*\d$/', $value) == 1)) ||
+                (($value == '?')));
+    }
+
+    /**
+     * Get parameter placeholder value
+     *
+     * @param  mixed  $value
+     * @param  string $column
+     * @return string
+     */
+    public function getParameter($value, $column = null)
+    {
+        $detectedDbType = null;
+        $parameter      = $value;
+
+        // SQLITE
+        if ((null !== $column) && ((':' . $column) == $value)) {
+            $detectedDbType = self::SQLITE;
+        // PGSQL
+        } else if (preg_match('/^\$\d*\d$/', $value) == 1) {
+            $detectedDbType = self::PGSQL;
+        // MYSQL/SQLSRV
+        } else if ($value == '?') {
+            $detectedDbType = self::MYSQL;
+        }
+
+        $this->incrementParameterCount();
+
+        if ((null !== $detectedDbType) && ($this->dbType != $detectedDbType)) {
+            switch ($this->dbType) {
+                case self::MYSQL:
+                case self::SQLSRV:
+                    $parameter = '?';
+                    break;
+                case self::PGSQL:
+                    $parameter = '$' . $this->parameterCount;
+                    break;
+                case self::SQLITE:
+                    if (null !== $column) {
+                        $parameter = ':' . $column;
+                    }
+                    break;
+            }
+        }
+
+        return $parameter;
     }
 
     /**
