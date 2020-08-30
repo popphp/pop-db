@@ -153,6 +153,9 @@ abstract class AbstractClause extends AbstractSql
     public function addValue($value)
     {
         if (!is_array($value) && !is_object($value)) {
+            if ($this->isParameter($value)) {
+                $value = $this->getParameter($value);
+            }
             $this->values[] = $value;
         }
         return $this;
@@ -168,6 +171,9 @@ abstract class AbstractClause extends AbstractSql
     public function addNamedValue($name, $value)
     {
         if (!is_array($value) && !is_object($value)) {
+            if ($this->isParameter($value, $name)) {
+                $value = $this->getParameter($value, $name);
+            }
             $this->values[$name] = $value;
         }
         return $this;

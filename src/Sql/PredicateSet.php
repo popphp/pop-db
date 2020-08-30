@@ -92,8 +92,16 @@ class PredicateSet
     {
         ['column' => $column, 'operator' => $operator, 'value' => $value] = Parser\Expression::parse($expression);
 
-        if ($this->sql->isParameter($value, $column)) {
-            $value = $this->sql->getParameter($value, $column);
+        if (is_array($value)) {
+            foreach ($value as $k => $v) {
+                if ($this->sql->isParameter($v, $column)) {
+                    $value[$k] = $this->sql->getParameter($v, $column);
+                }
+            }
+        } else {
+            if ($this->sql->isParameter($value, $column)) {
+                $value = $this->sql->getParameter($value, $column);
+            }
         }
 
         switch ($operator) {

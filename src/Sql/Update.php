@@ -69,16 +69,6 @@ class Update extends AbstractPredicateClause
             $colValue = (strpos($column, '.') !== false) ?
                 substr($column, (strpos($column, '.') + 1)) : $column;
 
-            // Check for named parameters
-            if ((':' . $colValue == substr($value, 0, strlen(':' . $colValue))) &&
-                ($dbType !== self::SQLITE) && (!($this->db instanceof \Pop\Db\Adapter\Pdo))) {
-                if (($dbType == self::MYSQL) || ($dbType == self::SQLSRV)) {
-                    $value = '?';
-                } else if ($dbType == self::PGSQL) {
-                    $value = '$' . $paramCount;
-                    $paramCount++;
-                }
-            }
             $val = (null === $value) ? 'NULL' : $this->quote($value);
             $set[] = $this->quoteId($column) .' = ' . $val;
         }

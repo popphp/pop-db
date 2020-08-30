@@ -130,4 +130,14 @@ class SqlTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testParameterCount()
+    {
+        $sql = $this->db->createSql();
+        $this->assertEquals(0, $sql->getParameterCount());
+        $sql->incrementParameterCount();
+        $this->assertEquals(1, $sql->getParameterCount());
+        $sql->decrementParameterCount();
+        $this->assertEquals(0, $sql->getParameterCount());
+    }
+
 }
