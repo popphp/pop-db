@@ -134,6 +134,12 @@ abstract class AbstractClause extends AbstractSql
      */
     public function setValues(array $values)
     {
+        foreach ($values as $column => $value) {
+            if ($this->isParameter($value, $column)) {
+                $values[$column] = $this->getParameter($value, $column);
+            }
+        }
+
         $this->values = $values;
         return $this;
     }
