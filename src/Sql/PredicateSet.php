@@ -399,15 +399,27 @@ class PredicateSet
     public function addPredicate(Predicate\AbstractPredicate $predicate)
     {
         $values = $predicate->getValues();
-        $column = array_shift($values);
 
-        foreach ($values as $key => $value) {
-            if ($this->sql->isParameter($value, $column)) {
-                $values[$key] = $this->sql->getParameter($value, $column);
+        if (is_array($values)) {
+            $column = array_shift($values);
+
+            foreach ($values as $key => $value) {
+                if (is_array($value)) {
+                    foreach ($value as $k => $v) {
+                        if ($this->sql->isParameter($v, $column)) {
+                            $values[$key][$k] = $this->sql->getParameter($v, $column);
+                        }
+                    }
+                } else {
+                    if ($this->sql->isParameter($value, $column)) {
+                        $values[$key] = $this->sql->getParameter($value, $column);
+                    }
+                }
             }
+
+            $predicate->setValues(array_merge([$column], $values));
         }
 
-        $predicate->setValues(array_merge([$column], $values));
         $this->predicates[] = $predicate;
         return $this;
     }
