@@ -174,55 +174,59 @@ class Record extends Record\AbstractRecord
     /**
      * Find by ID static method
      *
-     * @param  mixed  $id
-     * @return static
+     * @param  mixed   $id
+     * @param  boolean $asArray
+     * @return static|array
      */
-    public static function findById($id)
+    public static function findById($id, $asArray = false)
     {
-        return (new static())->getById($id);
+        return (new static())->getById($id, $asArray);
     }
 
     /**
      * Find one static method
      *
-     * @param  array  $columns
-     * @param  array  $options
-     * @return static
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
+     * @return static|array
      */
-    public static function findOne(array $columns = null, array $options = null)
+    public static function findOne(array $columns = null, array $options = null, $asArray = false)
     {
-        return (new static())->getOne($columns, $options);
+        return (new static())->getOne($columns, $options, $asArray);
     }
 
     /**
      * Find one or create static method
      *
-     * @param  array  $columns
-     * @param  array  $options
-     * @return static
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
+     * @return static|array
      */
-    public static function findOneOrCreate(array $columns = null, array $options = null)
+    public static function findOneOrCreate(array $columns = null, array $options = null, $asArray = false)
     {
         $result = (new static())->getOne($columns, $options);
 
         if (empty($result->toArray())) {
             $newRecord = new static($columns);
             $newRecord->save();
-            return $newRecord;
-        } else {
-            return $result;
+            $result = $newRecord;
         }
+
+        return ($asArray) ? $result->toArray() : $result;
     }
 
     /**
      * Find latest static method
      *
-     * @param  string $by
-     * @param  array  $columns
-     * @param  array  $options
-     * @return static
+     * @param  string  $by
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
+     * @return static|array
      */
-    public static function findLatest($by = null, array $columns = null, array $options = null)
+    public static function findLatest($by = null, array $columns = null, array $options = null, $asArray = false)
     {
         $record = new static();
 
@@ -238,7 +242,7 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        return $record->getOne($columns, $options);
+        return $record->getOne($columns, $options, $asArray);
     }
 
     /**
@@ -247,7 +251,7 @@ class Record extends Record\AbstractRecord
      * @param  array   $columns
      * @param  array   $options
      * @param  boolean $asArray
-     * @return static|Collection
+     * @return Collection|array
      */
     public static function findBy(array $columns = null, array $options = null, $asArray = false)
     {
@@ -260,19 +264,19 @@ class Record extends Record\AbstractRecord
      * @param  array   $columns
      * @param  array   $options
      * @param  boolean $asArray
-     * @return static|Collection
+     * @return static|Collection|array
      */
     public static function findByOrCreate(array $columns = null, array $options = null, $asArray = false)
     {
-        $result = (new static())->getBy($columns, $options, $asArray);
+        $result = (new static())->getBy($columns, $options);
 
         if ($result->count() == 0) {
             $newRecord = new static($columns);
             $newRecord->save();
-            return $newRecord;
-        } else {
-            return $result;
+            $result = $newRecord;
         }
+
+        return ($asArray) ? $result->toArray() : $result;
     }
 
     /**
@@ -322,7 +326,8 @@ class Record extends Record\AbstractRecord
         }
 
         if ($isSelect) {
-            return new Record\Collection($rows);
+            $collection = new Record\Collection($rows);
+            return ($asArray) ? $collection->toArray() : $collection;
         } else {
             return null;
         }
@@ -357,7 +362,8 @@ class Record extends Record\AbstractRecord
         }
 
         if ($isSelect) {
-            return new Record\Collection($rows);
+            $collection = new Record\Collection($rows);
+            return ($asArray) ? $collection->toArray() : $collection;
         } else {
             return null;
         }
@@ -431,16 +437,17 @@ class Record extends Record\AbstractRecord
     /**
      * Get by ID method
      *
-     * @param  mixed  $id
-     * @return static
+     * @param  mixed   $id
+     * @param  boolean $asArray
+     * @return static|array
      */
-    public function getById($id)
+    public function getById($id, $asArray = false)
     {
         $this->setColumns($this->getRowGateway()->find($id));
         if ($this->hasWiths()) {
             $this->getWithRelationships(false);
         }
-        return $this;
+        return ($asArray) ? $this->toArray() : $this;
     }
 
     /**
@@ -448,9 +455,10 @@ class Record extends Record\AbstractRecord
      *
      * @param  array  $columns
      * @param  array  $options
-     * @return static
+     * @param  boolean $asArray
+     * @return static|array
      */
-    public function getOne(array $columns = null, array $options = null)
+    public function getOne(array $columns = null, array $options = null, $asArray = false)
     {
         if (null === $options) {
             $options = ['limit' => 1];
@@ -475,7 +483,7 @@ class Record extends Record\AbstractRecord
             $this->setColumns($rows[0]);
         }
 
-        return $this;
+        return ($asArray) ? $this->toArray() : $this;
     }
 
     /**
