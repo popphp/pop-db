@@ -578,7 +578,7 @@ class Record extends Record\AbstractRecord
      */
     public function hasOne($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
-        $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey);
+        $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey, $options);
 
         return ($eager) ? $relationship : $relationship->getChild($options);
     }
@@ -594,7 +594,7 @@ class Record extends Record\AbstractRecord
      */
     public function hasOneOf($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
-        $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey);
+        $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey, $options);
 
         return ($eager) ? $relationship : $relationship->getChild();
     }
@@ -610,7 +610,7 @@ class Record extends Record\AbstractRecord
      */
     public function hasMany($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
-        $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey);
+        $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey, $options);
         return ($eager) ? $relationship : $relationship->getChildren($options);
     }
 
@@ -625,7 +625,7 @@ class Record extends Record\AbstractRecord
      */
     public function belongsTo($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
-        $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey);
+        $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey, $options);
         return ($eager) ? $relationship : $relationship->getParent($options);
     }
 

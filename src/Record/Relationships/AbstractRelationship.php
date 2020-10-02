@@ -41,17 +41,25 @@ abstract class AbstractRelationship implements RelationshipInterface
     protected $foreignKey = null;
 
     /**
+     * Relationship options
+     * @var array
+     */
+    protected $options = [];
+
+    /**
      * Constructor
      *
      * Instantiate the relationship object
      *
      * @param string $foreignTable
      * @param string $foreignKey
+     * @param array  $options
      */
-    public function __construct($foreignTable, $foreignKey)
+    public function __construct($foreignTable, $foreignKey, array $options = [])
     {
         $this->foreignTable = $foreignTable;
         $this->foreignKey   = $foreignKey;
+        $this->options      = $options;
     }
 
     /**
@@ -72,6 +80,16 @@ abstract class AbstractRelationship implements RelationshipInterface
     public function getForeignKey()
     {
         return $this->foreignKey;
+    }
+
+    /**
+     * Get options
+     *
+     * @return array
+     */
+    public function getOptions()
+    {
+        return $this->options;
     }
 
     /**

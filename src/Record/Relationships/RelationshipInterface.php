@@ -41,6 +41,13 @@ interface RelationshipInterface
     public function getForeignKey();
 
     /**
+     * Get options
+     *
+     * @return array
+     */
+    public function getOptions();
+
+    /**
      * Get eager relationships
      *
      * @param  array $ids

@@ -14,6 +14,7 @@
 namespace Pop\Db\Record\Relationships;
 
 use Pop\Db\Record;
+use Pop\Db\Sql\Parser;
 
 /**
  * Relationship class for "has one" relationships
@@ -42,10 +43,11 @@ class HasOne extends AbstractRelationship
      * @param Record $parent
      * @param string $foreignTable
      * @param string $foreignKey
+     * @param array  $options
      */
-    public function __construct(Record $parent, $foreignTable, $foreignKey)
+    public function __construct(Record $parent, $foreignTable, $foreignKey, array $options = [])
     {
-        parent::__construct($foreignTable, $foreignKey);
+        parent::__construct($foreignTable, $foreignKey, $options);
         $this->parent = $parent;
     }
 
@@ -94,9 +96,51 @@ class HasOne extends AbstractRelationship
         $table   = $this->foreignTable;
         $db      = $table::db();
         $sql     = $db->createSql();
+        $columns = null;
+
+        if (!empty($this->options)) {
+            if (isset($this->options['select'])) {
+                $columns = $this->options['select'];
+            }
+        }
 
         $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select()->from($table::table())->where->in($this->foreignKey, $placeholders);
+        $sql->select($columns)->from($table::table())->where->in($this->foreignKey, $placeholders);
+
+        if (!empty($this->options)) {
+            if (isset($this->options['limit'])) {
+                $sql->select()->limit((int)$this->options['limit']);
+            }
+
+            if (isset($this->options['offset'])) {
+                $sql->select()->offset((int)$this->options['offset']);
+            }
+            if (isset($this->options['join'])) {
+                $joins = (is_array($this->options['join']) && isset($this->options['join']['table'])) ?
+                    [$this->options['join']] : $this->options['join'];
+
+                foreach ($joins as $join) {
+                    if (isset($join['type']) && method_exists($sql->select(), $join['type'])) {
+                        $joinMethod = $join['type'];
+                        $sql->select()->{$joinMethod}($join['table'], $join['columns']);
+                    } else {
+                        $sql->select()->leftJoin($join['table'], $join['columns']);
+                    }
+                }
+            }
+            if (isset($this->options['order'])) {
+                if (!is_array($this->options['order'])) {
+                    $orders = (strpos($this->options['order'], ',') !== false) ?
+                        explode(',', $this->options['order']) : [$this->options['order']];
+                } else {
+                    $orders = $this->options['order'];
+                }
+                foreach ($orders as $order) {
+                    $ord = Parser\Order::parse(trim($order));
+                    $sql->select()->orderBy($ord['by'], $db->escape($ord['order']));
+                }
+            }
+        }
 
         $db->prepare($sql)
             ->bindParams($ids)
