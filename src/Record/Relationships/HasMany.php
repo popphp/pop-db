@@ -45,7 +45,7 @@ class HasMany extends AbstractRelationship
      * @param string $foreignKey
      * @param array  $options
      */
-    public function __construct(Record $parent, $foreignTable, $foreignKey, array $options = [])
+    public function __construct(Record $parent, $foreignTable, $foreignKey, array $options = null)
     {
         parent::__construct($foreignTable, $foreignKey, $options);
         $this->parent = $parent;

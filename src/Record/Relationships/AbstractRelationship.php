@@ -44,7 +44,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      * Relationship options
      * @var array
      */
-    protected $options = [];
+    protected $options = null;
 
     /**
      * Constructor
@@ -55,7 +55,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      * @param string $foreignKey
      * @param array  $options
      */
-    public function __construct($foreignTable, $foreignKey, array $options = [])
+    public function __construct($foreignTable, $foreignKey, array $options = null)
     {
         $this->foreignTable = $foreignTable;
         $this->foreignKey   = $foreignKey;

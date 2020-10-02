@@ -45,7 +45,7 @@ class BelongsTo extends AbstractRelationship
      * @param string $foreignKey
      * @param array  $options
      */
-    public function __construct(Record $child, $foreignTable, $foreignKey, array $options = [])
+    public function __construct(Record $child, $foreignTable, $foreignKey, array $options = null)
     {
         parent::__construct($foreignTable, $foreignKey, $options);
         $this->child = $child;
