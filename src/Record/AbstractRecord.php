@@ -78,6 +78,12 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected $withOptions = [];
 
     /**
+     * With relationship children
+     * @var string
+     */
+    protected $withChildren = null;
+
+    /**
      * Relationships
      * @var array
      */
@@ -220,7 +226,17 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function toArray()
     {
-        return $this->rowGateway->getColumns();
+        $columns = $this->rowGateway->getColumns();
+
+        if ($this->hasRelationships()) {
+            $relationships = $this->getRelationships();
+            foreach ($relationships as $name => $relationship) {
+                $columns[$name] = (is_object($relationship) && method_exists($relationship, 'toArray')) ?
+                    $relationship->toArray() : $relationship;
+            }
+        }
+
+        return $columns;
     }
 
     /**
@@ -372,8 +388,15 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function addWith($name, array $options = null)
     {
+        $children = null;
+        if (strpos($name, '.') !== false) {
+            $names    = explode('.', $name);
+            $name     = array_shift($names);
+            $children = implode('.', $names);
+        }
         $this->with[]        = $name;
         $this->withOptions[] = $options;
+        $this->withChildren  = $children;
 
         return $this;
     }
@@ -422,6 +445,52 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
 
             if (method_exists($this, $name)) {
                 $this->relationships[$name] = $this->{$name}($options, $eager);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Process with relationships
+     *
+     * @param  array $rows
+     * @return AbstractRecord
+     */
+    public function processWithRelationships(array $rows)
+    {
+        foreach ($this->relationships as $name => $relationship) {
+            $withIds = [];
+            if ($relationship instanceof \Pop\Db\Record\Relationships\HasOneOf) {
+                $primaryKey = $relationship->getForeignKey();
+                foreach ($rows as $i => $row) {
+                    if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
+                        $withIds[] = $row[$primaryKey];
+                    }
+                }
+                $results = $relationship->getEagerRelationships($withIds);
+            } else {
+                $primaryKey = $this->getPrimaryKeys();
+                if (count($primaryKey) == 1) {
+                    $primaryKey = reset($primaryKey);
+                }
+                foreach ($rows as $i => $row) {
+                    $primaryValues = $rows[$i]->getPrimaryValues();
+                    if (count($primaryValues) == 1) {
+                        $withId = reset($primaryValues);
+                        if (!in_array($withId, $withIds)) {
+                            $withIds[] = $withId;
+                        }
+                    }
+                }
+                $results = $relationship->getEagerRelationships($withIds);
+            }
+            foreach ($rows as $i => $row) {
+                if (isset($results[$row[$primaryKey]])) {
+                    $row->setRelationship($name, $results[$row[$primaryKey]]);
+                } else {
+                    $row->setRelationship($name, []);
+                }
             }
         }
 

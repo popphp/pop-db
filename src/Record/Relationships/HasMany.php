@@ -76,7 +76,11 @@ class HasMany extends AbstractRelationship
             $values = $values[0];
         }
 
-        return $table::findBy([$this->foreignKey => $values], $options);
+        if (!empty($this->children)) {
+            return $table::with($this->children)->getBy([$this->foreignKey => $values], $options);
+        } else {
+            return $table::findBy([$this->foreignKey => $values], $options);
+        }
     }
 
     /**
@@ -147,14 +151,25 @@ class HasMany extends AbstractRelationship
             ->bindParams($ids)
             ->execute();
 
-        $rows = $db->fetchAll();
+        $rows               = $db->fetchAll();
+        $parentIds          = [];
+        $childRelationships = [];
+
+        $primaryKey = (new $table())->getPrimaryKeys();
+        if (count($primaryKey) == 1) {
+            $primaryKey = reset($primaryKey);
+        }
 
         foreach ($rows as $row) {
+            $parentIds[] = $row[$primaryKey];
             if (!$asArray) {
                 if (!isset($results[$row[$this->foreignKey]])) {
                     $results[$row[$this->foreignKey]] = new Record\Collection();
                 }
                 $record = new $table();
+                if (null !== $this->children) {
+                    $record->addWith($this->children);
+                }
                 $record->setColumns($row);
                 $results[$row[$this->foreignKey]]->push($record);
             } else {
@@ -162,6 +177,39 @@ class HasMany extends AbstractRelationship
                     $results[$row[$this->foreignKey]] = [];
                 }
                 $results[$row[$this->foreignKey]][] = $row;
+            }
+        }
+
+        if (!empty($this->children) && !empty($parentIds)) {
+            foreach ($results as $collection) {
+                foreach ($collection as $record) {
+                    $record->getWithRelationships();
+                    foreach ($record->getRelationships() as $relationship) {
+                        $childRelationships = $relationship->getEagerRelationships($parentIds);
+                    }
+                }
+            }
+        }
+
+        if (!empty($childRelationships)) {
+            $children    = $this->children;
+            $subChildren = null;
+            if (strpos($children, '.') !== false) {
+                $names       = explode('.', $children);
+                $children    = array_shift($names);
+                $subChildren = implode('.', $names);
+            }
+
+            foreach ($results as $collection) {
+                foreach ($collection as $record) {
+                    if (!empty($subChildren)) {
+                        $record->addWith($subChildren);
+                    }
+                    $rel = (isset($childRelationships[$record[$primaryKey]])) ?
+                        $childRelationships[$record[$primaryKey]] : [];
+
+                    $record->setRelationship($children, $rel);
+                }
             }
         }
 

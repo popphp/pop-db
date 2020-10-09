@@ -76,7 +76,11 @@ class HasOne extends AbstractRelationship
             $values = $values[0];
         }
 
-        return $table::findOne([$this->foreignKey => $values], $options);
+        if (!empty($this->children)) {
+            return $table::with($this->children)->getOne([$this->foreignKey => $values], $options);
+        } else {
+            return $table::findOne([$this->foreignKey => $values], $options);
+        }
     }
 
     /**
@@ -146,12 +150,49 @@ class HasOne extends AbstractRelationship
             ->bindParams($ids)
             ->execute();
 
-        $rows = $db->fetchAll();
+        $rows               = $db->fetchAll();
+        $parentIds          = [];
+        $childRelationships = [];
+
+        $primaryKey = (new $table())->getPrimaryKeys();
+        if (count($primaryKey) == 1) {
+            $primaryKey = reset($primaryKey);
+        }
 
         foreach ($rows as $row) {
+            $parentIds[] = $row[$primaryKey];
             $record = new $table();
             $record->setColumns($row);
             $results[$row[$this->foreignKey]] = $record;
+        }
+
+        if (!empty($this->children) && !empty($parentIds)) {
+            foreach ($results as $record) {
+                $record->getWithRelationships();
+                foreach ($record->getRelationships() as $relationship) {
+                    $childRelationships = $relationship->getEagerRelationships($parentIds);
+                }
+            }
+        }
+
+        if (!empty($childRelationships)) {
+            $children    = $this->children;
+            $subChildren = null;
+            if (strpos($children, '.') !== false) {
+                $names       = explode('.', $children);
+                $children    = array_shift($names);
+                $subChildren = implode('.', $names);
+            }
+
+            foreach ($results as $record) {
+                if (!empty($subChildren)) {
+                    $record->addWith($subChildren);
+                }
+                $rel = (isset($childRelationships[$record[$primaryKey]])) ?
+                    $childRelationships[$record[$primaryKey]] : [];
+
+                $record->setRelationship($children, $rel);
+            }
         }
 
         return $results;

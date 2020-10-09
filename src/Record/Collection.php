@@ -56,7 +56,6 @@ class Collection extends Utils\Collection
                             $relationship->toArray() : $relationship;
                     }
                 }
-
             }
         }
 

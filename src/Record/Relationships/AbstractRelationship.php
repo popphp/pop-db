@@ -47,6 +47,12 @@ abstract class AbstractRelationship implements RelationshipInterface
     protected $options = null;
 
     /**
+     * Relationship children
+     * @var string
+     */
+    protected $children = null;
+
+    /**
      * Constructor
      *
      * Instantiate the relationship object
@@ -90,6 +96,28 @@ abstract class AbstractRelationship implements RelationshipInterface
     public function getOptions()
     {
         return $this->options;
+    }
+
+    /**
+     * Get child relationships
+     *
+     * @return string
+     */
+    public function getChildRelationships()
+    {
+        return $this->children;
+    }
+
+    /**
+     * Set children child relationships
+     *
+     * @param  string $children
+     * @return static
+     */
+    public function setChildRelationships($children)
+    {
+        $this->children = $children;
+        return $this;
     }
 
     /**

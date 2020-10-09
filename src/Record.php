@@ -479,6 +479,11 @@ class Record extends Record\AbstractRecord
 
         $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
 
+        if ($this->hasWiths()) {
+            $this->getWithRelationships();
+            $this->processWithRelationships($rows);
+        }
+
         if (isset($rows[0])) {
             $this->setColumns($rows[0]);
         }
@@ -515,40 +520,7 @@ class Record extends Record\AbstractRecord
 
         if ($this->hasWiths()) {
             $this->getWithRelationships();
-            foreach ($this->relationships as $name => $relationship) {
-                $withIds = [];
-                if ($relationship instanceof Record\Relationships\HasOneOf) {
-                    $primaryKey = $relationship->getForeignKey();
-                    foreach ($rows as $i => $row) {
-                        if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
-                            $withIds[] = $row[$primaryKey];
-                        }
-                    }
-                    $results = $relationship->getEagerRelationships($withIds);
-                } else {
-                    $primaryKey = $this->getPrimaryKeys();
-                    if (count($primaryKey) == 1) {
-                        $primaryKey = reset($primaryKey);
-                    }
-                    foreach ($rows as $i => $row) {
-                        $primaryValues = $rows[$i]->getPrimaryValues();
-                        if (count($primaryValues) == 1) {
-                            $withId = reset($primaryValues);
-                            if (!in_array($withId, $withIds)) {
-                                $withIds[] = $withId;
-                            }
-                        }
-                    }
-                    $results = $relationship->getEagerRelationships($withIds);
-                }
-                foreach ($rows as $i => $row) {
-                    if (isset($results[$row[$primaryKey]])) {
-                        $row->setRelationship($name, $results[$row[$primaryKey]]);
-                    } else {
-                        $row->setRelationship($name, []);
-                    }
-                }
-            }
+            $this->processWithRelationships($rows);
         }
 
         $collection = new Record\Collection($rows);
@@ -579,7 +551,9 @@ class Record extends Record\AbstractRecord
     public function hasOne($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey, $options);
-
+        if (!empty($this->withChildren)) {
+            $relationship->setChildRelationships($this->withChildren);
+        }
         return ($eager) ? $relationship : $relationship->getChild($options);
     }
 
@@ -595,7 +569,9 @@ class Record extends Record\AbstractRecord
     public function hasOneOf($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey, $options);
-
+        if (!empty($this->withChildren)) {
+            $relationship->setChildRelationships($this->withChildren);
+        }
         return ($eager) ? $relationship : $relationship->getChild();
     }
 
@@ -611,6 +587,9 @@ class Record extends Record\AbstractRecord
     public function hasMany($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey, $options);
+        if (!empty($this->withChildren)) {
+            $relationship->setChildRelationships($this->withChildren);
+        }
         return ($eager) ? $relationship : $relationship->getChildren($options);
     }
 
@@ -626,6 +605,9 @@ class Record extends Record\AbstractRecord
     public function belongsTo($foreignTable, $foreignKey, array $options = null, $eager = false)
     {
         $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey, $options);
+        if (!empty($this->withChildren)) {
+            $relationship->setChildRelationships($this->withChildren);
+        }
         return ($eager) ? $relationship : $relationship->getParent($options);
     }
 
