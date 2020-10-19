@@ -479,7 +479,7 @@ class Record extends Record\AbstractRecord
 
         $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
 
-        if ($this->hasWiths()) {
+        if ($this->hasWiths() && !empty($rows)) {
             $this->getWithRelationships();
             $this->processWithRelationships($rows);
         }
@@ -518,7 +518,7 @@ class Record extends Record\AbstractRecord
             $rows[$i] = $this->processRow($row);
         }
 
-        if ($this->hasWiths()) {
+        if ($this->hasWiths() && !empty($rows)) {
             $this->getWithRelationships();
             $this->processWithRelationships($rows);
         }
