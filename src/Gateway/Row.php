@@ -197,10 +197,11 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @param  mixed $values
      * @param  array $selectColumns
+     * @param  array $options
      * @throws Exception
      * @return array
      */
-    public function find($values, array $selectColumns = [])
+    public function find($values, array $selectColumns = [], array $options = null)
     {
         if (count($this->primaryKeys) == 0) {
             throw new Exception('Error: The primary key(s) have not been set.');
@@ -239,6 +240,24 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             } else {
                 $sql->select()->where->equalTo($primaryKey, $placeholder);
                 $params[$primaryKey] = $this->primaryValues[$i];
+            }
+        }
+
+        if ((null !== $options) && isset($options['offset'])) {
+            $sql->select()->offset((int)$options['offset']);
+        }
+
+        if ((null !== $options) && isset($options['join'])) {
+            $joins = (is_array($options['join']) && isset($options['join']['table'])) ?
+                [$options['join']] : $options['join'];
+
+            foreach ($joins as $join) {
+                if (isset($join['type']) && method_exists($sql->select(), $join['type'])) {
+                    $joinMethod = $join['type'];
+                    $sql->select()->{$joinMethod}($join['table'], $join['columns']);
+                } else {
+                    $sql->select()->leftJoin($join['table'], $join['columns']);
+                }
             }
         }
 

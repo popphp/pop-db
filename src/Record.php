@@ -175,12 +175,13 @@ class Record extends Record\AbstractRecord
      * Find by ID static method
      *
      * @param  mixed   $id
+     * @param  array   $options
      * @param  boolean $asArray
      * @return static|array
      */
-    public static function findById($id, $asArray = false)
+    public static function findById($id, array $options = null, $asArray = false)
     {
-        return (new static())->getById($id, $asArray);
+        return (new static())->getById($id, $options, $asArray);
     }
 
     /**
@@ -438,12 +439,13 @@ class Record extends Record\AbstractRecord
      * Get by ID method
      *
      * @param  mixed   $id
+     * @param  array   $options
      * @param  boolean $asArray
      * @return static|array
      */
-    public function getById($id, $asArray = false)
+    public function getById($id, array $options = null, $asArray = false)
     {
-        $this->setColumns($this->getRowGateway()->find($id));
+        $this->setColumns($this->getRowGateway()->find($id, [], $options));
         if ($this->hasWiths()) {
             $this->getWithRelationships(false);
         }

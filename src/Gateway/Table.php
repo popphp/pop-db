@@ -111,15 +111,15 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             $sql->select()->where($where);
         }
 
-        if (isset($options['limit'])) {
+        if ((null !== $options) && isset($options['limit'])) {
             $sql->select()->limit((int)$options['limit']);
         }
 
-        if (isset($options['offset'])) {
+        if ((null !== $options) && isset($options['offset'])) {
             $sql->select()->offset((int)$options['offset']);
         }
 
-        if (isset($options['join'])) {
+        if ((null !== $options) && isset($options['join'])) {
             $joins = (is_array($options['join']) && isset($options['join']['table'])) ?
                 [$options['join']] : $options['join'];
 
@@ -133,7 +133,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             }
         }
 
-        if (isset($options['order'])) {
+        if ((null !== $options) && isset($options['order'])) {
             if (!is_array($options['order'])) {
                 $orders = (strpos($options['order'], ',') !== false) ?
                     explode(',', $options['order']) : [$options['order']];
