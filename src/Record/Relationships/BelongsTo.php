@@ -75,7 +75,7 @@ class BelongsTo extends AbstractRelationship
         if (!empty($this->children)) {
             return $table::with($this->children)->getById($values);
         } else {
-            return $table::findById($values);
+            return $table::findById($values, $options);
         }
     }
 

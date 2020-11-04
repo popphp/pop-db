@@ -218,6 +218,8 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             foreach ($selectColumns as $selectColumn) {
                 $select[] = $this->table . '.' . $selectColumn;
             }
+        } else if ((null !== $options) && !empty($options['select'])) {
+            $select = $options['select'];
         } else {
             $select = [$this->table . '.*'];
         }
@@ -236,9 +238,9 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             }
 
             if (null === $this->primaryValues[$i]) {
-                $sql->select()->where->isNull($primaryKey);
+                $sql->select()->where->isNull($this->table . '.' . $primaryKey);
             } else {
-                $sql->select()->where->equalTo($primaryKey, $placeholder);
+                $sql->select()->where->equalTo($this->table . '.' . $primaryKey, $placeholder);
                 $params[$primaryKey] = $this->primaryValues[$i];
             }
         }
