@@ -171,6 +171,20 @@ class Alter extends AbstractStructure
     }
 
     /**
+     * Set the AFTER column (MySQL-only))
+     *
+     * @param  string $column
+     * @return Alter
+     */
+    public function after($column)
+    {
+        if ((null !== $this->currentColumn) && isset($this->columns[$this->currentColumn])) {
+            $this->columns[$this->currentColumn]['after'] = $column;
+        }
+        return $this;
+    }
+
+    /**
      * Render the table schema
      *
      * @return string
@@ -200,7 +214,11 @@ class Alter extends AbstractStructure
 
         // Add new columns
         foreach ($this->columns as $name => $column) {
-            $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' . $this->getColumnSchema($name, $column) . ';' . PHP_EOL;
+            $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' ADD ' . $this->getColumnSchema($name, $column);
+            if (($this->isMysql()) && !empty($column['after'])) {
+                $schema .= ' AFTER ' . $this->quoteId($column['after']);
+            }
+            $schema .= ';' . PHP_EOL;
         }
 
         // Drop columns

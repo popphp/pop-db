@@ -122,7 +122,8 @@ abstract class AbstractStructure extends AbstractTable
             'increment'  => false,
             'primary'    => false,
             'unsigned'   => false,
-            'attributes' => (!empty($attributes)) ? $attributes : []
+            'attributes' => (!empty($attributes)) ? $attributes : [],
+            'after'      => null
         ];
 
         return $this;
