@@ -104,8 +104,16 @@ class BelongsTo extends AbstractRelationship
             }
         }
 
+        $foreignKey  = $this->foreignKey;
+        $primaryKeys = (new $table())->getPrimaryKeys();
+        $info        = $table::getTableInfo();
+
+        if (!in_array($foreignKey, $info['columns']) && (count($primaryKeys) == 1)) {
+            $foreignKey = $primaryKeys[0];
+        }
+
         $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select($columns)->from($table::table())->where->in($this->foreignKey, $placeholders);
+        $sql->select($columns)->from($table::table())->where->in($foreignKey, $placeholders);
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
