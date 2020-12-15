@@ -72,8 +72,10 @@ class Expression
             $operator = (stripos($expression, ' NOT LIKE ') !== false) ? 'NOT LIKE' : 'LIKE';
             $value    = self::stripQuotes(trim(substr($expression, (stripos($expression, ' LIKE ') + 6))));
         } else {
-            [$column, $operator, $value] = array_map('trim', explode(' ', $expression));
-            $value = self::stripQuotes($value);
+            $column   = substr($expression, 0, strpos($expression, ' '));
+            $operator = substr($expression, (strlen($column) + 1));
+            $operator = substr($operator, 0, strpos($operator, ' '));
+            $value    = self::stripQuotes(trim(substr($expression, (strpos($expression, $operator) + strlen($operator)))));
         }
 
         if (!in_array($operator, self::$operators)) {
