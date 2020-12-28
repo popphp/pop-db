@@ -155,9 +155,7 @@ class HasOne extends AbstractRelationship
         $childRelationships = [];
 
         $primaryKey = (new $table())->getPrimaryKeys();
-        if (count($primaryKey) == 1) {
-            $primaryKey = reset($primaryKey);
-        }
+        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
 
         foreach ($rows as $row) {
             $parentIds[] = $row[$primaryKey];
