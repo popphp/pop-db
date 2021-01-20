@@ -353,16 +353,26 @@ abstract class AbstractSql
     /**
      * Quote the value (if it is not a numeric value)
      *
-     * @param  string $value
+     * @param  string  $value
+     * @param  boolean $force
      * @return string
      */
-    public function quote($value)
+    public function quote($value, $force = false)
     {
-        if (($value == '') ||
-            (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
-            !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
-            $value = "'" . $this->db->escape($value) . "'";
+        if ($force) {
+            if (($value == '') ||
+                ((preg_match('/^\$\d*\d$/', $value) == 0) &&
+                    !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
+                $value = "'" . $this->db->escape($value) . "'";
+            }
+        } else {
+            if (($value == '') ||
+                (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+                    !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
+                $value = "'" . $this->db->escape($value) . "'";
+            }
         }
+
         return $value;
     }
 

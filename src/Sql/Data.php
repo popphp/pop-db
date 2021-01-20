@@ -170,9 +170,10 @@ class Data extends AbstractSql
      * @param  array   $data
      * @param  mixed   $omit
      * @param  boolean $nullEmpty
+     * @param  boolean $forceQuote
      * @return string
      */
-    public function serialize(array $data, $omit = null, $nullEmpty = false)
+    public function serialize(array $data, $omit = null, $nullEmpty = false, $forceQuote = false)
     {
         if (null !== $omit) {
             $omit = (!is_array($omit)) ? [$omit] : $omit;
@@ -202,9 +203,11 @@ class Data extends AbstractSql
                     }
                 }
             }
-            $value = "(" . implode(', ', array_map([$this, 'quote'], $row)) . ")";
+            $value = "(" . implode(', ', array_map(function($value) use ($forceQuote) {
+                    return $this->quote($value, $forceQuote);
+                }, $row)) . ")";
             if ($nullEmpty) {
-                $value = str_replace(["'', ", ", '')"], ['NULL, ', ', NULL)'], $value);
+                $value = str_replace(["('',", " '', ", ", '')"], ["(NULL,", ' NULL, ', ', NULL)'], $value);
             }
 
             switch ($this->divide) {
