@@ -53,7 +53,7 @@ class Predicate
                 $column     = self::stripIdQuotes(trim(substr($predicate, 0, strpos($predicate, ' '))));
                 $predicates = [$column, $op, $value];
             } else if ((strpos($predicate, ' ' . $op . ' ') !== false) && ((strpos($predicate, ' NOT ' . $op . ' ') === false))) {
-                $ary    = explode($op, $predicate);
+                $ary    = explode(' ' . $op . ' ', $predicate);
                 $column = trim($ary[0]);
                 $value  = trim($ary[1]);
                 $column = self::stripIdQuotes($column);
