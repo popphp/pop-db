@@ -1,7 +1,7 @@
 pop-db
 ======
 
-[![Build Status](https://travis-ci.org/popphp/pop-db.svg?branch=master)](https://travis-ci.org/popphp/pop-db)
+[![Build Status](https://github.com/popphp/pop-db/workflows/phpunit/badge.svg)](https://github.com/popphp/pop-db/actions)
 [![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-db)](http://cc.popphp.org/pop-db/)
 
 OVERVIEW

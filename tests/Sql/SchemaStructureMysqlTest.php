@@ -10,7 +10,7 @@ class SchemaStructureMysqlTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
             'database' => 'travis_popdb',
@@ -61,29 +61,29 @@ class SchemaStructureMysqlTest extends TestCase
             ->char('gender');
 
         $sql = (string)$schema;
-        $this->assertContains('`email_id` INT', $sql);
-        $this->assertContains('`id` BIGINT', $sql);
-        $this->assertContains('`info_id` MEDIUMINT', $sql);
-        $this->assertContains('`active` SMALLINT', $sql);
-        $this->assertContains('`verified` TINYINT', $sql);
-        $this->assertContains('`worked` FLOAT', $sql);
-        $this->assertContains('`time_off` REAL', $sql);
-        $this->assertContains('`hourly` DOUBLE', $sql);
-        $this->assertContains('`overtime` DECIMAL', $sql);
-        $this->assertContains('`years` NUMERIC', $sql);
-        $this->assertContains('`birth_date` DATE', $sql);
-        $this->assertContains('`last_click` TIME', $sql);
-        $this->assertContains('`hired` DATETIME', $sql);
-        $this->assertContains('`fired` TIMESTAMP', $sql);
-        $this->assertContains('`started` YEAR', $sql);
-        $this->assertContains('`notes` TEXT', $sql);
-        $this->assertContains('`remarks` TINYTEXT', $sql);
-        $this->assertContains('`comments` MEDIUMTEXT', $sql);
-        $this->assertContains('`history` LONGTEXT', $sql);
-        $this->assertContains('`foo` BLOB', $sql);
-        $this->assertContains('`bar` MEDIUMBLOB', $sql);
-        $this->assertContains('`baz` LONGBLOB', $sql);
-        $this->assertContains('`gender` CHAR', $sql);
+        $this->assertStringContainsString('`email_id` INT', $sql);
+        $this->assertStringContainsString('`id` BIGINT', $sql);
+        $this->assertStringContainsString('`info_id` MEDIUMINT', $sql);
+        $this->assertStringContainsString('`active` SMALLINT', $sql);
+        $this->assertStringContainsString('`verified` TINYINT', $sql);
+        $this->assertStringContainsString('`worked` FLOAT', $sql);
+        $this->assertStringContainsString('`time_off` REAL', $sql);
+        $this->assertStringContainsString('`hourly` DOUBLE', $sql);
+        $this->assertStringContainsString('`overtime` DECIMAL', $sql);
+        $this->assertStringContainsString('`years` NUMERIC', $sql);
+        $this->assertStringContainsString('`birth_date` DATE', $sql);
+        $this->assertStringContainsString('`last_click` TIME', $sql);
+        $this->assertStringContainsString('`hired` DATETIME', $sql);
+        $this->assertStringContainsString('`fired` TIMESTAMP', $sql);
+        $this->assertStringContainsString('`started` YEAR', $sql);
+        $this->assertStringContainsString('`notes` TEXT', $sql);
+        $this->assertStringContainsString('`remarks` TINYTEXT', $sql);
+        $this->assertStringContainsString('`comments` MEDIUMTEXT', $sql);
+        $this->assertStringContainsString('`history` LONGTEXT', $sql);
+        $this->assertStringContainsString('`foo` BLOB', $sql);
+        $this->assertStringContainsString('`bar` MEDIUMBLOB', $sql);
+        $this->assertStringContainsString('`baz` LONGBLOB', $sql);
+        $this->assertStringContainsString('`gender` CHAR', $sql);
         $this->db->disconnect();
     }
 
@@ -98,10 +98,10 @@ class SchemaStructureMysqlTest extends TestCase
 
         $sql = (string)$schema;
 
-        $this->assertContains('`id` INT', $sql);
-        $this->assertContains('`info_id` INT', $sql);
-        $this->assertContains('`email_id` BIGINT', $sql);
-        $this->assertContains('`session_id` SMALLINT', $sql);
+        $this->assertStringContainsString('`id` INT', $sql);
+        $this->assertStringContainsString('`info_id` INT', $sql);
+        $this->assertStringContainsString('`email_id` BIGINT', $sql);
+        $this->assertStringContainsString('`session_id` SMALLINT', $sql);
         $this->db->disconnect();
     }
 
@@ -133,7 +133,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)
             ->int('active')->defaultIs(0)
             ->primary('id');
-        $this->assertContains("`active` INT DEFAULT '0'", (string)$schema);
+        $this->assertStringContainsString("`active` INT DEFAULT '0'", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -145,7 +145,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)
             ->int('active')->defaultIs(null)
             ->primary('id');
-        $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+        $this->assertStringContainsString("`active` INT DEFAULT NULL", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -157,7 +157,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)
             ->int('active')->defaultIs('NULL')
             ->primary('id');
-        $this->assertContains("`active` INT DEFAULT NULL", (string)$create);
+        $this->assertStringContainsString("`active` INT DEFAULT NULL", (string)$create);
         $this->db->disconnect();
     }
 
@@ -169,7 +169,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)
             ->int('active')->nullable()
             ->primary('id');
-        $this->assertContains("`active` INT DEFAULT NULL", (string)$schema);
+        $this->assertStringContainsString("`active` INT DEFAULT NULL", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -181,7 +181,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)
             ->int('active')->notNullable()
             ->primary('id');
-        $this->assertContains("`active` INT NOT NULL", (string)$schema);
+        $this->assertStringContainsString("`active` INT NOT NULL", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -193,7 +193,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)
             ->int('active')->unsigned()
             ->primary('id');
-        $this->assertContains("`active` INT UNSIGNED", (string)$schema);
+        $this->assertStringContainsString("`active` INT UNSIGNED", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -205,7 +205,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)->unique()
             ->int('active')
             ->primary('id');
-        $this->assertContains("CREATE UNIQUE INDEX `index_username` ON `users` (`username`);", (string)$schema);
+        $this->assertStringContainsString("CREATE UNIQUE INDEX `index_username` ON `users` (`username`);", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -216,7 +216,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->int('id', 16)->primary()
             ->varchar('username', 255)->unique()
             ->int('active');
-        $this->assertContains("PRIMARY KEY (`id`)", (string)$schema);
+        $this->assertStringContainsString("PRIMARY KEY (`id`)", (string)$schema);
         $this->db->disconnect();
     }
 
@@ -229,7 +229,7 @@ class SchemaStructureMysqlTest extends TestCase
             ->varchar('username', 255)->unique()
             ->int('active')
             ->foreignKey('info_id')->references('user_info')->on('id')->onDelete('CASCADE');
-        $this->assertContains("ALTER TABLE `users` ADD CONSTRAINT `fk_info_id` FOREIGN KEY (`info_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;", (string)$schema);
+        $this->assertStringContainsString("ALTER TABLE `users` ADD CONSTRAINT `fk_info_id` FOREIGN KEY (`info_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;", (string)$schema);
 
         $this->db->disconnect();
     }

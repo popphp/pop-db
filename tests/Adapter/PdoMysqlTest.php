@@ -6,12 +6,12 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
 
-class PdpMysqlTest extends TestCase
+class PdoMysqlTest extends TestCase
 {
 
     protected $password = '';
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->password = trim(file_get_contents(__DIR__ . '/../tmp/.mysql'));
     }
@@ -71,10 +71,10 @@ class PdpMysqlTest extends TestCase
 
         $debugResults = $profiler->prepareAsString();
         $this->assertTrue($db->hasTable('users'));
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('CREATE TABLE `users`', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('CREATE TABLE `users`', $debugResults);
         $db->disconnect();
     }
 
@@ -88,7 +88,7 @@ class PdpMysqlTest extends TestCase
         ]);
 
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
-        $this->assertContains('PDO mysql', $db->getVersion());
+        $this->assertStringContainsString('PDO mysql', $db->getVersion());
         $db->disconnect();
     }
 
@@ -137,10 +137,10 @@ class PdpMysqlTest extends TestCase
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('INSERT INTO `users`', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('INSERT INTO `users`', $debugResults);
         $db->disconnect();
     }
 

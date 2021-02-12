@@ -10,7 +10,7 @@ class UpdateTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
             'database' => 'travis_popdb',

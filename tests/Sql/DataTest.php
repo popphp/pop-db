@@ -11,7 +11,7 @@ class DataTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
             'database' => 'travis_popdb',
@@ -58,7 +58,7 @@ class DataTest extends TestCase
         $this->assertFalse($data->isSerialized());
         $data->serialize($rows);
         $this->assertTrue($data->isSerialized());
-        $this->assertContains('INSERT INTO', $data->getSql());
+        $this->assertStringContainsString('INSERT INTO', $data->getSql());
         $this->db->disconnect();
     }
 
@@ -90,8 +90,8 @@ class DataTest extends TestCase
         $this->assertFalse($data->isSerialized());
         $data->serialize($rows, 'email');
         $this->assertTrue($data->isSerialized());
-        $this->assertContains('INSERT INTO', $data->getSql());
-        $this->assertNotContains('`email`', $data->getSql());
+        $this->assertStringContainsString('INSERT INTO', $data->getSql());
+        $this->assertStringNotContainsString('`email`', $data->getSql());
         $this->db->disconnect();
     }
 
@@ -123,8 +123,8 @@ class DataTest extends TestCase
         $this->assertFalse($data->isSerialized());
         $data->serialize($rows, null, true);
         $this->assertTrue($data->isSerialized());
-        $this->assertContains('INSERT INTO', $data->getSql());
-        $this->assertContains('NULL', $data->getSql());
+        $this->assertStringContainsString('INSERT INTO', $data->getSql());
+        $this->assertStringContainsString('NULL', $data->getSql());
         $this->db->disconnect();
     }
 
@@ -236,7 +236,7 @@ class DataTest extends TestCase
         $this->assertFalse($data->isSerialized());
         $data->serialize($rows);
         $this->assertTrue($data->isSerialized());
-        $this->assertContains(' ON DUPLICATE KEY UPDATE `username` = VALUES(username), `password` = VALUES(password), `email` = VALUES(email);', (string)$data);
+        $this->assertStringContainsString(' ON DUPLICATE KEY UPDATE `username` = VALUES(username), `password` = VALUES(password), `email` = VALUES(email);', (string)$data);
         $this->db->disconnect();
     }
 
@@ -281,7 +281,7 @@ class DataTest extends TestCase
         $this->assertFalse($data->isSerialized());
         $data->serialize($rows);
         $this->assertTrue($data->isSerialized());
-        $this->assertContains(' ON CONFLICT ("id") DO UPDATE SET "username" = excluded.username, "password" = excluded.password, "email" = excluded.email;', (string)$data);
+        $this->assertStringContainsString(' ON CONFLICT ("id") DO UPDATE SET "username" = excluded.username, "password" = excluded.password, "email" = excluded.email;', (string)$data);
         $db->disconnect();
     }
 
@@ -314,7 +314,7 @@ class DataTest extends TestCase
                 'email'    => 'testuser5@test.com'
             ]
         ];
-        $this->assertFileNotExists(__DIR__ . '/../tmp/data.sql');
+        $this->assertFileDoesNotExist(__DIR__ . '/../tmp/data.sql');
         $data = new Data($this->db, 'pop_data_table');
         $data->serialize($rows);
         $data->writeToFile(__DIR__ . '/../tmp/data.sql');
@@ -353,7 +353,7 @@ class DataTest extends TestCase
                 'email'    => 'testuser5@test.com'
             ]
         ];
-        $this->assertFileNotExists(__DIR__ . '/../tmp/data.sql');
+        $this->assertFileDoesNotExist(__DIR__ . '/../tmp/data.sql');
         $data = new Data($this->db, 'pop_data_table');
         $data->streamToFile($rows, __DIR__ . '/../tmp/data.sql', 'password', true, '-- Sql Header', '-- Sql Footer');
         $this->assertFileExists(__DIR__ . '/../tmp/data.sql');
@@ -391,7 +391,7 @@ class DataTest extends TestCase
                 'email'    => 'testuser5@test.com'
             ]
         ];
-        $this->assertFileNotExists(__DIR__ . '/../tmp/data.sql');
+        $this->assertFileDoesNotExist(__DIR__ . '/../tmp/data.sql');
         $data = new Data($this->db, 'pop_data_table', 2);
         $data->streamToFile($rows, __DIR__ . '/../tmp/data.sql', 'password', true, '-- Sql Header', '-- Sql Footer');
         $this->assertFileExists(__DIR__ . '/../tmp/data.sql');
@@ -430,7 +430,7 @@ class DataTest extends TestCase
                 'email'    => 'testuser5@test.com'
             ]
         ];
-        $this->assertFileNotExists(__DIR__ . '/../tmp/data.sql');
+        $this->assertFileDoesNotExist(__DIR__ . '/../tmp/data.sql');
         $data = new Data($this->db, 'pop_data_table', 0);
         $data->streamToFile($rows, __DIR__ . '/../tmp/data.sql', 'password', true, '-- Sql Header', '-- Sql Footer');
         $this->assertFileExists(__DIR__ . '/../tmp/data.sql');

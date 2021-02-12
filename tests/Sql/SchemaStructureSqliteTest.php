@@ -10,7 +10,7 @@ class SchemaStructureSqliteTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         chmod(__DIR__ . '/../tmp', 0777);
         touch(__DIR__ . '/../tmp/db.sqlite');
@@ -50,28 +50,28 @@ class SchemaStructureSqliteTest extends TestCase
 
         $sql = (string)$schema;
 
-        $this->assertContains('"id" INTEGER', $sql);
-        $this->assertContains('"info_id" INTEGER', $sql);
-        $this->assertContains('"active" INTEGER', $sql);
-        $this->assertContains('"verified" INTEGER', $sql);
-        $this->assertContains('"worked" REAL', $sql);
-        $this->assertContains('"time_off" REAL', $sql);
-        $this->assertContains('"hourly" REAL', $sql);
-        $this->assertContains('"overtime" NUMERIC', $sql);
-        $this->assertContains('"years" NUMERIC', $sql);
-        $this->assertContains('"birth_date" DATE', $sql);
-        $this->assertContains('"last_click" TIME', $sql);
-        $this->assertContains('"hired" DATETIME', $sql);
-        $this->assertContains('"fired" DATETIME', $sql);
-        $this->assertContains('"started" YEAR', $sql);
-        $this->assertContains('"notes" TEXT', $sql);
-        $this->assertContains('"remarks" TEXT', $sql);
-        $this->assertContains('"comments" TEXT', $sql);
-        $this->assertContains('"history" TEXT', $sql);
-        $this->assertContains('"foo" BLOB', $sql);
-        $this->assertContains('"bar" BLOB', $sql);
-        $this->assertContains('"baz" BLOB', $sql);
-        $this->assertContains('"gender" CHAR', $sql);
+        $this->assertStringContainsString('"id" INTEGER', $sql);
+        $this->assertStringContainsString('"info_id" INTEGER', $sql);
+        $this->assertStringContainsString('"active" INTEGER', $sql);
+        $this->assertStringContainsString('"verified" INTEGER', $sql);
+        $this->assertStringContainsString('"worked" REAL', $sql);
+        $this->assertStringContainsString('"time_off" REAL', $sql);
+        $this->assertStringContainsString('"hourly" REAL', $sql);
+        $this->assertStringContainsString('"overtime" NUMERIC', $sql);
+        $this->assertStringContainsString('"years" NUMERIC', $sql);
+        $this->assertStringContainsString('"birth_date" DATE', $sql);
+        $this->assertStringContainsString('"last_click" TIME', $sql);
+        $this->assertStringContainsString('"hired" DATETIME', $sql);
+        $this->assertStringContainsString('"fired" DATETIME', $sql);
+        $this->assertStringContainsString('"started" YEAR', $sql);
+        $this->assertStringContainsString('"notes" TEXT', $sql);
+        $this->assertStringContainsString('"remarks" TEXT', $sql);
+        $this->assertStringContainsString('"comments" TEXT', $sql);
+        $this->assertStringContainsString('"history" TEXT', $sql);
+        $this->assertStringContainsString('"foo" BLOB', $sql);
+        $this->assertStringContainsString('"bar" BLOB', $sql);
+        $this->assertStringContainsString('"baz" BLOB', $sql);
+        $this->assertStringContainsString('"gender" CHAR', $sql);
     }
 
     public function testAlternateTypes()
@@ -84,9 +84,9 @@ class SchemaStructureSqliteTest extends TestCase
 
         $sql = (string)$schema;
 
-        $this->assertContains('"info_id" INTEGER', $sql);
-        $this->assertContains('"email_id" INTEGER', $sql);
-        $this->assertContains('"session_id" INTEGER', $sql);
+        $this->assertStringContainsString('"info_id" INTEGER', $sql);
+        $this->assertStringContainsString('"email_id" INTEGER', $sql);
+        $this->assertStringContainsString('"session_id" INTEGER', $sql);
 
         unlink(__DIR__ . '/../tmp/db.sqlite');
     }

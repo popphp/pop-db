@@ -12,7 +12,7 @@ class ProfilerTest extends TestCase
 
     protected $password = '';
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->password = trim(file_get_contents(__DIR__ . '/../../tmp/.mysql'));
     }

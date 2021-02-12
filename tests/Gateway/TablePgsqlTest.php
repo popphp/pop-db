@@ -11,7 +11,7 @@ class TablePgsqlTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::pgsqlConnect([
             'database' => 'travis_popdb',

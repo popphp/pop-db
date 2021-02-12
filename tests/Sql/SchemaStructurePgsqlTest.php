@@ -10,7 +10,7 @@ class SchemaStructurePgsqlTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::pgsqlConnect([
             'database' => 'travis_popdb',
@@ -49,28 +49,28 @@ class SchemaStructurePgsqlTest extends TestCase
 
         $sql = (string)$schema;
 
-        $this->assertContains('"id" BIGINT', $sql);
-        $this->assertContains('"info_id" INT', $sql);
-        $this->assertContains('"active" SMALLINT', $sql);
-        $this->assertContains('"verified" SMALLINT', $sql);
-        $this->assertContains('"worked" FLOAT', $sql);
-        $this->assertContains('"time_off" REAL', $sql);
-        $this->assertContains('"hourly" DOUBLE', $sql);
-        $this->assertContains('"overtime" DECIMAL', $sql);
-        $this->assertContains('"years" NUMERIC', $sql);
-        $this->assertContains('"birth_date" DATE', $sql);
-        $this->assertContains('"last_click" TIME', $sql);
-        $this->assertContains('"hired" TIMESTAMP', $sql);
-        $this->assertContains('"fired" TIMESTAMP', $sql);
-        $this->assertContains('"started" YEAR', $sql);
-        $this->assertContains('"notes" TEXT', $sql);
-        $this->assertContains('"remarks" TEXT', $sql);
-        $this->assertContains('"comments" TEXT', $sql);
-        $this->assertContains('"history" TEXT', $sql);
-        $this->assertContains('"foo" TEXT', $sql);
-        $this->assertContains('"bar" TEXT', $sql);
-        $this->assertContains('"baz" TEXT', $sql);
-        $this->assertContains('"gender" CHAR', $sql);
+        $this->assertStringContainsString('"id" BIGINT', $sql);
+        $this->assertStringContainsString('"info_id" INT', $sql);
+        $this->assertStringContainsString('"active" SMALLINT', $sql);
+        $this->assertStringContainsString('"verified" SMALLINT', $sql);
+        $this->assertStringContainsString('"worked" FLOAT', $sql);
+        $this->assertStringContainsString('"time_off" REAL', $sql);
+        $this->assertStringContainsString('"hourly" DOUBLE', $sql);
+        $this->assertStringContainsString('"overtime" DECIMAL', $sql);
+        $this->assertStringContainsString('"years" NUMERIC', $sql);
+        $this->assertStringContainsString('"birth_date" DATE', $sql);
+        $this->assertStringContainsString('"last_click" TIME', $sql);
+        $this->assertStringContainsString('"hired" TIMESTAMP', $sql);
+        $this->assertStringContainsString('"fired" TIMESTAMP', $sql);
+        $this->assertStringContainsString('"started" YEAR', $sql);
+        $this->assertStringContainsString('"notes" TEXT', $sql);
+        $this->assertStringContainsString('"remarks" TEXT', $sql);
+        $this->assertStringContainsString('"comments" TEXT', $sql);
+        $this->assertStringContainsString('"history" TEXT', $sql);
+        $this->assertStringContainsString('"foo" TEXT', $sql);
+        $this->assertStringContainsString('"bar" TEXT', $sql);
+        $this->assertStringContainsString('"baz" TEXT', $sql);
+        $this->assertStringContainsString('"gender" CHAR', $sql);
     }
 
     public function testAlternateTypes()
@@ -81,7 +81,7 @@ class SchemaStructurePgsqlTest extends TestCase
 
         $sql = (string)$schema;
 
-        $this->assertContains('"id" BYTEA', $sql);
+        $this->assertStringContainsString('"id" BYTEA', $sql);
     }
 
 }

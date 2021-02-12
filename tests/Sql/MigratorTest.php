@@ -11,7 +11,7 @@ class MigratorTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
             'database' => 'travis_popdb',
@@ -42,7 +42,7 @@ class MigratorTest extends TestCase
     public function testCreate()
     {
         $file = Migrator::create('MyAppMigration', __DIR__ . '/../tmp/migrations');
-        $this->assertContains('my_app_migration', $file);
+        $this->assertStringContainsString('my_app_migration', $file);
         $this->assertFileExists($file);
         unlink($file);
     }

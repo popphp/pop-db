@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class PdoSqliteTest extends TestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         chmod(__DIR__ . '/../tmp', 0777);
         touch(__DIR__ . '/../tmp/db.sqlite');
@@ -30,7 +30,7 @@ class PdoSqliteTest extends TestCase
             'type'     => 'sqlite'
         ]);
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
-        $this->assertContains('sqlite', $db->getDsn());
+        $this->assertStringContainsString('sqlite', $db->getDsn());
     }
 
     public function testAttributes()
@@ -65,10 +65,10 @@ class PdoSqliteTest extends TestCase
         $this->assertTrue($db->hasTable('users'));
 
         $debugResults = $profiler->prepareAsString();
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('CREATE TABLE "users"', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('CREATE TABLE "users"', $debugResults);
     }
 
     public function testBindParams()
@@ -105,11 +105,11 @@ class PdoSqliteTest extends TestCase
         $this->assertNotNull($db->getCountOfRows());
         $this->assertNotNull($db->fetchColumn(1));
         $this->assertNotNull($db->closeCursor());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('INSERT INTO "users"', $debugResults);
-        $this->assertContains('"username", "password", "email"', $debugParams);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('INSERT INTO "users"', $debugResults);
+        $this->assertStringContainsString('"username", "password", "email"', $debugParams);
     }
 
     public function testFetch()
@@ -237,9 +237,9 @@ class PdoSqliteTest extends TestCase
         $debugResults = $profiler->prepareAsString();
 
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testBindValue()
@@ -263,9 +263,9 @@ class PdoSqliteTest extends TestCase
         $debugResults = $profiler->prepareAsString();
 
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testError()

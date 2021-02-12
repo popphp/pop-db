@@ -11,7 +11,7 @@ class SchemaTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
             'database' => 'travis_popdb',
@@ -28,7 +28,7 @@ class SchemaTest extends TestCase
             ->int('id', 16)
             ->varchar('username', 255)
             ->primary('id');
-        $this->assertContains('CREATE TABLE IF NOT EXISTS `users`', (string)$schema);
+        $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS `users`', (string)$schema);
         $this->db->disconnect();
     }
 
@@ -36,7 +36,7 @@ class SchemaTest extends TestCase
     {
         $schema = $this->db->createSchema();
         $drop   = $schema->dropIfExists('users')->cascade();
-        $this->assertContains('DROP TABLE IF EXISTS `users`', (string)$drop);
+        $this->assertStringContainsString('DROP TABLE IF EXISTS `users`', (string)$drop);
         $this->db->disconnect();
     }
 
@@ -44,7 +44,7 @@ class SchemaTest extends TestCase
     {
         $schema = $this->db->createSchema();
         $schema->alter('users')->addColumn('email', 'varchar', 255);
-        $this->assertContains('ALTER TABLE `users`', (string)$schema);
+        $this->assertStringContainsString('ALTER TABLE `users`', (string)$schema);
         $this->db->disconnect();
     }
 
@@ -54,7 +54,7 @@ class SchemaTest extends TestCase
         $rename = $schema->rename('users');
         $rename->to('users_table');
         $this->assertEquals('users_table', $rename->getTo());
-        $this->assertContains('RENAME TABLE `users` TO `users_table`', (string)$rename);
+        $this->assertStringContainsString('RENAME TABLE `users` TO `users_table`', (string)$rename);
         $this->db->disconnect();
     }
 
@@ -62,7 +62,7 @@ class SchemaTest extends TestCase
     {
         $schema   = $this->db->createSchema();
         $truncate = $schema->truncate('users')->cascade();
-        $this->assertContains('TRUNCATE TABLE `users`', (string)$truncate);
+        $this->assertStringContainsString('TRUNCATE TABLE `users`', (string)$truncate);
         $this->db->disconnect();
     }
 
@@ -75,7 +75,7 @@ class SchemaTest extends TestCase
             ->int('id', 16)
             ->varchar('username', 255)
             ->primary('id');
-        $this->assertContains('SET foreign_key_checks = 0', (string)$schema);
+        $this->assertStringContainsString('SET foreign_key_checks = 0', (string)$schema);
         $this->db->disconnect();
     }
 
@@ -96,7 +96,7 @@ class SchemaTest extends TestCase
             ->int('id', 16)
             ->varchar('username', 255)
             ->primary('id');
-        $this->assertContains('PRAGMA foreign_keys=off;', (string)$schema);
+        $this->assertStringContainsString('PRAGMA foreign_keys=off;', (string)$schema);
     }
 
     public function testCreateExecute()

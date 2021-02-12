@@ -10,7 +10,7 @@ class AlterPgsqlTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->db = Db::pgsqlConnect([
             'database' => 'travis_popdb',
@@ -37,7 +37,7 @@ class AlterPgsqlTest extends TestCase
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users');
         $alter->modifyColumn('email', 'email', 'varchar', 255);
-        $this->assertContains('ALTER TABLE "users" ALTER COLUMN "email" VARCHAR(255);', $alter->render());
+        $this->assertStringContainsString('ALTER TABLE "users" ALTER COLUMN "email" VARCHAR(255);', $alter->render());
     }
 
     public function testRename()
@@ -45,21 +45,21 @@ class AlterPgsqlTest extends TestCase
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users');
         $alter->modifyColumn('email', 'email_address');
-        $this->assertContains('ALTER TABLE "users" RENAME COLUMN "email" "email_address";', $alter->render());
+        $this->assertStringContainsString('ALTER TABLE "users" RENAME COLUMN "email" "email_address";', $alter->render());
     }
 
     public function testDropIndex()
     {
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users')->dropIndex('product_price');
-        $this->assertContains('DROP INDEX "users"."product_price";', $alter->render());
+        $this->assertStringContainsString('DROP INDEX "users"."product_price";', $alter->render());
     }
 
     public function testDropConstraint()
     {
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users')->dropConstraint('product_price');
-        $this->assertContains('ALTER TABLE "users" DROP CONSTRAINT "product_price";', $alter->render());
+        $this->assertStringContainsString('ALTER TABLE "users" DROP CONSTRAINT "product_price";', $alter->render());
     }
 
 }

@@ -11,7 +11,7 @@ class TableSqliteTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         chmod(__DIR__ . '/../tmp', 0777);
         touch(__DIR__ . '/../tmp/db.sqlite');

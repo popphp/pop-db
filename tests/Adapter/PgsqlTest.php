@@ -12,7 +12,7 @@ class PgsqlTest extends TestCase
 
     protected $password = '';
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->password = trim(file_get_contents(__DIR__ . '/../tmp/.pgsql'));
     }
@@ -76,11 +76,11 @@ class PgsqlTest extends TestCase
         $this->assertTrue($db->hasTable('users'));
         $debugResults = $profiler->prepareAsString();
         $this->assertInstanceOf('Pop\Db\Adapter\Pgsql', $db);
-        $this->assertContains('PostgreSQL', $db->getVersion());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('CREATE TABLE IF NOT EXISTS "users"', $debugResults);
+        $this->assertStringContainsString('PostgreSQL', $db->getVersion());
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS "users"', $debugResults);
     }
 
     public function testExecuteException()
@@ -151,10 +151,10 @@ class PgsqlTest extends TestCase
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(0, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('INSERT INTO users', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('INSERT INTO users', $debugResults);
     }
 
     public function testRollback()

@@ -33,7 +33,7 @@ class DbTest extends TestCase
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
             'host'     => 'localhost'
         ]);
-        $this->assertContains('Error: ', $check);
+        $this->assertStringContainsString('Error: ', $check);
     }
 
     public function testCheckException()

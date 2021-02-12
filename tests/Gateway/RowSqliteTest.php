@@ -11,7 +11,7 @@ class RowSqliteTest extends TestCase
 
     protected $db = null;
 
-    public function setUp()
+    public function setUp(): void
     {
         if (file_exists(__DIR__ . '/../tmp/db.sqlite')) {
             unlink(__DIR__ . '/../tmp/db.sqlite');

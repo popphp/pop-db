@@ -10,7 +10,7 @@ use Pop\Utils\CallableObject;
 class SqliteTest extends TestCase
 {
 
-    public function setUp()
+    public function setUp(): void
     {
         chmod(__DIR__ . '/../tmp', 0777);
         touch(__DIR__ . '/../tmp/db.sqlite');
@@ -46,7 +46,7 @@ class SqliteTest extends TestCase
             'database' => __DIR__ . '/../tmp/db.sqlite'
         ]);
         $this->assertInstanceOf('Pop\Db\Adapter\Sqlite', $db);
-        $this->assertContains('SQLite', $db->getVersion());
+        $this->assertStringContainsString('SQLite', $db->getVersion());
     }
 
     public function testCreateTable()
@@ -71,10 +71,10 @@ class SqliteTest extends TestCase
         $this->assertTrue($db->hasTable('users'));
 
         $debugResults = $profiler->prepareAsString();
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('CREATE TABLE "users"', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('CREATE TABLE "users"', $debugResults);
     }
 
     public function testBindParams()
@@ -105,10 +105,10 @@ class SqliteTest extends TestCase
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
-        $this->assertContains('INSERT INTO "users"', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
+        $this->assertStringContainsString('INSERT INTO "users"', $debugResults);
     }
 
     public function testFetch()
@@ -229,9 +229,9 @@ class SqliteTest extends TestCase
         $debugResults = $profiler->prepareAsString();
 
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testBindValue()
@@ -254,9 +254,9 @@ class SqliteTest extends TestCase
         $debugResults = $profiler->prepareAsString();
 
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertContains('Start:', $debugResults);
-        $this->assertContains('Finish:', $debugResults);
-        $this->assertContains('Elapsed:', $debugResults);
+        $this->assertStringContainsString('Start:', $debugResults);
+        $this->assertStringContainsString('Finish:', $debugResults);
+        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testDropTable()
