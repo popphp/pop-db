@@ -25,7 +25,7 @@
     <env name="MYSQL_HOST" value="127.0.0.1"/>
     <env name="PGSQL_DB"   value="test_popdb"/>
     <env name="PGSQL_USER" value="postgres"/>
-    <env name="PGSQL_PASS" value=""/>
+    <env name="PGSQL_PASS" value="postgres"/>
     <env name="PGSQL_HOST" value="localhost"/>
   </php>
 </phpunit>
