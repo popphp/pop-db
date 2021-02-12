@@ -43,11 +43,8 @@ jobs:
     # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
     # Docs: https://getcomposer.org/doc/articles/scripts.md
 
-    - name: Install MySQL Client
-      run: sudo apt install mysql-client
-
     - name: Create MySQL Database
-      run: mysql -e 'CREATE DATABASE IF NOT EXISTS test_popdb;'
+      run: mysql -h 127.0.0.1 -e 'CREATE DATABASE IF NOT EXISTS test_popdb;'
 
    # - name: Create PostgreSQL Database
    #   run: psql -c 'create database travis_popdb;' -U postgres
