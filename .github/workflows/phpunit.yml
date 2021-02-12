@@ -21,9 +21,9 @@ jobs:
         collation server: 'utf8_general_ci'
         mysql version: '5.7'
         mysql database: 'travis_popdb'
-        mysql root password: ${{ secrets.RootPassword }} # Required if "mysql user" is empty, default is empty. The root superuser password
+        mysql root password: '' #${{ secrets.RootPassword }} # Required if "mysql user" is empty, default is empty. The root superuser password
         #mysql user: 'root' # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Can use secrets, too
-        mysql password: ${{ secrets.DatabasePassword }} # Required if "mysql user" exists. The password for the "mysql user"
+        #mysql password: ${{ secrets.DatabasePassword }} # Required if "mysql user" exists. The password for the "mysql user"
 
     #- name: Validate composer.json and composer.lock
     #  run: composer validate
