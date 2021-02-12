@@ -14,10 +14,10 @@ class PredicateTest extends TestCase
     public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/../tmp/.mysql')),
-            'host'     => '127.0.0.1'
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
     }
     

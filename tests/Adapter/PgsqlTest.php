@@ -10,19 +10,12 @@ use PHPUnit\Framework\TestCase;
 class PgsqlTest extends TestCase
 {
 
-    protected $password = '';
-
-    public function setUp(): void
-    {
-        $this->password = trim(file_get_contents(__DIR__ . '/../tmp/.pgsql'));
-    }
-
     public function testConstructorException()
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Pgsql([
-            'username' => 'postgres',
-            'password' => $this->password
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS']
         ]);
     }
 
@@ -36,9 +29,10 @@ class PgsqlTest extends TestCase
     public function testPgsqlConnect()
     {
         $db = Db::pgsqlConnect([
-            'database'        => 'travis_popdb',
-            'username'        => 'postgres',
-            'password'        => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $this->assertInstanceOf('Pop\Db\Adapter\Pgsql', $db);
     }
@@ -46,9 +40,9 @@ class PgsqlTest extends TestCase
     public function testConstructor()
     {
         $db = new Pgsql([
-            'database'        => 'travis_popdb',
-            'username'        => 'postgres',
-            'password'        => $this->password,
+            'database'        => $_ENV['PGSQL_DB'],
+            'username'        => $_ENV['PGSQL_USER'],
+            'password'        => $_ENV['PGSQL_PASS'],
             'port'            => 5432,
             'hostaddr'        => '127.0.0.1',
             'connect_timeout' => 3000,
@@ -87,9 +81,10 @@ class PgsqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $db->execute();
     }
@@ -98,9 +93,10 @@ class PgsqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $db->fetch();
     }
@@ -109,9 +105,10 @@ class PgsqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $db->throwError('Error: Some Error');
     }
@@ -119,9 +116,10 @@ class PgsqlTest extends TestCase
     public function testGetTables()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $this->assertContains('users', $db->getTables());
     }
@@ -129,9 +127,10 @@ class PgsqlTest extends TestCase
     public function testBindParams()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
 
         $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
@@ -160,9 +159,10 @@ class PgsqlTest extends TestCase
     public function testRollback()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
 
         $db->beginTransaction();
@@ -178,9 +178,10 @@ class PgsqlTest extends TestCase
     public function testFetch()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $db->query('SELECT * FROM users');
 
@@ -196,9 +197,10 @@ class PgsqlTest extends TestCase
     public function testFetchResults()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $db->prepare('SELECT * FROM "users" WHERE id != $1')
            ->bindParams([0])
@@ -212,9 +214,10 @@ class PgsqlTest extends TestCase
     public function testDropTable()
     {
         $db = new Pgsql([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
 
         $schema = $db->createSchema();

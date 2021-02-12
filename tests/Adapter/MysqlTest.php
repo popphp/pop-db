@@ -11,19 +11,12 @@ use Pop\Utils\CallableObject;
 class MysqlTest extends TestCase
 {
 
-    protected $password = '';
-
-    public function setUp(): void
-    {
-        $this->password = trim(file_get_contents(__DIR__ . '/../tmp/.mysql'));
-    }
-
     public function testConstructorException()
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
-            'username' => 'root',
-            'password' => $this->password
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS']
         ]);
     }
 
@@ -37,24 +30,26 @@ class MysqlTest extends TestCase
     public function testMysqlConnect()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $db);
         $this->assertInstanceOf('Pop\Db\Sql', $db->createSql());
         $this->assertInstanceOf('Pop\Db\Sql\Schema', $db->createSchema());
         $this->assertIsArray($db->getOptions());
-        $this->assertEquals('travis_popdb', $db->getOptions()['database']);
+        $this->assertEquals('test_popdb', $db->getOptions()['database']);
         $db->disconnect();
     }
 
     public function testCreateTable()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $profiler = $db->listen('Pop\Debug\Handler\QueryHandler', ['name' => 'query-listener'], new Profiler());
@@ -82,9 +77,10 @@ class MysqlTest extends TestCase
     public function testConstructor()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $db);
@@ -96,9 +92,10 @@ class MysqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->execute();
     }
@@ -107,9 +104,10 @@ class MysqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->fetch();
     }
@@ -118,9 +116,10 @@ class MysqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->clearError();
         $this->assertFalse($db->hasError());
@@ -130,9 +129,10 @@ class MysqlTest extends TestCase
     public function testGetTables()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $this->assertContains('users', $db->getTables());
         $this->assertTrue($db->hasTable('users'));
@@ -142,9 +142,10 @@ class MysqlTest extends TestCase
     public function testBindParams()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $sql      = $db->createSql();
@@ -176,9 +177,10 @@ class MysqlTest extends TestCase
     public function testFetch()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->query('SELECT * FROM users');
         $this->assertTrue($db->hasResult());
@@ -195,9 +197,10 @@ class MysqlTest extends TestCase
     public function testFetchResults()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->prepare('SELECT * FROM users WHERE id != ?')
            ->bindParams([0])
@@ -216,9 +219,10 @@ class MysqlTest extends TestCase
     public function testTransaction()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $db->beginTransaction();
@@ -238,9 +242,10 @@ class MysqlTest extends TestCase
     public function testRollback()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $db->beginTransaction();
@@ -260,9 +265,10 @@ class MysqlTest extends TestCase
     public function testTransactionWithFlags()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $db->beginTransaction(MYSQLI_TRANS_START_READ_WRITE);
@@ -282,9 +288,10 @@ class MysqlTest extends TestCase
     public function testRollbackFlags()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $db->beginTransaction(MYSQLI_TRANS_START_READ_WRITE);
@@ -304,9 +311,10 @@ class MysqlTest extends TestCase
     public function testTransactionWithFlagsAndName()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $db->beginTransaction(MYSQLI_TRANS_START_READ_WRITE, 'test_trans');
@@ -326,9 +334,10 @@ class MysqlTest extends TestCase
     public function testRollbackFlagsAndName()
     {
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $db->beginTransaction(MYSQLI_TRANS_START_READ_WRITE, 'test_trans');
@@ -349,9 +358,10 @@ class MysqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->query('SELECT * FROM `bad_table`');
     }
@@ -360,9 +370,10 @@ class MysqlTest extends TestCase
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->prepare('SELECT * FROM `bad_table` WHERE `id` = ?')
             ->bindParams([1])
@@ -372,9 +383,10 @@ class MysqlTest extends TestCase
     public function testDropTable()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
 
         $schema = $db->createSchema();

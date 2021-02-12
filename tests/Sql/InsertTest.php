@@ -13,10 +13,10 @@ class InsertTest extends TestCase
     public function setUp(): void
     {
         $this->db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/../tmp/.mysql')),
-            'host'     => '127.0.0.1'
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
     }
 
@@ -38,9 +38,10 @@ class InsertTest extends TestCase
     public function testRenderPgsql()
     {
         $db = Db::pgsqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => trim(file_get_contents(__DIR__ . '/../tmp/.pgsql'))
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $sql = $db->createSql();
         $sql->insert()->into('users')->values(['username' => ':username']);
@@ -50,9 +51,10 @@ class InsertTest extends TestCase
     public function testConflictPgsql()
     {
         $db = Db::pgsqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => trim(file_get_contents(__DIR__ . '/../tmp/.pgsql'))
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
         $sql = $db->createSql();
         $sql->insert()->into('users')->values(['username' => 'admin'])->onConflict(['username'], 'id');

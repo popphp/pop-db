@@ -9,19 +9,12 @@ use PHPUnit\Framework\TestCase;
 class PdoMysqlTest extends TestCase
 {
 
-    protected $password = '';
-
-    public function setUp(): void
-    {
-        $this->password = trim(file_get_contents(__DIR__ . '/../tmp/.mysql'));
-    }
-
     public function testConstructorException()
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Pdo([
-            'username' => 'root',
-            'password' => $this->password,
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
             'type'     => 'mysql'
         ]);
     }
@@ -36,9 +29,10 @@ class PdoMysqlTest extends TestCase
     public function testMysqlConnect()
     {
         $db = Db::pdoConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
@@ -50,9 +44,10 @@ class PdoMysqlTest extends TestCase
     public function testCreateTable()
     {
         $db = Db::pdoConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
 
@@ -81,9 +76,10 @@ class PdoMysqlTest extends TestCase
     public function testConstructor()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
 
@@ -95,9 +91,10 @@ class PdoMysqlTest extends TestCase
     public function testGetTables()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
         $this->assertContains('users', $db->getTables());
@@ -108,9 +105,10 @@ class PdoMysqlTest extends TestCase
     public function testBindParams()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
 
@@ -147,9 +145,10 @@ class PdoMysqlTest extends TestCase
     public function testFetch()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
         $db->query('SELECT * FROM users');
@@ -167,9 +166,10 @@ class PdoMysqlTest extends TestCase
     public function testFetchResults()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
         $db->prepare('SELECT * FROM users WHERE id != ?')
@@ -189,9 +189,10 @@ class PdoMysqlTest extends TestCase
     public function testTransaction()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
 
@@ -212,9 +213,10 @@ class PdoMysqlTest extends TestCase
     public function testRollback()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
 
@@ -235,9 +237,10 @@ class PdoMysqlTest extends TestCase
     public function testDropTable()
     {
         $db = Db::pdoConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password,
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'type'     => 'mysql'
         ]);
 

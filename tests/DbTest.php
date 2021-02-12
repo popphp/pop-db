@@ -17,10 +17,10 @@ class DbTest extends TestCase
     public function testCheck()
     {
         $check = Db::check('mysql', [
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1'
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $this->assertTrue(($check === true));
     }
@@ -29,9 +29,9 @@ class DbTest extends TestCase
     {
         $check = Db::check('mysql', [
             'database' => 'bad_db',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1'
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $this->assertStringContainsString('Error: ', $check);
     }
@@ -39,10 +39,10 @@ class DbTest extends TestCase
     public function testCheckException()
     {
         $check = Db::check('mysql', [
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1'
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ], 'Bad\Namespace\\');
         $this->assertEquals("Error: The database adapter 'Bad\Namespace\Mysql' does not exist.", $check);
     }
@@ -51,10 +51,10 @@ class DbTest extends TestCase
     {
         $this->expectException('Pop\Db\Exception');
         Db::executeSqlFile(__DIR__ . '/tmp/users.mysql.sql', 'mysql', [
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']              ,
             'prefix'   => 'pop_'
         ], 'Bad\NameSpace\\');
     }
@@ -63,10 +63,10 @@ class DbTest extends TestCase
     {
         $this->expectException('Pop\Db\Exception');
         Db::executeSqlFile(__DIR__ . '/tmp/bad.mysql.sql', 'mysql', [
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'prefix'   => 'pop_'
         ]);
     }
@@ -74,17 +74,17 @@ class DbTest extends TestCase
     public function testExecuteMysqlSqlFile()
     {
         Db::executeSqlFile(__DIR__ . '/tmp/users.mysql.sql', 'mysql', [
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
             'prefix'   => 'pop_'
         ]);
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $this->assertTrue($db->hasTable('pop_users'));
         $db->query('DROP TABLE `pop_users`');
@@ -95,10 +95,10 @@ class DbTest extends TestCase
     public function testExecuteMysqlSqlFileWithAdapter()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         Db::executeSqlFile(__DIR__ . '/tmp/users.mysql.sql', $db, ['prefix'   => 'pop_']);
         $this->assertTrue($db->hasTable('pop_users'));
@@ -148,10 +148,10 @@ class DbTest extends TestCase
     public function testSetDbByClassPrefix()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         Db::setDb($db, null, 'Pop\Db\Test\TestAsset\\');
         Db::addClassToTable('Pop\Db\Test\TestAsset\Users', 'users');
@@ -165,10 +165,10 @@ class DbTest extends TestCase
     public function testSetDbByClass()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => '127.0.0.1',
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         Db::setDb($db, 'Pop\Db\Test\TestAsset\Users', null, true);
         Db::setDefaultDb($db, 'Pop\Db\Test\TestAsset\Users');

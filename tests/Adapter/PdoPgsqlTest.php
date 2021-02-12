@@ -9,19 +9,12 @@ use PHPUnit\Framework\TestCase;
 class PdoPgsqlTest extends TestCase
 {
 
-    protected $password = '';
-
-    public function setUp(): void
-    {
-        $this->password = trim(file_get_contents(__DIR__ . '/../tmp/.pgsql'));
-    }
-
     public function testConstructorException()
     {
         $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Pdo([
-            'username' => 'postgres',
-            'password' => $this->password,
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
             'type'     => 'pgsql'
         ]);
     }
@@ -29,9 +22,10 @@ class PdoPgsqlTest extends TestCase
     public function testPgsqlConnect()
     {
         $db = Db::pdoConnect([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
@@ -40,9 +34,10 @@ class PdoPgsqlTest extends TestCase
     public function testConstructor()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
 
@@ -78,9 +73,10 @@ TABLE;
     public function testGetTables()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
         $this->assertContains('users', $db->getTables());
@@ -89,9 +85,10 @@ TABLE;
     public function testBindParams()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
 
@@ -123,9 +120,10 @@ TABLE;
     public function testRollback()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
 
@@ -146,9 +144,10 @@ TABLE;
     public function testFetch()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
         $db->query('SELECT * FROM users');
@@ -165,9 +164,10 @@ TABLE;
     public function testFetchResults()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
         $db->prepare('SELECT * FROM "users" WHERE id != :id')
@@ -182,9 +182,10 @@ TABLE;
     public function testDropTable()
     {
         $db = new Pdo([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => $this->password,
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
             'type'     => 'pgsql'
         ]);
 

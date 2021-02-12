@@ -10,13 +10,6 @@ use Pop\Db\Db;
 class ProfilerTest extends TestCase
 {
 
-    protected $password = '';
-
-    public function setUp(): void
-    {
-        $this->password = trim(file_get_contents(__DIR__ . '/../../tmp/.mysql'));
-    }
-
     public function testStep()
     {
         $step = new Step();
@@ -38,9 +31,10 @@ class ProfilerTest extends TestCase
     public function testMysqlProfiler()
     {
         $db = Db::mysqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'root',
-            'password' => $this->password
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
         ]);
         $db->setProfiler(new Profiler());
         $this->assertInstanceOf('Pop\Db\Adapter\Profiler\Profiler', $db->getProfiler());

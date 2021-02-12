@@ -14,10 +14,10 @@ class TablePgsqlTest extends TestCase
     public function setUp(): void
     {
         $this->db = Db::pgsqlConnect([
-            'database' => 'travis_popdb',
-            'username' => 'postgres',
-            'password' => trim(file_get_contents(__DIR__ . '/../tmp/.pgsql')),
-            'host'     => '127.0.0.1'
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
         ]);
 
         $schema = $this->db->createSchema();
