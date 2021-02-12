@@ -44,7 +44,7 @@ jobs:
     # Docs: https://getcomposer.org/doc/articles/scripts.md
 
     - name: Install MySQL Client
-      run: sudo apt install mysql
+      run: sudo apt install mysql-client
 
     - name: Create MySQL Database
       run: mysql -e 'CREATE DATABASE IF NOT EXISTS test_popdb;'
