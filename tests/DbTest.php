@@ -20,7 +20,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost'
+            'host'     => '127.0.0.1'
         ]);
         $this->assertTrue(($check === true));
     }
@@ -31,7 +31,7 @@ class DbTest extends TestCase
             'database' => 'bad_db',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost'
+            'host'     => '127.0.0.1'
         ]);
         $this->assertStringContainsString('Error: ', $check);
     }
@@ -42,7 +42,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost'
+            'host'     => '127.0.0.1'
         ], 'Bad\Namespace\\');
         $this->assertEquals("Error: The database adapter 'Bad\Namespace\Mysql' does not exist.", $check);
     }
@@ -54,7 +54,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
             'prefix'   => 'pop_'
         ], 'Bad\NameSpace\\');
     }
@@ -66,7 +66,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
             'prefix'   => 'pop_'
         ]);
     }
@@ -77,14 +77,14 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
             'prefix'   => 'pop_'
         ]);
         $db = Db::mysqlConnect([
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
         ]);
         $this->assertTrue($db->hasTable('pop_users'));
         $db->query('DROP TABLE `pop_users`');
@@ -98,7 +98,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
         ]);
         Db::executeSqlFile(__DIR__ . '/tmp/users.mysql.sql', $db, ['prefix'   => 'pop_']);
         $this->assertTrue($db->hasTable('pop_users'));
@@ -151,7 +151,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
         ]);
         Db::setDb($db, null, 'Pop\Db\Test\TestAsset\\');
         Db::addClassToTable('Pop\Db\Test\TestAsset\Users', 'users');
@@ -168,7 +168,7 @@ class DbTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/tmp/.mysql')),
-            'host'     => 'localhost',
+            'host'     => '127.0.0.1',
         ]);
         Db::setDb($db, 'Pop\Db\Test\TestAsset\Users', null, true);
         Db::setDefaultDb($db, 'Pop\Db\Test\TestAsset\Users');

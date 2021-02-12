@@ -17,7 +17,7 @@ class DataTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'root',
             'password' => trim(file_get_contents(__DIR__ . '/../tmp/.mysql')),
-            'host'     => 'localhost'
+            'host'     => '127.0.0.1'
         ]);
     }
 
@@ -246,7 +246,7 @@ class DataTest extends TestCase
             'database' => 'travis_popdb',
             'username' => 'postgres',
             'password' => trim(file_get_contents(__DIR__ . '/../tmp/.pgsql')),
-            'host'     => 'localhost'
+            'host'     => '127.0.0.1'
         ]);
 
         $rows = [
