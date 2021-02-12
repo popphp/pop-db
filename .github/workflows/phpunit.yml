@@ -18,7 +18,7 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: test_popdb
         ports:
-          - 3306
+          - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
@@ -43,8 +43,8 @@ jobs:
     # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
     # Docs: https://getcomposer.org/doc/articles/scripts.md
 
-    - name: Create MySQL Database
-      run: mysql -u root --password= -h 127.0.0.1 -e 'CREATE DATABASE IF NOT EXISTS test_popdb;'
+    #- name: Create MySQL Database
+    #  run: mysql -u root --password= -h 127.0.0.1 -e 'CREATE DATABASE IF NOT EXISTS test_popdb;'
 
    # - name: Create PostgreSQL Database
    #   run: psql -c 'create database travis_popdb;' -U postgres
