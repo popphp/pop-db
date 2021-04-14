@@ -76,10 +76,16 @@ class HasOne extends AbstractRelationship
             $values = $values[0];
         }
 
+        $columns = [$this->foreignKey => $values];
+
+        if (!empty($options) && !empty($options['columns'])) {
+            $columns = array_merge($columns, $options['columns']);
+        }
+
         if (!empty($this->children)) {
-            return $table::with($this->children)->getOne([$this->foreignKey => $values], $options);
+            return $table::with($this->children)->getOne($columns, $options);
         } else {
-            return $table::findOne([$this->foreignKey => $values], $options);
+            return $table::findOne($columns, $options);
         }
     }
 

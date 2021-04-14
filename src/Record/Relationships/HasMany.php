@@ -76,10 +76,16 @@ class HasMany extends AbstractRelationship
             $values = $values[0];
         }
 
+        $columns = [$this->foreignKey => $values];
+
+        if (!empty($options) && !empty($options['columns'])) {
+            $columns = array_merge($columns, $options['columns']);
+        }
+
         if (!empty($this->children)) {
-            return $table::with($this->children)->getBy([$this->foreignKey => $values], $options);
+            return $table::with($this->children)->getBy($columns, $options);
         } else {
-            return $table::findBy([$this->foreignKey => $values], $options);
+            return $table::findBy($columns, $options);
         }
     }
 
