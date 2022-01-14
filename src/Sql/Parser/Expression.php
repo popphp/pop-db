@@ -144,7 +144,8 @@ class Expression
                     $value   = substr($value, 0, -1);
                 }
                 break;
-                break;
+            case 'NOT IN':
+            case 'NOT BETWEEN':
             case 'IS NOT NULL':
                 $column .= '-';
                 break;
