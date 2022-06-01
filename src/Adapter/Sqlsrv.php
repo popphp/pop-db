@@ -108,7 +108,7 @@ class Sqlsrv extends AbstractAdapter
         ];
 
         if (isset($this->options['info']) && is_array($this->options['info'])) {
-            $info = array_merge($this->info, $this->options['info']);
+            $this->info = array_merge($this->info, $this->options['info']);
         }
 
         if (!isset($info['ReturnDatesAsStrings'])) {
