@@ -405,13 +405,13 @@ class Column extends AbstractFormatter
             $columnString .= ' ' . implode(' ', $column['attributes']);
         }
 
-        if (($column['nullable'] === false) || (strtoupper($column['default']) == 'NOT NULL')) {
+        if (($column['nullable'] === false) || (strtoupper((string)$column['default']) == 'NOT NULL')) {
             $columnString .= ' NOT NULL';
         }
 
         if ((null === $column['default']) && ($column['nullable'] === true)) {
             $columnString .= ' DEFAULT NULL';
-        } else if (strtoupper($column['default']) == 'NULL') {
+        } else if (strtoupper((string)$column['default']) == 'NULL') {
             $columnString .= ' DEFAULT NULL';
         } else if (null !== $column['default']) {
             $columnString .= " DEFAULT '" . $column['default'] . "'";

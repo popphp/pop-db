@@ -270,23 +270,26 @@ class PdoSqliteTest extends TestCase
 
     public function testError()
     {
-        if (strpos(PHP_VERSION, '8.1') !== false) {
-            $this->expectException('PDOException');
-        } else {
-            $this->expectException('Error');
+        try {
+            $db = Db::pdoConnect([
+                'database' => __DIR__ . '/../tmp/db.sqlite',
+                'type'     => 'sqlite'
+            ]);
+
+            $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+
+            $sql = $db->createSql();
+
+            $sql->select()->from('bad_table');
+            $db->query($sql);
+        } catch (\Exception|\Error $e) {
+            $class = get_class($e);
+            if (strpos($class, 'PDO') !== false) {
+                $this->assertEquals('PDOException', $class);
+            } else {
+                $this->assertEquals('Error', $class);
+            }
         }
-
-        $db = Db::pdoConnect([
-            'database' => __DIR__ . '/../tmp/db.sqlite',
-            'type'     => 'sqlite'
-        ]);
-
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
-
-        $sql = $db->createSql();
-
-        $sql->select()->from('bad_table');
-        $db->query($sql);
     }
 
     public function testDropTable()
