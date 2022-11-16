@@ -35,6 +35,7 @@ class RecordTest extends TestCase
             ->int('logins', 16)->defaultIs(0)
             ->primary('id');
 
+
         $schema->execute();
 
         \Pop\Db\Test\TestAsset\Users::setDb($this->db);

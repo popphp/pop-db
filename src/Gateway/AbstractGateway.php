@@ -116,12 +116,12 @@ abstract class AbstractGateway implements GatewayInterface
                         $primaryResult = ($row[$keyField] == 1);
                         break;
                     case Sql::MYSQL:
-                        $nullResult    = (strtoupper($row[$nullField]) != 'NO');
-                        $primaryResult = (strtoupper($row[$keyField]) == 'PRI');
+                        $nullResult    = (!empty($row[$keyField]) && (strtoupper($row[$nullField]) != 'NO'));
+                        $primaryResult = (!empty($row[$keyField]) && (strtoupper($row[$keyField]) == 'PRI'));
                         break;
                     default:
                         $nullResult    = $row[$nullField];
-                        $primaryResult = (strtoupper($row[$keyField]) == 'PRIMARY KEY');
+                        $primaryResult = (!empty($row[$keyField]) && (strtoupper($row[$keyField]) == 'PRIMARY KEY'));
 
                 }
 

@@ -277,8 +277,8 @@ abstract class AbstractSql
      */
     public function isParameter($value, $column = null)
     {
-        return (((null !== $column) && ((':' . $column) == $value)) ||
-                ((preg_match('/^\$\d*\d$/', $value) == 1)) ||
+        return ((!empty($value) && (null !== $column) && ((':' . $column) == $value)) ||
+                ((preg_match('/^\$\d*\d$/', (string)$value) == 1)) ||
                 (($value == '?')));
     }
 

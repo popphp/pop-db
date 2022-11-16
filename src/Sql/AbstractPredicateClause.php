@@ -48,7 +48,7 @@ abstract class AbstractPredicateClause extends AbstractClause
             if (is_string($where)) {
                 if ((stripos($where, ' AND ') !== false) || (stripos($where, ' OR ') !== false)) {
                     $expressions = array_map('trim', preg_split(
-                        '/(AND|OR)/', $where, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
+                        '/(AND|OR)/', $where, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
                     ));
                     foreach ($expressions as $i => $expression) {
                         if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {

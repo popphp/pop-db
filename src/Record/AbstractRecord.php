@@ -15,6 +15,7 @@ namespace Pop\Db\Record;
 
 use Pop\Db\Gateway;
 use Pop\Db\Sql\Parser;
+use ReturnTypeWillChange;
 
 /**
  * Abstract record class
@@ -244,7 +245,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return $this->rowGateway->count();
     }
@@ -254,7 +255,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return \ArrayIterator
      */
-    public function getIterator()
+    public function getIterator(): \ArrayIterator
     {
         return $this->rowGateway->getIterator();
     }
@@ -623,7 +624,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $offset
      * @return boolean
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return $this->__isset($offset);
     }
@@ -634,6 +635,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $offset
      * @return mixed
      */
+    #[ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->__get($offset);
@@ -646,6 +648,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $value
      * @return void
      */
+    #[ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->__set($offset, $value);
@@ -657,6 +660,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $offset
      * @return void
      */
+    #[ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         $this->__unset($offset);

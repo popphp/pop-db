@@ -2,6 +2,8 @@
 
 namespace Pop\Db\Test\TestAsset;
 
+use ReturnTypeWillChange;
+
 class MockData implements \ArrayAccess
 {
 
@@ -39,21 +41,24 @@ class MockData implements \ArrayAccess
         }
     }
 
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return $this->__isset($offset);
     }
 
+    #[ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->__get($offset);
     }
 
+    #[ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->__set($offset, $value);
     }
 
+    #[ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         $this->__unset($offset);

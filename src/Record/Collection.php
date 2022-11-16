@@ -42,7 +42,7 @@ class Collection extends Utils\Collection
      * @param  array    $options
      * @return array
      */
-    public function toArray($options = [])
+    public function toArray($options = []): array
     {
         $items = $this->data;
 

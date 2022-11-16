@@ -267,7 +267,7 @@ class Select extends AbstractPredicateClause
                 if (is_string($having)) {
                     if ((stripos($having, ' AND ') !== false) || (stripos($having, ' OR ') !== false)) {
                         $expressions = array_map('trim', preg_split(
-                            '/(AND|OR)/', $having, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
+                            '/(AND|OR)/', $having, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
                         ));
                         foreach ($expressions as $i => $expression) {
                             if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {

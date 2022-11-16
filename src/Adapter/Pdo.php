@@ -374,7 +374,7 @@ class Pdo extends AbstractAdapter
         if (null !== $this->profiler) {
             $this->profiler->current->addParam($param, $value);
         }
-        $this->statement->bindParam($param, $value, $dataType, $length, $options);
+        $this->statement->bindParam($param, $value, $dataType, (int)$length, $options);
         return $this;
     }
 

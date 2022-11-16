@@ -102,7 +102,7 @@ class Migrator extends Migration\AbstractMigrator
         $current    = null;
 
         foreach ($this->migrations as $timestamp => $migration) {
-            if (strtotime($timestamp) > strtotime($this->current)) {
+            if (strtotime($timestamp) > strtotime((int)$this->current)) {
                 $stepsToRun[] = $timestamp;
             }
         }

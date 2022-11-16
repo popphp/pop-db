@@ -401,7 +401,7 @@ class Mysql extends AbstractAdapter
      */
     public function escape($value)
     {
-        return $this->connection->real_escape_string($value);
+        return (!empty($value)) ? $this->connection->real_escape_string($value) : '';
     }
 
     /**

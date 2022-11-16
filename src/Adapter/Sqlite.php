@@ -80,7 +80,7 @@ class Sqlite extends AbstractAdapter
             $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
         }
 
-        $this->connection = new \SQLite3($this->options['database'], $this->flags, $this->key);
+        $this->connection = new \SQLite3($this->options['database'], $this->flags, (string)$this->key);
 
         return $this;
     }

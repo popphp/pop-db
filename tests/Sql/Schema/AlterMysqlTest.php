@@ -36,7 +36,7 @@ class AlterMysqlTest extends TestCase
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users');
         $alter->modifyColumn('email', 'email_address', 'varchar', 255);
-        $this->assertStringContainsString('ALTER TABLE `users` CHANGE COLUMN `email` `email_address` VARCHAR(255) DEFAULT NULL;', $alter->render());
+        $this->assertStringContainsString('ALTER TABLE `users` CHANGE COLUMN `email` `email_address` VARCHAR(255)', $alter->render());
     }
 
     public function testAlterWithPrecision()
@@ -44,7 +44,7 @@ class AlterMysqlTest extends TestCase
         $schema = $this->db->createSchema();
         $alter = $schema->alter('users');
         $alter->modifyColumn('price', 'product_price', 'decimal', 16, 2);
-        $this->assertStringContainsString('ALTER TABLE `users` CHANGE COLUMN `price` `product_price` DECIMAL(16, 2) DEFAULT NULL;', $alter->render());
+        $this->assertStringContainsString('ALTER TABLE `users` CHANGE COLUMN `price` `product_price` DECIMAL(16, 2)', $alter->render());
     }
 
     public function testAlterWithIndex()

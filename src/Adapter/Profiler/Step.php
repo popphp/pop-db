@@ -132,7 +132,7 @@ class Step extends AbstractProfiler
      */
     public function addError($error, $number = null)
     {
-        $this->errors[microtime(true)] = [
+        $this->errors[(string)microtime(true)] = [
             'error'  => $error,
             'number' => $number
         ];

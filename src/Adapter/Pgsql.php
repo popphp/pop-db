@@ -343,7 +343,7 @@ class Pgsql extends AbstractAdapter
      */
     public function escape($value)
     {
-        return pg_escape_string($value);
+        return (!empty($value)) ? pg_escape_string($this->connection, $value) : '';
     }
 
     /**
@@ -353,7 +353,7 @@ class Pgsql extends AbstractAdapter
      */
     public function getLastId()
     {
-        $insertQuery = pg_query("SELECT lastval();");
+        $insertQuery = pg_query($this->connection, "SELECT lastval();");
         $insertRow   = pg_fetch_row($insertQuery);
         return $insertRow[0];
     }

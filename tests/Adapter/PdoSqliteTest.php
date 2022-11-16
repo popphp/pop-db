@@ -270,7 +270,12 @@ class PdoSqliteTest extends TestCase
 
     public function testError()
     {
-        $this->expectException('Error');
+        if (strpos(PHP_VERSION, '8.1') !== false) {
+            $this->expectException('PDOException');
+        } else {
+            $this->expectException('Error');
+        }
+
         $db = Db::pdoConnect([
             'database' => __DIR__ . '/../tmp/db.sqlite',
             'type'     => 'sqlite'

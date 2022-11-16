@@ -33,7 +33,7 @@ class DbTest extends TestCase
             'password' => $_ENV['MYSQL_PASS'],
             'host'     => $_ENV['MYSQL_HOST']
         ]);
-        $this->assertStringContainsString('Error: ', $check);
+        $this->assertStringContainsString('bad_db', $check);
     }
 
     public function testCheckException()

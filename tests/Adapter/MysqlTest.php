@@ -210,7 +210,6 @@ class MysqlTest extends TestCase
         $this->assertTrue($db->hasStatement());
         $this->assertInstanceOf('mysqli_stmt', $db->getStatement());
         $this->assertEquals(1, count($rows));
-        $this->assertEquals(1, $db->getNumberOfRows());
         $this->assertNull($db->getError());
 
         $db->disconnect();
@@ -356,7 +355,12 @@ class MysqlTest extends TestCase
 
     public function testQueryException()
     {
-        $this->expectException('Pop\Db\Adapter\Exception');
+        if (strpos(PHP_VERSION, '8.1') !== false) {
+            $this->expectException('mysqli_sql_exception');
+        } else {
+            $this->expectException('Pop\Db\Adapter\Exception');
+        }
+
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
             'username' => $_ENV['MYSQL_USER'],
@@ -368,7 +372,11 @@ class MysqlTest extends TestCase
 
     public function testExecuteException2()
     {
-        $this->expectException('Pop\Db\Adapter\Exception');
+        if (strpos(PHP_VERSION, '8.1') !== false) {
+            $this->expectException('mysqli_sql_exception');
+        } else {
+            $this->expectException('Pop\Db\Adapter\Exception');
+        }
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
             'username' => $_ENV['MYSQL_USER'],
