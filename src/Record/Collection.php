@@ -80,6 +80,10 @@ class Collection extends Utils\Collection
             }
         }
 
+        if (null === $items) {
+            $items = [];
+        }
+
         return $items;
     }
 
