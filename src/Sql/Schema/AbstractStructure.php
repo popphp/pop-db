@@ -319,7 +319,7 @@ abstract class AbstractStructure extends AbstractTable
         if (null === $name) {
             $name = 'index';
             foreach ($column as $c) {
-                $name .= '_' . strtolower($c);
+                $name .= '_' . strtolower((string)$c);
             }
         }
         $this->indices[$name] = [
@@ -370,7 +370,7 @@ abstract class AbstractStructure extends AbstractTable
     public function foreignKey($column, $name = null)
     {
         if (null === $name) {
-            $name = 'fk_'. strtolower($column);
+            $name = 'fk_'. strtolower((string)$column);
         }
         $this->currentConstraint  = $name;
         $this->constraints[$name] = [
@@ -421,7 +421,7 @@ abstract class AbstractStructure extends AbstractTable
     public function onDelete($action = null)
     {
         if (null !== $this->currentConstraint) {
-            $this->constraints[$this->currentConstraint]['delete'] = (strtolower($action) == 'cascade') ?
+            $this->constraints[$this->currentConstraint]['delete'] = (strtolower((string)$action) == 'cascade') ?
                 'CASCADE' : 'SET NULL';
         }
 
