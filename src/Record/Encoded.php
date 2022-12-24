@@ -179,30 +179,32 @@ class Encoded extends \Pop\Db\Record
      */
     public function decodeValue($key, $value)
     {
-        if (in_array($key, $this->jsonFields)) {
-            $jsonValue = @json_decode($value, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $value = $jsonValue;
-            }
-        } else if (in_array($key, $this->phpFields)) {
-            $phpValue = @unserialize($value);
-            if ($phpValue !== false) {
-                $value = $phpValue;
-            }
-        } else if (in_array($key, $this->base64Fields)) {
-            $base64Value = @base64_decode($value, true);
-            if ($base64Value !== false) {
-                $value = $base64Value;
-            }
-        } else if (in_array($key, $this->encryptedFields)) {
-            if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
-                throw new Exception('Error: The encryption properties have not been set for this class.');
-            }
-            $base64Value = @base64_decode($value, true);
-            if ($base64Value !== false) {
-                $value = openssl_decrypt(
-                    base64_decode($value), $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv)
-                );
+        if (null !== $value) {
+            if (in_array($key, $this->jsonFields)) {
+                $jsonValue = @json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $value = $jsonValue;
+                }
+            } else if (in_array($key, $this->phpFields)) {
+                $phpValue = @unserialize($value);
+                if ($phpValue !== false) {
+                    $value = $phpValue;
+                }
+            } else if (in_array($key, $this->base64Fields)) {
+                $base64Value = @base64_decode($value, true);
+                if ($base64Value !== false) {
+                    $value = $base64Value;
+                }
+            } else if (in_array($key, $this->encryptedFields)) {
+                if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
+                    throw new Exception('Error: The encryption properties have not been set for this class.');
+                }
+                $base64Value = @base64_decode($value, true);
+                if ($base64Value !== false) {
+                    $value = openssl_decrypt(
+                        base64_decode($value), $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv)
+                    );
+                }
             }
         }
 
