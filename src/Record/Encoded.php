@@ -179,26 +179,32 @@ class Encoded extends \Pop\Db\Record
      */
     public function decodeValue($key, $value)
     {
-        if (null !== $value) {
-            if (in_array($key, $this->jsonFields)) {
+        if (in_array($key, $this->jsonFields)) {
+            if (null !== $value) {
                 $jsonValue = @json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     $value = $jsonValue;
                 }
-            } else if (in_array($key, $this->phpFields)) {
+            }
+        } else if (in_array($key, $this->phpFields)) {
+            if (null !== $value) {
                 $phpValue = @unserialize($value);
                 if ($phpValue !== false) {
                     $value = $phpValue;
                 }
-            } else if (in_array($key, $this->base64Fields)) {
+            }
+        } else if (in_array($key, $this->base64Fields)) {
+            if (null !== $value) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
                     $value = $base64Value;
                 }
-            } else if (in_array($key, $this->encryptedFields)) {
-                if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
-                    throw new Exception('Error: The encryption properties have not been set for this class.');
-                }
+            }
+        } else if (in_array($key, $this->encryptedFields)) {
+            if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
+                throw new Exception('Error: The encryption properties have not been set for this class.');
+            }
+            if (null !== $value) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
                     $value = openssl_decrypt(
