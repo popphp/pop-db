@@ -385,6 +385,38 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindIn()
+    {
+
+        $user1 = new Users([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com'
+        ]);
+        $user1->save();
+
+        $user2 = new Users([
+            'username' => 'testuser2',
+            'password' => 'password2',
+            'email'    => 'testuser2@test.com'
+        ]);
+        $user2->save();
+
+        $user3 = new Users([
+            'username' => 'testuser3',
+            'password' => 'password3',
+            'email'    => 'testuser3@test.com'
+        ]);
+        $user3->save();
+
+        $users = Users::findIn('id', [1, 2, 3]);
+        $this->assertEquals(3, count($users));
+        $this->assertTrue(isset($users[1]));
+        $this->assertTrue(isset($users[2]));
+        $this->assertTrue(isset($users[3]));
+        $this->db->disconnect();
+    }
+
     public function testFindByOrCreate()
     {
         $user = Users::findBy([

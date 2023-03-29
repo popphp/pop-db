@@ -281,6 +281,21 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Find in static method
+     *
+     * @param  string  $key
+     * @param  array   $values
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
+     * @return array
+     */
+    public static function findIn($key, array $values, array $columns = null, array $options = null, $asArray = false)
+    {
+        return (new static())->getIn($key, $values, $columns, $options, $asArray);
+    }
+
+    /**
      * Find all static method
      *
      * @param  array   $options
@@ -527,6 +542,31 @@ class Record extends Record\AbstractRecord
 
         $collection = new Record\Collection($rows);
         return ($asArray) ? $collection->toArray() : $collection;
+    }
+
+    /**
+     * Get in method
+     *
+     * @param  string  $key
+     * @param  array   $values
+     * @param  array   $columns
+     * @param  array   $options
+     * @param  boolean $asArray
+     * @return array
+     */
+    public function getIn($key, array $values, array $columns = null, array $options = null, $asArray = false)
+    {
+        $columns = (null !== $columns) ? array_merge([$key => $values], $columns) : [$key => $values];
+        $results = $this->getBy($columns, $options, $asArray);
+        $rows    = [];
+
+        foreach ($results as $row) {
+            if (isset($row[$key])) {
+                $rows[$row[$key]] = (($asArray) && ($row instanceof \Pop\Db\Record)) ? $row->toArray() : $row;
+            }
+        }
+
+        return $rows;
     }
 
     /**
