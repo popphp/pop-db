@@ -447,7 +447,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             if (array_key_exists($name, $this->columns) && ($value !== $this->columns[$name])) {
                 $this->dirty['old'][$name] = $this->columns[$name];
                 $this->dirty['new'][$name] = $value;
-            } else if (!isset($this->columns[$name]) && !empty($value)) {
+            } else if (!isset($this->columns[$name]) && isset($value)) {
                 $this->dirty['old'][$name] = null;
                 $this->dirty['new'][$name] = $value;
             }
