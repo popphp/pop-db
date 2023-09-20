@@ -146,6 +146,10 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             }
         }
 
+        if ((null !== $options) && isset($options['group'])) {
+            $sql->select()->groupBy($options['group']);
+        }
+
         $db->prepare((string)$sql);
 
         if ((null !== $parameters) && (count($parameters) > 0)) {
