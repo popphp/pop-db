@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -52,7 +52,7 @@ interface AdapterInterface
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     public function hasOptions();
 
@@ -139,7 +139,7 @@ interface AdapterInterface
     /**
      * Determine whether or not connected
      *
-     * @return boolean
+     * @return bool
      */
     public function isConnected();
 
@@ -153,7 +153,7 @@ interface AdapterInterface
     /**
      * Determine whether or not a statement resource exists
      *
-     * @return boolean
+     * @return bool
      */
     public function hasStatement();
 
@@ -167,7 +167,7 @@ interface AdapterInterface
     /**
      * Determine whether or not a result resource exists
      *
-     * @return boolean
+     * @return bool
      */
     public function hasResult();
 
@@ -211,7 +211,7 @@ interface AdapterInterface
     /**
      * Determine whether or not there is an error
      *
-     * @return boolean
+     * @return bool
      */
     public function hasError();
 
@@ -292,7 +292,7 @@ interface AdapterInterface
      * Return if the database has a table
      *
      * @param  string  $table
-     * @return boolean
+     * @return bool
      */
     public function hasTable($table);
 

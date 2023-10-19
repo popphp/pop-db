@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -23,7 +23,7 @@ use ReturnTypeWillChange;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -62,7 +62,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
 
     /**
      * Is new record flag
-     * @var boolean
+     * @var bool
      */
     protected $isNew = false;
 
@@ -110,7 +110,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function setTableFromClassName($class = null)
     {
-        if (null === $class) {
+        if ($class === null) {
             $class = get_class($this);
         }
 
@@ -196,7 +196,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function getPrimaryValues()
     {
-        return (null !== $this->rowGateway) ?
+        return ($this->rowGateway !== null) ?
             array_intersect_key($this->rowGateway->getColumns(), array_flip($this->primaryKeys)) : [];
     }
 
@@ -293,7 +293,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Determine if the result has rows
      *
-     * @return boolean
+     * @return bool
      */
     public function hasRows()
     {
@@ -309,7 +309,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function setColumns($columns = null)
     {
-        if (null !== $columns) {
+        if ($columns !== null) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
                 $this->rowGateway->setColumns((array)$columns);
             } else if ($columns instanceof AbstractRecord) {
@@ -328,7 +328,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Set all the table rows at once
      *
      * @param  array   $rows
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return AbstractRecord
      */
     public function setRows(array $rows = null, $asArray = false)
@@ -336,7 +336,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
         $this->rowGateway->setColumns();
         $this->tableGateway->setRows();
 
-        if (null !== $rows) {
+        if ($rows !== null) {
             $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
             foreach ($rows as $i => $row) {
                 $rows[$i] = $this->processRow($row, $asArray);
@@ -351,7 +351,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Process table rows
      *
      * @param  array   $rows
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return array
      */
     public function processRows(array $rows, $asArray = false)
@@ -366,7 +366,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Process a table row
      *
      * @param  array   $row
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return mixed
      */
     public function processRow(array $row, $asArray = false)
@@ -406,7 +406,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Determine if there is specific with relationship
      *
      * @param  string  $name
-     * @return boolean
+     * @return bool
      */
     public function hasWith($name)
     {
@@ -416,7 +416,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Determine if there are with relationships
      *
-     * @return boolean
+     * @return bool
      */
     public function hasWiths()
     {
@@ -436,7 +436,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Get with relationships
      *
-     * @param  boolean $eager
+     * @param  bool $eager
      * @return AbstractRecord
      */
     public function getWithRelationships($eager = true)
@@ -526,7 +526,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Has relationship
      *
      * @param  string $name
-     * @return boolean
+     * @return bool
      */
     public function hasRelationship($name)
     {
@@ -546,7 +546,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Get relationships
      *
-     * @return boolean
+     * @return bool
      */
     public function hasRelationships()
     {
@@ -590,7 +590,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Magic method to return the isset value of $this->rowGateway[$name]
      *
      * @param  string $name
-     * @return boolean
+     * @return bool
      */
     public function __isset($name)
     {
@@ -622,7 +622,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * ArrayAccess offsetExists
      *
      * @param  mixed $offset
-     * @return boolean
+     * @return bool
      */
     public function offsetExists($offset): bool
     {

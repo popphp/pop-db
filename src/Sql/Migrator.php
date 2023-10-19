@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -22,7 +22,7 @@ use Pop\Db\Sql\Parser;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -76,7 +76,7 @@ class Migrator extends Migration\AbstractMigrator
             'MigrationTemplate', $class, file_get_contents(__DIR__ . '/Migration/Template/MigrationTemplate.php')
         );
 
-        if (null !== $path) {
+        if ($path !== null) {
             if (!is_dir($path)) {
                 throw new Exception('Error: That path does not exist');
             }
@@ -120,7 +120,7 @@ class Migrator extends Migration\AbstractMigrator
             }
         }
 
-        if (null !== $current) {
+        if ($current !== null) {
             file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $current);
         }
 

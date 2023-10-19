@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -139,7 +139,7 @@ class Pgsql extends AbstractAdapter
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     public function hasOptions()
     {
@@ -195,18 +195,18 @@ class Pgsql extends AbstractAdapter
 
         if (!($this->result = pg_query($this->connection, $sql))) {
             $pgError = pg_last_error($this->connection);
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($pgError);
             }
             $this->throwError($pgError);
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -231,13 +231,13 @@ class Pgsql extends AbstractAdapter
 
         if ($this->statement === false) {
             $pgError = pg_last_error();
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($pgError);
             }
             $this->throwError('PostgreSQL Statement Error: ' . $pgError);
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
@@ -253,7 +253,7 @@ class Pgsql extends AbstractAdapter
      */
     public function bindParams(array $params)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
         }
 
@@ -273,7 +273,7 @@ class Pgsql extends AbstractAdapter
      */
     public function execute()
     {
-        if ((null === $this->statement) || (null === $this->statementString) || (null === $this->statementName)) {
+        if (($this->statement === null) || ($this->statementString === null) || ($this->statementName === null)) {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
@@ -284,7 +284,7 @@ class Pgsql extends AbstractAdapter
             $this->query($this->statementString);
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -298,7 +298,7 @@ class Pgsql extends AbstractAdapter
      */
     public function fetch()
     {
-        if (null === $this->result) {
+        if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
         }
 
@@ -365,7 +365,7 @@ class Pgsql extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (null === $this->result) {
+        if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
         }
 

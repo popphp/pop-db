@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -28,7 +28,7 @@ class Mysql extends AbstractAdapter
 
     /**
      * Statement result
-     * @var boolean
+     * @var bool
      */
     protected $statementResult = false;
 
@@ -105,7 +105,7 @@ class Mysql extends AbstractAdapter
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     public function hasOptions()
     {
@@ -121,9 +121,9 @@ class Mysql extends AbstractAdapter
      */
     public function beginTransaction($flags = null, $name = null)
     {
-        if ((null !== $flags) && (null !== $name)) {
+        if (($flags !== null) && ($name !== null)) {
             $this->connection->begin_transaction($flags, $name);
-        } else if (null !== $flags) {
+        } else if ($flags !== null) {
             $this->connection->begin_transaction($flags);
         } else {
             $this->connection->begin_transaction();
@@ -141,9 +141,9 @@ class Mysql extends AbstractAdapter
      */
     public function commit($flags = null, $name = null)
     {
-        if ((null !== $flags) && (null !== $name)) {
+        if (($flags !== null) && ($name !== null)) {
             $this->connection->commit($flags, $name);
-        } else if (null !== $flags) {
+        } else if ($flags !== null) {
             $this->connection->commit($flags);
         } else {
             $this->connection->commit();
@@ -161,9 +161,9 @@ class Mysql extends AbstractAdapter
      */
     public function rollback($flags = null, $name = null)
     {
-        if ((null !== $flags) && (null !== $name)) {
+        if (($flags !== null) && ($name !== null)) {
             $this->connection->rollback($flags, $name);
-        } else if (null !== $flags) {
+        } else if ($flags !== null) {
             $this->connection->rollback($flags);
         } else {
             $this->connection->rollback();
@@ -188,18 +188,18 @@ class Mysql extends AbstractAdapter
         }
 
         if (!($this->result = $this->connection->query($sql))) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($this->connection->error, $this->connection->errno);
             }
             $this->throwError('Error: ' . $this->connection->errno . ' => ' . $this->connection->error);
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -220,13 +220,13 @@ class Mysql extends AbstractAdapter
 
         $this->statement = $this->connection->stmt_init();
         if (!$this->statement->prepare($sql)) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($this->statement->error, $this->statement->errno);
             }
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
@@ -244,7 +244,7 @@ class Mysql extends AbstractAdapter
     {
         $bindParams = [''];
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
         }
 
@@ -305,20 +305,20 @@ class Mysql extends AbstractAdapter
      */
     public function execute()
     {
-        if (null === $this->statement) {
+        if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set');
         }
 
         $this->statementResult = $this->statement->execute();
 
         if (!empty($this->statement->error)) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->current->addError($this->statement->error, $this->statement->errno);
             }
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -333,7 +333,7 @@ class Mysql extends AbstractAdapter
      */
     public function fetch()
     {
-        if ((null !== $this->statement) && ($this->statementResult !== false)) {
+        if (($this->statement !== null) && ($this->statementResult !== false)) {
             $params     = [];
             $bindParams = [];
             $row        = false;
@@ -358,7 +358,7 @@ class Mysql extends AbstractAdapter
 
             return $row;
         } else {
-            if (null === $this->result) {
+            if ($this->result === null) {
                 $this->throwError('Error: The database result resource is not currently set.');
             }
             return $this->result->fetch_array(MYSQLI_ASSOC);
@@ -421,10 +421,10 @@ class Mysql extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (null !== $this->statement) {
+        if ($this->statement !== null) {
             $this->statement->store_result();
             return $this->statement->num_rows;
-        } else if (null !== $this->result) {
+        } else if ($this->result !== null) {
             return $this->result->num_rows;
         } else {
             $this->throwError('Error: The database result resource is not currently set.');

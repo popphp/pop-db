@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -46,7 +46,7 @@ class Sqlsrv extends AbstractAdapter
 
     /**
      * Statement result
-     * @var boolean
+     * @var bool
      */
     protected $statementResult = false;
 
@@ -123,7 +123,7 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     public function hasOptions()
     {
@@ -179,7 +179,7 @@ class Sqlsrv extends AbstractAdapter
         $this->statementResult = false;
 
         if (!($this->result = sqlsrv_query($this->connection, $sql))) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $errors = $this->getSqlSrvErrors(false);
@@ -188,12 +188,12 @@ class Sqlsrv extends AbstractAdapter
                 }
             }
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -217,7 +217,7 @@ class Sqlsrv extends AbstractAdapter
         if (strpos($this->statementString, '?') === false) {
             $this->statement = sqlsrv_prepare($this->connection, $this->statementString);
             if ($this->statement === false) {
-                if (null !== $this->profiler) {
+                if ($this->profiler !== null) {
                     $this->profiler->addStep();
                     $this->profiler->current->setQuery($sql);
                     $errors = $this->getSqlSrvErrors(false);
@@ -226,7 +226,7 @@ class Sqlsrv extends AbstractAdapter
                     }
                 }
                 $this->throwError('SQL Server Statement Error: ' . $this->getSqlSrvErrors());
-            } else if (null !== $this->profiler) {
+            } else if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
             }
@@ -244,7 +244,7 @@ class Sqlsrv extends AbstractAdapter
      */
     public function bindParams(array $params, $options = null)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
         }
 
@@ -266,7 +266,7 @@ class Sqlsrv extends AbstractAdapter
         }
 
         if (count($bindParams) > 0) {
-            $this->statement = (null !== $options) ?
+            $this->statement = ($options !== null) ?
                 sqlsrv_prepare($this->connection, $this->statementString, $bindParams, $options) :
                 sqlsrv_prepare($this->connection, $this->statementString, $bindParams);
 
@@ -285,14 +285,14 @@ class Sqlsrv extends AbstractAdapter
      */
     public function execute()
     {
-        if (null === $this->statement) {
+        if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         $this->statementResult = sqlsrv_execute($this->statement);
 
         if ($this->statementResult === false) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $errors = $this->getSqlSrvErrors(false);
                 foreach ($errors as $code => $error) {
                     $this->profiler->current->addError($error, $code);
@@ -301,7 +301,7 @@ class Sqlsrv extends AbstractAdapter
             $this->throwError('Error: ' . $this->getSqlSrvErrors());
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -315,10 +315,10 @@ class Sqlsrv extends AbstractAdapter
      */
     public function fetch()
     {
-        if ((null !== $this->statement) && ($this->statementResult !== false)) {
+        if (($this->statement !== null) && ($this->statementResult !== false)) {
             return sqlsrv_fetch_array($this->statement, SQLSRV_FETCH_ASSOC);
         } else {
-            if (null === $this->result) {
+            if ($this->result === null) {
                 $this->throwError('Error: The database result resource is not currently set.');
             }
 
@@ -359,7 +359,7 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Get SQL Server errors
      *
-     * @param  boolean $asString
+     * @param  bool $asString
      * @return mixed
      */
     public function getSqlSrvErrors($asString = true)
@@ -409,9 +409,9 @@ class Sqlsrv extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (null !== $this->statement) {
+        if ($this->statement !== null) {
             return sqlsrv_num_rows($this->statement);
-        } else if (null !== $this->result) {
+        } else if ($this->result !== null) {
             return sqlsrv_num_rows($this->result);
         } else {
             $this->throwError('Error: The database result resource is not currently set.');

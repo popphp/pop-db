@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Sql\Schema;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -133,7 +133,7 @@ abstract class AbstractStructure extends AbstractTable
      * Determine if the table has a column
      *
      * @param  string $name
-     * @return boolean
+     * @return bool
      */
     public function hasColumn($name)
     {
@@ -148,7 +148,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function addColumnAttribute($attribute)
     {
-        if (null !== $this->currentColumn) {
+        if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['attributes'][] = $attribute;
         }
 
@@ -158,7 +158,7 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Determine if the table has an increment column
      *
-     * @return boolean
+     * @return bool
      */
     public function hasIncrement()
     {
@@ -174,7 +174,7 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Get the increment column(s)
      *
-     * @param  boolean $quote
+     * @param  bool $quote
      * @return array
      */
     public function getIncrement($quote = false)
@@ -191,7 +191,7 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Determine if the table has a primary key column
      *
-     * @return boolean
+     * @return bool
      */
     public function hasPrimary()
     {
@@ -207,7 +207,7 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Get the primary key column(s)
      *
-     * @param  boolean $quote
+     * @param  bool $quote
      * @return array
      */
     public function getPrimary($quote = false)
@@ -229,7 +229,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function increment($start = 1)
     {
-        if (null !== $this->currentColumn) {
+        if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['increment'] = (int)$start;
         }
 
@@ -244,9 +244,9 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function defaultIs($value)
     {
-        if (null !== $this->currentColumn) {
+        if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['default'] = $value;
-            if (null === $value) {
+            if ($value === null) {
                 $this->columns[$this->currentColumn]['nullable'] = true;
             }
         }
@@ -261,7 +261,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function nullable()
     {
-        if (null !== $this->currentColumn) {
+        if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['nullable'] = true;
         }
 
@@ -275,7 +275,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function notNullable()
     {
-        if (null !== $this->currentColumn) {
+        if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['nullable'] = false;
         }
 
@@ -289,7 +289,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function unsigned()
     {
-        if (null !== $this->currentColumn) {
+        if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['unsigned'] = true;
         }
 
@@ -316,7 +316,7 @@ abstract class AbstractStructure extends AbstractTable
             }
         }
 
-        if (null === $name) {
+        if ($name === null) {
             $name = 'index';
             foreach ($column as $c) {
                 $name .= '_' . strtolower((string)$c);
@@ -339,7 +339,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function unique($column = null, $name = null)
     {
-        if (null === $column) {
+        if ($column === null) {
             $column = $this->currentColumn;
         }
         return $this->index($column, $name, 'unique');
@@ -354,7 +354,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function primary($column = null, $name = null)
     {
-        if (null === $column) {
+        if ($column === null) {
             $column = $this->currentColumn;
         }
         return $this->index($column, $name, 'primary');
@@ -369,7 +369,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function foreignKey($column, $name = null)
     {
-        if (null === $name) {
+        if ($name === null) {
             $name = 'fk_'. strtolower((string)$column);
         }
         $this->currentConstraint  = $name;
@@ -390,7 +390,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function references($foreignTable)
     {
-        if (null !== $this->currentConstraint) {
+        if ($this->currentConstraint !== null) {
             $this->constraints[$this->currentConstraint]['references'] = $foreignTable;
         }
 
@@ -405,7 +405,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function on($foreignColumn)
     {
-        if (null !== $this->currentConstraint) {
+        if ($this->currentConstraint !== null) {
             $this->constraints[$this->currentConstraint]['on'] = $foreignColumn;
         }
 
@@ -420,7 +420,7 @@ abstract class AbstractStructure extends AbstractTable
      */
     public function onDelete($action = null)
     {
-        if (null !== $this->currentConstraint) {
+        if ($this->currentConstraint !== null) {
             $this->constraints[$this->currentConstraint]['delete'] = (strtolower((string)$action) == 'cascade') ?
                 'CASCADE' : 'SET NULL';
         }

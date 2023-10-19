@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter\Profiler;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -59,11 +59,11 @@ class Step extends AbstractProfiler
     /**
      * Determine if the profiler has query
      *
-     * @return boolean
+     * @return bool
      */
     public function hasQuery()
     {
-        return (null !== $this->query);
+        return ($this->query !== null);
     }
 
     /**
@@ -106,7 +106,7 @@ class Step extends AbstractProfiler
     /**
      * Determine if the profiler has params
      *
-     * @return boolean
+     * @return bool
      */
     public function hasParams()
     {
@@ -143,7 +143,7 @@ class Step extends AbstractProfiler
     /**
      * Determine if the profiler has errors
      *
-     * @return boolean
+     * @return bool
      */
     public function hasErrors()
     {

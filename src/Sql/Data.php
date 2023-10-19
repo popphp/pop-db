@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ use Pop\Db\Adapter\AbstractAdapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -157,11 +157,11 @@ class Data extends AbstractSql
     /**
      * Check if data was serialized into SQL
      *
-     * @return boolean
+     * @return bool
      */
     public function isSerialized()
     {
-        return (null !== $this->sql);
+        return ($this->sql !== null);
     }
 
     /**
@@ -169,13 +169,13 @@ class Data extends AbstractSql
      *
      * @param  array   $data
      * @param  mixed   $omit
-     * @param  boolean $nullEmpty
-     * @param  boolean $forceQuote
+     * @param  bool $nullEmpty
+     * @param  bool $forceQuote
      * @return string
      */
     public function serialize(array $data, $omit = null, $nullEmpty = false, $forceQuote = false)
     {
-        if (null !== $omit) {
+        if ($omit !== null) {
             $omit = (!is_array($omit)) ? [$omit] : $omit;
         }
 
@@ -255,7 +255,7 @@ class Data extends AbstractSql
      * @param  array   $data
      * @param  string  $to
      * @param  mixed   $omit
-     * @param  boolean $nullEmpty
+     * @param  bool $nullEmpty
      * @param  string  $header
      * @param  string  $footer
      * @return void
@@ -268,11 +268,11 @@ class Data extends AbstractSql
 
         $handle = fopen($to, 'w+');
 
-        if (null !== $header) {
+        if ($header !== null) {
             fwrite($handle, $header);
         }
 
-        if (null !== $omit) {
+        if ($omit !== null) {
             $omit = (!is_array($omit)) ? [$omit] : $omit;
         }
 
@@ -328,7 +328,7 @@ class Data extends AbstractSql
         }
 
 
-        if (null !== $footer) {
+        if ($footer !== null) {
             fwrite($handle, $footer);
         }
 

@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -28,7 +28,7 @@ class Select extends AbstractPredicateClause
 
     /**
      * Distinct keyword
-     * @var boolean
+     * @var bool
      */
     protected $distinct = false;
 
@@ -71,7 +71,7 @@ class Select extends AbstractPredicateClause
     /**
      * Select distinct
      *
-     * @param  boolean $distinct
+     * @param  bool $distinct
      * @return Select
      */
     public function distinct($distinct = true)
@@ -258,32 +258,30 @@ class Select extends AbstractPredicateClause
      */
     public function having($having = null)
     {
-        if (null === $this->having) {
+        if ($this->having === null) {
             $this->having = new Having($this);
         }
 
-        if (null !== $having) {
-            if (null !== $having) {
-                if (is_string($having)) {
-                    if ((stripos($having, ' AND ') !== false) || (stripos($having, ' OR ') !== false)) {
-                        $expressions = array_map('trim', preg_split(
-                            '/(AND|OR)/', $having, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
-                        ));
-                        foreach ($expressions as $i => $expression) {
-                            if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
-                                $this->having->and($expression);
-                            } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
-                                $this->having->or($expression);
-                            } else if (($expression != 'AND') && ($expression != 'OR')) {
-                                $this->having->add($expression);
-                            }
+        if ($having !== null) {
+            if (is_string($having)) {
+                if ((stripos($having, ' AND ') !== false) || (stripos($having, ' OR ') !== false)) {
+                    $expressions = array_map('trim', preg_split(
+                        '/(AND|OR)/', $having, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
+                    ));
+                    foreach ($expressions as $i => $expression) {
+                        if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
+                            $this->having->and($expression);
+                        } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
+                            $this->having->or($expression);
+                        } else if (($expression != 'AND') && ($expression != 'OR')) {
+                            $this->having->add($expression);
                         }
-                    } else {
-                        $this->having->add($having);
                     }
-                } else if (is_array($having)) {
-                    $this->having->addExpressions($having);
+                } else {
+                    $this->having->add($having);
                 }
+            } else if (is_array($having)) {
+                $this->having->addExpressions($having);
             }
         }
 
@@ -298,11 +296,11 @@ class Select extends AbstractPredicateClause
      */
     public function andHaving($having = null)
     {
-        if (null === $this->having) {
+        if ($this->having === null) {
             $this->having = new Having($this);
         }
 
-        if (null !== $having) {
+        if ($having !== null) {
             if (is_string($having)) {
                 $this->having->and($having);
             } else if (is_array($having)) {
@@ -323,11 +321,11 @@ class Select extends AbstractPredicateClause
      */
     public function orHaving($having = null)
     {
-        if (null === $this->having) {
+        if ($this->having === null) {
             $this->having = new Having($this);
         }
 
-        if (null !== $having) {
+        if ($having !== null) {
             if (is_string($having)) {
                 $this->having->or($having);
             } else if (is_array($having)) {
@@ -379,7 +377,7 @@ class Select extends AbstractPredicateClause
             $byColumns = $this->quoteId(trim($by));
         }
 
-        $this->orderBy .= ((null !== $this->orderBy) ? ', ' : '') . $byColumns;
+        $this->orderBy .= (($this->orderBy !== null) ? ', ' : '') . $byColumns;
 
         if (strpos($order, 'RAND') !== false) {
             $this->orderBy .= ($this->isSqlite()) ? ' RANDOM()' : ' RAND()';
@@ -444,8 +442,8 @@ class Select extends AbstractPredicateClause
         $sql .= 'FROM ';
 
         // Account for LIMIT and OFFSET clauses if the database is SQLSRV
-        if (($this->isSqlsrv()) && ((null !== $this->limit) || (null !== $this->offset))) {
-            if (null === $this->orderBy) {
+        if (($this->isSqlsrv()) && (($this->limit !== null) || ($this->offset !== null))) {
+            if ($this->orderBy === null) {
                 throw new Exception(
                     'Error: You must set an order by clause to execute a limit clause on the MS SQL Server database.'
                 );
@@ -470,28 +468,28 @@ class Select extends AbstractPredicateClause
         }
 
         // Build any WHERE clauses
-        if (null !== $this->where) {
+        if ($this->where !== null) {
             $sql .= ' WHERE ' . $this->where;
         }
 
         // Build any HAVING clause
-        if (null !== $this->having) {
+        if ($this->having !== null) {
             $sql .= ' HAVING ' . $this->having;
         }
 
         // Build any GROUP BY clause
-        if (null !== $this->groupBy) {
+        if ($this->groupBy !== null) {
             $sql .= ' GROUP BY ' . $this->groupBy;
         }
 
         // Build any ORDER BY clause
-        if (null !== $this->orderBy) {
+        if ($this->orderBy !== null) {
             $sql .= ' ORDER BY ' . $this->orderBy;
         }
 
         // Build any LIMIT clause for all other database types.
         if (!$this->isSqlsrv()) {
-            if (null !== $this->limit) {
+            if ($this->limit !== null) {
                 if ((strpos($this->limit, ',') !== false) && ($this->isPgsql())) {
                     [$offset, $limit] = explode(',', $this->limit);
                     $this->offset     = (int)trim($offset);
@@ -503,12 +501,12 @@ class Select extends AbstractPredicateClause
 
         // Build any OFFSET clause for all other database types.
         if (!$this->isSqlsrv()) {
-            if (null !== $this->offset) {
+            if ($this->offset !== null) {
                 $sql .= ' OFFSET ' . $this->offset;
             }
         }
 
-        if (null !== $this->alias) {
+        if ($this->alias !== null) {
             $sql = '(' . $sql . ') AS ' . $this->quoteId($this->alias);
         }
 
@@ -536,13 +534,13 @@ class Select extends AbstractPredicateClause
     {
         switch (strtolower($name)) {
             case 'where':
-                if (null === $this->where) {
+                if ($this->where === null) {
                     $this->where = new Where($this);
                 }
                 return $this->where;
                 break;
             case 'having':
-                if (null === $this->having) {
+                if ($this->having === null) {
                     $this->having = new Having($this);
                 }
                 return $this->having;
@@ -565,9 +563,9 @@ class Select extends AbstractPredicateClause
         ];
 
         // Calculate the limit and/or offset
-        if (null !== $this->offset) {
+        if ($this->offset !== null) {
             $result['offset'] = (int)$this->offset + 1;
-            $result['limit']  = (null !== $this->limit) ? (int)$this->limit + (int)$this->offset : 0;
+            $result['limit']  = ($this->limit !== null) ? (int)$this->limit + (int)$this->offset : 0;
         } else if (strpos($this->limit, ',') !== false) {
             $ary  = explode(',', $this->limit);
             $result['offset'] = (int)trim($ary[0]) + 1;
@@ -588,8 +586,8 @@ class Select extends AbstractPredicateClause
     {
         $sql    = null;
         $result = $this->getLimitAndOffset();
-        if (null !== $result['offset']) {
-            if (null === $this->where) {
+        if ($result['offset'] !== null) {
+            if ($this->where === null) {
                 $this->where = new Where($this);
             }
 

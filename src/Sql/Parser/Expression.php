@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Sql\Parser;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -180,7 +180,7 @@ class Expression
      *
      * @param  array   $columns
      * @param  string  $placeholder
-     * @param  boolean $flatten
+     * @param  bool $flatten
      * @return array
      */
     public static function parseShorthand($columns, $placeholder = null, $flatten = true)
@@ -201,7 +201,7 @@ class Expression
             }
 
             // IS NULL/IS NOT NULL
-            if (null === $value) {
+            if ($value === null) {
                 $newExpression = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
                 if ($placeholder == ':') {
                     $expressions[$parsedColumn] = $newExpression;
@@ -229,7 +229,7 @@ class Expression
                     $p        = $value;
                     $i++;
                 }
-                if (null !== $placeholder) {
+                if ($placeholder !== null) {
                     $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
                         implode(', ', $pHolders) . ')';
                     if ($placeholder == ':') {
@@ -263,7 +263,7 @@ class Expression
                     $pHolder2 = $pHolder;
                 }
 
-                if (null !== $placeholder) {
+                if ($placeholder !== null) {
                     $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
                         'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
                     if ($placeholder == ':') {
@@ -289,7 +289,7 @@ class Expression
                 if ((substr($column, -1) == '%') || (substr($column, -2) == '%-')) {
                     $value .= '%';
                 }
-                if (null !== $placeholder) {
+                if ($placeholder !== null) {
                     $newExpression = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
                     if ($placeholder == ':') {
                         $expressions[$parsedColumn] = $newExpression;

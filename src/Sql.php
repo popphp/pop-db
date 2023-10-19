@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ use Pop\Db\Sql\AbstractSql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -64,10 +64,10 @@ class Sql extends AbstractSql
         $this->update = null;
         $this->delete = null;
 
-        if (null === $this->select) {
+        if ($this->select === null) {
             $this->select = new Sql\Select($this->db);
         }
-        if (null !== $columns) {
+        if ($columns !== null) {
             if (!is_array($columns)) {
                 $columns = [$columns];
             }
@@ -95,10 +95,10 @@ class Sql extends AbstractSql
         $this->update = null;
         $this->delete = null;
 
-        if (null === $this->insert) {
+        if ($this->insert === null) {
             $this->insert = new Sql\Insert($this->db);
         }
-        if (null !== $table) {
+        if ($table !== null) {
             $this->insert->setTable($table);
         }
 
@@ -117,10 +117,10 @@ class Sql extends AbstractSql
         $this->select = null;
         $this->delete = null;
 
-        if (null === $this->update) {
+        if ($this->update === null) {
             $this->update = new Sql\Update($this->db);
         }
-        if (null !== $table) {
+        if ($table !== null) {
             $this->update->setTable($table);
         }
 
@@ -139,10 +139,10 @@ class Sql extends AbstractSql
         $this->update = null;
         $this->select = null;
 
-        if (null === $this->delete) {
+        if ($this->delete === null) {
             $this->delete = new Sql\Delete($this->db);
         }
-        if (null !== $table) {
+        if ($table !== null) {
             $this->delete->setTable($table);
         }
 
@@ -152,41 +152,41 @@ class Sql extends AbstractSql
     /**
      * Determine if SQL object has a select object
      *
-     * @return boolean
+     * @return bool
      */
     public function hasSelect()
     {
-        return (null !== $this->select);
+        return ($this->select !== null);
     }
 
     /**
      * Determine if SQL object has a insert object
      *
-     * @return boolean
+     * @return bool
      */
     public function hasInsert()
     {
-        return (null !== $this->insert);
+        return ($this->insert !== null);
     }
 
     /**
      * Determine if SQL object has a update object
      *
-     * @return boolean
+     * @return bool
      */
     public function hasUpdate()
     {
-        return (null !== $this->update);
+        return ($this->update !== null);
     }
 
     /**
      * Determine if SQL object has a delete object
      *
-     * @return boolean
+     * @return bool
      */
     public function hasDelete()
     {
-        return (null !== $this->delete);
+        return ($this->delete !== null);
     }
 
     /**
@@ -213,13 +213,13 @@ class Sql extends AbstractSql
     {
         $sql = null;
 
-        if (null !== $this->select) {
+        if ($this->select !== null) {
             $sql = $this->select->render();
-        } else if (null !== $this->insert) {
+        } else if ($this->insert !== null) {
             $sql = $this->insert->render();
-        } else if (null !== $this->update) {
+        } else if ($this->update !== null) {
             $sql = $this->update->render();
-        } else if (null !== $this->delete) {
+        } else if ($this->delete !== null) {
             $sql = $this->delete->render();
         }
 

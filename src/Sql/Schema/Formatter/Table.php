@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -22,7 +22,7 @@ use Pop\Db\Sql\Schema\AbstractStructure;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -83,13 +83,13 @@ class Table extends AbstractFormatter
         $sql = PHP_EOL . ')';
 
         if ($dbType == Sql::MYSQL) {
-            if (null !== $engine) {
+            if ($engine !== null) {
                 $sql .= ' ENGINE=' . $engine;
             }
-            if (null !== $charset) {
+            if ($charset !== null) {
                 $sql .= ' DEFAULT CHARSET=' . $charset;
             }
-            if (null !== $increment) {
+            if ($increment !== null) {
                 $sql .= ' AUTO_INCREMENT=' . (int)$increment;
             }
             $sql .= ';' . PHP_EOL . PHP_EOL;

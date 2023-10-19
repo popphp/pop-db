@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -69,7 +69,7 @@ class PredicateSet
     {
         $this->sql = $sql;
 
-        if (null !== $predicates) {
+        if ($predicates !== null) {
             if (is_array($predicates)) {
                 $this->addPredicates($predicates);
             } else {
@@ -77,7 +77,7 @@ class PredicateSet
             }
         }
 
-        if (null !== $conjunction) {
+        if ($conjunction !== null) {
             $this->setConjunction($conjunction);
         }
     }
@@ -177,7 +177,7 @@ class PredicateSet
     public function and($expression = null)
     {
         $this->setNextConjunction('AND');
-        if (null !== $expression) {
+        if ($expression !== null) {
             $this->add($expression);
         }
         return $this;
@@ -192,7 +192,7 @@ class PredicateSet
     public function or($expression = null)
     {
         $this->setNextConjunction('OR');
-        if (null !== $expression) {
+        if ($expression !== null) {
             $this->add($expression);
         }
         return $this;
@@ -556,7 +556,7 @@ class PredicateSet
     /**
      * Has predicates
      *
-     * @return boolean
+     * @return bool
      */
     public function hasPredicates()
     {
@@ -576,7 +576,7 @@ class PredicateSet
     /**
      * Has predicates
      *
-     * @return boolean
+     * @return bool
      */
     public function hasPredicateSets()
     {

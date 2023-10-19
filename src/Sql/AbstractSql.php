@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ use Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -102,7 +102,7 @@ abstract class AbstractSql
     /**
      * Determine if the DB type is MySQL
      *
-     * @return boolean
+     * @return bool
      */
     public function isMysql()
     {
@@ -112,7 +112,7 @@ abstract class AbstractSql
     /**
      * Determine if the DB type is PostgreSQL
      *
-     * @return boolean
+     * @return bool
      */
     public function isPgsql()
     {
@@ -122,7 +122,7 @@ abstract class AbstractSql
     /**
      * Determine if the DB type is SQL Server
      *
-     * @return boolean
+     * @return bool
      */
     public function isSqlsrv()
     {
@@ -132,7 +132,7 @@ abstract class AbstractSql
     /**
      * Determine if the DB type is SQLite
      *
-     * @return boolean
+     * @return bool
      */
     public function isSqlite()
     {
@@ -273,11 +273,11 @@ abstract class AbstractSql
      *
      * @param  mixed  $value
      * @param  string $column
-     * @return boolean
+     * @return bool
      */
     public function isParameter($value, $column = null)
     {
-        return ((!empty($value) && (null !== $column) && ((':' . $column) == $value)) ||
+        return ((!empty($value) && ($column !== null) && ((':' . $column) == $value)) ||
                 ((preg_match('/^\$\d*\d$/', (string)$value) == 1)) ||
                 (($value == '?')));
     }
@@ -295,7 +295,7 @@ abstract class AbstractSql
         $parameter      = $value;
 
         // SQLITE
-        if ((null !== $column) && ((':' . $column) == $value)) {
+        if (($column !== null) && ((':' . $column) == $value)) {
             $detectedDbType = self::SQLITE;
         // PGSQL
         } else if (preg_match('/^\$\d*\d$/', $value) == 1) {
@@ -307,7 +307,7 @@ abstract class AbstractSql
 
         $this->incrementParameterCount();
 
-        if ((null !== $detectedDbType) && ($this->dbType != $detectedDbType)) {
+        if (($detectedDbType !== null) && ($this->dbType != $detectedDbType)) {
             switch ($this->dbType) {
                 case self::MYSQL:
                 case self::SQLSRV:
@@ -317,7 +317,7 @@ abstract class AbstractSql
                     $parameter = '$' . $this->parameterCount;
                     break;
                 case self::SQLITE:
-                    if (null !== $column) {
+                    if ($column !== null) {
                         $parameter = ':' . $column;
                     }
                     break;
@@ -354,7 +354,7 @@ abstract class AbstractSql
      * Quote the value (if it is not a numeric value)
      *
      * @param  string  $value
-     * @param  boolean $force
+     * @param  bool $force
      * @return string
      */
     public function quote($value, $force = false)
@@ -392,25 +392,25 @@ abstract class AbstractSql
         if (stripos($adapter, 'mysql') !== false) {
             $this->dbType      = self::MYSQL;
             $this->idQuoteType = self::BACKTICK;
-            if (null === $this->placeholder) {
+            if ($this->placeholder === null) {
                 $this->placeholder = '?';
             }
         } else if (stripos($adapter, 'pgsql') !== false) {
             $this->dbType      = self::PGSQL;
             $this->idQuoteType = self::DOUBLE_QUOTE;
-            if (null === $this->placeholder) {
+            if ($this->placeholder === null) {
                 $this->placeholder = '$';
             }
         } else if (stripos($adapter, 'sqlite') !== false) {
             $this->dbType      = self::SQLITE;
             $this->idQuoteType = self::DOUBLE_QUOTE;
-            if (null === $this->placeholder) {
+            if ($this->placeholder === null) {
                 $this->placeholder = ':';
             }
         } else if (stripos($adapter, 'sqlsrv') !== false) {
             $this->dbType      = self::SQLSRV;
             $this->idQuoteType = self::BRACKET;
-            if (null === $this->placeholder) {
+            if ($this->placeholder === null) {
                 $this->placeholder = '?';
             }
         }

@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ use Pop\Db\Adapter\AbstractAdapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -112,13 +112,13 @@ class Alter extends AbstractStructure
     public function modifyColumn($oldName, $newName, $type = null, $size = null, $precision = null)
     {
         if (isset($this->existingColumns[$oldName])) {
-            if (null !== $type) {
+            if ($type !== null) {
                 $this->existingColumns[$oldName]['type'] = $type;
             }
-            if (null !== $size) {
+            if ($size !== null) {
                 $this->existingColumns[$oldName]['size'] = $size;
             }
-            if (null !== $precision) {
+            if ($precision !== null) {
                 $this->existingColumns[$oldName]['precision'] = $precision;
             }
 
@@ -178,7 +178,7 @@ class Alter extends AbstractStructure
      */
     public function after($column)
     {
-        if ((null !== $this->currentColumn) && isset($this->columns[$this->currentColumn])) {
+        if (($this->currentColumn !== null) && isset($this->columns[$this->currentColumn])) {
             $this->columns[$this->currentColumn]['after'] = $column;
         }
         return $this;
@@ -195,7 +195,7 @@ class Alter extends AbstractStructure
 
         // Modify existing columns
         foreach ($this->existingColumns as $name => $column) {
-            if (null !== $column['modify']) {
+            if ($column['modify'] !== null) {
                 if ($this->isMysql()) {
                     $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) .
                         ' CHANGE COLUMN ' . $this->quoteId($name) . ' ' .

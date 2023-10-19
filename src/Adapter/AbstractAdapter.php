@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -22,7 +22,7 @@ use Pop\Utils\CallableObject;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -109,7 +109,7 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     abstract public function hasOptions();
 
@@ -202,11 +202,11 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Determine whether or not connected
      *
-     * @return boolean
+     * @return bool
      */
     public function isConnected()
     {
-        return (null !== $this->connection);
+        return ($this->connection !== null);
     }
 
     /**
@@ -222,11 +222,11 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Determine whether or not a statement resource exists
      *
-     * @return boolean
+     * @return bool
      */
     public function hasStatement()
     {
-        return (null !== $this->statement);
+        return ($this->statement !== null);
     }
 
     /**
@@ -242,11 +242,11 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Determine whether or not a result resource exists
      *
-     * @return boolean
+     * @return bool
      */
     public function hasResult()
     {
-        return (null !== $this->result);
+        return ($this->result !== null);
     }
 
     /**
@@ -269,16 +269,16 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     public function listen($listener, $params = null, Profiler\Profiler $profiler = null)
     {
-        if (null !== $profiler) {
+        if ($profiler !== null) {
             $this->profiler = $profiler;
         }
-        if (null === $this->profiler) {
+        if ($this->profiler === null) {
             $this->profiler = new Profiler\Profiler();
         }
 
         if (!($listener instanceof CallableObject)) {
             $this->listener = new CallableObject($listener, [$this->profiler]);
-            if (null !== $params) {
+            if ($params !== null) {
                 if (is_array($params)) {
                     $this->listener->addParameters($params);
                 } else {
@@ -287,7 +287,7 @@ abstract class AbstractAdapter implements AdapterInterface
             }
         } else {
             $this->listener = $listener;
-            if (null !== $params) {
+            if ($params !== null) {
                 if (is_array($params)) {
                     array_unshift($params, $this->profiler);
                 } else {
@@ -349,11 +349,11 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Determine whether or not there is an error
      *
-     * @return boolean
+     * @return bool
      */
     public function hasError()
     {
-        return (null !== $this->error);
+        return ($this->error !== null);
     }
 
     /**
@@ -387,10 +387,10 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     public function throwError($error = null)
     {
-        if (null !== $error) {
+        if ($error !== null) {
             $this->setError($error);
         }
-        if (null !== $this->error) {
+        if ($this->error !== null) {
             throw new Exception($this->error);
         }
     }
@@ -464,7 +464,7 @@ abstract class AbstractAdapter implements AdapterInterface
      * Return if the database has a table
      *
      * @param  string  $table
-     * @return boolean
+     * @return bool
      */
     public function hasTable($table)
     {

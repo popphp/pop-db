@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -69,14 +69,14 @@ class Update extends AbstractPredicateClause
             $colValue = (strpos($column, '.') !== false) ?
                 substr($column, (strpos($column, '.') + 1)) : $column;
 
-            $val = (null === $value) ? 'NULL' : $this->quote($value);
+            $val = ($value === null) ? 'NULL' : $this->quote($value);
             $set[] = $this->quoteId($column) .' = ' . $val;
         }
 
         $sql .= implode(', ', $set);
 
         // Build any WHERE clauses
-        if (null !== $this->where) {
+        if ($this->where !== null) {
             $sql .= ' WHERE ' . $this->where;
         }
 
@@ -104,7 +104,7 @@ class Update extends AbstractPredicateClause
     {
         switch (strtolower($name)) {
             case 'where':
-                if (null === $this->where) {
+                if ($this->where === null) {
                     $this->where = new Where($this);
                 }
                 return $this->where;

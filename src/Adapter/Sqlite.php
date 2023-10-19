@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -114,7 +114,7 @@ class Sqlite extends AbstractAdapter
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     public function hasOptions()
     {
@@ -124,7 +124,7 @@ class Sqlite extends AbstractAdapter
     /**
      * Does the database file exist
      *
-     * @return boolean
+     * @return bool
      */
     public function dbFileExists()
     {
@@ -179,18 +179,18 @@ class Sqlite extends AbstractAdapter
         $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
 
         if (!($this->result = $this->connection->query($sql))) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -212,7 +212,7 @@ class Sqlite extends AbstractAdapter
         $this->statement = $this->connection->prepare($sql);
 
         if ($this->statement === false) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
@@ -220,7 +220,7 @@ class Sqlite extends AbstractAdapter
             $this->throwError(
                 'SQLite Statement Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
             );
-        } else if (null !== $this->profiler) {
+        } else if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
@@ -236,7 +236,7 @@ class Sqlite extends AbstractAdapter
      */
     public function bindParams(array $params)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
         }
 
@@ -269,7 +269,7 @@ class Sqlite extends AbstractAdapter
      */
     public function bindParam($param, $value, $type = SQLITE3_BLOB)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
         }
 
@@ -290,7 +290,7 @@ class Sqlite extends AbstractAdapter
      */
     public function bindValue($param, $value, $type = SQLITE3_BLOB)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
         }
 
@@ -308,20 +308,20 @@ class Sqlite extends AbstractAdapter
      */
     public function execute()
     {
-        if (null === $this->statement) {
+        if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         $this->result = $this->statement->execute();
 
         if ($this->result === false) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
             $this->throwError('Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg());
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -335,7 +335,7 @@ class Sqlite extends AbstractAdapter
      */
     public function fetch()
     {
-        if (null === $this->result) {
+        if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
         }
 
@@ -400,7 +400,7 @@ class Sqlite extends AbstractAdapter
      */
     public function getNumberOfRows()
     {
-        if (null === $this->lastSql) {
+        if ($this->lastSql === null) {
             return $this->connection->changes();
         } else {
             if (!($this->lastResult = $this->connection->query($this->lastSql))) {

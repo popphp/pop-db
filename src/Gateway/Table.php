@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -22,7 +22,7 @@ use Pop\Db\Sql\Parser;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -58,7 +58,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     /**
      * Has rows
      *
-     * @return boolean
+     * @return bool
      */
     public function hasRows()
     {
@@ -101,25 +101,25 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
         $db  = Db::getDb($this->table);
         $sql = $db->createSql();
 
-        if (null === $columns) {
+        if ($columns === null) {
             $columns = [$this->table . '.*'];
         }
 
         $sql->select($columns)->from($this->table);
 
-        if (null !== $where) {
+        if ($where !== null) {
             $sql->select()->where($where);
         }
 
-        if ((null !== $options) && isset($options['limit'])) {
+        if (($options !== null) && isset($options['limit'])) {
             $sql->select()->limit((int)$options['limit']);
         }
 
-        if ((null !== $options) && isset($options['offset'])) {
+        if (($options !== null) && isset($options['offset'])) {
             $sql->select()->offset((int)$options['offset']);
         }
 
-        if ((null !== $options) && isset($options['join'])) {
+        if (($options !== null) && isset($options['join'])) {
             $joins = (is_array($options['join']) && isset($options['join']['table'])) ?
                 [$options['join']] : $options['join'];
 
@@ -133,7 +133,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             }
         }
 
-        if ((null !== $options) && isset($options['order'])) {
+        if (($options !== null) && isset($options['order'])) {
             if (!is_array($options['order'])) {
                 $orders = (strpos($options['order'], ',') !== false) ?
                     explode(',', $options['order']) : [$options['order']];
@@ -146,13 +146,13 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
             }
         }
 
-        if ((null !== $options) && isset($options['group'])) {
+        if (($options !== null) && isset($options['group'])) {
             $sql->select()->groupBy($options['group']);
         }
 
         $db->prepare((string)$sql);
 
-        if ((null !== $parameters) && (count($parameters) > 0)) {
+        if (($parameters !== null) && (count($parameters) > 0)) {
             $db->bindParams($parameters);
         }
 
@@ -269,7 +269,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
 
         $sql->update($this->table)->values($values);
 
-        if (null !== $where) {
+        if ($where !== null) {
             $sql->update()->where($where);
         }
 
@@ -296,7 +296,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
 
         $sql->delete($this->table);
 
-        if (null !== $where) {
+        if ($where !== null) {
             $sql->delete()->where($where);
         }
 

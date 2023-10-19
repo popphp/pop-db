@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Record;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -95,7 +95,7 @@ class Encoded extends \Pop\Db\Record
      */
     public function setColumns($columns = null)
     {
-        if (null !== $columns) {
+        if ($columns !== null) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
                 $columns = $this->encode($columns);
             } else if ($columns instanceof AbstractRecord) {
@@ -180,21 +180,21 @@ class Encoded extends \Pop\Db\Record
     public function decodeValue($key, $value)
     {
         if (in_array($key, $this->jsonFields)) {
-            if (null !== $value) {
+            if ($value !== null) {
                 $jsonValue = @json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     $value = $jsonValue;
                 }
             }
         } else if (in_array($key, $this->phpFields)) {
-            if (null !== $value) {
+            if ($value !== null) {
                 $phpValue = @unserialize($value);
                 if ($phpValue !== false) {
                     $value = $phpValue;
                 }
             }
         } else if (in_array($key, $this->base64Fields)) {
-            if (null !== $value) {
+            if ($value !== null) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
                     $value = $base64Value;
@@ -204,7 +204,7 @@ class Encoded extends \Pop\Db\Record
             if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
                 throw new Exception('Error: The encryption properties have not been set for this class.');
             }
-            if (null !== $value) {
+            if ($value !== null) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
                     $value = openssl_decrypt(
@@ -222,7 +222,7 @@ class Encoded extends \Pop\Db\Record
      *
      * @param  string $key
      * @param  string  $value
-     * @return boolean
+     * @return bool
      */
     public function verify($key, $value)
     {
@@ -238,7 +238,7 @@ class Encoded extends \Pop\Db\Record
     public function encode(array $columns)
     {
         foreach ($columns as $key => $value) {
-            if ((null !== $value) && ($this->isEncodedColumn($key))) {
+            if (($value !== null) && ($this->isEncodedColumn($key))) {
                 $columns[$key] = $this->encodeValue($key, $value);
             }
         }
@@ -267,7 +267,7 @@ class Encoded extends \Pop\Db\Record
      * Determine if column is an encoded column
      *
      * @param  string $key
-     * @return boolean
+     * @return bool
      */
     public function isEncodedColumn($key)
     {
@@ -284,7 +284,7 @@ class Encoded extends \Pop\Db\Record
      */
     public function __set($name, $value)
     {
-        if ((null !== $value) && ($this->isEncodedColumn($name))) {
+        if (($value !== null) && ($this->isEncodedColumn($name))) {
             $value = $this->encodeValue($name, $value);
         }
         parent::__set($name, $value);

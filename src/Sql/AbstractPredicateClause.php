@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,10 @@ namespace Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
+ * @property   $where mixed
  */
 abstract class AbstractPredicateClause extends AbstractClause
 {
@@ -40,11 +41,11 @@ abstract class AbstractPredicateClause extends AbstractClause
      */
     public function where($where = null)
     {
-        if (null === $this->where) {
+        if ($this->where === null) {
             $this->where = new Where($this);
         }
 
-        if (null !== $where) {
+        if ($where !== null) {
             if (is_string($where)) {
                 if ((stripos($where, ' AND ') !== false) || (stripos($where, ' OR ') !== false)) {
                     $expressions = array_map('trim', preg_split(
@@ -78,11 +79,11 @@ abstract class AbstractPredicateClause extends AbstractClause
      */
     public function andWhere($where = null)
     {
-        if (null === $this->where) {
+        if ($this->where === null) {
             $this->where = new Where($this);
         }
 
-        if (null !== $where) {
+        if ($where !== null) {
             if (is_string($where)) {
                 $this->where->and($where);
             } else if (is_array($where)) {
@@ -103,11 +104,11 @@ abstract class AbstractPredicateClause extends AbstractClause
      */
     public function orWhere($where = null)
     {
-        if (null === $this->where) {
+        if ($this->where === null) {
             $this->where = new Where($this);
         }
 
-        if (null !== $where) {
+        if ($where !== null) {
             if (is_string($where)) {
                 $this->where->or($where);
             } else if (is_array($where)) {

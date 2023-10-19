@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -22,7 +22,7 @@ use Pop\Db\Sql\Parser;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -93,13 +93,13 @@ class HasMany extends AbstractRelationship
      * Get eager relationships
      *
      * @param  array   $ids
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @throws Exception
      * @return array
      */
     public function getEagerRelationships(array $ids, $asArray = false)
     {
-        if ((null === $this->foreignTable) || (null === $this->foreignKey)) {
+        if (($this->foreignTable === null) || ($this->foreignKey === null)) {
             throw new Exception('Error: The foreign table and key values have not been set.');
         }
 
@@ -171,7 +171,7 @@ class HasMany extends AbstractRelationship
                     $results[$row[$this->foreignKey]] = new Record\Collection();
                 }
                 $record = new $table();
-                if (null !== $this->children) {
+                if ($this->children !== null) {
                     $record->addWith($this->children);
                 }
                 $record->setColumns($row);

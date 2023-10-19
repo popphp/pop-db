@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -46,7 +46,7 @@ class Pdo extends AbstractAdapter
 
     /**
      * Statement result
-     * @var boolean
+     * @var bool
      */
     protected $statementResult = false;
 
@@ -131,7 +131,7 @@ class Pdo extends AbstractAdapter
     /**
      * Has database connection options
      *
-     * @return boolean
+     * @return bool
      */
     public function hasOptions()
     {
@@ -148,7 +148,7 @@ class Pdo extends AbstractAdapter
     /**
      * Does the database file exist
      *
-     * @return boolean
+     * @return bool
      */
     public function dbFileExists()
     {
@@ -259,7 +259,7 @@ class Pdo extends AbstractAdapter
         $sth = $this->connection->prepare($sql);
 
         if (!($sth->execute())) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
                 $this->profiler->current->addError($this->getErrorMessage($sth->errorInfo()), $sth->errorCode());
@@ -267,14 +267,14 @@ class Pdo extends AbstractAdapter
             $this->buildError($sth->errorCode(), $sth->errorInfo())
                  ->throwError();
         } else {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
             }
             $this->result = $sth;
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -300,12 +300,12 @@ class Pdo extends AbstractAdapter
             $this->placeholder = ':';
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->addStep();
             $this->profiler->current->setQuery($sql);
         }
 
-        if ((null !== $attribs) && is_array($attribs)) {
+        if (($attribs !== null) && is_array($attribs)) {
             $this->statement = $this->connection->prepare($sql, $attribs);
         } else {
             $this->statement = $this->connection->prepare($sql);
@@ -322,7 +322,7 @@ class Pdo extends AbstractAdapter
      */
     public function bindParams(array $params)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
         }
 
@@ -371,7 +371,7 @@ class Pdo extends AbstractAdapter
      */
     public function bindParam($param, &$value, $dataType = \PDO::PARAM_STR, $length = null, $options = null)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
         }
         $this->statement->bindParam($param, $value, $dataType, (int)$length, $options);
@@ -388,7 +388,7 @@ class Pdo extends AbstractAdapter
      */
     public function bindValue($param, $value, $dataType = \PDO::PARAM_STR)
     {
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
         }
         $this->statement->bindValue($param, $value, $dataType);
@@ -416,14 +416,14 @@ class Pdo extends AbstractAdapter
      */
     public function execute()
     {
-        if (null === $this->statement) {
+        if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
 
         $this->statementResult = $this->statement->execute();
 
         if ($this->statement->errorCode() != 0) {
-            if (null !== $this->profiler) {
+            if ($this->profiler !== null) {
                 $this->profiler->current->addError(
                     $this->getErrorMessage($this->statement->errorInfo()), $this->statement->errorCode()
                 );
@@ -432,7 +432,7 @@ class Pdo extends AbstractAdapter
                  ->throwError();
         }
 
-        if (null !== $this->profiler) {
+        if ($this->profiler !== null) {
             $this->profiler->current->finish();
         }
 
@@ -447,10 +447,10 @@ class Pdo extends AbstractAdapter
      */
     public function fetch($dataType = \PDO::FETCH_ASSOC)
     {
-        if ((null !== $this->statement) && ($this->statementResult !== false)) {
+        if (($this->statement !== null) && ($this->statementResult !== false)) {
             return $this->statement->fetch($dataType);
         } else {
-            if (null === $this->result) {
+            if ($this->result === null) {
                 $this->throwError('Error: The database statement resource is not currently set.');
             }
             return $this->result->fetch($dataType);
@@ -491,7 +491,7 @@ class Pdo extends AbstractAdapter
         // If pgsql
         if ($this->type == 'pgsql') {
             $this->query("SELECT lastval();");
-            if (null !== $this->result) {
+            if ($this->result !== null) {
                 $insertRow = $this->result->fetch();
                 $id        = $insertRow[0];
             }
@@ -517,9 +517,9 @@ class Pdo extends AbstractAdapter
     {
         $count = 0;
 
-        if (null !== $this->result) {
+        if ($this->result !== null) {
             $count = $this->result->rowCount();
-        } else if (null !== $this->statement) {
+        } else if ($this->statement !== null) {
             $count = $this->statement->rowCount();
         } else {
             $this->throwError('Error: The database statement resource is not currently set.');
@@ -606,7 +606,7 @@ class Pdo extends AbstractAdapter
      */
     protected function buildError($code = null, $info = null)
     {
-        if ((null === $code) && (null === $info)) {
+        if (($code === null) && ($info === null)) {
             $errorCode = $this->connection->errorCode();
             $errorInfo = $this->connection->errorInfo();
         } else {
@@ -628,9 +628,9 @@ class Pdo extends AbstractAdapter
     {
         $count = 0;
 
-        if (null !== $this->result) {
+        if ($this->result !== null) {
             $count = $this->result->columnCount();
-        } else if (null !== $this->statement) {
+        } else if ($this->statement !== null) {
             $count = $this->statement->columnCount();
         } else {
             $this->throwError('Error: The database statement resource is not currently set.');
@@ -683,7 +683,7 @@ class Pdo extends AbstractAdapter
     /**
      * The method displays information about the prepared SQL command for debugging purposes.
      *
-     * @param  boolean $debug
+     * @param  bool $debug
      * @return string
      */
     public function debugDumpParams($debug = false)

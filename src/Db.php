@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -19,7 +19,7 @@ namespace Pop\Db;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -231,7 +231,7 @@ class Db
 
             // Assemble statements based on ; delimiter
             foreach ($lines as $i => $line) {
-                $currentStatement .= (null !== $currentStatement) ? ' ' . $line : $line;
+                $currentStatement .= ($currentStatement !== null) ? ' ' . $line : $line;
                 if (substr($line, -1) == ';') {
                     $statements[]     = $currentStatement;
                     $currentStatement = null;
@@ -294,7 +294,7 @@ class Db
      * Determine if a database adapter is available
      *
      * @param  string $adapter
-     * @return boolean
+     * @return bool
      */
     public static function isAvailable($adapter)
     {
@@ -336,16 +336,16 @@ class Db
      * @param  Adapter\AbstractAdapter $db
      * @param  string                  $class
      * @param  string                  $prefix
-     * @param  boolean                 $isDefault
+     * @param  bool                 $isDefault
      * @return void
      */
     public static function setDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null, $isDefault = false)
     {
-        if (null !== $prefix) {
+        if ($prefix !== null) {
             self::$db[$prefix] = $db;
         }
 
-        if (null !== $class) {
+        if ($class !== null) {
             self::$db[$class] = $db;
             $record = new $class();
             if ($record instanceof Record) {
@@ -370,10 +370,10 @@ class Db
         $dbAdapter = null;
 
         // Check for database adapter assigned to a full class name
-        if ((null !== $class) && isset(self::$db[$class])) {
+        if (($class !== null) && isset(self::$db[$class])) {
             $dbAdapter = self::$db[$class];
         // Check for database adapter assigned to a namespace
-        } else if (null !== $class) {
+        } else if ($class !== null) {
             foreach (self::$db as $prefix => $adapter) {
                 if (substr($class, 0, strlen($prefix)) == $prefix) {
                     $dbAdapter = $adapter;
@@ -382,7 +382,7 @@ class Db
         }
 
         // Check if class is actual table name
-        if ((null === $dbAdapter) && (null !== $class) && in_array($class, self::$classToTable)) {
+        if (($dbAdapter === null) && ($class !== null) && in_array($class, self::$classToTable)) {
             $class = array_search($class, self::$classToTable);
             // Direct match
             if (isset(self::$db[$class])) {
@@ -397,11 +397,11 @@ class Db
             }
         }
 
-        if ((null === $dbAdapter) && isset(self::$db['default'])) {
+        if (($dbAdapter === null) && isset(self::$db['default'])) {
             $dbAdapter = self::$db['default'];
         }
 
-        if (null === $dbAdapter) {
+        if ($dbAdapter === null) {
             throw new Exception('No database adapter was found.');
         }
 
@@ -412,15 +412,15 @@ class Db
      * Check for a DB adapter
      *
      * @param  string $class
-     * @return boolean
+     * @return bool
      */
     public static function hasDb($class = null)
     {
         $result = false;
 
-        if ((null !== $class) && isset(self::$db[$class])) {
+        if (($class !== null) && isset(self::$db[$class])) {
             $result = true;
-        } else if (null !== $class) {
+        } else if ($class !== null) {
             foreach (self::$db as $prefix => $adapter) {
                 if (substr($class, 0, strlen($prefix)) == $prefix) {
                     $result = true;
@@ -428,7 +428,7 @@ class Db
             }
         }
 
-        if ((!$result) && (null !== $class) && in_array($class, self::$classToTable)) {
+        if ((!$result) && ($class !== null) && in_array($class, self::$classToTable)) {
             $table = array_search($class, self::$classToTable);
             if (isset(self::$db[$table])) {
                 $result = true;
@@ -458,7 +458,7 @@ class Db
      * Check if class-to-table relationship exists
      *
      * @param  string $class
-     * @return boolean
+     * @return bool
      */
     public static function hasClassToTable($class)
     {

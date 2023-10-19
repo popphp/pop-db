@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ use Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -409,11 +409,11 @@ class Column extends AbstractFormatter
             $columnString .= ' NOT NULL';
         }
 
-        if ((null === $column['default']) && ($column['nullable'] === true)) {
+        if (($column['default'] === null) && ($column['nullable'] === true)) {
             $columnString .= ' DEFAULT NULL';
         } else if (strtoupper((string)$column['default']) == 'NULL') {
             $columnString .= ' DEFAULT NULL';
-        } else if (null !== $column['default']) {
+        } else if ($column['default'] !== null) {
             $columnString .= " DEFAULT '" . $column['default'] . "'";
         }
 

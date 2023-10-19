@@ -29,6 +29,10 @@ Install `pop-db` using Composer.
 
     composer require popphp/pop-db
 
+    "require": {
+        "popphp/pop-db" : "^6.0.0"
+    }
+
 ## BASIC USAGE
 
 * [Connect to a database](#connect-to-a-database)

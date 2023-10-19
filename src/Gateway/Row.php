@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -22,7 +22,7 @@ use ReturnTypeWillChange;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -66,7 +66,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      */
     public function __construct($table, $primaryKeys = null)
     {
-        if (null !== $primaryKeys) {
+        if ($primaryKeys !== null) {
             $this->setPrimaryKeys($primaryKeys);
         }
         parent::__construct($table);
@@ -120,7 +120,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * Determine if number of primary keys and primary values match
      *
      * @throws Exception
-     * @return boolean
+     * @return bool
      */
     public function doesPrimaryCountMatch()
     {
@@ -164,7 +164,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     /**
      * Check if row data is dirty
      *
-     * @return boolean
+     * @return bool
      */
     public function isDirty()
     {
@@ -219,7 +219,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             foreach ($selectColumns as $selectColumn) {
                 $select[] = $this->table . '.' . $selectColumn;
             }
-        } else if ((null !== $options) && !empty($options['select'])) {
+        } else if (($options !== null) && !empty($options['select'])) {
             $select = $options['select'];
         } else {
             $select = [$this->table . '.*'];
@@ -238,7 +238,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
                 $placeholder .= ($i + 1);
             }
 
-            if (null === $this->primaryValues[$i]) {
+            if ($this->primaryValues[$i] === null) {
                 $sql->select()->where->isNull($this->table . '.' . $primaryKey);
             } else {
                 $sql->select()->where->equalTo($this->table . '.' . $primaryKey, $placeholder);
@@ -246,11 +246,11 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             }
         }
 
-        if ((null !== $options) && isset($options['offset'])) {
+        if (($options !== null) && isset($options['offset'])) {
             $sql->select()->offset((int)$options['offset']);
         }
 
-        if ((null !== $options) && isset($options['join'])) {
+        if (($options !== null) && isset($options['join'])) {
             $joins = (is_array($options['join']) && isset($options['join']['table'])) ?
                 [$options['join']] : $options['join'];
 
@@ -378,7 +378,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             }
 
             if (array_key_exists($key, $this->primaryValues)) {
-                if (null === $this->primaryValues[$key]) {
+                if ($this->primaryValues[$key] === null) {
                     $sql->update()->where->isNull($primaryKey);
                 } else {
                     $sql->update()->where->equalTo($primaryKey, $placeholder);
@@ -386,12 +386,12 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             }
 
             if (array_key_exists($key, $this->primaryValues)) {
-                if (null !== $this->primaryValues[$key]) {
+                if ($this->primaryValues[$key] !== null) {
                     $params[$this->primaryKeys[$key]] = $this->primaryValues[$key];
                     $values[$this->primaryKeys[$key]] = $placeholder;
                 }
             } else if (array_key_exists($this->primaryKeys[$key], $this->columns)) {
-                if (null !== $this->primaryValues[$key]) {
+                if ($this->primaryValues[$key] !== null) {
                     if (substr($placeholder, 0, 1) == ':') {
                         $params[$this->primaryKeys[$key]] = $this->columns[$this->primaryKeys[$key]];
                         $values[$this->primaryKeys[$key]] = $placeholder;
@@ -443,7 +443,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             } else if ($placeholder == '$') {
                 $placeholder .= ($i + 1);
             }
-            if (null === $this->primaryValues[$i]) {
+            if ($this->primaryValues[$i] === null) {
                 $sql->delete()->where->isNull($primaryKey);
             } else {
                 $sql->delete()->where->equalTo($primaryKey, $placeholder);
@@ -532,7 +532,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * Magic method to return the isset value of $this->columns[$name].
      *
      * @param  string $name
-     * @return boolean
+     * @return bool
      */
     public function __isset($name)
     {
@@ -560,7 +560,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * ArrayAccess offsetExists
      *
      * @param  mixed $offset
-     * @return boolean
+     * @return bool
      */
     public function offsetExists($offset): bool
     {

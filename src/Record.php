@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  */
 
@@ -21,7 +21,7 @@ use Pop\Db\Record\Collection;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2023 NOLA Interactive, LLC. (http://www.nolainteractive.com)
+ * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    5.3.0
  */
@@ -53,13 +53,13 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        if (null !== $table) {
+        if ($table !== null) {
             $this->setTable($table);
         } else {
             $this->setTableFromClassName($class);
         }
 
-        if (null !== $db) {
+        if ($db !== null) {
             Db::setDb($db, $class, null, ($class === __CLASS__));
         }
 
@@ -72,7 +72,7 @@ class Record extends Record\AbstractRecord
         $this->tableGateway = new Gateway\Table($this->getFullTable());
         $this->rowGateway   = new Gateway\Row($this->getFullTable(), $this->primaryKeys);
 
-        if (null !== $columns) {
+        if ($columns !== null) {
             $this->isNew = true;
             $this->setColumns($columns);
         }
@@ -85,7 +85,7 @@ class Record extends Record\AbstractRecord
     /**
      * Check for a DB adapter
      *
-     * @return boolean
+     * @return bool
      */
     public static function hasDb()
     {
@@ -97,7 +97,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  Adapter\AbstractAdapter $db
      * @param  string                  $prefix
-     * @param  boolean                 $isDefault
+     * @param  bool                 $isDefault
      * @return void
      */
     public static function setDb(Adapter\AbstractAdapter $db, $prefix = null, $isDefault = false)
@@ -176,7 +176,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed   $id
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|array
      */
     public static function findById($id, array $options = null, $asArray = false)
@@ -189,7 +189,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|array
      */
     public static function findOne(array $columns = null, array $options = null, $asArray = false)
@@ -202,7 +202,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|array
      */
     public static function findOneOrCreate(array $columns = null, array $options = null, $asArray = false)
@@ -224,19 +224,19 @@ class Record extends Record\AbstractRecord
      * @param  string  $by
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|array
      */
     public static function findLatest($by = null, array $columns = null, array $options = null, $asArray = false)
     {
         $record = new static();
 
-        if ((null === $by) && (count($record->getPrimaryKeys()) == 1)) {
+        if (($by === null) && (count($record->getPrimaryKeys()) == 1)) {
             $by = $record->getPrimaryKeys()[0];
         }
 
-        if (null !== $by) {
-            if (null === $options) {
+        if ($by !== null) {
+            if ($options === null) {
                 $options = ['order' => $by . ' DESC'];
             } else {
                 $options['order'] = $by . ' DESC';
@@ -251,7 +251,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return Collection|array
      */
     public static function findBy(array $columns = null, array $options = null, $asArray = false)
@@ -264,7 +264,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|Collection|array
      */
     public static function findByOrCreate(array $columns = null, array $options = null, $asArray = false)
@@ -287,7 +287,7 @@ class Record extends Record\AbstractRecord
      * @param  array   $values
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return array
      */
     public static function findIn($key, array $values, array $columns = null, array $options = null, $asArray = false)
@@ -299,7 +299,7 @@ class Record extends Record\AbstractRecord
      * Find all static method
      *
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|Collection
      */
     public static function findAll(array $options = null, $asArray = false)
@@ -312,7 +312,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed   $sql
      * @param  array   $params
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return mixed
      */
     public static function execute($sql, array $params = [], $asArray = false)
@@ -353,7 +353,7 @@ class Record extends Record\AbstractRecord
      * Static method to execute a custom SQL query.
      *
      * @param  mixed   $sql
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return mixed
      */
     public static function query($sql, $asArray = false)
@@ -398,7 +398,7 @@ class Record extends Record\AbstractRecord
         $expressions = null;
         $params      = null;
 
-        if (null !== $columns) {
+        if ($columns !== null) {
             $db            = Db::getDb($record->getFullTable());
             $sql           = $db->createSql();
             ['expressions' => $expressions, 'params' => $params] =
@@ -455,7 +455,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed   $id
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|array
      */
     public function getById($id, array $options = null, $asArray = false)
@@ -472,12 +472,12 @@ class Record extends Record\AbstractRecord
      *
      * @param  array  $columns
      * @param  array  $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return static|array
      */
     public function getOne(array $columns = null, array $options = null, $asArray = false)
     {
-        if (null === $options) {
+        if ($options === null) {
             $options = ['limit' => 1];
         } else {
             $options['limit'] = 1;
@@ -487,7 +487,7 @@ class Record extends Record\AbstractRecord
         $params      = null;
         $select      = $options['select'] ?? null;
 
-        if (null !== $columns) {
+        if ($columns !== null) {
             $db            = Db::getDb($this->getFullTable());
             $sql           = $db->createSql();
             ['expressions' => $expressions, 'params' => $params] =
@@ -513,7 +513,7 @@ class Record extends Record\AbstractRecord
      *
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return Collection|array
      */
     public function getBy(array $columns = null, array $options = null, $asArray = false)
@@ -522,7 +522,7 @@ class Record extends Record\AbstractRecord
         $params      = null;
         $select      = $options['select'] ?? null;
 
-        if (null !== $columns) {
+        if ($columns !== null) {
             $db            = Db::getDb($this->getFullTable());
             $sql           = $db->createSql();
             ['expressions' => $expressions, 'params' => $params] =
@@ -551,12 +551,12 @@ class Record extends Record\AbstractRecord
      * @param  array   $values
      * @param  array   $columns
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return array
      */
     public function getIn($key, array $values, array $columns = null, array $options = null, $asArray = false)
     {
-        $columns = (null !== $columns) ? array_merge([$key => $values], $columns) : [$key => $values];
+        $columns = ($columns !== null) ? array_merge([$key => $values], $columns) : [$key => $values];
         $results = $this->getBy($columns, $options, $asArray);
         $rows    = [];
 
@@ -573,7 +573,7 @@ class Record extends Record\AbstractRecord
      * Get all method
      *
      * @param  array   $options
-     * @param  boolean $asArray
+     * @param  bool $asArray
      * @return Collection
      */
     public function getAll(array $options = null, $asArray = false)
@@ -587,7 +587,7 @@ class Record extends Record\AbstractRecord
      * @param  string  $foreignTable
      * @param  string  $foreignKey
      * @param  array   $options
-     * @param  boolean $eager
+     * @param  bool $eager
      * @return Record|Record\Relationships\HasOne
      */
     public function hasOne($foreignTable, $foreignKey, array $options = null, $eager = false)
@@ -605,7 +605,7 @@ class Record extends Record\AbstractRecord
      * @param  string  $foreignTable
      * @param  string  $foreignKey
      * @param  array   $options
-     * @param  boolean $eager
+     * @param  bool $eager
      * @return Record|Record\Relationships\HasOneOf
      */
     public function hasOneOf($foreignTable, $foreignKey, array $options = null, $eager = false)
@@ -623,7 +623,7 @@ class Record extends Record\AbstractRecord
      * @param  string  $foreignTable
      * @param  string  $foreignKey
      * @param  array   $options
-     * @param  boolean $eager
+     * @param  bool $eager
      * @return Collection|Record\Relationships\HasMany
      */
     public function hasMany($foreignTable, $foreignKey, array $options = null, $eager = false)
@@ -641,7 +641,7 @@ class Record extends Record\AbstractRecord
      * @param  string $foreignTable
      * @param  string $foreignKey
      * @param  array   $options
-     * @param  boolean $eager
+     * @param  bool $eager
      * @return Record|Record\Relationships\BelongsTo
      */
     public function belongsTo($foreignTable, $foreignKey, array $options = null, $eager = false)
@@ -712,7 +712,7 @@ class Record extends Record\AbstractRecord
     /**
      * Check if row is dirty
      *
-     * @return boolean
+     * @return bool
      */
     public function isDirty()
     {
@@ -748,7 +748,7 @@ class Record extends Record\AbstractRecord
     public function save(array $columns = null)
     {
         // Save or update the record
-        if (null === $columns) {
+        if ($columns === null) {
             if ($this->isNew) {
                 $this->rowGateway->save();
                 $this->isNew = false;
@@ -778,14 +778,14 @@ class Record extends Record\AbstractRecord
     public function delete(array $columns = null)
     {
         // Delete the record
-        if (null === $columns) {
+        if ($columns === null) {
             $this->rowGateway->delete();
         // Delete multiple rows
         } else {
             $expressions = null;
             $params      = [];
 
-            if (null !== $columns) {
+            if ($columns !== null) {
                 $db            = Db::getDb($this->getFullTable());
                 $sql           = $db->createSql();
                 ['expressions' => $expressions, 'params' => $params] =
@@ -817,7 +817,7 @@ class Record extends Record\AbstractRecord
             $arg1   = $arguments[0] ?? null;
             $arg2   = $arguments[1] ?? null;
 
-            if (null !== $arg1) {
+            if ($arg1 !== null) {
                 $record = static::findBy([$column => $arg1], $arg2);
             }
         }
