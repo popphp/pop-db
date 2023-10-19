@@ -122,7 +122,7 @@ class Migrator extends Migration\AbstractMigrator
         }
 
         if ($current !== null) {
-            file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $current);
+            $this->storeCurrent($current);
         }
 
         return $this;
@@ -152,7 +152,7 @@ class Migrator extends Migration\AbstractMigrator
         $class      = null;
 
         foreach ($this->migrations as $timestamp => $migration) {
-            if (strtotime($timestamp) <= strtotime($this->current)) {
+            if (strtotime($timestamp) <= strtotime((int)$this->current)) {
                 $stepsToRun[] = $timestamp;
             }
         }
@@ -170,9 +170,9 @@ class Migrator extends Migration\AbstractMigrator
         }
 
         if (isset($i) && isset($stepsToRun[$i])) {
-            file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $stepsToRun[$i]);
-        } else if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
-            unlink($this->path . DIRECTORY_SEPARATOR . '.current');
+            $this->storeCurrent($stepsToRun[$i]);
+        } else {
+            $this->clearCurrent();
         }
 
         return $this;
@@ -205,11 +205,11 @@ class Migrator extends Migration\AbstractMigrator
 
         $handle = opendir($this->path);
         while (false !== ($filename = readdir($handle))) {
-            if (($filename != '.') && ($filename != '..') && !is_dir($this->path . DIRECTORY_SEPARATOR . $filename)) {
+            if (($filename != '.') && ($filename != '..') &&
+                !is_dir($this->path . DIRECTORY_SEPARATOR . $filename) &&
+                (substr($filename, -4) == '.php')) {
                 $fileContents = trim(file_get_contents($this->path . DIRECTORY_SEPARATOR . $filename));
-                if ($filename == '.current') {
-                    $this->current = $fileContents;
-                } else if ((str_ends_with($filename, '.php')) && (str_contains($fileContents, 'extends AbstractMigration'))) {
+                if ((strpos($fileContents, 'extends AbstractMigration') !== false)) {
                     $namespace = null;
                     if (str_contains($fileContents, 'namespace ')) {
                         $namespace = substr($fileContents, (strpos($fileContents, 'namespace ') + 10));
@@ -224,6 +224,9 @@ class Migrator extends Migration\AbstractMigrator
                 }
             }
         }
+        closedir($handle);
+
+        $this->loadCurrent();
 
         return $this;
     }
@@ -246,6 +249,42 @@ class Migrator extends Migration\AbstractMigrator
     public function getCurrent(): ?string
     {
         return $this->current;
+    }
+
+    /**
+      * Load the current migration timestamp
+      *
+      * @return void
+    */
+    protected function loadCurrent(): void
+    {
+        $cur = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.current');
+        if (false !== $cur) {
+            $this->current = (int)$cur;
+        }
+    }
+
+    /**
+     * Store the current migration timestamp
+     *
+     * @param int $current
+     * @return void
+     */
+    protected function storeCurrent($current): void
+    {
+        file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $current);
+    }
+
+    /**
+     * Clear the current migration timestamp
+     *
+     * @return void
+     */
+    protected function clearCurrent(): void
+    {
+        if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
+            unlink($this->path . DIRECTORY_SEPARATOR . '.current');
+        }
     }
 
 }
