@@ -29,49 +29,49 @@ class Operator
     /**
      * Method to get the operator from the shorthand column name
      *
-     * @param string $column
+     * @param  string $column
      * @return array
      */
-    public static function parse($column)
+    public static function parse(string$column): array
     {
         $operator = '=';
 
         // LIKE/NOT LIKE shorthand
-        if (substr($column, 0, 2) == '-%') {
+        if (str_starts_with($column, '-%')) {
             $column   = substr($column, 2);
             $operator = 'NOT LIKE';
-        } else if (substr($column, 0, 1) == '%') {
+        } else if (str_starts_with($column, '%')) {
             $column   = substr($column, 1);
             $operator = 'LIKE';
         }
-        if (substr($column, -2) == '%-') {
+        if (str_ends_with($column, '%-')) {
             $column   = substr($column, 0, -2);
             $operator = 'NOT LIKE';
-        } else if (substr($column, -1) == '%') {
+        } else if (str_ends_with($column, '%')) {
             $column   = substr($column, 0, -1);
             $operator = 'LIKE';
         }
 
         // NOT NULL/IN/BETWEEN shorthand
-        if (substr($column, -1) == '-') {
+        if (str_ends_with($column, '-')) {
             $column   = trim(substr($column, 0, -1));
             $operator = 'NOT';
         }
 
         // Basic comparison shorthand
-        if (substr($column, -2) == '>=') {
+        if (str_ends_with($column, '>=')) {
             $column   = trim(substr($column, 0, -2));
             $operator = '>=';
-        } else if (substr($column, -2) == '<=') {
+        } else if (str_ends_with($column, '<=')) {
             $column   = trim(substr($column, 0, -2));
             $operator = '<=';
-        } else if (substr($column, -2) == '!=') {
+        } else if (str_ends_with($column, '!=')) {
             $column   = trim(substr($column, 0, -2));
             $operator = '!=';
-        } else if (substr($column, -1) == '>') {
+        } else if (str_ends_with($column, '>')) {
             $column   = trim(substr($column, 0, -1));
             $operator = '>';
-        } else if (substr($column, -1) == '<') {
+        } else if (str_ends_with($column, '<')) {
             $column   = trim(substr($column, 0, -1));
             $operator = '<';
         }

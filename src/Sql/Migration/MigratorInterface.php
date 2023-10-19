@@ -33,13 +33,13 @@ interface MigratorInterface
      *
      * @return AbstractAdapter
      */
-    public function getDb();
+    public function getDb(): AbstractAdapter;
 
     /**
      * Get the DB adapter (alias method)
      *
      * @return AbstractAdapter
      */
-    public function db();
+    public function db(): AbstractAdapter;
 
 }

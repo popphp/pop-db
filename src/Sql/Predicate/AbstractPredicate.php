@@ -30,21 +30,21 @@ abstract class AbstractPredicate
 
     /**
      * Format
-     * @var string
+     * @var ?string
      */
-    protected $format = null;
+    protected ?string $format = null;
 
     /**
      * Values
      * @var mixed
      */
-    protected $values = null;
+    protected mixed $values = null;
 
     /**
      * Conjunction
      * @var string
      */
-    protected $conjunction = 'AND';
+    protected string $conjunction = 'AND';
 
     /**
      * Constructor
@@ -53,8 +53,9 @@ abstract class AbstractPredicate
      *
      * @param  mixed  $values
      * @param  string $conjunction
+     * @throws Exception
      */
-    public function __construct($values, $conjunction = 'AND')
+    public function __construct(mixed $values, string $conjunction = 'AND')
     {
         $this->setValues($values);
         $this->setConjunction($conjunction);
@@ -65,7 +66,7 @@ abstract class AbstractPredicate
      *
      * @return string
      */
-    public function getFormat()
+    public function getFormat(): string
     {
         return $this->format;
     }
@@ -76,7 +77,7 @@ abstract class AbstractPredicate
      * @param  mixed  $values
      * @return AbstractPredicate
      */
-    public function setValues($values)
+    public function setValues(mixed $values): AbstractPredicate
     {
         $this->values = $values;
         return $this;
@@ -87,7 +88,7 @@ abstract class AbstractPredicate
      *
      * @return array
      */
-    public function getValues()
+    public function getValues(): array
     {
         return $this->values;
     }
@@ -96,9 +97,10 @@ abstract class AbstractPredicate
      * Get the conjunction
      *
      * @param  string $conjunction
+     * @throws Exception
      * @return AbstractPredicate
      */
-    public function setConjunction($conjunction)
+    public function setConjunction(string $conjunction): AbstractPredicate
     {
         if ((strtoupper($conjunction) != 'OR') && (strtoupper($conjunction) != 'AND')) {
             throw new Exception("Error: The conjunction must be 'AND' or 'OR'. '" . $conjunction . "' is not allowed.");
@@ -114,7 +116,7 @@ abstract class AbstractPredicate
      *
      * @return string
      */
-    public function getConjunction()
+    public function getConjunction(): string
     {
         return $this->conjunction;
     }
@@ -125,6 +127,6 @@ abstract class AbstractPredicate
      * @param  AbstractSql $sql
      * @return string
      */
-    abstract public function render(AbstractSql $sql);
+    abstract public function render(AbstractSql $sql): string;
 
 }

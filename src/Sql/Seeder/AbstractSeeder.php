@@ -34,6 +34,6 @@ abstract class AbstractSeeder implements SeederInterface
      * @param  AbstractAdapter $db
      * @return void
      */
-    abstract public function run(AbstractAdapter $db);
+    abstract public function run(AbstractAdapter $db): void;
 
 }

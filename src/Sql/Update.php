@@ -33,7 +33,7 @@ class Update extends AbstractPredicateClause
      * @param  mixed  $value
      * @return Update
      */
-    public function set($name, $value)
+    public function set(string $name, mixed $value): Update
     {
         $this->addNamedValue($name, $value);
         return $this;
@@ -45,7 +45,7 @@ class Update extends AbstractPredicateClause
      * @param  array $values
      * @return Update
      */
-    public function values(array $values)
+    public function values(array $values): Update
     {
         $this->setValues($values);
         return $this;
@@ -56,7 +56,7 @@ class Update extends AbstractPredicateClause
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         // Start building the UPDATE statement
         $sql = 'UPDATE ' . $this->quoteId($this->table) . ' SET ';
@@ -66,7 +66,7 @@ class Update extends AbstractPredicateClause
         $dbType = $this->getDbType();
 
         foreach ($this->values as $column => $value) {
-            $colValue = (strpos($column, '.') !== false) ?
+            $colValue = (str_contains($column, '.')) ?
                 substr($column, (strpos($column, '.') + 1)) : $column;
 
             $val = ($value === null) ? 'NULL' : $this->quote($value);
@@ -88,7 +88,7 @@ class Update extends AbstractPredicateClause
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }
@@ -100,7 +100,7 @@ class Update extends AbstractPredicateClause
      * @throws Exception
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         switch (strtolower($name)) {
             case 'where':

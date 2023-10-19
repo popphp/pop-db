@@ -30,43 +30,43 @@ class Select extends AbstractPredicateClause
      * Distinct keyword
      * @var bool
      */
-    protected $distinct = false;
+    protected bool $distinct = false;
 
     /**
      * Joins
      * @var array
      */
-    protected $joins = [];
+    protected array $joins = [];
 
     /**
      * HAVING predicate object
-     * @var Having
+     * @var ?Having
      */
-    protected $having = null;
+    protected ?Having $having = null;
 
     /**
      * GROUP BY value
-     * @var string
+     * @var ?string
      */
-    protected $groupBy = null;
+    protected ?string $groupBy = null;
 
     /**
      * ORDER BY value
-     * @var string
+     * @var ?string
      */
-    protected $orderBy = null;
+    protected ?string $orderBy = null;
 
     /**
      * LIMIT value
      * @var mixed
      */
-    protected $limit = null;
+    protected mixed $limit = null;
 
     /**
      * OFFSET value
-     * @var int
+     * @var ?int
      */
-    protected $offset = null;
+    protected ?int $offset = null;
 
     /**
      * Select distinct
@@ -74,7 +74,7 @@ class Select extends AbstractPredicateClause
      * @param  bool $distinct
      * @return Select
      */
-    public function distinct($distinct = true)
+    public function distinct(bool $distinct = true): Select
     {
         $this->distinct = (bool)$distinct;
         return $this;
@@ -86,7 +86,7 @@ class Select extends AbstractPredicateClause
      * @param  mixed  $table
      * @return Select
      */
-    public function from($table)
+    public function from(mixed $table): Select
     {
         $this->setTable($table);
         return $this;
@@ -98,7 +98,7 @@ class Select extends AbstractPredicateClause
      * @param  mixed  $table
      * @return Select
      */
-    public function asAlias($table)
+    public function asAlias(mixed $table): Select
     {
         $this->setAlias($table);
         return $this;
@@ -112,7 +112,7 @@ class Select extends AbstractPredicateClause
      * @param  string $join
      * @return Select
      */
-    public function join($foreignTable, array $columns, $join = 'JOIN')
+    public function join(mixed $foreignTable, array $columns, string $join = 'JOIN'): Select
     {
         $this->joins[] = new Join($this, $foreignTable, $columns, $join);
         return $this;
@@ -125,7 +125,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function leftJoin($foreignTable, array $columns)
+    public function leftJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'LEFT JOIN');
     }
@@ -137,7 +137,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function rightJoin($foreignTable, array $columns)
+    public function rightJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'RIGHT JOIN');
     }
@@ -149,7 +149,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function fullJoin($foreignTable, array $columns)
+    public function fullJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'FULL JOIN');
     }
@@ -161,7 +161,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function outerJoin($foreignTable, array $columns)
+    public function outerJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'OUTER JOIN');
     }
@@ -173,7 +173,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function leftOuterJoin($foreignTable, array $columns)
+    public function leftOuterJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'LEFT OUTER JOIN');
     }
@@ -185,7 +185,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function rightOuterJoin($foreignTable, array $columns)
+    public function rightOuterJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'RIGHT OUTER JOIN');
     }
@@ -197,7 +197,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function fullOuterJoin($foreignTable, array $columns)
+    public function fullOuterJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'FULL OUTER JOIN');
     }
@@ -209,7 +209,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function innerJoin($foreignTable, array $columns)
+    public function innerJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'INNER JOIN');
     }
@@ -221,7 +221,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function leftInnerJoin($foreignTable, array $columns)
+    public function leftInnerJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'LEFT INNER JOIN');
     }
@@ -233,7 +233,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function rightInnerJoin($foreignTable, array $columns)
+    public function rightInnerJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'RIGHT INNER JOIN');
     }
@@ -245,7 +245,7 @@ class Select extends AbstractPredicateClause
      * @param  array $columns
      * @return Select
      */
-    public function fullInnerJoin($foreignTable, array $columns)
+    public function fullInnerJoin(mixed $foreignTable, array $columns): Select
     {
         return $this->join($foreignTable, $columns, 'FULL INNER JOIN');
     }
@@ -256,7 +256,7 @@ class Select extends AbstractPredicateClause
      * @param  mixed $having
      * @return Select
      */
-    public function having($having = null)
+    public function having(mixed $having = null): Select
     {
         if ($this->having === null) {
             $this->having = new Having($this);
@@ -294,7 +294,7 @@ class Select extends AbstractPredicateClause
      * @param  mixed $having
      * @return Select
      */
-    public function andHaving($having = null)
+    public function andHaving(mixed $having = null): Select
     {
         if ($this->having === null) {
             $this->having = new Having($this);
@@ -319,7 +319,7 @@ class Select extends AbstractPredicateClause
      * @param  mixed $having
      * @return Select
      */
-    public function orHaving($having = null)
+    public function orHaving(mixed $having = null): Select
     {
         if ($this->having === null) {
             $this->having = new Having($this);
@@ -344,11 +344,11 @@ class Select extends AbstractPredicateClause
      * @param mixed $by
      * @return Select
      */
-    public function groupBy($by)
+    public function groupBy(mixed $by): Select
     {
         if (is_array($by)) {
             $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
-        } else if (strpos($by, ',') !== false) {
+        } else if (str_contains($by, ',')) {
             $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
             $this->groupBy = $this->quoteId(trim($by));
@@ -364,14 +364,14 @@ class Select extends AbstractPredicateClause
      * @param  string $order
      * @return Select
      */
-    public function orderBy($by, $order = 'ASC')
+    public function orderBy(mixed $by, string $order = 'ASC'): Select
     {
         $byColumns = null;
         $order     = strtoupper($order);
 
         if (is_array($by)) {
             $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
-        } else if (strpos($by, ',') !== false) {
+        } else if (str_contains($by, ',')) {
             $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
             $byColumns = $this->quoteId(trim($by));
@@ -379,7 +379,7 @@ class Select extends AbstractPredicateClause
 
         $this->orderBy .= (($this->orderBy !== null) ? ', ' : '') . $byColumns;
 
-        if (strpos($order, 'RAND') !== false) {
+        if (str_contains($order, 'RAND')) {
             $this->orderBy .= ($this->isSqlite()) ? ' RANDOM()' : ' RAND()';
         } else if (($order == 'ASC') || ($order == 'DESC')) {
             $this->orderBy .= ' ' . $order;
@@ -391,12 +391,12 @@ class Select extends AbstractPredicateClause
     /**
      * Set the LIMIT value
      *
-     * @param int $limit
+     * @param  int $limit
      * @return Select
      */
-    public function limit($limit)
+    public function limit(int $limit): Select
     {
-        $this->limit = (int)$limit;
+        $this->limit = $limit;
         return $this;
     }
 
@@ -406,9 +406,9 @@ class Select extends AbstractPredicateClause
      * @param  int $offset
      * @return Select
      */
-    public function offset($offset)
+    public function offset(int $offset): Select
     {
-        $this->offset = (int)$offset;
+        $this->offset = $offset;
         return $this;
     }
 
@@ -418,7 +418,7 @@ class Select extends AbstractPredicateClause
      * @throws Exception
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         // Start building the SELECT statement
         $sql = 'SELECT ' . (($this->distinct) ? 'DISTINCT ' : null);
@@ -490,7 +490,7 @@ class Select extends AbstractPredicateClause
         // Build any LIMIT clause for all other database types.
         if (!$this->isSqlsrv()) {
             if ($this->limit !== null) {
-                if ((strpos($this->limit, ',') !== false) && ($this->isPgsql())) {
+                if ((str_contains($this->limit, ',')) && ($this->isPgsql())) {
                     [$offset, $limit] = explode(',', $this->limit);
                     $this->offset     = (int)trim($offset);
                     $this->limit      = (int)trim($limit);
@@ -518,7 +518,7 @@ class Select extends AbstractPredicateClause
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }
@@ -530,7 +530,7 @@ class Select extends AbstractPredicateClause
      * @throws Exception
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         switch (strtolower($name)) {
             case 'where':
@@ -555,7 +555,7 @@ class Select extends AbstractPredicateClause
      *
      * @return array
      */
-    protected function getLimitAndOffset()
+    protected function getLimitAndOffset(): array
     {
         $result = [
             'limit'  => null,
@@ -566,7 +566,7 @@ class Select extends AbstractPredicateClause
         if ($this->offset !== null) {
             $result['offset'] = (int)$this->offset + 1;
             $result['limit']  = ($this->limit !== null) ? (int)$this->limit + (int)$this->offset : 0;
-        } else if (strpos($this->limit, ',') !== false) {
+        } else if (str_contains($this->limit, ',')) {
             $ary  = explode(',', $this->limit);
             $result['offset'] = (int)trim($ary[0]) + 1;
             $result['limit']  = (int)trim($ary[1]) + (int)trim($ary[0]);
@@ -582,7 +582,7 @@ class Select extends AbstractPredicateClause
      *
      * @return string
      */
-    protected function buildSqlSrvLimitAndOffset()
+    protected function buildSqlSrvLimitAndOffset(): string
     {
         $sql    = null;
         $result = $this->getLimitAndOffset();

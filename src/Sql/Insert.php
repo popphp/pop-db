@@ -28,23 +28,23 @@ class Insert extends AbstractClause
 
     /**
      * Conflict key for UPSERT
-     * @var string
+     * @var ?string
      */
-    protected $conflictKey = null;
+    protected ?string $conflictKey = null;
 
     /**
      * Conflict columns for UPSERT
      * @var array
      */
-    protected $conflictColumns = [];
+    protected array $conflictColumns = [];
 
     /**
      * Set into table
      *
-     * @param  mixed  $table
+     * @param  mixed $table
      * @return Insert
      */
-    public function into($table)
+    public function into(mixed $table): Insert
     {
         $this->setTable($table);
         return $this;
@@ -56,7 +56,7 @@ class Insert extends AbstractClause
      * @param  array $values
      * @return Insert
      */
-    public function values(array $values)
+    public function values(array $values): Insert
     {
         $this->setValues($values);
         return $this;
@@ -65,11 +65,11 @@ class Insert extends AbstractClause
     /**
      * Set what to do on a insert conflict (UPSERT - PostgreSQL & SQLite)
      *
-     * @param  array  $columns
-     * @param  string $key
+     * @param  array   $columns
+     * @param  ?string $key
      * @return Insert
      */
-    public function onConflict(array $columns, $key = null)
+    public function onConflict(array $columns, ?string $key = null): Insert
     {
         $this->conflictColumns = $columns;
         $this->conflictKey     = $key;
@@ -82,7 +82,7 @@ class Insert extends AbstractClause
      * @param  array $columns
      * @return Insert
      */
-    public function onDuplicateKeyUpdate(array $columns)
+    public function onDuplicateKeyUpdate(array $columns): Insert
     {
         $this->onConflict($columns);
         return $this;
@@ -93,7 +93,7 @@ class Insert extends AbstractClause
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         // Start building the INSERT statement
         $sql     = 'INSERT INTO ' . $this->quoteId($this->table) . ' ';
@@ -142,7 +142,7 @@ class Insert extends AbstractClause
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

@@ -34,6 +34,6 @@ interface SeederInterface
      * @param  AbstractAdapter $db
      * @return void
      */
-    public function run(AbstractAdapter $db);
+    public function run(AbstractAdapter $db): void;
 
 }

@@ -28,9 +28,9 @@ class Rename extends AbstractTable
 
     /**
      * Rename table name
-     * @var string
+     * @var ?string
      */
-    protected $to = null;
+    protected ?string $to = null;
 
     /**
      * Set the rename table name
@@ -38,7 +38,7 @@ class Rename extends AbstractTable
      * @param  string $table
      * @return Rename
      */
-    public function to($table)
+    public function to(string $table): Rename
     {
         $this->to = $table;
         return $this;
@@ -49,7 +49,7 @@ class Rename extends AbstractTable
      *
      * @return string
      */
-    public function getTo()
+    public function getTo(): string
     {
         return $this->to;
     }
@@ -59,7 +59,7 @@ class Rename extends AbstractTable
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         return ($this->isMysql()) ?
             'RENAME TABLE ' . $this->quoteId($this->table) . ' TO ' . $this->quoteId($this->to) . ';' . PHP_EOL :
@@ -71,7 +71,7 @@ class Rename extends AbstractTable
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

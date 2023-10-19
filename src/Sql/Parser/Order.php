@@ -32,7 +32,7 @@ class Order
      * @param  string $orderBy
      * @return array
      */
-    public static function parse($orderBy)
+    public static function parse(string $orderBy): array
     {
         $by    = null;
         $order = null;
@@ -51,7 +51,7 @@ class Order
             $by    = $orderBy;
         }
 
-        if (strpos($by, ',') !== false) {
+        if (str_contains($by, ',')) {
             $by = array_map('trim', explode(',', $by));
         }
 

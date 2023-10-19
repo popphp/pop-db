@@ -31,21 +31,21 @@ class Migrator extends Migration\AbstractMigrator
 
     /**
      * Migration path
-     * @var string
+     * @var ?string
      */
-    protected $path = null;
+    protected ?string $path = null;
 
     /**
      * Current migration position
-     * @var string
+     * @var ?string
      */
-    protected $current = null;
+    protected ?string $current = null;
 
     /**
      * Migrations
      * @var array
      */
-    protected $migrations = [];
+    protected array $migrations = [];
 
     /**
      * Constructor
@@ -54,8 +54,9 @@ class Migrator extends Migration\AbstractMigrator
      *
      * @param  AbstractAdapter $db
      * @param  string          $path
+     * @throws Exception
      */
-    public function __construct(AbstractAdapter $db, $path)
+    public function __construct(AbstractAdapter $db, string $path)
     {
         parent::__construct($db);
         $this->setPath($path);
@@ -64,12 +65,12 @@ class Migrator extends Migration\AbstractMigrator
     /**
      * Create new migration file
      *
-     * @param  string $class
-     * @param  string $path
+     * @param  string  $class
+     * @param  ?string $path
      * @throws Exception
      * @return string
      */
-    public static function create($class, $path = null)
+    public static function create(string $class, ?string $path = null): string
     {
         $file          = date('YmdHis') . '_' . Parser\Table::parse($class) . '.php';
         $classContents = str_replace(
@@ -94,7 +95,7 @@ class Migrator extends Migration\AbstractMigrator
      * @param  mixed $steps
      * @return Migrator
      */
-    public function run($steps = 1)
+    public function run(mixed $steps = 1): Migrator
     {
         ksort($this->migrations, SORT_NUMERIC);
 
@@ -132,7 +133,7 @@ class Migrator extends Migration\AbstractMigrator
      *
      * @return Migrator
      */
-    public function runAll()
+    public function runAll(): Migrator
     {
         return $this->run('all');
     }
@@ -143,7 +144,7 @@ class Migrator extends Migration\AbstractMigrator
      * @param  mixed $steps
      * @return Migrator
      */
-    public function rollback($steps = 1)
+    public function rollback(mixed $steps = 1): Migrator
     {
         krsort($this->migrations, SORT_NUMERIC);
 
@@ -182,7 +183,7 @@ class Migrator extends Migration\AbstractMigrator
      *
      * @return Migrator
      */
-    public function rollbackAll()
+    public function rollbackAll(): Migrator
     {
         return $this->rollback('all');
     }
@@ -194,7 +195,7 @@ class Migrator extends Migration\AbstractMigrator
      * @throws Exception
      * @return Migrator
      */
-    public function setPath($path)
+    public function setPath(string $path): Migrator
     {
         if (!file_exists($path)) {
             throw new Exception('Error: That migration path does not exist');
@@ -208,9 +209,9 @@ class Migrator extends Migration\AbstractMigrator
                 $fileContents = trim(file_get_contents($this->path . DIRECTORY_SEPARATOR . $filename));
                 if ($filename == '.current') {
                     $this->current = $fileContents;
-                } else if ((substr($filename, -4) == '.php') && (strpos($fileContents, 'extends AbstractMigration') !== false)) {
+                } else if ((str_ends_with($filename, '.php')) && (str_contains($fileContents, 'extends AbstractMigration'))) {
                     $namespace = null;
-                    if (strpos($fileContents, 'namespace ') !== false) {
+                    if (str_contains($fileContents, 'namespace ')) {
                         $namespace = substr($fileContents, (strpos($fileContents, 'namespace ') + 10));
                         $namespace = trim(substr($namespace, 0, strpos($namespace, ';'))) . '\\';
                     }
@@ -230,9 +231,9 @@ class Migrator extends Migration\AbstractMigrator
     /**
      * Get the migration path
      *
-     * @return string
+     * @return ?string
      */
-    public function getPath()
+    public function getPath(): ?string
     {
         return $this->path;
     }
@@ -240,9 +241,9 @@ class Migrator extends Migration\AbstractMigrator
     /**
      * Get the migration path
      *
-     * @return string
+     * @return ?string
      */
-    public function getCurrent()
+    public function getCurrent(): ?string
     {
         return $this->current;
     }

@@ -37,7 +37,7 @@ class Table extends AbstractFormatter
      * @param  array  $columns
      * @return string
      */
-    public static function createPgsqlSequences(array $increment, $table, array $columns)
+    public static function createPgsqlSequences(array $increment, string $table, array $columns): string
     {
         $sequences = '';
 
@@ -56,7 +56,7 @@ class Table extends AbstractFormatter
      * @param  array  $primary
      * @return string
      */
-    public static function formatPrimarySchema($dbType, array $primary)
+    public static function formatPrimarySchema(string $dbType, array $primary): string
     {
         $primarySchema = '';
 
@@ -72,13 +72,13 @@ class Table extends AbstractFormatter
     /**
      * Format end of table
      *
-     * @param  string $dbType
-     * @param  string $engine
-     * @param  string $charset
-     * @param  int    $increment
+     * @param  string  $dbType
+     * @param  ?string $engine
+     * @param  ?string $charset
+     * @param  ?int    $increment
      * @return string
      */
-    public static function formatEndOfTable($dbType, $engine = null, $charset = null, $increment = null)
+    public static function formatEndOfTable(string $dbType, ?string $engine = null, ?string $charset = null, ?int $increment = null): string
     {
         $sql = PHP_EOL . ')';
 
@@ -109,7 +109,7 @@ class Table extends AbstractFormatter
      * @param  array  $columns
      * @return string
      */
-    public static function createSequences($dbType, array $increment, $table, array $columns)
+    public static function createSequences(string $dbType, array $increment, string $table, array $columns): string
     {
         $sequences = '';
 
@@ -142,7 +142,7 @@ class Table extends AbstractFormatter
      * @param  AbstractStructure $schema
      * @return string
      */
-    public static function createIndices(array $indices, $table, AbstractStructure $schema)
+    public static function createIndices(array $indices, string $table, AbstractStructure $schema): string
     {
         $indexSchema = '';
 
@@ -169,7 +169,7 @@ class Table extends AbstractFormatter
      * @param  AbstractStructure $schema
      * @return string
      */
-    public static function createConstraints(array $constraints, $table, AbstractStructure $schema)
+    public static function createConstraints(array $constraints, string $table, AbstractStructure $schema): string
     {
         $constraintSchema = PHP_EOL;
 

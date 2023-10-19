@@ -30,37 +30,37 @@ class Schema extends AbstractSql
      * DROP table schema objects
      * @var array
      */
-    protected $drop = [];
+    protected array $drop = [];
 
     /**
      * CREATE table schema objects
      * @var array
      */
-    protected $create = [];
+    protected array $create = [];
 
     /**
      * ALTER table schema objects
      * @var array
      */
-    protected $alter = [];
+    protected array $alter = [];
 
     /**
      * RENAME table schema objects
      * @var array
      */
-    protected $rename = [];
+    protected array $rename = [];
 
     /**
      * TRUNCATE table schema objects
      * @var array
      */
-    protected $truncate = [];
+    protected array $truncate = [];
 
     /**
      * Foreign key check flag
      * @var bool
      */
-    protected $foreignKeyCheck = true;
+    protected bool $foreignKeyCheck = true;
 
     /**
      * Access the CREATE table object
@@ -68,7 +68,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Create
      */
-    public function create($table)
+    public function create(string $table): Schema\Create
     {
         return $this->getCreateTable($table);
     }
@@ -79,7 +79,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Create
      */
-    public function createIfNotExists($table)
+    public function createIfNotExists(string $table): Schema\Create
     {
         $this->getCreateTable($table)->ifNotExists();
         return $this->getCreateTable($table);
@@ -91,7 +91,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Drop
      */
-    public function drop($table)
+    public function drop(string $table): Schema\Drop
     {
         return $this->getDropTable($table);
     }
@@ -102,7 +102,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Drop
      */
-    public function dropIfExists($table)
+    public function dropIfExists(string $table): Schema\Drop
     {
         $this->getDropTable($table)->ifExists();
         return $this->getDropTable($table);
@@ -114,7 +114,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Alter
      */
-    public function alter($table)
+    public function alter(string $table): Schema\Alter
     {
         return $this->getAlterTable($table);
     }
@@ -125,7 +125,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Rename
      */
-    public function rename($table)
+    public function rename(string $table): Schema\Rename
     {
         return $this->getRenameTable($table);
     }
@@ -136,7 +136,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Truncate
      */
-    public function truncate($table)
+    public function truncate(string $table): Schema\Truncate
     {
         return $this->getTruncateTable($table);
     }
@@ -146,7 +146,7 @@ class Schema extends AbstractSql
      *
      * @return Schema
      */
-    public function enableForeignKeyCheck()
+    public function enableForeignKeyCheck(): Schema
     {
         $this->foreignKeyCheck = true;
         return $this;
@@ -157,7 +157,7 @@ class Schema extends AbstractSql
      *
      * @return Schema
      */
-    public function disableForeignKeyCheck()
+    public function disableForeignKeyCheck(): Schema
     {
         $this->foreignKeyCheck = false;
         return $this;
@@ -168,7 +168,7 @@ class Schema extends AbstractSql
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         $sql = '';
 
@@ -223,7 +223,7 @@ class Schema extends AbstractSql
      *
      * @return Schema
      */
-    public function reset()
+    public function reset(): Schema
     {
         $this->drop            = [];
         $this->create          = [];
@@ -241,7 +241,7 @@ class Schema extends AbstractSql
      * @param  bool $reset
      * @return void
      */
-    public function execute($reset = true)
+    public function execute(bool $reset = true): void
     {
         if (!$this->foreignKeyCheck) {
             if ($this->isMysql()) {
@@ -309,7 +309,7 @@ class Schema extends AbstractSql
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }
@@ -320,7 +320,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Create
      */
-    protected function getCreateTable($table)
+    protected function getCreateTable(string $table): Schema\Create
     {
         if (!isset($this->create[$table])) {
             $this->create[$table] = new Schema\Create($table, $this->db);
@@ -334,7 +334,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Drop
      */
-    protected function getDropTable($table)
+    protected function getDropTable(string $table): Schema\Drop
     {
         if (!isset($this->drop[$table])) {
             $this->drop[$table] = new Schema\Drop($table, $this->db);
@@ -348,7 +348,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Alter
      */
-    protected function getAlterTable($table)
+    protected function getAlterTable(string $table): Schema\Alter
     {
         if (!isset($this->alter[$table])) {
             $this->alter[$table] = new Schema\Alter($table, $this->db);
@@ -362,7 +362,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Rename
      */
-    protected function getRenameTable($table)
+    protected function getRenameTable(string $table): Schema\Rename
     {
         if (!isset($this->rename[$table])) {
             $this->rename[$table] = new Schema\Rename($table, $this->db);
@@ -376,7 +376,7 @@ class Schema extends AbstractSql
      * @param  string $table
      * @return Schema\Truncate
      */
-    protected function getTruncateTable($table)
+    protected function getTruncateTable(string $table): Schema\Truncate
     {
         if (!isset($this->truncate[$table])) {
             $this->truncate[$table] = new Schema\Truncate($table, $this->db);

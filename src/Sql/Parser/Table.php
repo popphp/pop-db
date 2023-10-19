@@ -32,7 +32,7 @@ class Table
      * @param  string $tableClass
      * @return string
      */
-    public static function parse($tableClass)
+    public static function parse(string $tableClass): string
     {
         $chars   = str_split($tableClass);
         $dbTable = null;

@@ -38,7 +38,7 @@ class Column extends AbstractFormatter
      * @throws Exception
      * @return string
      */
-    public static function getColumnSchema($dbType, $name, array $column, $table)
+    public static function getColumnSchema(string $dbType, string $name, array $column, string $table): string
     {
         if (!isset($column['type'])) {
             throw new Exception('Error: The column type was not set.');
@@ -56,7 +56,7 @@ class Column extends AbstractFormatter
      * @param  string $type
      * @return string
      */
-    public static function getValidDataType($dbType, $type)
+    public static function getValidDataType(string $dbType, string $type): string
     {
         switch ($dbType) {
             case Sql::MYSQL:
@@ -82,7 +82,7 @@ class Column extends AbstractFormatter
      * @param  string $type
      * @return string
      */
-    public static function getValidMysqlDataType($type)
+    public static function getValidMysqlDataType(string $type): string
     {
         $type = strtoupper($type);
 
@@ -116,7 +116,7 @@ class Column extends AbstractFormatter
      * @param  string $type
      * @return string
      */
-    public static function getValidPgsqlDataType($type)
+    public static function getValidPgsqlDataType(string $type): string
     {
         $type = strtoupper($type);
 
@@ -159,7 +159,7 @@ class Column extends AbstractFormatter
      * @param  string $type
      * @return string
      */
-    public static function getValidSqliteDataType($type)
+    public static function getValidSqliteDataType(string $type): string
     {
         $type = strtoupper($type);
 
@@ -206,7 +206,7 @@ class Column extends AbstractFormatter
      * @param  string $type
      * @return string
      */
-    public static function getValidSqlsrvDataType($type)
+    public static function getValidSqlsrvDataType(string $type): string
     {
         $type = strtoupper($type);
 
@@ -254,7 +254,7 @@ class Column extends AbstractFormatter
      * @throws Exception
      * @return string
      */
-    public static function formatColumn($dbType, $name, $dataType, array $column, $table)
+    public static function formatColumn(string $dbType, string $name, string $dataType, array $column, string $table): string
     {
         switch ($dbType) {
             case Sql::MYSQL:
@@ -282,7 +282,7 @@ class Column extends AbstractFormatter
      * @param  array  $column
      * @return string
      */
-    public static function formatMysqlColumn($name, $dataType, array $column)
+    public static function formatMysqlColumn(string $name, string $dataType, array $column): string
     {
         $columnString = $name . ' ' . $dataType;
         $sizeAllowed  = ['DECIMAL', 'NUMERIC', 'FLOAT', 'DOUBLE', 'REAL', 'DOUBLE PRECISION'];
@@ -317,7 +317,7 @@ class Column extends AbstractFormatter
      * @param  string $table
      * @return string
      */
-    public static function formatPgsqlColumn($name, $dataType, array $column, $table)
+    public static function formatPgsqlColumn(string $name, string $dataType, array $column, string $table): string
     {
         $columnString     = $name . ' ' . $dataType;
         $unquotedName     = self::unquoteId($name);
@@ -348,7 +348,7 @@ class Column extends AbstractFormatter
      * @param  array  $column
      * @return string
      */
-    public static function formatSqliteColumn($name, $dataType, array $column)
+    public static function formatSqliteColumn(string $name, string $dataType, array $column): string
     {
         $columnString = $name . ' ' . $dataType;
         $columnString = self::formatCommonParameters($columnString, $column);
@@ -368,7 +368,7 @@ class Column extends AbstractFormatter
      * @param  array  $column
      * @return string
      */
-    public static function formatSqlsrvColumn($name, $dataType, array $column)
+    public static function formatSqlsrvColumn(string $name, string $dataType, array $column): string
     {
         $columnString = $name . ' ' . $dataType;
         $sizeAllowed      = ['DECIMAL', 'NUMERIC', 'FLOAT', 'REAL'];
@@ -399,7 +399,7 @@ class Column extends AbstractFormatter
      * @param  array  $column
      * @return string
      */
-    public static function formatCommonParameters($columnString, array $column)
+    public static function formatCommonParameters(string $columnString, array $column): string
     {
         if (count($column['attributes']) > 0) {
             $columnString .= ' ' . implode(' ', $column['attributes']);

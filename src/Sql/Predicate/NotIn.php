@@ -35,8 +35,9 @@ class NotIn extends AbstractPredicate
      *
      * @param  array  $values
      * @param  string $conjunction
+     * @throws Exception
      */
-    public function __construct(array $values, $conjunction = 'AND')
+    public function __construct(array $values, string $conjunction = 'AND')
     {
         $this->format = '%1 NOT IN (%2)';
         parent::__construct($values, $conjunction);
@@ -50,7 +51,7 @@ class NotIn extends AbstractPredicate
      * @throws Exception
      * @return string
      */
-    public function render(AbstractSql $sql)
+    public function render(AbstractSql $sql): string
     {
         if (count($this->values) != 2) {
             throw new Exception('Error: The values array must have 2 values in it.');

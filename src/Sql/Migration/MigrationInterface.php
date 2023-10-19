@@ -29,15 +29,15 @@ interface MigrationInterface
     /**
      * Execute an UP migration (new forward changes)
      *
-     * @return MigrationInterface
+     * @return void
      */
-    public function up();
+    public function up(): void;
 
     /**
      * Execute a DOWN migration (rollback previous changes)
      *
-     * @return MigrationInterface
+     * @return void
      */
-    public function down();
+    public function down(): void;
 
 }

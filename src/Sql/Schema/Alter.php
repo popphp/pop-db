@@ -32,25 +32,25 @@ class Alter extends AbstractStructure
      * Existing columns in the table
      * @var array
      */
-    protected $existingColumns = [];
+    protected array $existingColumns = [];
 
     /**
      * Columns to be dropped
      * @var array
      */
-    protected $dropColumns = [];
+    protected array $dropColumns = [];
 
     /**
      * Indices to be dropped
      * @var array
      */
-    protected $dropIndices = [];
+    protected array $dropIndices = [];
 
     /**
      * Constraints to be dropped
      * @var array
      */
-    protected $dropConstraints = [];
+    protected array $dropConstraints = [];
 
     /**
      * Constructor
@@ -60,7 +60,7 @@ class Alter extends AbstractStructure
      * @param  string          $table
      * @param  AbstractAdapter $db
      */
-    public function __construct($table, $db)
+    public function __construct(string $table, $db)
     {
         parent::__construct($table, $db);
 
@@ -68,9 +68,9 @@ class Alter extends AbstractStructure
             foreach ($this->info['columns'] as $name => $column) {
                 $size      = null;
                 $precision = null;
-                if (strpos($column['type'], '(') !== false) {
+                if (str_contains($column['type'], '(')) {
                     $type = substr($column['type'], 0, strpos($column['type'], '('));
-                    if (strpos($column['type'], ',') !== false) {
+                    if (str_contains($column['type'], ',')) {
                         $size = substr($column['type'], (strpos($column['type'], '(') + 1));
                         $size = substr($size, 0, strpos($size, ','));
                         $precision = substr($column['type'], (strpos($column['type'], ',') + 1));
@@ -102,14 +102,14 @@ class Alter extends AbstractStructure
     /**
      * Modify a column
      *
-     * @param  string $oldName
-     * @param  string $newName
-     * @param  string $type
-     * @param  mixed  $size
-     * @param  mixed  $precision
+     * @param  string  $oldName
+     * @param  string  $newName
+     * @param  ?string $type
+     * @param  mixed   $size
+     * @param  mixed   $precision
      * @return Alter
      */
-    public function modifyColumn($oldName, $newName, $type = null, $size = null, $precision = null)
+    public function modifyColumn(string $oldName, string $newName, ?string $type = null, mixed $size = null, mixed $precision = null): Alter
     {
         if (isset($this->existingColumns[$oldName])) {
             if ($type !== null) {
@@ -134,7 +134,7 @@ class Alter extends AbstractStructure
      * @param  string $name
      * @return Alter
      */
-    public function dropColumn($name)
+    public function dropColumn(string $name): Alter
     {
         if (!in_array($name, $this->dropColumns)) {
             $this->dropColumns[] = $name;
@@ -148,7 +148,7 @@ class Alter extends AbstractStructure
      * @param  string $name
      * @return Alter
      */
-    public function dropIndex($name)
+    public function dropIndex(string $name): Alter
     {
         if (!in_array($name, $this->dropIndices)) {
             $this->dropIndices[] = $name;
@@ -162,7 +162,7 @@ class Alter extends AbstractStructure
      * @param  string $name
      * @return Alter
      */
-    public function dropConstraint($name)
+    public function dropConstraint(string $name): Alter
     {
         if (!in_array($name, $this->dropConstraints)) {
             $this->dropConstraints[] = $name;
@@ -176,7 +176,7 @@ class Alter extends AbstractStructure
      * @param  string $column
      * @return Alter
      */
-    public function after($column)
+    public function after(string $column): Alter
     {
         if (($this->currentColumn !== null) && isset($this->columns[$this->currentColumn])) {
             $this->columns[$this->currentColumn]['after'] = $column;
@@ -189,7 +189,7 @@ class Alter extends AbstractStructure
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         $schema = '';
 
@@ -264,7 +264,7 @@ class Alter extends AbstractStructure
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

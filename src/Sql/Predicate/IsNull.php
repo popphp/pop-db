@@ -33,10 +33,11 @@ class IsNull extends AbstractPredicate
      *
      * Instantiate the IS NULL predicate set object
      *
-     * @param  string  $values
+     * @param  string $values
      * @param  string $conjunction
+     * @throws Exception
      */
-    public function __construct($values, $conjunction = 'AND')
+    public function __construct(string $values, string $conjunction = 'AND')
     {
         $this->format = '%1 IS NULL';
         parent::__construct($values, $conjunction);
@@ -49,7 +50,7 @@ class IsNull extends AbstractPredicate
      * @param  AbstractSql $sql
      * @return string
      */
-    public function render(AbstractSql $sql)
+    public function render(AbstractSql $sql): string
     {
         return '(' . str_replace('%1', $sql->quoteId($this->values), $this->format) . ')';
     }

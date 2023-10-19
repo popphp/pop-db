@@ -28,33 +28,33 @@ class PredicateSet
 
     /**
      * SQL object
-     * @var AbstractSql
+     * @var ?AbstractSql
      */
-    protected $sql = null;
+    protected ?AbstractSql $sql = null;
 
     /**
      * Predicates
      * @var array
      */
-    protected $predicates = [];
+    protected array$predicates = [];
 
     /**
      * Nested predicate sets
      * @var array
      */
-    protected $predicateSets = [];
+    protected array $predicateSets = [];
 
     /**
      * Conjunction
-     * @var string
+     * @var ?string
      */
-    protected $conjunction = null;
+    protected ?string $conjunction = null;
 
     /**
      * Next conjunction
      * @var string
      */
-    protected $nextConjunction = 'AND';
+    protected string $nextConjunction = 'AND';
 
     /**
      * Constructor
@@ -63,9 +63,10 @@ class PredicateSet
      *
      * @param  AbstractSql $sql
      * @param  mixed       $predicates
-     * @param  string      $conjunction
+     * @param  ?string     $conjunction
+     * @throws Exception
      */
-    public function __construct(AbstractSql $sql, $predicates = null, $conjunction = null)
+    public function __construct(AbstractSql $sql, mixed $predicates = null, ?string $conjunction = null)
     {
         $this->sql = $sql;
 
@@ -88,7 +89,7 @@ class PredicateSet
      * @param  string $expression
      * @return PredicateSet
      */
-    public function add($expression)
+    public function add(string $expression): PredicateSet
     {
         ['column' => $column, 'operator' => $operator, 'value' => $value] = Parser\Expression::parse($expression);
 
@@ -159,7 +160,7 @@ class PredicateSet
      * @param  array $expressions
      * @return PredicateSet
      */
-    public function addExpressions(array $expressions)
+    public function addExpressions(array $expressions): PredicateSet
     {
         foreach ($expressions as $expression) {
             $this->add($expression);
@@ -171,10 +172,11 @@ class PredicateSet
     /**
      * Add an AND predicate from a string expression
      *
-     * @param  string $expression
+     * @param  ?string $expression
+     * @throws Exception
      * @return PredicateSet
      */
-    public function and($expression = null)
+    public function and(?string $expression = null): PredicateSet
     {
         $this->setNextConjunction('AND');
         if ($expression !== null) {
@@ -186,10 +188,11 @@ class PredicateSet
     /**
      * Add an OR predicate from a string expression
      *
-     * @param  string $expression
+     * @param  ?string $expression
+     * @throws Exception
      * @return PredicateSet
      */
-    public function or($expression = null)
+    public function or(?string $expression = null): PredicateSet
     {
         $this->setNextConjunction('OR');
         if ($expression !== null) {
@@ -205,7 +208,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function equalTo($column, $value)
+    public function equalTo(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\EqualTo([$column, $value], $this->nextConjunction));
     }
@@ -217,7 +220,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function notEqualTo($column, $value)
+    public function notEqualTo(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -229,7 +232,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function greaterThan($column, $value)
+    public function greaterThan(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\GreaterThan([$column, $value], $this->nextConjunction));
     }
@@ -241,7 +244,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function greaterThanOrEqualTo($column, $value)
+    public function greaterThanOrEqualTo(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\GreaterThanOrEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -253,7 +256,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function lessThan($column, $value)
+    public function lessThan(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\LessThan([$column, $value], $this->nextConjunction));
     }
@@ -265,7 +268,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function lessThanOrEqualTo($column, $value)
+    public function lessThanOrEqualTo(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\LessThanOrEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -277,7 +280,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function like($column, $value)
+    public function like(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\Like([$column, $value], $this->nextConjunction));
     }
@@ -289,7 +292,7 @@ class PredicateSet
      * @param  string $value
      * @return PredicateSet
      */
-    public function notLike($column, $value)
+    public function notLike(string $column, string $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotLike([$column, $value], $this->nextConjunction));
     }
@@ -302,7 +305,7 @@ class PredicateSet
      * @param  string $value2
      * @return PredicateSet
      */
-    public function between($column, $value1, $value2)
+    public function between(string $column, string $value1, string $value2): PredicateSet
     {
         return $this->addPredicate(new Predicate\Between([$column, $value1, $value2], $this->nextConjunction));
     }
@@ -315,7 +318,7 @@ class PredicateSet
      * @param  string $value2
      * @return PredicateSet
      */
-    public function notBetween($column, $value1, $value2)
+    public function notBetween(string $column, string $value1, string $value2): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotBetween([$column, $value1, $value2], $this->nextConjunction));
     }
@@ -327,7 +330,7 @@ class PredicateSet
      * @param  mixed  $values
      * @return PredicateSet
      */
-    public function in($column, $values)
+    public function in(string $column, string $values): PredicateSet
     {
         return $this->addPredicate(new Predicate\In([$column, $values], $this->nextConjunction));
     }
@@ -339,7 +342,7 @@ class PredicateSet
      * @param  mixed  $values
      * @return PredicateSet
      */
-    public function notIn($column, $values)
+    public function notIn(string $column, string $values): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotIn([$column, $values], $this->nextConjunction));
     }
@@ -350,7 +353,7 @@ class PredicateSet
      * @param  string $column
      * @return PredicateSet
      */
-    public function isNull($column)
+    public function isNull(string $column): PredicateSet
     {
         return $this->addPredicate(new Predicate\IsNull($column, $this->nextConjunction));
     }
@@ -361,7 +364,7 @@ class PredicateSet
      * @param  string $column
      * @return PredicateSet
      */
-    public function isNotNull($column)
+    public function isNotNull(string $column): PredicateSet
     {
         return $this->addPredicate(new Predicate\IsNotNull($column, $this->nextConjunction));
     }
@@ -370,9 +373,10 @@ class PredicateSet
      * Add AND predicate
      *
      * @param  Predicate\AbstractPredicate $predicate
+     * @throws Predicate\Exception
      * @return PredicateSet
      */
-    public function andPredicate(Predicate\AbstractPredicate $predicate)
+    public function andPredicate(Predicate\AbstractPredicate $predicate): PredicateSet
     {
         $predicate->setConjunction('AND');
         return $this->addPredicate($predicate);
@@ -382,9 +386,10 @@ class PredicateSet
      * Add OR predicate
      *
      * @param  Predicate\AbstractPredicate $predicate
+     * @throws Predicate\Exception
      * @return PredicateSet
      */
-    public function orPredicate(Predicate\AbstractPredicate $predicate)
+    public function orPredicate(Predicate\AbstractPredicate $predicate): PredicateSet
     {
         $predicate->setConjunction('OR');
         return $this->addPredicate($predicate);
@@ -396,7 +401,7 @@ class PredicateSet
      * @param  Predicate\AbstractPredicate $predicate
      * @return PredicateSet
      */
-    public function addPredicate(Predicate\AbstractPredicate $predicate)
+    public function addPredicate(Predicate\AbstractPredicate $predicate): PredicateSet
     {
         $values = $predicate->getValues();
 
@@ -430,7 +435,7 @@ class PredicateSet
      * @param  array $predicates
      * @return PredicateSet
      */
-    public function addPredicates(array $predicates)
+    public function addPredicates(array $predicates): PredicateSet
     {
         foreach ($predicates as $predicate) {
             $this->addPredicate($predicate);
@@ -445,7 +450,7 @@ class PredicateSet
      * @param  PredicateSet $predicateSet
      * @return PredicateSet
      */
-    public function addPredicateSet(PredicateSet $predicateSet)
+    public function addPredicateSet(PredicateSet $predicateSet): PredicateSet
     {
         $this->predicateSets[] = $predicateSet;
         return $this;
@@ -457,7 +462,7 @@ class PredicateSet
      * @param  array $predicateSets
      * @return PredicateSet
      */
-    public function addPredicateSets(array $predicateSets)
+    public function addPredicateSets(array $predicateSets): PredicateSet
     {
         foreach ($predicateSets as $predicateSet) {
             $this->addPredicateSet($predicateSet);
@@ -472,7 +477,7 @@ class PredicateSet
      * @param  string $conjunction
      * @return PredicateSet
      */
-    public function nest($conjunction = 'AND')
+    public function nest(string $conjunction = 'AND'): PredicateSet
     {
         $predicateSet = new self($this->sql, null, $conjunction);
         $this->addPredicateSet($predicateSet);
@@ -484,7 +489,7 @@ class PredicateSet
      *
      * @return PredicateSet
      */
-    public function andNest()
+    public function andNest(): PredicateSet
     {
         return $this->nest('AND');
     }
@@ -494,7 +499,7 @@ class PredicateSet
      *
      * @return PredicateSet
      */
-    public function orNest()
+    public function orNest(): PredicateSet
     {
         return $this->nest('OR');
     }
@@ -503,9 +508,10 @@ class PredicateSet
      * Get the conjunction
      *
      * @param  string $conjunction
+     * @throws Exception
      * @return PredicateSet
      */
-    public function setConjunction($conjunction)
+    public function setConjunction(string $conjunction): PredicateSet
     {
         if ((strtoupper($conjunction) != 'OR') && (strtoupper($conjunction) != 'AND')) {
             throw new Exception("Error: The conjunction must be 'AND' or 'OR'. '" . $conjunction . "' is not allowed.");
@@ -519,9 +525,9 @@ class PredicateSet
     /**
      * Get the conjunction
      *
-     * @return string
+     * @return ?string
      */
-    public function getConjunction()
+    public function getConjunction(): ?string
     {
         return $this->conjunction;
     }
@@ -530,9 +536,10 @@ class PredicateSet
      * Get the next conjunction
      *
      * @param  string $conjunction
+     * @throws Exception
      * @return PredicateSet
      */
-    public function setNextConjunction($conjunction)
+    public function setNextConjunction(string $conjunction): PredicateSet
     {
         if ((strtoupper($conjunction) != 'OR') && (strtoupper($conjunction) != 'AND')) {
             throw new Exception("Error: The conjunction must be 'AND' or 'OR'. '" . $conjunction . "' is not allowed.");
@@ -548,7 +555,7 @@ class PredicateSet
      *
      * @return string
      */
-    public function getNextConjunction()
+    public function getNextConjunction(): string
     {
         return $this->nextConjunction;
     }
@@ -558,7 +565,7 @@ class PredicateSet
      *
      * @return bool
      */
-    public function hasPredicates()
+    public function hasPredicates(): bool
     {
         return (count($this->predicates) > 0);
     }
@@ -568,7 +575,7 @@ class PredicateSet
      *
      * @return array
      */
-    public function getPredicates()
+    public function getPredicates(): array
     {
         return $this->predicates;
     }
@@ -578,7 +585,7 @@ class PredicateSet
      *
      * @return bool
      */
-    public function hasPredicateSets()
+    public function hasPredicateSets(): bool
     {
         return (count($this->predicateSets) > 0);
     }
@@ -588,7 +595,7 @@ class PredicateSet
      *
      * @return array
      */
-    public function getPredicateSets()
+    public function getPredicateSets(): array
     {
         return $this->predicateSets;
     }
@@ -596,11 +603,12 @@ class PredicateSet
     /**
      * Predicate set render method
      *
+     * @throws Exception
      * @return string
      */
-    public function render()
+    public function render(): string
     {
-        $predicateString = null;
+        $predicateString = '';
 
         foreach ($this->predicates as $i => $predicate) {
             $predicateString .= ($i == 0) ?
@@ -627,7 +635,7 @@ class PredicateSet
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

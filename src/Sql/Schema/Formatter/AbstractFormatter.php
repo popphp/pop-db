@@ -32,9 +32,9 @@ abstract class AbstractFormatter
      * @param  string $identifier
      * @return string
      */
-    public static function unquoteId($identifier)
+    public static function unquoteId(string $identifier): string
     {
-        if (strpos($identifier, '.') !== false) {
+        if (str_contains($identifier, '.')) {
             $identifierAry = explode('.', $identifier);
             foreach ($identifierAry as $key => $val) {
                 $first = substr($val, 0, 1);

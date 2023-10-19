@@ -29,10 +29,10 @@ class Delete extends AbstractPredicateClause
     /**
      * Set from table
      *
-     * @param  mixed  $table
+     * @param  mixed $table
      * @return Delete
      */
-    public function from($table)
+    public function from(mixed $table): Delete
     {
         $this->setTable($table);
         return $this;
@@ -43,7 +43,7 @@ class Delete extends AbstractPredicateClause
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         // Start building the DELETE statement
         $sql = 'DELETE FROM ' . $this->quoteId($this->table);
@@ -61,7 +61,7 @@ class Delete extends AbstractPredicateClause
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }
@@ -73,7 +73,7 @@ class Delete extends AbstractPredicateClause
      * @throws Exception
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         switch (strtolower($name)) {
             case 'where':

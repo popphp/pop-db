@@ -32,31 +32,31 @@ class Data extends AbstractSql
      * Database table
      * @var string
      */
-    protected $table = 'pop_db_data';
+    protected string $table = 'pop_db_data';
 
     /**
      * Divide INSERT groups by # (0 creates one big INSERT statement, 1 creates an INSERT statement per row)
      * @var int
      */
-    protected $divide = 1;
+    protected int $divide = 1;
 
     /**
      * Conflict key for UPSERT
-     * @var string
+     * @var ?string
      */
-    protected $conflictKey = null;
+    protected ?string $conflictKey = null;
 
     /**
      * Conflict columns for UPSERT
      * @var array
      */
-    protected $conflictColumns = [];
+    protected array $conflictColumns = [];
 
     /**
      * SQL string
-     * @var string
+     * @var ?string
      */
-    protected $sql = null;
+    protected ?string $sql = null;
 
     /**
      * Constructor
@@ -67,7 +67,7 @@ class Data extends AbstractSql
      * @param  string          $table
      * @param  int             $divide
      */
-    public function __construct(AbstractAdapter $db, $table = 'pop_db_data', $divide = 1)
+    public function __construct(AbstractAdapter $db, string $table = 'pop_db_data', int $divide = 1)
     {
         parent::__construct($db);
         $this->setDivide($divide);
@@ -80,9 +80,9 @@ class Data extends AbstractSql
      * @param  int $divide
      * @return Data
      */
-    public function setDivide($divide)
+    public function setDivide(int $divide): Data
     {
-        $this->divide = (int)$divide;
+        $this->divide = $divide;
         return $this;
     }
 
@@ -91,7 +91,7 @@ class Data extends AbstractSql
      *
      * @return int
      */
-    public function getDivide()
+    public function getDivide(): int
     {
         return $this->divide;
     }
@@ -102,7 +102,7 @@ class Data extends AbstractSql
      * @param  string $table
      * @return Data
      */
-    public function setTable($table)
+    public function setTable(string $table): Data
     {
         $this->table = $table;
         return $this;
@@ -113,7 +113,7 @@ class Data extends AbstractSql
      *
      * @return string
      */
-    public function getTable()
+    public function getTable(): string
     {
         return $this->table;
     }
@@ -121,9 +121,9 @@ class Data extends AbstractSql
     /**
      * Get SQL string
      *
-     * @return string
+     * @return ?string
      */
-    public function getSql()
+    public function getSql(): ?string
     {
         return $this->sql;
     }
@@ -131,11 +131,11 @@ class Data extends AbstractSql
     /**
      * Set what to do on a insert conflict (UPSERT - PostgreSQL & SQLite)
      *
-     * @param  array  $columns
-     * @param  string $key
+     * @param  array   $columns
+     * @param  ?string $key
      * @return Data
      */
-    public function onConflict(array $columns, $key = null)
+    public function onConflict(array $columns, ?string $key = null): Data
     {
         $this->conflictColumns = $columns;
         $this->conflictKey     = $key;
@@ -148,7 +148,7 @@ class Data extends AbstractSql
      * @param  array $columns
      * @return Data
      */
-    public function onDuplicateKeyUpdate(array $columns)
+    public function onDuplicateKeyUpdate(array $columns): Data
     {
         $this->onConflict($columns);
         return $this;
@@ -159,7 +159,7 @@ class Data extends AbstractSql
      *
      * @return bool
      */
-    public function isSerialized()
+    public function isSerialized(): bool
     {
         return ($this->sql !== null);
     }
@@ -167,13 +167,13 @@ class Data extends AbstractSql
     /**
      * Serialize the data into INSERT statements
      *
-     * @param  array   $data
-     * @param  mixed   $omit
-     * @param  bool $nullEmpty
-     * @param  bool $forceQuote
-     * @return string
+     * @param  array $data
+     * @param  mixed $omit
+     * @param  bool  $nullEmpty
+     * @param  bool  $forceQuote
+     * @return ?string
      */
-    public function serialize(array $data, $omit = null, $nullEmpty = false, $forceQuote = false)
+    public function serialize(array $data, mixed $omit = null, bool $nullEmpty = false, bool $forceQuote = false): ?string
     {
         if ($omit !== null) {
             $omit = (!is_array($omit)) ? [$omit] : $omit;
@@ -239,12 +239,12 @@ class Data extends AbstractSql
     /**
      * Output SQL to a file
      *
-     * @param  string $to
-     * @param  string $header
-     * @param  string $footer
+     * @param  string  $to
+     * @param  ?string $header
+     * @param  ?string $footer
      * @return void
      */
-    public function writeToFile($to, $header = null, $footer = null)
+    public function writeToFile(string $to, ?string $header = null, ?string $footer = null): void
     {
         file_put_contents($to, $header . $this->sql . $footer);
     }
@@ -253,14 +253,16 @@ class Data extends AbstractSql
      * Serialize the data into INSERT statements
      *
      * @param  array   $data
-     * @param  string  $to
+     * @param  ?string $to
      * @param  mixed   $omit
-     * @param  bool $nullEmpty
-     * @param  string  $header
-     * @param  string  $footer
+     * @param  bool    $nullEmpty
+     * @param  ?string $header
+     * @param  ?string $footer
      * @return void
      */
-    public function streamToFile(array $data, $to, $omit = null, $nullEmpty = false, $header = null, $footer = null)
+    public function streamToFile(
+        array $data, ?string $to, mixed $omit = null, bool $nullEmpty = false, ?string $header = null, ?string $footer = null
+    ): void
     {
         if (!file_exists($to)) {
             touch($to);
@@ -340,7 +342,7 @@ class Data extends AbstractSql
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->sql;
     }
@@ -350,9 +352,9 @@ class Data extends AbstractSql
      *
      * @return string
      */
-    protected function formatConflicts()
+    protected function formatConflicts(): string
     {
-        $onUpdate = null;
+        $onUpdate = '';
 
         if (!empty($this->conflictColumns)) {
             $updates = [];

@@ -30,31 +30,31 @@ abstract class AbstractStructure extends AbstractTable
      * Columns to be added or modified
      * @var array
      */
-    protected $columns = [];
+    protected array $columns = [];
 
     /**
      * Indices to be created
      * @var array
      */
-    protected $indices = [];
+    protected array $indices = [];
 
     /**
      * Constraints to be added
      * @var array
      */
-    protected $constraints = [];
+    protected array $constraints = [];
 
     /**
      * Current column
-     * @var string
+     * @var ?string
      */
-    protected $currentColumn = null;
+    protected ?string $currentColumn = null;
 
     /**
      * Current constraint
-     * @var string
+     * @var ?string
      */
-    protected $currentConstraint = null;
+    protected ?string $currentConstraint = null;
 
     /**
      * Set the current column
@@ -62,7 +62,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $column
      * @return AbstractStructure
      */
-    public function column($column)
+    public function column(string $column): AbstractStructure
     {
         $this->currentColumn = $column;
         return $this;
@@ -71,9 +71,9 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Get the current column
      *
-     * @return string
+     * @return ?string
      */
-    public function getColumn()
+    public function getColumn(): ?string
     {
         return $this->currentColumn;
     }
@@ -84,7 +84,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $constraint
      * @return AbstractStructure
      */
-    public function constraint($constraint)
+    public function constraint(string $constraint): AbstractStructure
     {
         $this->currentConstraint = $constraint;
         return $this;
@@ -93,9 +93,9 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Get the current constraint
      *
-     * @return string
+     * @return ?string
      */
-    public function getConstraint()
+    public function getConstraint(): ?string
     {
         return $this->currentConstraint;
     }
@@ -110,7 +110,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function addColumn($name, $type, $size = null, $precision = null, array $attributes = [])
+    public function addColumn(string $name, string $type, mixed $size = null, mixed $precision = null, array $attributes = []): AbstractStructure
     {
         $this->currentColumn  = $name;
         $this->columns[$name] = [
@@ -135,7 +135,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $name
      * @return bool
      */
-    public function hasColumn($name)
+    public function hasColumn(string $name): bool
     {
         return (isset($this->columns[$name]));
     }
@@ -146,7 +146,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $attribute
      * @return AbstractStructure
      */
-    public function addColumnAttribute($attribute)
+    public function addColumnAttribute(string $attribute): AbstractStructure
     {
         if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['attributes'][] = $attribute;
@@ -160,7 +160,7 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @return bool
      */
-    public function hasIncrement()
+    public function hasIncrement(): bool
     {
         $result = false;
         foreach ($this->columns as $name => $column) {
@@ -177,7 +177,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  bool $quote
      * @return array
      */
-    public function getIncrement($quote = false)
+    public function getIncrement(bool $quote = false): array
     {
         $result = [];
         foreach ($this->columns as $name => $column) {
@@ -193,7 +193,7 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @return bool
      */
-    public function hasPrimary()
+    public function hasPrimary(): bool
     {
         $result = false;
         foreach ($this->columns as $name => $column) {
@@ -210,7 +210,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  bool $quote
      * @return array
      */
-    public function getPrimary($quote = false)
+    public function getPrimary(bool$quote = false): array
     {
         $result = [];
         foreach ($this->columns as $name => $column) {
@@ -227,10 +227,10 @@ abstract class AbstractStructure extends AbstractTable
      * @param  int $start
      * @return AbstractStructure
      */
-    public function increment($start = 1)
+    public function increment(int $start = 1): AbstractStructure
     {
         if ($this->currentColumn !== null) {
-            $this->columns[$this->currentColumn]['increment'] = (int)$start;
+            $this->columns[$this->currentColumn]['increment'] = $start;
         }
 
         return $this;
@@ -242,7 +242,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  mixed $value
      * @return AbstractStructure
      */
-    public function defaultIs($value)
+    public function defaultIs(mixed $value): AbstractStructure
     {
         if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['default'] = $value;
@@ -259,7 +259,7 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @return AbstractStructure
      */
-    public function nullable()
+    public function nullable(): AbstractStructure
     {
         if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['nullable'] = true;
@@ -273,7 +273,7 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @return AbstractStructure
      */
-    public function notNullable()
+    public function notNullable(): AbstractStructure
     {
         if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['nullable'] = false;
@@ -287,7 +287,7 @@ abstract class AbstractStructure extends AbstractTable
      *
      * @return AbstractStructure
      */
-    public function unsigned()
+    public function unsigned(): AbstractStructure
     {
         if ($this->currentColumn !== null) {
             $this->columns[$this->currentColumn]['unsigned'] = true;
@@ -299,12 +299,12 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create an index
      *
-     * @param  string $column
-     * @param  string $name
-     * @param  string $type
+     * @param  string  $column
+     * @param  ?string $name
+     * @param  string  $type
      * @return AbstractStructure
      */
-    public function index($column, $name = null, $type = 'index')
+    public function index(string $column, ?string $name = null, string $type = 'index'): AbstractStructure
     {
         if (!is_array($column)) {
             $column = [$column];
@@ -333,11 +333,11 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create a UNIQUE index
      *
-     * @param  string $column
-     * @param  string $name
+     * @param  ?string $column
+     * @param  ?string $name
      * @return AbstractStructure
      */
-    public function unique($column = null, $name = null)
+    public function unique(?string $column = null, ?string $name = null): AbstractStructure
     {
         if ($column === null) {
             $column = $this->currentColumn;
@@ -348,11 +348,11 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create a PRIMARY KEY index
      *
-     * @param  string $column
-     * @param  string $name
+     * @param  ?string $column
+     * @param  ?string $name
      * @return AbstractStructure
      */
-    public function primary($column = null, $name = null)
+    public function primary(?string $column = null, ?string $name = null): AbstractStructure
     {
         if ($column === null) {
             $column = $this->currentColumn;
@@ -363,11 +363,11 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create a FOREIGN KEY constraint
      *
-     * @param  string $column
-     * @param  string $name
+     * @param  string  $column
+     * @param  ?string $name
      * @return AbstractStructure
      */
-    public function foreignKey($column, $name = null)
+    public function foreignKey(string $column, ?string $name = null): AbstractStructure
     {
         if ($name === null) {
             $name = 'fk_'. strtolower((string)$column);
@@ -388,7 +388,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $foreignTable
      * @return AbstractStructure
      */
-    public function references($foreignTable)
+    public function references(string $foreignTable): AbstractStructure
     {
         if ($this->currentConstraint !== null) {
             $this->constraints[$this->currentConstraint]['references'] = $foreignTable;
@@ -403,7 +403,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  string $foreignColumn
      * @return AbstractStructure
      */
-    public function on($foreignColumn)
+    public function on(string $foreignColumn): AbstractStructure
     {
         if ($this->currentConstraint !== null) {
             $this->constraints[$this->currentConstraint]['on'] = $foreignColumn;
@@ -415,10 +415,10 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Assign FOREIGN KEY ON DELETE action
      *
-     * @param  string $action
+     * @param  ?string $action
      * @return AbstractStructure
      */
-    public function onDelete($action = null)
+    public function onDelete(?string $action = null): AbstractStructure
     {
         if ($this->currentConstraint !== null) {
             $this->constraints[$this->currentConstraint]['delete'] = (strtolower((string)$action) == 'cascade') ?
@@ -440,7 +440,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function integer($name, $size = null, array $attributes = [])
+    public function integer(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'integer', $size, null, $attributes);
     }
@@ -453,7 +453,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function int($name, $size = null, array $attributes = [])
+    public function int(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'int', $size, null, $attributes);
     }
@@ -466,7 +466,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function bigInt($name, $size = null, array $attributes = [])
+    public function bigInt(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'bigint', $size, null, $attributes);
     }
@@ -479,7 +479,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function mediumInt($name, $size = null, array $attributes = [])
+    public function mediumInt(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'mediumint', $size, null, $attributes);
     }
@@ -492,7 +492,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function smallInt($name, $size = null, array $attributes = [])
+    public function smallInt(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'smallint', $size, null, $attributes);
     }
@@ -505,7 +505,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function tinyInt($name, $size = null, array $attributes = [])
+    public function tinyInt(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'tinyint', $size, null, $attributes);
     }
@@ -523,7 +523,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function float($name, $size = null, $precision = null, array $attributes = [])
+    public function float(string $name, mixed $size = null, mixed $precision = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'float', $size, $precision, $attributes);
     }
@@ -537,7 +537,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function real($name, $size = null, $precision = null, array $attributes = [])
+    public function real(string $name, mixed $size = null, mixed $precision = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'real', $size, $precision, $attributes);
     }
@@ -551,7 +551,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function double($name, $size = null, $precision = null, array $attributes = [])
+    public function double(string $name, mixed $size = null, mixed $precision = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'double', $size, $precision, $attributes);
     }
@@ -565,7 +565,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function decimal($name, $size = null, $precision = null, array $attributes = [])
+    public function decimal(string $name, mixed $size = null, mixed $precision = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'decimal', $size, $precision, $attributes);
     }
@@ -579,7 +579,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function numeric($name, $size = null, $precision = null, array $attributes = [])
+    public function numeric(string $name, mixed $size = null, mixed $precision = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'numeric', $size, $precision, $attributes);
     }
@@ -595,7 +595,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function date($name, array $attributes = [])
+    public function date(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'date', null, null, $attributes);
     }
@@ -607,7 +607,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function time($name, array $attributes = [])
+    public function time(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'time', null, null, $attributes);
     }
@@ -619,7 +619,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function datetime($name, array $attributes = [])
+    public function datetime(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'datetime', null, null, $attributes);
     }
@@ -631,7 +631,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function timestamp($name, array $attributes = [])
+    public function timestamp(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'timestamp', null, null, $attributes);
     }
@@ -644,7 +644,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function year($name, $size = null, array $attributes = [])
+    public function year(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'year', $size, null, $attributes);
     }
@@ -660,7 +660,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function text($name, array $attributes = [])
+    public function text(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'text', null, null, $attributes);
     }
@@ -672,7 +672,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function tinyText($name, array $attributes = [])
+    public function tinyText(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'tinytext', null, null, $attributes);
     }
@@ -684,7 +684,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function mediumText($name, array $attributes = [])
+    public function mediumText(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'mediumtext', null, null, $attributes);
     }
@@ -696,7 +696,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function longText($name, array $attributes = [])
+    public function longText(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'longtext', null, null, $attributes);
     }
@@ -708,7 +708,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function blob($name, array $attributes = [])
+    public function blob(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'blob', null, null, $attributes);
     }
@@ -720,7 +720,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function mediumBlob($name, array $attributes = [])
+    public function mediumBlob(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'mediumblob', null, null, $attributes);
     }
@@ -732,7 +732,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function longBlob($name, array $attributes = [])
+    public function longBlob(string $name, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'longblob', null, null, $attributes);
     }
@@ -745,7 +745,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function char($name, $size = null, array $attributes = [])
+    public function char(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'char', $size, null, $attributes);
     }
@@ -758,7 +758,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array  $attributes
      * @return AbstractStructure
      */
-    public function varchar($name, $size = null, array $attributes = [])
+    public function varchar(string $name, mixed $size = null, array $attributes = []): AbstractStructure
     {
         return $this->addColumn($name, 'varchar', $size, null, $attributes);
     }
@@ -770,7 +770,7 @@ abstract class AbstractStructure extends AbstractTable
      * @param  array $column
      * @return string
      */
-    protected function getColumnSchema($name, array $column)
+    protected function getColumnSchema($name, array $column): string
     {
         return Formatter\Column::getColumnSchema($this->getDbType(), $this->quoteId($name), $column, $this->table);
     }

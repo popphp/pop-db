@@ -30,20 +30,20 @@ class Drop extends AbstractTable
      * IF EXISTS flag
      * @var bool
      */
-    protected $ifExists = false;
+    protected bool $ifExists = false;
 
     /**
      * CASCADE flag
      * @var bool
      */
-    protected $cascade  = false;
+    protected bool $cascade  = false;
 
     /**
      * Set the IF EXISTS flag
      *
      * @return Drop
      */
-    public function ifExists()
+    public function ifExists(): Drop
     {
         $this->ifExists = true;
         return $this;
@@ -54,7 +54,7 @@ class Drop extends AbstractTable
      *
      * @return Drop
      */
-    public function cascade()
+    public function cascade(): Drop
     {
         $this->cascade = true;
         return $this;
@@ -65,7 +65,7 @@ class Drop extends AbstractTable
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         return 'DROP TABLE ' . ((($this->ifExists) && ($this->dbType != self::SQLSRV)) ? 'IF EXISTS ' : null)
             . $this->quoteId($this->table) . ((($this->isPgsql()) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
@@ -76,7 +76,7 @@ class Drop extends AbstractTable
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

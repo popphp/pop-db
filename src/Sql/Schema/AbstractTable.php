@@ -32,15 +32,15 @@ abstract class AbstractTable extends AbstractSql
 
     /**
      * Table name
-     * @var string
+     * @var ?string
      */
-    protected $table = null;
+    protected ?string $table = null;
 
     /**
      * Table info
      * @var array
      */
-    protected $info = [];
+    protected array $info = [];
 
     /**
      * Constructor
@@ -50,7 +50,7 @@ abstract class AbstractTable extends AbstractSql
      * @param  string          $table
      * @param  AbstractAdapter $db
      */
-    public function __construct($table, AbstractAdapter $db)
+    public function __construct(string $table, AbstractAdapter $db)
     {
         $this->table = $table;
         parent::__construct($db);
@@ -64,7 +64,7 @@ abstract class AbstractTable extends AbstractSql
      *
      * @return string
      */
-    public function getTable()
+    public function getTable(): string
     {
         return $this->table;
     }
@@ -74,7 +74,7 @@ abstract class AbstractTable extends AbstractSql
      *
      * @return array
      */
-    public function getInfo()
+    public function getInfo(): array
     {
         return $this->info;
     }
@@ -84,7 +84,7 @@ abstract class AbstractTable extends AbstractSql
      *
      * @return array
      */
-    public function renderToStatements()
+    public function renderToStatements(): array
     {
         $statements    = explode(';' . PHP_EOL, $this->render());
         $sqlStatements = [];
@@ -104,13 +104,13 @@ abstract class AbstractTable extends AbstractSql
      *
      * @return string
      */
-    abstract public function render();
+    abstract public function render(): string;
 
     /**
      * Render the table schema to string
      *
      * @return string
      */
-    abstract public function __toString();
+    abstract public function __toString(): string;
 
 }

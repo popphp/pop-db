@@ -30,7 +30,7 @@ class Expression
      * Allowed operators
      * @var array
      */
-    protected static $operators = [
+    protected static array $operators = [
         '>=', '<=', '!=', '=', '>', '<',
         'NOT LIKE', 'LIKE', 'NOT BETWEEN', 'BETWEEN',
         'NOT IN', 'IN', 'IS NOT NULL', 'IS NULL'
@@ -40,9 +40,10 @@ class Expression
      * Method to parse a predicate string expression into its components
      *
      * @param  string $expression
+     * @throws Exception
      * @return array
      */
-    public static function parse($expression)
+    public static function parse(string $expression): array
     {
         $column   = null;
         $operator = null;
@@ -95,7 +96,7 @@ class Expression
      * @param  array $expressions
      * @return array
      */
-    public static function parseExpressions(array $expressions)
+    public static function parseExpressions(array $expressions): array
     {
         $components = [];
 
@@ -112,7 +113,7 @@ class Expression
      * @param  string $expression
      * @return array
      */
-    public static function convertExpressionToShorthand($expression)
+    public static function convertExpressionToShorthand(string $expression): array
     {
         ['column' => $column, 'operator' => $operator, 'value' => $value] = self::parse($expression);
 
@@ -125,21 +126,21 @@ class Expression
                 $column .= $operator;
                 break;
             case 'LIKE':
-                if (substr($value, 0, 1) == '%') {
+                if (str_starts_with($value, '%')) {
                     $column = '%' . $column;
                     $value  = substr($value, 1);
                 }
-                if (substr($value, -1) == '%') {
+                if (str_ends_with($value, '%')) {
                     $column .= '%';
                     $value   = substr($value, 0, -1);
                 }
                 break;
             case 'NOT LIKE':
-                if (substr($value, 0, 1) == '%') {
+                if (str_starts_with($value, '%')) {
                     $column = '-%' . $column;
                     $value  = substr($value, 1);
                 }
-                if (substr($value, -1) == '%') {
+                if (str_ends_with($value, '%')) {
                     $column .= '%-';
                     $value   = substr($value, 0, -1);
                 }
@@ -151,7 +152,7 @@ class Expression
                 break;
         }
 
-        if (strpos($expression, ' BETWEEN ') !== false) {
+        if (str_contains($expression, ' BETWEEN ')) {
             $value = '(' . implode(', ', $value) . ')';
         }
 
@@ -164,7 +165,7 @@ class Expression
      * @param  array $expressions
      * @return array
      */
-    public static function convertExpressionsToShorthand(array $expressions)
+    public static function convertExpressionsToShorthand(array $expressions): array
     {
         $conditions = [];
 
@@ -179,11 +180,11 @@ class Expression
      * Method to parse the shorthand columns to create expressions and their parameters
      *
      * @param  array   $columns
-     * @param  string  $placeholder
-     * @param  bool $flatten
+     * @param  ?string $placeholder
+     * @param  bool    $flatten
      * @return array
      */
-    public static function parseShorthand($columns, $placeholder = null, $flatten = true)
+    public static function parseShorthand(array $columns, ?string $placeholder = null, bool $flatten = true): array
     {
         $expressions = [];
         $params      = [];
@@ -247,8 +248,8 @@ class Expression
                     $params[$j] = $p;
                 }
             // BETWEEN/NOT BETWEEN
-            } else if (is_string($value) && (substr($value, 0, 1) == '(') && (substr($value, -1) == ')') &&
-                (strpos($value, ',') !== false)) {
+            } else if (is_string($value) && (str_starts_with($value, '(')) && (str_ends_with($value, ')')) &&
+                (str_contains($value, ','))) {
                 $values            = substr($value, (strpos($value, '(') + 1));
                 $values            = substr($values, 0, strpos($values, ')'));
                 [$value1, $value2] = array_map('trim', explode(',', $values));
@@ -283,10 +284,10 @@ class Expression
                 $i++;
             // LIKE/NOT LIKE or Standard Operators
             } else  {
-                if ((substr($column, 0, 1) == '%') || (substr($column, 0, 2) == '-%')) {
+                if ((str_starts_with($column, '%')) || (str_starts_with($column, '-%'))) {
                     $value  = '%' . $value;
                 }
-                if ((substr($column, -1) == '%') || (substr($column, -2) == '%-')) {
+                if ((str_ends_with($column, '%')) || (str_ends_with($column, '%-'))) {
                     $value .= '%';
                 }
                 if ($placeholder !== null) {
@@ -343,11 +344,11 @@ class Expression
      * @param  string $identifier
      * @return string
      */
-    public static function stripIdQuotes($identifier)
+    public static function stripIdQuotes(string $identifier): string
     {
-        if (((substr($identifier, 0, 1) == '"') && (substr($identifier, -1) == '"')) ||
-            ((substr($identifier, 0, 1) == '`') && (substr($identifier, -1) == '`')) ||
-            ((substr($identifier, 0, 1) == '[') && (substr($identifier, -1) == ']'))) {
+        if (((str_starts_with($identifier, '"')) && (str_ends_with($identifier, '"'))) ||
+            ((str_starts_with($identifier, '`')) && (str_ends_with($identifier, '`'))) ||
+            ((str_starts_with($identifier, '[')) && (str_ends_with($identifier, ']')))) {
             $identifier = substr($identifier, 1);
             $identifier = substr($identifier, 0, -1);
         }
@@ -361,10 +362,10 @@ class Expression
      * @param  string $value
      * @return string
      */
-    public static function stripQuotes($value)
+    public static function stripQuotes(string $value): string
     {
-        if (((substr($value, 0, 1) == '"') && (substr($value, -1) == '"')) ||
-            ((substr($value, 0, 1) == "'") && (substr($value, -1) == "'"))) {
+        if (((str_starts_with($value, '"')) && (str_ends_with($value, '"'))) ||
+            ((str_starts_with($value, "'")) && (str_ends_with($value, "'")))) {
             $value = substr($value, 1);
             $value = substr($value, 0, -1);
         }
@@ -378,10 +379,10 @@ class Expression
      * @param  string $value
      * @return string
      */
-    public static function quote($value)
+    public static function quote(string $value): string
     {
         if (($value == '') ||
-            (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+            (($value != '?') && (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
                 !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
             $value = "'" . $value . "'";
         }

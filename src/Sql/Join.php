@@ -38,27 +38,27 @@ class Join
 
     /**
      * SQL object
-     * @var AbstractSql
+     * @var ?AbstractSql
      */
-    protected $sql = null;
+    protected ?AbstractSql $sql = null;
 
     /**
      * Foreign table
-     * @var string
+     * @var ?string
      */
-    protected $foreignTable = null;
+    protected ?string $foreignTable = null;
 
     /**
      * Columns
      * @var array
      */
-    protected $columns = [];
+    protected array $columns = [];
 
     /**
      * Join type
      * @var string
      */
-    protected $join = 'JOIN';
+    protected string $join = 'JOIN';
 
     /**
      * Constructor
@@ -70,7 +70,7 @@ class Join
      * @param  array       $columns
      * @param  string      $join
      */
-    public function __construct($sql, $foreignTable, array $columns, $join = 'JOIN')
+    public function __construct(AbstractSql $sql, mixed $foreignTable, array $columns, string $join = 'JOIN')
     {
         $this->sql = $sql;
 
@@ -95,7 +95,7 @@ class Join
      *
      * @return string
      */
-    public function getForeignTable()
+    public function getForeignTable(): string
     {
         return $this->foreignTable;
     }
@@ -105,7 +105,7 @@ class Join
      *
      * @return array
      */
-    public function getColumns()
+    public function getColumns(): array
     {
         return $this->columns;
     }
@@ -115,7 +115,7 @@ class Join
      *
      * @return string
      */
-    public function getJoin()
+    public function getJoin(): string
     {
         return $this->join;
     }
@@ -125,14 +125,14 @@ class Join
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         $columns = [];
         foreach ($this->columns as $column1 => $column2) {
             if (is_array($column2)) {
                 foreach ($column2 as $c) {
-                    $columns[] = ((strpos($column1, '.') !== false) ? $this->sql->quoteId($column1) : $column1) . ' = ' .
-                        ((strpos($c, '.') !== false) ? $this->sql->quoteId($c) : $c);
+                    $columns[] = ((str_contains($column1, '.')) ? $this->sql->quoteId($column1) : $column1) . ' = ' .
+                        ((str_contains($c, '.')) ? $this->sql->quoteId($c) : $c);
                 }
             } else {
                 $columns[] = $this->sql->quoteId($column1) . ' = ' . $this->sql->quoteId($column2);
@@ -147,7 +147,7 @@ class Join
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

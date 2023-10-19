@@ -30,9 +30,9 @@ abstract class AbstractMigrator implements MigratorInterface
 
     /**
      * Database adapter
-     * @var AbstractAdapter
+     * @var ?AbstractAdapter
      */
-    protected $db = null;
+    protected ?AbstractAdapter $db = null;
 
     /**
      * Constructor
@@ -51,7 +51,7 @@ abstract class AbstractMigrator implements MigratorInterface
      *
      * @return AbstractAdapter
      */
-    public function getDb()
+    public function getDb(): AbstractAdapter
     {
         return $this->db;
     }
@@ -61,7 +61,7 @@ abstract class AbstractMigrator implements MigratorInterface
      *
      * @return AbstractAdapter
      */
-    public function db()
+    public function db(): AbstractAdapter
     {
         return $this->db;
     }

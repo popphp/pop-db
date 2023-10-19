@@ -30,14 +30,14 @@ class Truncate extends AbstractTable
      * CASCADE flag
      * @var bool
      */
-    protected $cascade  = false;
+    protected bool $cascade  = false;
 
     /**
      * Set the CASCADE flag
      *
      * @return Truncate
      */
-    public function cascade()
+    public function cascade(): Truncate
     {
         $this->cascade = true;
         return $this;
@@ -48,7 +48,7 @@ class Truncate extends AbstractTable
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         return 'TRUNCATE TABLE ' . $this->quoteId($this->table) .
             ((($this->isPgsql()) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
@@ -59,7 +59,7 @@ class Truncate extends AbstractTable
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

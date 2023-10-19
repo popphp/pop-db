@@ -33,10 +33,11 @@ class IsNotNull extends AbstractPredicate
      *
      * Instantiate the IS NOT NULL predicate set object
      *
-     * @param  string  $values
+     * @param  string $values
      * @param  string $conjunction
+     * @throws Exception
      */
-    public function __construct($values, $conjunction = 'AND')
+    public function __construct(string $values, string $conjunction = 'AND')
     {
         $this->format = '%1 IS NOT NULL';
         parent::__construct($values, $conjunction);

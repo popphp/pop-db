@@ -29,15 +29,15 @@ abstract class AbstractMigration extends AbstractMigrator implements MigrationIn
     /**
      * Execute an UP migration (new forward changes)
      *
-     * @return MigrationInterface
+     * @return void
      */
-    abstract public function up();
+    abstract public function up(): void;
 
     /**
      * Execute a DOWN migration (rollback previous changes)
      *
-     * @return MigrationInterface
+     * @return void
      */
-    abstract public function down();
+    abstract public function down(): void;
 
 }

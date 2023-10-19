@@ -30,26 +30,26 @@ class Create extends AbstractStructure
      * IF NOT EXISTS flag
      * @var bool
      */
-    protected $ifNotExists = false;
+    protected bool $ifNotExists = false;
 
     /**
      * Table engine (MySQL only)
      * @var string
      */
-    protected $engine = 'InnoDB';
+    protected string $engine = 'InnoDB';
 
     /**
      * Table charset (MySQL only)
      * @var string
      */
-    protected $charset = 'utf8';
+    protected string $charset = 'utf8';
 
     /**
      * Set the IF NOT EXISTS flag
      *
      * @return Create
      */
-    public function ifNotExists()
+    public function ifNotExists(): Create
     {
         $this->ifNotExists = true;
         return $this;
@@ -61,7 +61,7 @@ class Create extends AbstractStructure
      * @param  string $engine
      * @return Create
      */
-    public function setEngine($engine)
+    public function setEngine(string $engine): Create
     {
         $this->engine = $engine;
         return $this;
@@ -72,7 +72,7 @@ class Create extends AbstractStructure
      *
      * @return string
      */
-    public function getEngine()
+    public function getEngine(): string
     {
         return $this->engine;
     }
@@ -83,7 +83,7 @@ class Create extends AbstractStructure
      * @param  string $charset
      * @return Create
      */
-    public function setCharset($charset)
+    public function setCharset(string $charset): Create
     {
         $this->charset = $charset;
         return $this;
@@ -94,7 +94,7 @@ class Create extends AbstractStructure
      *
      * @return string
      */
-    public function getCharset()
+    public function getCharset(): string
     {
         return $this->charset;
     }
@@ -104,7 +104,7 @@ class Create extends AbstractStructure
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
         $schema = '';
 
@@ -166,7 +166,7 @@ class Create extends AbstractStructure
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }
