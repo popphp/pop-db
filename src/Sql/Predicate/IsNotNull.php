@@ -50,7 +50,7 @@ class IsNotNull extends AbstractPredicate
      * @param  AbstractSql $sql
      * @return string
      */
-    public function render(AbstractSql $sql)
+    public function render(AbstractSql $sql): string
     {
         return '(' . str_replace('%1', $sql->quoteId($this->values), $this->format) . ')';
     }

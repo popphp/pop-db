@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="vendor/autoload.php" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
-  <coverage processUncoveredFiles="true">
-    <include>
-      <directory suffix=".php">src</directory>
-    </include>
-    <exclude>
-      <file>src/Adapter/Sqlsrv.php</file>
-      <file>src/Sql/Migration/Template/MigrationTemplate.php</file>
-    </exclude>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="vendor/autoload.php" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.4/phpunit.xsd" cacheDirectory=".phpunit.cache">
+  <coverage>
     <report>
       <html outputDirectory="/tmp/pop-db-cc" lowUpperBound="35" highLowerBound="70"/>
     </report>
@@ -19,13 +12,22 @@
   </testsuites>
   <logging/>
   <php>
-    <env name="MYSQL_DB"   value="test_popdb"/>
+    <env name="MYSQL_DB" value="test_popdb"/>
     <env name="MYSQL_USER" value="root"/>
     <env name="MYSQL_PASS" value=""/>
     <env name="MYSQL_HOST" value="127.0.0.1"/>
-    <env name="PGSQL_DB"   value="test_popdb"/>
+    <env name="PGSQL_DB" value="test_popdb"/>
     <env name="PGSQL_USER" value="postgres"/>
     <env name="PGSQL_PASS" value="postgres"/>
     <env name="PGSQL_HOST" value="127.0.0.1"/>
   </php>
+  <source>
+    <include>
+      <directory suffix=".php">src</directory>
+    </include>
+    <exclude>
+      <file>src/Adapter/Sqlsrv.php</file>
+      <file>src/Sql/Migration/Template/MigrationTemplate.php</file>
+    </exclude>
+  </source>
 </phpunit>

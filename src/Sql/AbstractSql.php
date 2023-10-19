@@ -52,9 +52,9 @@ abstract class AbstractSql
 
     /**
      * Database type
-     * @var ?int
+     * @var ?string
      */
-    protected ?int $dbType = null;
+    protected ?string $dbType = null;
 
     /**
      * SQL placeholder
