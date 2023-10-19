@@ -12,7 +12,9 @@
  * @namespace
  */
 namespace Pop\Db\Record;
+
 use Pop\Utils;
+
 /**
  * Record collection class
  *
@@ -21,7 +23,7 @@ use Pop\Utils;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Collection extends Utils\Collection
 {
@@ -31,7 +33,7 @@ class Collection extends Utils\Collection
      *
      * @return array
      */
-    public function getItems()
+    public function getItems(): array
     {
         return $this->data;
     }
@@ -39,10 +41,10 @@ class Collection extends Utils\Collection
     /**
      * Method to get collection object as an array
      *
-     * @param  array    $options
+     * @param  array $options
      * @return array
      */
-    public function toArray($options = []): array
+    public function toArray(array $options = []): array
     {
         $items = $this->data;
 

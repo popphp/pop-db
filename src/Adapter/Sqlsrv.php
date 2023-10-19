@@ -21,34 +21,34 @@ namespace Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Sqlsrv extends AbstractAdapter
 {
 
     /**
      * Database
-     * @var string
+     * @var ?string
      */
-    protected $database = null;
+    protected ?string $database = null;
 
     /**
      * Database info
      * @var array
      */
-    protected $info = [];
+    protected array $info = [];
 
     /**
      * Prepared statement string
-     * @var string
+     * @var ?string
      */
-    protected $statementString = null;
+    protected ?string $statementString = null;
 
     /**
      * Statement result
      * @var bool
      */
-    protected $statementResult = false;
+    protected bool $statementResult = false;
 
     /**
      * Constructor
@@ -70,7 +70,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  array $options
      * @return Sqlsrv
      */
-    public function connect(array $options = [])
+    public function connect(array $options = []): Sqlsrv
     {
         if (!empty($options)) {
             $this->setOptions($options);
@@ -93,7 +93,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  array $options
      * @return Sqlsrv
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): Sqlsrv
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
@@ -125,7 +125,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return bool
      */
-    public function hasOptions()
+    public function hasOptions(): bool
     {
         return (isset($this->options['database']) && isset($this->options['username']) && isset($this->options['password']));
     }
@@ -135,7 +135,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return Sqlsrv
      */
-    public function beginTransaction()
+    public function beginTransaction(): Sqlsrv
     {
         sqlsrv_begin_transaction($this->connection);
         return $this;
@@ -146,7 +146,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return Sqlsrv
      */
-    public function commit()
+    public function commit(): Sqlsrv
     {
         sqlsrv_commit($this->connection);
         return $this;
@@ -157,7 +157,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return Sqlsrv
      */
-    public function rollback()
+    public function rollback(): Sqlsrv
     {
         sqlsrv_rollback($this->connection);
         return $this;
@@ -169,7 +169,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  mixed $sql
      * @return Sqlsrv
      */
-    public function query($sql)
+    public function query(mixed $sql): Sqlsrv
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -206,7 +206,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  mixed $sql
      * @return Sqlsrv
      */
-    public function prepare($sql)
+    public function prepare(mixed $sql): Sqlsrv
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -242,7 +242,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  mixed $options
      * @return Sqlsrv
      */
-    public function bindParams(array $params, $options = null)
+    public function bindParams(array $params, mixed $options = null): Sqlsrv
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
@@ -283,7 +283,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return Sqlsrv
      */
-    public function execute()
+    public function execute(): Sqlsrv
     {
         if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set.');
@@ -313,7 +313,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return array
      */
-    public function fetch()
+    public function fetch(): array
     {
         if (($this->statement !== null) && ($this->statementResult !== false)) {
             return sqlsrv_fetch_array($this->statement, SQLSRV_FETCH_ASSOC);
@@ -331,7 +331,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return array
      */
-    public function fetchAll()
+    public function fetchAll(): array
     {
         $rows = [];
 
@@ -347,7 +347,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return void
      */
-    public function disconnect()
+    public function disconnect(): void
     {
         if ($this->isConnected()) {
             sqlsrv_close($this->connection);
@@ -362,7 +362,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  bool $asString
      * @return mixed
      */
-    public function getSqlSrvErrors($asString = true)
+    public function getSqlSrvErrors(bool $asString = true): mixed
     {
         $errors       = '';
         $errorsAry    = [];
@@ -383,7 +383,7 @@ class Sqlsrv extends AbstractAdapter
      * @param  string $value
      * @return string
      */
-    public function escape($value)
+    public function escape(string $value): string
     {
         $search  = ['\\', "\n", "\r", "\x00", "\x1a", '\'', '"'];
         $replace = ['\\\\', "\\n", "\\r", "\\x00", "\\x1a", '\\\'', '\\"'];
@@ -395,7 +395,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return int
      */
-    public function getLastId()
+    public function getLastId(): int
     {
         $this->query('SELECT SCOPE_IDENTITY() as Current_Identity');
         $row = $this->fetch();
@@ -407,7 +407,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return int
      */
-    public function getNumberOfRows()
+    public function getNumberOfRows(): int
     {
         if ($this->statement !== null) {
             return sqlsrv_num_rows($this->statement);
@@ -423,7 +423,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         $version = sqlsrv_server_info($this->connection);
         return $version['SQLServerName'] . ': ' . $version['SQLServerVersion'];
@@ -434,7 +434,7 @@ class Sqlsrv extends AbstractAdapter
      *
      * @return array
      */
-    public function getTables()
+    public function getTables(): array
     {
         $tables = [];
 

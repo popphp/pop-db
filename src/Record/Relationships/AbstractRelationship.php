@@ -23,34 +23,34 @@ use Pop\Db\Record\Collection;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractRelationship implements RelationshipInterface
 {
 
     /**
      * Foreign table class
-     * @var string
+     * @var ?string
      */
-    protected $foreignTable = null;
+    protected ?string $foreignTable = null;
 
     /**
      * Foreign key
-     * @var string
+     * @var ?string
      */
-    protected $foreignKey = null;
+    protected ?string $foreignKey = null;
 
     /**
      * Relationship options
-     * @var array
+     * @var ?array
      */
-    protected $options = null;
+    protected ?array $options = null;
 
     /**
      * Relationship children
-     * @var string
+     * @var ?string
      */
-    protected $children = null;
+    protected ?string $children = null;
 
     /**
      * Constructor
@@ -59,9 +59,9 @@ abstract class AbstractRelationship implements RelationshipInterface
      *
      * @param string $foreignTable
      * @param string $foreignKey
-     * @param array  $options
+     * @param ?array $options
      */
-    public function __construct($foreignTable, $foreignKey, array $options = null)
+    public function __construct(string $foreignTable, string $foreignKey, ?array $options = null)
     {
         $this->foreignTable = $foreignTable;
         $this->foreignKey   = $foreignKey;
@@ -73,7 +73,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      *
      * @return string
      */
-    public function getForeignTable()
+    public function getForeignTable(): string
     {
         return $this->foreignTable;
     }
@@ -83,7 +83,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      *
      * @return string
      */
-    public function getForeignKey()
+    public function getForeignKey(): string
     {
         return $this->foreignKey;
     }
@@ -93,7 +93,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      *
      * @return array
      */
-    public function getOptions()
+    public function getOptions(): array
     {
         return $this->options;
     }
@@ -103,7 +103,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      *
      * @return string
      */
-    public function getChildRelationships()
+    public function getChildRelationships(): string
     {
         return $this->children;
     }
@@ -114,7 +114,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      * @param  string $children
      * @return static
      */
-    public function setChildRelationships($children)
+    public function setChildRelationships(string $children): static
     {
         $this->children = $children;
         return $this;
@@ -127,6 +127,6 @@ abstract class AbstractRelationship implements RelationshipInterface
      * @throws Exception
      * @return array
      */
-    abstract public function getEagerRelationships(array $ids);
+    abstract public function getEagerRelationships(array $ids): array;
 
 }

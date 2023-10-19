@@ -15,6 +15,7 @@ namespace Pop\Db\Gateway;
 
 use Pop\Db\Db;
 use Pop\Db\Sql\Parser;
+use ArrayIterator;
 
 /**
  * Table gateway class
@@ -24,7 +25,7 @@ use Pop\Db\Sql\Parser;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Table extends AbstractGateway implements \Countable, \IteratorAggregate
 {
@@ -33,14 +34,14 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      * Result rows
      * @var array
      */
-    protected $rows = [];
+    protected array $rows = [];
 
     /**
      * Get the number of result rows
      *
      * @return int
      */
-    public function getNumberOfRows()
+    public function getNumberOfRows(): int
     {
         return count($this->rows);
     }
@@ -50,7 +51,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      *
      * @return array
      */
-    public function getRows()
+    public function getRows(): array
     {
         return $this->rows;
     }
@@ -60,7 +61,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      *
      * @return bool
      */
-    public function hasRows()
+    public function hasRows(): bool
     {
         return (count($this->rows) > 0);
     }
@@ -70,7 +71,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      *
      * @return array
      */
-    public function rows()
+    public function rows(): array
     {
         return $this->rows;
     }
@@ -80,7 +81,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      *
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         return $this->rows;
     }
@@ -88,13 +89,13 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     /**
      * Select rows from the table
      *
-     * @param  array $columns
-     * @param  mixed $where
-     * @param  array $parameters
-     * @param  array $options
+     * @param  ?array $columns
+     * @param  mixed  $where
+     * @param  ?array $parameters
+     * @param  ?array $options
      * @return array
      */
-    public function select(array $columns = null, $where = null, array $parameters = null, array $options = null)
+    public function select(?array $columns = null, mixed $where = null, ?array $parameters = null, ?array $options = null): array
     {
         $this->rows = [];
 
@@ -169,7 +170,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      * @param  array $columns
      * @return Table
      */
-    public function insert(array $columns)
+    public function insert(array $columns): Table
     {
         $this->rows = [];
 
@@ -207,7 +208,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      * @param  array $values
      * @return Table
      */
-    public function insertRows($values)
+    public function insertRows(array $values): Table
     {
         $this->rows   = [];
         $db           = Db::getDb($this->table);
@@ -239,12 +240,12 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     /**
      * Update a table
      *
-     * @param  array $columns
-     * @param  mixed $where
-     * @param  array $parameters
+     * @param  array  $columns
+     * @param  mixed  $where
+     * @param  ?array $parameters
      * @return Table
      */
-    public function update(array $columns, $where = null, array $parameters = [])
+    public function update(array $columns, mixed $where = null, ?array $parameters = []): Table
     {
         $this->rows = [];
 
@@ -287,7 +288,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      * @param  array $parameters
      * @return Table
      */
-    public function delete($where = null, array $parameters = [])
+    public function delete(mixed $where = null, array $parameters = []): Table
     {
         $this->rows = [];
 
@@ -317,7 +318,7 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
      * @param  array  $rows
      * @return Table
      */
-    public function setRows(array $rows = [])
+    public function setRows(array $rows = []): Table
     {
         $this->rows = $rows;
         return $this;
@@ -336,11 +337,11 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     /**
      * Method to iterate over the table rows
      *
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
-    public function getIterator(): \ArrayIterator
+    public function getIterator(): ArrayIterator
     {
-        return new \ArrayIterator($this->rows);
+        return new ArrayIterator($this->rows);
     }
 
 }

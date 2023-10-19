@@ -23,7 +23,7 @@ use Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractSql
 {
@@ -46,45 +46,45 @@ abstract class AbstractSql
 
     /**
      * Database object
-     * @var Adapter\AbstractAdapter
+     * @var ?Adapter\AbstractAdapter
      */
-    protected $db = null;
+    protected ?Adapter\AbstractAdapter $db = null;
 
     /**
      * Database type
-     * @var int
+     * @var ?int
      */
-    protected $dbType = null;
+    protected ?int $dbType = null;
 
     /**
      * SQL placeholder
-     * @var string
+     * @var ?string
      */
-    protected $placeholder = null;
+    protected ?string $placeholder = null;
 
     /**
      * ID quote type
      * @var string
      */
-    protected $idQuoteType = 'NO_QUOTE';
+    protected string $idQuoteType = 'NO_QUOTE';
 
     /**
      * ID open quote
-     * @var string
+     * @var ?string
      */
-    protected $openQuote = null;
+    protected ?string $openQuote = null;
 
     /**
      * ID close quote
-     * @var string
+     * @var ?string
      */
-    protected $closeQuote = null;
+    protected ?string $closeQuote = null;
 
     /**
      * Parameter count
      * @var int
      */
-    protected $parameterCount = 0;
+    protected int $parameterCount = 0;
 
     /**
      * Constructor
@@ -104,7 +104,7 @@ abstract class AbstractSql
      *
      * @return bool
      */
-    public function isMysql()
+    public function isMysql(): bool
     {
         return ($this->dbType == self::MYSQL);
     }
@@ -114,7 +114,7 @@ abstract class AbstractSql
      *
      * @return bool
      */
-    public function isPgsql()
+    public function isPgsql(): bool
     {
         return ($this->dbType == self::PGSQL);
     }
@@ -124,7 +124,7 @@ abstract class AbstractSql
      *
      * @return bool
      */
-    public function isSqlsrv()
+    public function isSqlsrv(): bool
     {
         return ($this->dbType == self::SQLSRV);
     }
@@ -134,7 +134,7 @@ abstract class AbstractSql
      *
      * @return bool
      */
-    public function isSqlite()
+    public function isSqlite(): bool
     {
         return ($this->dbType == self::SQLITE);
     }
@@ -142,9 +142,9 @@ abstract class AbstractSql
     /**
      * Get the current database adapter object (alias method)
      *
-     * @return Adapter\AbstractAdapter
+     * @return ?Adapter\AbstractAdapter
      */
-    public function db()
+    public function db(): ?Adapter\AbstractAdapter
     {
         return $this->db;
     }
@@ -152,9 +152,9 @@ abstract class AbstractSql
     /**
      * Get the current database adapter object
      *
-     * @return Adapter\AbstractAdapter
+     * @return ?Adapter\AbstractAdapter
      */
-    public function getDb()
+    public function getDb(): ?Adapter\AbstractAdapter
     {
         return $this->db;
     }
@@ -165,7 +165,7 @@ abstract class AbstractSql
      * @param  string $type
      * @return AbstractSql
      */
-    public function setIdQuoteType($type = self::NO_QUOTE)
+    public function setIdQuoteType(string $type = self::NO_QUOTE): AbstractSql
     {
         if (defined('Pop\Db\Sql::' . $type)) {
             $this->idQuoteType = $type;
@@ -180,7 +180,7 @@ abstract class AbstractSql
      * @param  string $placeholder
      * @return AbstractSql
      */
-    public function setPlaceholder($placeholder)
+    public function setPlaceholder(string $placeholder): AbstractSql
     {
         $this->placeholder = $placeholder;
         return $this;
@@ -189,9 +189,9 @@ abstract class AbstractSql
     /**
      * Get the current database type
      *
-     * @return int
+     * @return ?int
      */
-    public function getDbType()
+    public function getDbType(): ?int
     {
         return $this->dbType;
     }
@@ -199,9 +199,9 @@ abstract class AbstractSql
     /**
      * Get the SQL placeholder
      *
-     * @return string
+     * @return ?string
      */
-    public function getPlaceholder()
+    public function getPlaceholder(): ?string
     {
         return $this->placeholder;
     }
@@ -209,9 +209,9 @@ abstract class AbstractSql
     /**
      * Get the quote ID type
      *
-     * @return int
+     * @return string
      */
-    public function getIdQuoteType()
+    public function getIdQuoteType(): string
     {
         return $this->idQuoteType;
     }
@@ -219,9 +219,9 @@ abstract class AbstractSql
     /**
      * Get open quote
      *
-     * @return string
+     * @return ?string
      */
-    public function getOpenQuote()
+    public function getOpenQuote(): ?string
     {
         return $this->openQuote;
     }
@@ -229,9 +229,9 @@ abstract class AbstractSql
     /**
      * Get close quote
      *
-     * @return string
+     * @return ?string
      */
-    public function getCloseQuote()
+    public function getCloseQuote(): ?string
     {
         return $this->closeQuote;
     }
@@ -241,7 +241,7 @@ abstract class AbstractSql
      *
      * @return int
      */
-    public function getParameterCount()
+    public function getParameterCount(): int
     {
         return $this->parameterCount;
     }
@@ -249,9 +249,9 @@ abstract class AbstractSql
     /**
      * Increment parameter count
      *
-     * @return static
+     * @return AbstractSql
      */
-    public function incrementParameterCount()
+    public function incrementParameterCount(): AbstractSql
     {
         $this->parameterCount++;
         return $this;
@@ -260,9 +260,9 @@ abstract class AbstractSql
     /**
      * Decrement parameter count
      *
-     * @return static
+     * @return AbstractSql
      */
-    public function decrementParameterCount()
+    public function decrementParameterCount(): AbstractSql
     {
         $this->parameterCount--;
         return $this;
@@ -271,11 +271,11 @@ abstract class AbstractSql
     /**
      * Check if value is parameter placeholder
      *
-     * @param  mixed  $value
-     * @param  string $column
+     * @param  mixed   $value
+     * @param  ?string $column
      * @return bool
      */
-    public function isParameter($value, $column = null)
+    public function isParameter(mixed $value, ?string $column = null): bool
     {
         return ((!empty($value) && ($column !== null) && ((':' . $column) == $value)) ||
                 ((preg_match('/^\$\d*\d$/', (string)$value) == 1)) ||
@@ -285,11 +285,11 @@ abstract class AbstractSql
     /**
      * Get parameter placeholder value
      *
-     * @param  mixed  $value
-     * @param  string $column
+     * @param  mixed   $value
+     * @param  ?string $column
      * @return string
      */
-    public function getParameter($value, $column = null)
+    public function getParameter(mixed $value, ?string $column = null): string
     {
         $detectedDbType = null;
         $parameter      = $value;
@@ -333,11 +333,11 @@ abstract class AbstractSql
      * @param  string $identifier
      * @return string
      */
-    public function quoteId($identifier)
+    public function quoteId(string $identifier): string
     {
         $quotedId = null;
 
-        if (strpos($identifier, '.') !== false) {
+        if (str_contains($identifier, '.')) {
             $identifierAry = explode('.', $identifier);
             foreach ($identifierAry as $key => $val) {
                 $identifierAry[$key] = ($val != '*') ? $this->openQuote . $val . $this->closeQuote : $val;
@@ -353,11 +353,11 @@ abstract class AbstractSql
     /**
      * Quote the value (if it is not a numeric value)
      *
-     * @param  string  $value
-     * @param  bool $force
-     * @return string
+     * @param  string $value
+     * @param  bool   $force
+     * @return float|int|string
      */
-    public function quote($value, $force = false)
+    public function quote(string $value, bool $force = false): float|int|string
     {
         if ($force) {
             if (($value == '') ||
@@ -367,7 +367,7 @@ abstract class AbstractSql
             }
         } else {
             if (($value == '') ||
-                (($value != '?') && (substr($value, 0, 1) != ':') && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+                (($value != '?') && (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
                     !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
                 $value = "'" . $this->db->escape($value) . "'";
             }
@@ -382,7 +382,7 @@ abstract class AbstractSql
      * @param  string $adapter
      * @return void
      */
-    protected function init($adapter)
+    protected function init(string $adapter): void
     {
         if (stripos($adapter, 'pdo') !== false) {
             $adapter           = $this->db->getType();
@@ -423,7 +423,7 @@ abstract class AbstractSql
      *
      * @return void
      */
-    protected function initQuoteType()
+    protected function initQuoteType(): void
     {
         switch ($this->idQuoteType) {
             case (self::BACKTICK):

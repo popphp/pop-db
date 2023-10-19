@@ -24,16 +24,16 @@ use Pop\Db\Sql\Parser;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class BelongsTo extends AbstractRelationship
 {
 
     /**
      * Child record
-     * @var Record
+     * @var ?Record
      */
-    protected $child;
+    protected ?Record $child = null;
 
     /**
      * Constructor
@@ -43,9 +43,9 @@ class BelongsTo extends AbstractRelationship
      * @param Record $child
      * @param string $foreignTable
      * @param string $foreignKey
-     * @param array  $options
+     * @param ?array $options
      */
-    public function __construct(Record $child, $foreignTable, $foreignKey, array $options = null)
+    public function __construct(Record $child, string $foreignTable, string $foreignKey, ?array $options = null)
     {
         parent::__construct($foreignTable, $foreignKey, $options);
         $this->child = $child;
@@ -54,9 +54,9 @@ class BelongsTo extends AbstractRelationship
     /**
      * Get child record
      *
-     * @return Record
+     * @return ?Record
      */
-    public function getChild()
+    public function getChild(): ?Record
     {
         return $this->child;
     }
@@ -64,10 +64,10 @@ class BelongsTo extends AbstractRelationship
     /**
      * Get parent
      *
-     * @param  array  $options
-     * @return Record
+     * @param  ?array $options
+     * @return ?Record
      */
-    public function getParent(array $options = null)
+    public function getParent(?array $options = null): ?Record
     {
         $table  = $this->foreignTable;
         $values = $this->child[$this->foreignKey];
@@ -86,7 +86,7 @@ class BelongsTo extends AbstractRelationship
      * @throws Exception
      * @return array
      */
-    public function getEagerRelationships(array $ids)
+    public function getEagerRelationships(array $ids): array
     {
         if (($this->foreignTable === null) || ($this->foreignKey === null)) {
             throw new Exception('Error: The foreign table and key values have not been set.');
@@ -138,7 +138,7 @@ class BelongsTo extends AbstractRelationship
             }
             if (isset($this->options['order'])) {
                 if (!is_array($this->options['order'])) {
-                    $orders = (strpos($this->options['order'], ',') !== false) ?
+                    $orders = (str_contains($this->options['order'], ',')) ?
                         explode(',', $this->options['order']) : [$this->options['order']];
                 } else {
                     $orders = $this->options['order'];
@@ -179,7 +179,7 @@ class BelongsTo extends AbstractRelationship
         if (!empty($childRelationships)) {
             $children    = $this->children;
             $subChildren = null;
-            if (strpos($children, '.') !== false) {
+            if (str_contains($children, '.')) {
                 $names       = explode('.', $children);
                 $children    = array_shift($names);
                 $subChildren = implode('.', $names);

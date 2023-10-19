@@ -21,7 +21,7 @@ namespace Pop\Db\Sql;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractClause extends AbstractSql
 {
@@ -30,25 +30,25 @@ abstract class AbstractClause extends AbstractSql
      * Table
      * @var mixed
      */
-    protected $table = null;
+    protected mixed $table = null;
 
     /**
      * Alias
-     * @var string
+     * @var ?string
      */
-    protected $alias = null;
+    protected ?string $alias = null;
 
     /**
      * Values
      * @var array
      */
-    protected $values = [];
+    protected array $values = [];
 
     /**
      * Supported standard SQL aggregate functions
      * @var array
      */
-    protected static $aggregateFunctions = [
+    protected static array $aggregateFunctions = [
         'AVG', 'COUNT', 'MAX', 'MIN', 'SUM'
     ];
 
@@ -56,7 +56,7 @@ abstract class AbstractClause extends AbstractSql
      * Supported standard SQL math functions
      * @var array
      */
-    protected static $mathFunctions = [
+    protected static array $mathFunctions = [
         'ABS', 'RAND', 'SQRT', 'POW', 'POWER', 'EXP', 'LN', 'LOG', 'LOG10', 'GREATEST', 'LEAST',
         'DIV', 'MOD', 'ROUND', 'TRUNC', 'CEIL', 'CEILING', 'FLOOR', 'COS', 'ACOS', 'ACOSH', 'SIN',
         'SINH', 'ASIN', 'ASINH', 'TAN', 'TANH', 'ATANH', 'ATAN2',
@@ -66,7 +66,7 @@ abstract class AbstractClause extends AbstractSql
      * Supported standard SQL string functions
      * @var array
      */
-    protected static $stringFunctions = [
+    protected static array $stringFunctions = [
         'CONCAT', 'FORMAT', 'INSTR', 'LCASE', 'LEFT', 'LENGTH', 'LOCATE', 'LOWER', 'LPAD',
         'LTRIM', 'POSITION', 'QUOTE', 'REGEXP', 'REPEAT', 'REPLACE', 'REVERSE', 'RIGHT', 'RPAD',
         'RTRIM', 'SPACE', 'STRCMP', 'SUBSTRING', 'SUBSTR', 'TRIM', 'UCASE', 'UPPER'
@@ -76,9 +76,9 @@ abstract class AbstractClause extends AbstractSql
      * Set the table
      *
      * @param  mixed $table
-     * @return AbstractSql
+     * @return AbstractClause
      */
-    public function setTable($table)
+    public function setTable(mixed $table): AbstractClause
     {
         $this->table = $table;
         return $this;
@@ -89,7 +89,7 @@ abstract class AbstractClause extends AbstractSql
      *
      * @return bool
      */
-    public function hasAlias()
+    public function hasAlias(): bool
     {
         return ($this->alias !== null);
     }
@@ -97,9 +97,9 @@ abstract class AbstractClause extends AbstractSql
     /**
      * Get the alias
      *
-     * @return string
+     * @return ?string
      */
-    public function getAlias()
+    public function getAlias(): ?string
     {
         return $this->alias;
     }
@@ -108,9 +108,9 @@ abstract class AbstractClause extends AbstractSql
      * Set the alias
      *
      * @param  string $alias
-     * @return AbstractSql
+     * @return AbstractClause
      */
-    public function setAlias($alias)
+    public function setAlias(string $alias): AbstractClause
     {
         $this->alias = $alias;
         return $this;
@@ -119,9 +119,9 @@ abstract class AbstractClause extends AbstractSql
     /**
      * Get the table
      *
-     * @return string
+     * @return ?string
      */
-    public function getTable()
+    public function getTable(): ?string
     {
         return $this->table;
     }
@@ -130,9 +130,9 @@ abstract class AbstractClause extends AbstractSql
      * Set the values
      *
      * @param  array $values
-     * @return AbstractSql
+     * @return AbstractClause
      */
-    public function setValues(array $values)
+    public function setValues(array $values): AbstractClause
     {
         foreach ($values as $column => $value) {
             if ($this->isParameter($value, $column)) {
@@ -148,9 +148,9 @@ abstract class AbstractClause extends AbstractSql
      * Add a value
      *
      * @param  mixed $value
-     * @return AbstractSql
+     * @return AbstractClause
      */
-    public function addValue($value)
+    public function addValue(mixed $value): AbstractClause
     {
         if (!is_array($value) && !is_object($value)) {
             if ($this->isParameter($value)) {
@@ -166,9 +166,9 @@ abstract class AbstractClause extends AbstractSql
      *
      * @param  string $name
      * @param  mixed  $value
-     * @return AbstractSql
+     * @return AbstractClause
      */
-    public function addNamedValue($name, $value)
+    public function addNamedValue(string $name, mixed $value): AbstractClause
     {
         if (!is_array($value) && !is_object($value)) {
             if ($this->isParameter($value, $name)) {
@@ -184,7 +184,7 @@ abstract class AbstractClause extends AbstractSql
      *
      * @return array
      */
-    public function getValues()
+    public function getValues(): array
     {
         return $this->values;
     }
@@ -195,9 +195,9 @@ abstract class AbstractClause extends AbstractSql
      * @param  string $name
      * @return mixed
      */
-    public function getValue($name)
+    public function getValue(string $name): mixed
     {
-        return (isset($this->values[$name])) ? $this->values[$name] : null;
+        return $this->values[$name] ?? null;
     }
 
     /**
@@ -206,9 +206,9 @@ abstract class AbstractClause extends AbstractSql
      * @param  string $value
      * @return bool
      */
-    public static function isSupportedFunction($value)
+    public static function isSupportedFunction(string $value): bool
     {
-        if (strpos($value, '(') !== false) {
+        if (str_contains($value, '(')) {
             $value = trim(substr($value, 0, strpos($value, '(')));
         }
         $value = strtoupper($value);
@@ -223,6 +223,6 @@ abstract class AbstractClause extends AbstractSql
      *
      * @return string
      */
-    abstract public function render();
+    abstract public function render(): string;
 
 }

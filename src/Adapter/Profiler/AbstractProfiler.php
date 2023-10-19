@@ -21,22 +21,22 @@ namespace Pop\Db\Adapter\Profiler;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractProfiler implements ProfilerInterface
 {
 
     /**
      * Step start time
-     * @var float
+     * @var ?float
      */
-    protected $start = null;
+    protected ?float $start = null;
 
     /**
      * Step finish time
-     * @var float
+     * @var ?float
      */
-    protected $finish = null;
+    protected ?float $finish = null;
 
     /**
      * Constructor
@@ -53,7 +53,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      *
      * @return float
      */
-    public function getStart()
+    public function getStart(): float
     {
         return $this->start;
     }
@@ -63,7 +63,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      *
      * @return AbstractProfiler
      */
-    public function finish()
+    public function finish(): AbstractProfiler
     {
         $this->finish = microtime(true);
         return $this;
@@ -74,7 +74,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      *
      * @return float
      */
-    public function getFinish()
+    public function getFinish(): float
     {
         return $this->finish;
     }
@@ -84,7 +84,7 @@ abstract class AbstractProfiler implements ProfilerInterface
      *
      * @return string
      */
-    public function getElapsed()
+    public function getElapsed(): string
     {
         if ($this->finish === null) {
             $this->finish();

@@ -24,52 +24,52 @@ use Pop\Utils\CallableObject;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractAdapter implements AdapterInterface
 {
 
     /**
      * Database connection options
-     * @var mixed
+     * @var array
      */
-    protected $options = [];
+    protected array $options = [];
 
     /**
      * Database connection object/resource
      * @var mixed
      */
-    protected $connection = null;
+    protected mixed $connection = null;
 
     /**
      * Statement object/resource
      * @var mixed
      */
-    protected $statement = null;
+    protected mixed $statement = null;
 
     /**
      * Result object/resource
      * @var mixed
      */
-    protected $result = null;
+    protected mixed $result = null;
 
     /**
      * Error string/object/resource
      * @var mixed
      */
-    protected $error = null;
+    protected mixed $error = null;
 
     /**
      * Query listener object/resource
-     * @var CallableObject
+     * @var mixed
      */
-    protected $listener = null;
+    protected mixed $listener = null;
 
     /**
      * Query profiler
-     * @var Profiler\Profiler
+     * @var ?Profiler\Profiler
      */
-    protected $profiler = null;
+    protected ?Profiler\Profiler $profiler = null;
 
     /**
      * Constructor
@@ -86,22 +86,22 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  array $options
      * @return AbstractAdapter
      */
-    abstract public function connect(array $options = []);
+    abstract public function connect(array $options = []): AbstractAdapter;
 
     /**
      * Set database connection options
      *
      * @param  array $options
-     * @return AdapterInterface
+     * @return AbstractAdapter
      */
-    abstract public function setOptions(array $options);
+    abstract public function setOptions(array $options): AbstractAdapter;
 
     /**
      * Get database connection options
      *
      * @return array
      */
-    public function getOptions()
+    public function getOptions(): array
     {
         return $this->options;
     }
@@ -111,44 +111,44 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return bool
      */
-    abstract public function hasOptions();
+    abstract public function hasOptions(): bool;
 
     /**
      * Begin a transaction
      *
      * @return AbstractAdapter
      */
-    abstract public function beginTransaction();
+    abstract public function beginTransaction(): AbstractAdapter;
 
     /**
      * Commit a transaction
      *
      * @return AbstractAdapter
      */
-    abstract public function commit();
+    abstract public function commit(): AbstractAdapter;
 
     /**
      * Rollback a transaction
      *
      * @return AbstractAdapter
      */
-    abstract public function rollback();
+    abstract public function rollback(): AbstractAdapter;
 
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return AbstractAdapter
      */
-    abstract public function query($sql);
+    abstract public function query(mixed $sql): AbstractAdapter;
 
     /**
      * Prepare a SQL query
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return AbstractAdapter
      */
-    abstract public function prepare($sql);
+    abstract public function prepare(mixed $sql): AbstractAdapter;
 
     /**
      * Bind parameters to a prepared SQL query
@@ -156,35 +156,35 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  array $params
      * @return AbstractAdapter
      */
-    abstract public function bindParams(array $params);
+    abstract public function bindParams(array $params): AbstractAdapter;
 
     /**
      * Execute a prepared SQL query
      *
      * @return AbstractAdapter
      */
-    abstract public function execute();
+    abstract public function execute(): AbstractAdapter;
 
     /**
      * Fetch and return a row from the result
      *
      * @return array
      */
-    abstract public function fetch();
+    abstract public function fetch(): array;
 
     /**
      * Fetch and return all rows from the result
      *
      * @return array
      */
-    abstract public function fetchAll();
+    abstract public function fetchAll(): array;
 
     /**
      * Create SQL builder
      *
      * @return Sql
      */
-    public function createSql()
+    public function createSql(): Sql
     {
         return new Sql($this);
     }
@@ -194,7 +194,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return Sql\Schema
      */
-    public function createSchema()
+    public function createSchema(): Sql\Schema
     {
         return new Sql\Schema($this);
     }
@@ -204,7 +204,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return bool
      */
-    public function isConnected()
+    public function isConnected(): bool
     {
         return ($this->connection !== null);
     }
@@ -214,7 +214,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return mixed
      */
-    public function getConnection()
+    public function getConnection(): mixed
     {
         return $this->connection;
     }
@@ -224,7 +224,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return bool
      */
-    public function hasStatement()
+    public function hasStatement(): bool
     {
         return ($this->statement !== null);
     }
@@ -234,7 +234,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return mixed
      */
-    public function getStatement()
+    public function getStatement(): mixed
     {
         return $this->statement;
     }
@@ -244,7 +244,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return bool
      */
-    public function hasResult()
+    public function hasResult(): bool
     {
         return ($this->result !== null);
     }
@@ -254,7 +254,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return mixed
      */
-    public function getResult()
+    public function getResult(): mixed
     {
         return $this->result;
     }
@@ -262,12 +262,12 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Add query listener to the adapter
      *
-     * @param  mixed             $listener
-     * @param  mixed             $params
-     * @param  Profiler\Profiler $profiler
+     * @param  mixed              $listener
+     * @param  mixed              $params
+     * @param  ?Profiler\Profiler $profiler
      * @return mixed
      */
-    public function listen($listener, $params = null, Profiler\Profiler $profiler = null)
+    public function listen(mixed $listener, mixed $params = null, ?Profiler\Profiler $profiler = null): AbstractAdapter
     {
         if ($profiler !== null) {
             $this->profiler = $profiler;
@@ -305,9 +305,9 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Get query listener
      *
-     * @return CallableObject
+     * @return mixed
      */
-    public function getListener()
+    public function getListener(): mixed
     {
         return $this->listener;
     }
@@ -318,7 +318,7 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  Profiler\Profiler $profiler
      * @return AbstractAdapter
      */
-    public function setProfiler(Profiler\Profiler $profiler)
+    public function setProfiler(Profiler\Profiler $profiler): AbstractAdapter
     {
         $this->profiler = $profiler;
         return $this;
@@ -329,7 +329,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return Profiler\Profiler
      */
-    public function getProfiler()
+    public function getProfiler(): Profiler\Profiler
     {
         return $this->profiler;
     }
@@ -339,7 +339,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return AbstractAdapter
      */
-    public function clearProfiler()
+    public function clearProfiler(): AbstractAdapter
     {
         unset($this->profiler);
         $this->profiler = null;
@@ -351,7 +351,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return bool
      */
-    public function hasError()
+    public function hasError(): bool
     {
         return ($this->error !== null);
     }
@@ -362,7 +362,7 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  string $error
      * @return AbstractAdapter
      */
-    public function setError($error)
+    public function setError(string $error): AbstractAdapter
     {
         $this->error = $error;
         return $this;
@@ -373,7 +373,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return mixed
      */
-    public function getError()
+    public function getError(): mixed
     {
         return $this->error;
     }
@@ -381,11 +381,11 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Throw a database error exception
      *
-     * @param  string $error
+     * @param  ?string $error
      * @throws Exception
      * @return void
      */
-    public function throwError($error = null)
+    public function throwError(?string $error = null): void
     {
         if ($error !== null) {
             $this->setError($error);
@@ -400,7 +400,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return AbstractAdapter
      */
-    public function clearError()
+    public function clearError(): AbstractAdapter
     {
         $this->error = null;
         return $this;
@@ -411,7 +411,7 @@ abstract class AbstractAdapter implements AdapterInterface
      *
      * @return void
      */
-    public function disconnect()
+    public function disconnect(): void
     {
         unset($this->connection);
         unset($this->statement);
@@ -430,35 +430,35 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  string $value
      * @return string
      */
-    abstract public function escape($value);
+    abstract public function escape(string $value): string;
 
     /**
      * Return the last ID of the last query
      *
      * @return int
      */
-    abstract public function getLastId();
+    abstract public function getLastId(): int;
 
     /**
      * Return the number of rows from the last query
      *
      * @return int
      */
-    abstract public function getNumberOfRows();
+    abstract public function getNumberOfRows(): int;
 
     /**
      * Return the database version
      *
      * @return string
      */
-    abstract public function getVersion();
+    abstract public function getVersion(): string;
 
     /**
      * Return the tables in the database
      *
      * @return array
      */
-    abstract public function getTables();
+    abstract public function getTables(): array;
 
     /**
      * Return if the database has a table
@@ -466,7 +466,7 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  string  $table
      * @return bool
      */
-    public function hasTable($table)
+    public function hasTable(string $table): bool
     {
         return (in_array($table, $this->getTables()));
     }

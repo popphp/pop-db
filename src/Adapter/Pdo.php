@@ -21,34 +21,34 @@ namespace Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Pdo extends AbstractAdapter
 {
 
     /**
      * PDO DSN
-     * @var string
+     * @var ?string
      */
-    protected $dsn = null;
+    protected ?string $dsn = null;
 
     /**
      * PDO type
-     * @var string
+     * @var ?string
      */
-    protected $type = null;
+    protected ?string $type = null;
 
     /**
      * Statement placeholder
-     * @var string
+     * @var ?string
      */
-    protected $placeholder = null;
+    protected ?string $placeholder = null;
 
     /**
      * Statement result
      * @var bool
      */
-    protected $statementResult = false;
+    protected bool $statementResult = false;
 
     /**
      * Constructor
@@ -70,7 +70,7 @@ class Pdo extends AbstractAdapter
      * @param  array $options
      * @return Pdo
      */
-    public function connect(array $options = [])
+    public function connect(array $options = []): Pdo
     {
         if (!empty($options)) {
             $this->setOptions($options);
@@ -100,7 +100,7 @@ class Pdo extends AbstractAdapter
      * @param  array $options
      * @return Pdo
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): Pdo
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
@@ -133,7 +133,7 @@ class Pdo extends AbstractAdapter
      *
      * @return bool
      */
-    public function hasOptions()
+    public function hasOptions(): bool
     {
         if (!isset($this->options['type'])) {
             return false;
@@ -150,7 +150,7 @@ class Pdo extends AbstractAdapter
      *
      * @return bool
      */
-    public function dbFileExists()
+    public function dbFileExists(): bool
     {
         return (isset($this->options['database']) && file_exists($this->options['database']));
     }
@@ -158,9 +158,9 @@ class Pdo extends AbstractAdapter
     /**
      * Return the DSN
      *
-     * @return string
+     * @return ?string
      */
-    public function getDsn()
+    public function getDsn(): ?string
     {
         return $this->dsn;
     }
@@ -168,9 +168,9 @@ class Pdo extends AbstractAdapter
     /**
      * Return the type
      *
-     * @return string
+     * @return ?string
      */
-    public function getType()
+    public function getType(): ?string
     {
         return $this->type;
     }
@@ -180,7 +180,7 @@ class Pdo extends AbstractAdapter
      *
      * @return Pdo
      */
-    public function beginTransaction()
+    public function beginTransaction(): Pdo
     {
         $this->connection->beginTransaction();
         return $this;
@@ -191,7 +191,7 @@ class Pdo extends AbstractAdapter
      *
      * @return Pdo
      */
-    public function commit()
+    public function commit(): Pdo
     {
         $this->connection->commit();
         return $this;
@@ -202,7 +202,7 @@ class Pdo extends AbstractAdapter
      *
      * @return bool
      */
-    public function inTransaction()
+    public function inTransaction(): bool
     {
         return $this->connection->inTransaction();
     }
@@ -212,7 +212,7 @@ class Pdo extends AbstractAdapter
      *
      * @return Pdo
      */
-    public function rollback()
+    public function rollback(): Pdo
     {
         $this->connection->rollBack();
         return $this;
@@ -225,7 +225,7 @@ class Pdo extends AbstractAdapter
      * @param  mixed  $value     The value of the attribute request
      * @return bool
      */
-    public function setAttribute($attribute, $value)
+    public function setAttribute(int $attribute, mixed $value): bool
     {
         return $this->connection->setAttribute($attribute, $value);
     }
@@ -236,7 +236,7 @@ class Pdo extends AbstractAdapter
      * @param  int $attribute A request attribute
      * @return string
      */
-    public function getAttribute($attribute)
+    public function getAttribute(int $attribute): string
     {
         return $this->connection->getAttribute($attribute);
     }
@@ -247,7 +247,7 @@ class Pdo extends AbstractAdapter
      * @param  mixed $sql
      * @return Pdo
      */
-    public function query($sql)
+    public function query(mixed $sql): Pdo
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -285,18 +285,18 @@ class Pdo extends AbstractAdapter
      * Prepare a SQL query
      *
      * @param  mixed  $sql
-     * @param  array  $attribs
+     * @param  ?array $attribs
      * @return Pdo
      */
-    public function prepare($sql, $attribs = null)
+    public function prepare(mixed $sql, ?array $attribs = null): Pdo
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
         }
 
-        if (strpos($sql, '?') !== false) {
+        if (str_contains($sql, '?')) {
             $this->placeholder = '?';
-        } else if (strpos($sql, ':') !== false) {
+        } else if (str_contains($sql, ':')) {
             $this->placeholder = ':';
         }
 
@@ -320,7 +320,7 @@ class Pdo extends AbstractAdapter
      * @param  array $params
      * @return Pdo
      */
-    public function bindParams(array $params)
+    public function bindParams(array $params): Pdo
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
@@ -365,11 +365,11 @@ class Pdo extends AbstractAdapter
      * @param  mixed $param
      * @param  mixed $value
      * @param  int   $dataType
-     * @param  int   $length
+     * @param  ?int  $length
      * @param  mixed $options
      * @return Pdo
      */
-    public function bindParam($param, &$value, $dataType = \PDO::PARAM_STR, $length = null, $options = null)
+    public function bindParam(mixed $param, mixed &$value, int $dataType = \PDO::PARAM_STR, ?int $length = null, mixed $options = null): Pdo
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
@@ -386,7 +386,7 @@ class Pdo extends AbstractAdapter
      * @param  int   $dataType
      * @return Pdo
      */
-    public function bindValue($param, $value, $dataType = \PDO::PARAM_STR)
+    public function bindValue(mixed $param, mixed $value, int $dataType = \PDO::PARAM_STR): Pdo
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
@@ -403,7 +403,7 @@ class Pdo extends AbstractAdapter
      * @param  int   $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
      * @return Pdo
      */
-    public function bindColumn($column, $param, $dataType = \PDO::PARAM_STR)
+    public function bindColumn(mixed $column, mixed $param, int $dataType = \PDO::PARAM_STR): Pdo
     {
         $this->statement->bindColumn($column, $param, $dataType);
         return $this;
@@ -414,7 +414,7 @@ class Pdo extends AbstractAdapter
      *
      * @return Pdo
      */
-    public function execute()
+    public function execute(): Pdo
     {
         if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set.');
@@ -445,7 +445,7 @@ class Pdo extends AbstractAdapter
      * @param  int $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
      * @return array
      */
-    public function fetch($dataType = \PDO::FETCH_ASSOC)
+    public function fetch(int $dataType = \PDO::FETCH_ASSOC): array
     {
         if (($this->statement !== null) && ($this->statementResult !== false)) {
             return $this->statement->fetch($dataType);
@@ -463,7 +463,7 @@ class Pdo extends AbstractAdapter
      * @param  int $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
      * @return array
      */
-    public function fetchAll($dataType = \PDO::FETCH_ASSOC)
+    public function fetchAll(int $dataType = \PDO::FETCH_ASSOC): array
     {
         return $this->statement->fetchAll($dataType);
     }
@@ -474,7 +474,7 @@ class Pdo extends AbstractAdapter
      * @param  string $value
      * @return string
      */
-    public function escape($value)
+    public function escape(string $value): string
     {
         return substr($this->connection->quote($value), 1, -1);
     }
@@ -484,7 +484,7 @@ class Pdo extends AbstractAdapter
      *
      * @return int
      */
-    public function getLastId()
+    public function getLastId(): int
     {
         $id = 0;
 
@@ -513,7 +513,7 @@ class Pdo extends AbstractAdapter
      *
      * @return int
      */
-    public function getNumberOfRows()
+    public function getNumberOfRows(): int
     {
         $count = 0;
 
@@ -532,7 +532,7 @@ class Pdo extends AbstractAdapter
      *
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return 'PDO ' . substr($this->dsn, 0, strpos($this->dsn, ':')) . ' ' .
         $this->connection->getAttribute(\PDO::ATTR_SERVER_VERSION);
@@ -543,7 +543,7 @@ class Pdo extends AbstractAdapter
      *
      * @return array
      */
-    public function getTables()
+    public function getTables(): array
     {
         $tables = [];
 
@@ -578,9 +578,9 @@ class Pdo extends AbstractAdapter
      * Get the error message
      *
      * @param  mixed $errorInfo
-     * @return string
+     * @return ?string
      */
-    protected function getErrorMessage($errorInfo)
+    protected function getErrorMessage(mixed $errorInfo): ?string
     {
         if (is_array($errorInfo)) {
             $errorMessage = null;
@@ -600,11 +600,11 @@ class Pdo extends AbstractAdapter
     /**
      * Build the error
      *
-     * @param  string $code
-     * @param  array  $info
+     * @param  ?string $code
+     * @param  ?array  $info
      * @return Pdo
      */
-    protected function buildError($code = null, $info = null)
+    protected function buildError(?string $code = null, ?array $info = null): Pdo
     {
         if (($code === null) && ($info === null)) {
             $errorCode = $this->connection->errorCode();
@@ -624,7 +624,7 @@ class Pdo extends AbstractAdapter
      * @throws Exception
      * @return int
      */
-    public function getNumberOfFields()
+    public function getNumberOfFields(): int
     {
         $count = 0;
 
@@ -644,7 +644,7 @@ class Pdo extends AbstractAdapter
      *
      * @return bool
      */
-    public function closeCursor()
+    public function closeCursor(): bool
     {
         return $this->statement->closeCursor();
     }
@@ -654,7 +654,7 @@ class Pdo extends AbstractAdapter
      *
      * @return int
      */
-    public function getCountOfFields()
+    public function getCountOfFields(): int
     {
         return $this->statement->columnCount();
     }
@@ -665,7 +665,7 @@ class Pdo extends AbstractAdapter
      * @param  int $num The number of the table column
      * @return mixed
      */
-    public function fetchColumn($num = null)
+    public function fetchColumn(int $num = null): mixed
     {
         return $this->statement->fetchColumn($num);
     }
@@ -675,7 +675,7 @@ class Pdo extends AbstractAdapter
      *
      * @return int
      */
-    public function getCountOfRows()
+    public function getCountOfRows(): int
     {
         return $this->statement->rowCount();
     }
@@ -686,7 +686,7 @@ class Pdo extends AbstractAdapter
      * @param  bool $debug
      * @return string
      */
-    public function debugDumpParams($debug = false)
+    public function debugDumpParams(bool $debug = false): bool|string
     {
         ob_start();
         $this->statement->debugDumpParams();
@@ -698,10 +698,10 @@ class Pdo extends AbstractAdapter
     /**
      * The method runs an SQL query for execution and returns the number of rows affected during execution.
      *
-     * @param  string $sql The SQL statement to be prepared and run
+     * @param  mixed $sql The SQL statement to be prepared and run
      * @return Pdo
      */
-    public function exec($sql)
+    public function exec(mixed $sql): Pdo
     {
         if (!($this->connection->exec($sql))) {
             $this->throwError('Error: The database statement resource is not currently set.');

@@ -15,7 +15,7 @@ namespace Pop\Db\Record;
 
 use Pop\Db\Gateway;
 use Pop\Db\Sql\Parser;
-use ReturnTypeWillChange;
+use ArrayIterator;
 
 /**
  * Abstract record class
@@ -25,70 +25,70 @@ use ReturnTypeWillChange;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggregate
 {
 
     /**
      * Table name
-     * @var string
+     * @var ?string
      */
-    protected $table = null;
+    protected ?string $table = null;
 
     /**
      * Table prefix
-     * @var string
+     * @var ?string
      */
-    protected $prefix = null;
+    protected ?string $prefix = null;
 
     /**
      * Primary keys
      * @var array
      */
-    protected $primaryKeys = ['id'];
+    protected array $primaryKeys = ['id'];
 
     /**
      * Row gateway
-     * @var Gateway\Row
+     * @var ?Gateway\Row
      */
-    protected $rowGateway = null;
+    protected ?Gateway\Row $rowGateway = null;
 
     /**
      * Table gateway
-     * @var Gateway\Table
+     * @var ?Gateway\Table
      */
-    protected $tableGateway = null;
+    protected ?Gateway\Table $tableGateway = null;
 
     /**
      * Is new record flag
      * @var bool
      */
-    protected $isNew = false;
+    protected bool $isNew = false;
 
     /**
      * With relationships
      * @var array
      */
-    protected $with = [];
+    protected array $with = [];
 
     /**
      * With relationship options
      * @var array
      */
-    protected $withOptions = [];
+    protected array $withOptions = [];
 
     /**
      * With relationship children
-     * @var string
+     * @var ?string
      */
-    protected $withChildren = null;
+    protected ?string $withChildren = null;
 
     /**
      * Relationships
      * @var array
      */
-    protected $relationships = [];
+    protected array $relationships = [];
 
     /**
      * Set the table
@@ -96,7 +96,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $table
      * @return AbstractRecord
      */
-    public function setTable($table)
+    public function setTable(string $table): AbstractRecord
     {
         $this->table = $table;
         return $this;
@@ -105,18 +105,18 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Set the table from a class name
      *
-     * @param  string $class
-     * @return mixed
+     * @param  ?string $class
+     * @return AbstractRecord
      */
-    public function setTableFromClassName($class = null)
+    public function setTableFromClassName(?string $class = null): AbstractRecord
     {
         if ($class === null) {
             $class = get_class($this);
         }
 
-        if (strpos($class, '_') !== false) {
+        if (str_contains($class, '_')) {
             $cls = substr($class, (strrpos($class, '_') + 1));
-        } else if (strpos($class, '\\') !== false) {
+        } else if (str_contains($class, '\\')) {
             $cls = substr($class, (strrpos($class, '\\') + 1));
         } else {
             $cls = $class;
@@ -131,7 +131,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $prefix
      * @return AbstractRecord
      */
-    public function setPrefix($prefix)
+    public function setPrefix(string $prefix): AbstractRecord
     {
         $this->prefix = $prefix;
         return $this;
@@ -143,7 +143,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  array $keys
      * @return AbstractRecord
      */
-    public function setPrimaryKeys(array $keys)
+    public function setPrimaryKeys(array $keys): AbstractRecord
     {
         $this->primaryKeys = $keys;
         return $this;
@@ -152,9 +152,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Get the table
      *
-     * @return string
+     * @return ?string
      */
-    public function getTable()
+    public function getTable(): ?string
     {
         return $this->table;
     }
@@ -164,7 +164,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return string
      */
-    public function getFullTable()
+    public function getFullTable(): string
     {
         return $this->prefix . $this->table;
     }
@@ -172,9 +172,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Get the table prefix
      *
-     * @return string
+     * @return ?string
      */
-    public function getPrefix()
+    public function getPrefix(): ?string
     {
         return $this->prefix;
     }
@@ -184,7 +184,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return array
      */
-    public function getPrimaryKeys()
+    public function getPrimaryKeys(): array
     {
         return $this->primaryKeys;
     }
@@ -194,7 +194,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return array
      */
-    public function getPrimaryValues()
+    public function getPrimaryValues(): array
     {
         return ($this->rowGateway !== null) ?
             array_intersect_key($this->rowGateway->getColumns(), array_flip($this->primaryKeys)) : [];
@@ -203,9 +203,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Get the row gateway
      *
-     * @return Gateway\Row
+     * @return ?Gateway\Row
      */
-    public function getRowGateway()
+    public function getRowGateway(): ?Gateway\Row
     {
         return $this->rowGateway;
     }
@@ -213,9 +213,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Get the table gateway
      *
-     * @return Gateway\Table
+     * @return ?Gateway\Table
      */
-    public function getTableGateway()
+    public function getTableGateway(): ?Gateway\Table
     {
         return $this->tableGateway;
     }
@@ -225,7 +225,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $columns = $this->rowGateway->getColumns();
 
@@ -253,9 +253,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Method to iterate over the columns
      *
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
-    public function getIterator(): \ArrayIterator
+    public function getIterator(): ArrayIterator
     {
         return $this->rowGateway->getIterator();
     }
@@ -265,7 +265,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return Collection
      */
-    public function getRows()
+    public function getRows(): Collection
     {
         return new Collection($this->tableGateway->getRows());
     }
@@ -275,7 +275,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return Collection
      */
-    public function rows()
+    public function rows(): Collection
     {
         return $this->getRows();
     }
@@ -285,7 +285,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return int
      */
-    public function countRows()
+    public function countRows(): int
     {
         return $this->tableGateway->getNumberOfRows();
     }
@@ -295,7 +295,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return bool
      */
-    public function hasRows()
+    public function hasRows(): bool
     {
         return ($this->tableGateway->getNumberOfRows() > 0);
     }
@@ -307,7 +307,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @throws Exception
      * @return AbstractRecord
      */
-    public function setColumns($columns = null)
+    public function setColumns(mixed $columns = null): AbstractRecord
     {
         if ($columns !== null) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
@@ -327,11 +327,11 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Set all the table rows at once
      *
-     * @param  array   $rows
-     * @param  bool $asArray
+     * @param  ?array $rows
+     * @param  bool   $asArray
      * @return AbstractRecord
      */
-    public function setRows(array $rows = null, $asArray = false)
+    public function setRows(array $rows = null, bool $asArray = false): AbstractRecord
     {
         $this->rowGateway->setColumns();
         $this->tableGateway->setRows();
@@ -350,11 +350,11 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Process table rows
      *
-     * @param  array   $rows
-     * @param  bool $asArray
+     * @param  array $rows
+     * @param  bool  $asArray
      * @return array
      */
-    public function processRows(array $rows, $asArray = false)
+    public function processRows(array $rows, bool $asArray = false): array
     {
         foreach ($rows as $i => $row) {
             $rows[$i] = $this->processRow($row, $asArray);
@@ -365,11 +365,11 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Process a table row
      *
-     * @param  array   $row
-     * @param  bool $asArray
+     * @param  array $row
+     * @param  bool  $asArray
      * @return mixed
      */
-    public function processRow(array $row, $asArray = false)
+    public function processRow(array $row, bool $asArray = false): mixed
     {
         if ($asArray) {
             return $row;
@@ -384,13 +384,13 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Set with relationships
      *
      * @param  string $name
-     * @param  array  $options
+     * @param  ?array $options
      * @return AbstractRecord
      */
-    public function addWith($name, array $options = null)
+    public function addWith(string $name, array $options = null): AbstractRecord
     {
         $children = null;
-        if (strpos($name, '.') !== false) {
+        if (str_contains($name, '.')) {
             $names    = explode('.', $name);
             $name     = array_shift($names);
             $children = implode('.', $names);
@@ -405,10 +405,10 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     /**
      * Determine if there is specific with relationship
      *
-     * @param  string  $name
+     * @param  string $name
      * @return bool
      */
-    public function hasWith($name)
+    public function hasWith(string $name): bool
     {
         return (isset($this->with[$name]));
     }
@@ -418,7 +418,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return bool
      */
-    public function hasWiths()
+    public function hasWiths(): bool
     {
         return (count($this->with) > 0);
     }
@@ -428,7 +428,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return array
      */
-    public function getWiths()
+    public function getWiths(): array
     {
         return $this->with;
     }
@@ -439,7 +439,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  bool $eager
      * @return AbstractRecord
      */
-    public function getWithRelationships($eager = true)
+    public function getWithRelationships(bool $eager = true): AbstractRecord
     {
         foreach ($this->with as $i => $name) {
             $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
@@ -458,7 +458,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  array $rows
      * @return AbstractRecord
      */
-    public function processWithRelationships(array $rows)
+    public function processWithRelationships(array $rows): AbstractRecord
     {
         foreach ($this->relationships as $name => $relationship) {
             $withIds = [];
@@ -505,7 +505,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed  $relationship
      * @return AbstractRecord
      */
-    public function setRelationship($name, $relationship)
+    public function setRelationship(string $name, mixed $relationship): AbstractRecord
     {
         $this->relationships[$name] = $relationship;
         return $this;
@@ -517,9 +517,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $name
      * @return mixed
      */
-    public function getRelationship($name)
+    public function getRelationship(string $name): mixed
     {
-        return (isset($this->relationships[$name])) ? $this->relationships[$name] : null;
+        return $this->relationships[$name] ?? null;
     }
 
     /**
@@ -528,7 +528,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $name
      * @return bool
      */
-    public function hasRelationship($name)
+    public function hasRelationship(string $name): bool
     {
         return (isset($this->relationships[$name]));
     }
@@ -538,7 +538,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return array
      */
-    public function getRelationships()
+    public function getRelationships(): array
     {
         return $this->relationships;
     }
@@ -548,7 +548,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      *
      * @return bool
      */
-    public function hasRelationships()
+    public function hasRelationships(): bool
     {
         return (count($this->relationships) > 0);
     }
@@ -560,7 +560,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $value
      * @return void
      */
-    public function __set($name, $value)
+    public function __set(string $name, mixed $value)
     {
         $this->rowGateway[$name] = $value;
     }
@@ -571,7 +571,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $name
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         $result = null;
 
@@ -592,7 +592,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $name
      * @return bool
      */
-    public function __isset($name)
+    public function __isset(string $name): bool
     {
         if (isset($this->relationships[$name])) {
             return true;
@@ -611,7 +611,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  string $name
      * @return void
      */
-    public function __unset($name)
+    public function __unset(string $name): void
     {
         if (isset($this->rowGateway[$name])) {
             unset($this->rowGateway[$name]);
@@ -624,7 +624,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $offset
      * @return bool
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return $this->__isset($offset);
     }
@@ -635,8 +635,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $offset
      * @return mixed
      */
-    #[ReturnTypeWillChange]
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->__get($offset);
     }
@@ -648,8 +647,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $value
      * @return void
      */
-    #[ReturnTypeWillChange]
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->__set($offset, $value);
     }
@@ -660,8 +658,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  mixed $offset
      * @return void
      */
-    #[ReturnTypeWillChange]
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         $this->__unset($offset);
     }

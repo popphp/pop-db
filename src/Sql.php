@@ -23,42 +23,42 @@ use Pop\Db\Sql\AbstractSql;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Sql extends AbstractSql
 {
 
     /**
      * Select object
-     * @var Sql\Select
+     * @var ?Sql\Select
      */
-    protected $select = null;
+    protected ?Sql\Select $select = null;
 
     /**
      * Insert object
-     * @var Sql\Insert
+     * @var ?Sql\Insert
      */
-    protected $insert = null;
+    protected ?Sql\Insert $insert = null;
 
     /**
      * Update object
-     * @var Sql\Update
+     * @var ?Sql\Update
      */
-    protected $update = null;
+    protected ?Sql\Update $update = null;
 
     /**
      * Delete object
-     * @var Sql\Delete
+     * @var ?Sql\Delete
      */
-    protected $delete = null;
+    protected ?Sql\Delete $delete = null;
 
     /**
      * Access the select object
      *
      * @param  mixed $columns
-     * @return Sql\Select
+     * @return ?Sql\Select
      */
-    public function select($columns = null)
+    public function select(mixed $columns = null): ?Sql\Select
     {
         $this->insert = null;
         $this->update = null;
@@ -86,10 +86,10 @@ class Sql extends AbstractSql
     /**
      * Access the insert object
      *
-     * @param  string $table
-     * @return Sql\Insert
+     * @param  ?string $table
+     * @return ?Sql\Insert
      */
-    public function insert($table = null)
+    public function insert(?string $table = null): ?Sql\Insert
     {
         $this->select = null;
         $this->update = null;
@@ -108,10 +108,10 @@ class Sql extends AbstractSql
     /**
      * Access the update object
      *
-     * @param  string $table
-     * @return Sql\Update
+     * @param  ?string $table
+     * @return ?Sql\Update
      */
-    public function update($table = null)
+    public function update(?string $table = null): ?Sql\Update
     {
         $this->insert = null;
         $this->select = null;
@@ -130,10 +130,10 @@ class Sql extends AbstractSql
     /**
      * Access the delete object
      *
-     * @param  string $table
-     * @return Sql\Delete
+     * @param  ?string $table
+     * @return ?Sql\Delete
      */
-    public function delete($table = null)
+    public function delete(?string $table = null): ?Sql\Delete
     {
         $this->insert = null;
         $this->update = null;
@@ -154,7 +154,7 @@ class Sql extends AbstractSql
      *
      * @return bool
      */
-    public function hasSelect()
+    public function hasSelect(): bool
     {
         return ($this->select !== null);
     }
@@ -164,7 +164,7 @@ class Sql extends AbstractSql
      *
      * @return bool
      */
-    public function hasInsert()
+    public function hasInsert(): bool
     {
         return ($this->insert !== null);
     }
@@ -174,7 +174,7 @@ class Sql extends AbstractSql
      *
      * @return bool
      */
-    public function hasUpdate()
+    public function hasUpdate(): bool
     {
         return ($this->update !== null);
     }
@@ -184,7 +184,7 @@ class Sql extends AbstractSql
      *
      * @return bool
      */
-    public function hasDelete()
+    public function hasDelete(): bool
     {
         return ($this->delete !== null);
     }
@@ -194,7 +194,7 @@ class Sql extends AbstractSql
      *
      * @return Sql
      */
-    public function reset()
+    public function reset(): Sql
     {
         $this->select = null;
         $this->insert = null;
@@ -209,9 +209,9 @@ class Sql extends AbstractSql
      *
      * @return string
      */
-    public function render()
+    public function render(): string
     {
-        $sql = null;
+        $sql = '';
 
         if ($this->select !== null) {
             $sql = $this->select->render();
@@ -233,7 +233,7 @@ class Sql extends AbstractSql
      *
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->render();
     }

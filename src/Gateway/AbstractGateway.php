@@ -25,16 +25,16 @@ use Pop\Db\Adapter\AbstractAdapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 abstract class AbstractGateway implements GatewayInterface
 {
 
     /**
      * Table
-     * @var string
+     * @var ?string
      */
-    protected $table = null;
+    protected ?string $table = null;
 
     /**
      * Constructor
@@ -43,7 +43,7 @@ abstract class AbstractGateway implements GatewayInterface
      *
      * @param  string $table
      */
-    public function __construct($table)
+    public function __construct(string $table)
     {
         $this->table = $table;
     }
@@ -53,7 +53,7 @@ abstract class AbstractGateway implements GatewayInterface
      *
      * @return string
      */
-    public function getTable()
+    public function getTable(): string
     {
         return $this->table;
     }
@@ -61,10 +61,10 @@ abstract class AbstractGateway implements GatewayInterface
     /**
      * Get table info
      *
-     * @param  AbstractAdapter $db
+     * @param  ?AbstractAdapter $db
      * @return array
      */
-    public function getTableInfo(AbstractAdapter $db = null)
+    public function getTableInfo(?AbstractAdapter $db = null): array
     {
         if ($db === null) {
             $db = Db::getDb($this->table);

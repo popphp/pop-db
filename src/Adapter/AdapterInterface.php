@@ -21,7 +21,7 @@ namespace Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 interface AdapterInterface
 {
@@ -32,7 +32,7 @@ interface AdapterInterface
      * @param  array $options
      * @return AdapterInterface
      */
-    public function connect(array $options = []);
+    public function connect(array $options = []): AdapterInterface;
 
     /**
      * Set database connection options
@@ -40,58 +40,58 @@ interface AdapterInterface
      * @param  array $options
      * @return AdapterInterface
      */
-    public function setOptions(array $options);
+    public function setOptions(array $options): AdapterInterface;
 
     /**
      * Get database connection options
      *
      * @return array
      */
-    public function getOptions();
+    public function getOptions(): array;
 
     /**
      * Has database connection options
      *
      * @return bool
      */
-    public function hasOptions();
+    public function hasOptions(): bool;
 
     /**
      * Begin a transaction
      *
      * @return AdapterInterface
      */
-    public function beginTransaction();
+    public function beginTransaction(): AdapterInterface;
 
     /**
      * Commit a transaction
      *
      * @return AdapterInterface
      */
-    public function commit();
+    public function commit(): AdapterInterface;
 
     /**
      * Rollback a transaction
      *
      * @return AdapterInterface
      */
-    public function rollback();
+    public function rollback(): AdapterInterface;
 
     /**
      * Execute a SQL query directly
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return AdapterInterface
      */
-    public function query($sql);
+    public function query(mixed $sql): AdapterInterface;
 
     /**
      * Prepare a SQL query.
      *
-     * @param  string $sql
+     * @param  mixed $sql
      * @return AdapterInterface
      */
-    public function prepare($sql);
+    public function prepare(mixed $sql): AdapterInterface;
 
     /**
      * Bind parameters to a prepared SQL query
@@ -99,84 +99,84 @@ interface AdapterInterface
      * @param  array $params
      * @return AdapterInterface
      */
-    public function bindParams(array $params);
+    public function bindParams(array $params): AdapterInterface;
 
     /**
      * Execute a prepared SQL query
      *
      * @return AdapterInterface
      */
-    public function execute();
+    public function execute(): AdapterInterface;
 
     /**
      * Fetch and return a row from the result
      *
      * @return array
      */
-    public function fetch();
+    public function fetch(): array;
 
     /**
      * Fetch and return all rows from the result
      *
      * @return array
      */
-    public function fetchAll();
+    public function fetchAll(): array;
 
     /**
      * Create SQL builder
      *
      * @return \Pop\Db\Sql
      */
-    public function createSql();
+    public function createSql(): \Pop\Db\Sql;
 
     /**
      * Create Schema builder
      *
      * @return \Pop\Db\Sql\Schema
      */
-    public function createSchema();
+    public function createSchema(): \Pop\Db\Sql\Schema;
 
     /**
      * Determine whether or not connected
      *
      * @return bool
      */
-    public function isConnected();
+    public function isConnected(): bool;
 
     /**
      * Get the connection object/resource
      *
      * @return mixed
      */
-    public function getConnection();
+    public function getConnection(): mixed;
 
     /**
      * Determine whether or not a statement resource exists
      *
      * @return bool
      */
-    public function hasStatement();
+    public function hasStatement(): bool;
 
     /**
      * Get the statement object/resource
      *
      * @return mixed
      */
-    public function getStatement();
+    public function getStatement(): mixed;
 
     /**
      * Determine whether or not a result resource exists
      *
      * @return bool
      */
-    public function hasResult();
+    public function hasResult(): bool;
 
     /**
      * Get the result object/resource
      *
      * @return mixed
      */
-    public function getResult();
+    public function getResult(): mixed;
 
     /**
      * Add query listener to the adapter
@@ -184,7 +184,7 @@ interface AdapterInterface
      * @param  mixed $listener
      * @return AdapterInterface
      */
-    public function listen($listener);
+    public function listen(mixed $listener): AdapterInterface;
 
     /**
      * Set query profiler
@@ -192,28 +192,28 @@ interface AdapterInterface
      * @param  Profiler\Profiler $profiler
      * @return AdapterInterface
      */
-    public function setProfiler(Profiler\Profiler $profiler);
+    public function setProfiler(Profiler\Profiler $profiler): AdapterInterface;
 
     /**
      * Get query profiler
      *
      * @return Profiler\Profiler
      */
-    public function getProfiler();
+    public function getProfiler(): Profiler\Profiler;
 
     /**
      * Clear query profiler
      *
      * @return AdapterInterface
      */
-    public function clearProfiler();
+    public function clearProfiler(): AdapterInterface;
 
     /**
      * Determine whether or not there is an error
      *
      * @return bool
      */
-    public function hasError();
+    public function hasError(): bool;
 
     /**
      * Set the error
@@ -221,14 +221,14 @@ interface AdapterInterface
      * @param  string $error
      * @return AdapterInterface
      */
-    public function setError($error);
+    public function setError(string $error): AdapterInterface;
 
     /**
      * Get the error
      *
      * @return mixed
      */
-    public function getError();
+    public function getError(): mixed;
 
     /**
      * Throw a database error exception
@@ -236,21 +236,21 @@ interface AdapterInterface
      * @throws Exception
      * @return void
      */
-    public function throwError();
+    public function throwError(): void;
 
     /**
      * Clear the error
      *
      * @return AdapterInterface
      */
-    public function clearError();
+    public function clearError(): AdapterInterface;
 
     /**
      * Disconnect from the database
      *
      * @return void
      */
-    public function disconnect();
+    public function disconnect(): void;
 
     /**
      * Escape the value
@@ -258,42 +258,42 @@ interface AdapterInterface
      * @param  string $value
      * @return string
      */
-    public function escape($value);
+    public function escape(string $value): string;
 
     /**
      * Return the last ID of the last query
      *
      * @return int
      */
-    public function getLastId();
+    public function getLastId(): int;
 
     /**
      * Return the number of rows from the last query
      *
      * @return int
      */
-    public function getNumberOfRows();
+    public function getNumberOfRows(): int;
 
     /**
      * Return the database version
      *
      * @return string
      */
-    public function getVersion();
+    public function getVersion(): string;
 
     /**
      * Return the tables in the database
      *
      * @return array
      */
-    public function getTables();
+    public function getTables(): array;
 
     /**
      * Return if the database has a table
      *
-     * @param  string  $table
+     * @param  string $table
      * @return bool
      */
-    public function hasTable($table);
+    public function hasTable(string $table): bool;
 
 }

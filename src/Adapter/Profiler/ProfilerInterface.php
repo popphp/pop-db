@@ -21,7 +21,7 @@ namespace Pop\Db\Adapter\Profiler;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 interface ProfilerInterface
 {
@@ -31,27 +31,27 @@ interface ProfilerInterface
      *
      * @return float
      */
-    public function getStart();
+    public function getStart(): float;
 
     /**
      * Finish profiler
      *
      * @return ProfilerInterface
      */
-    public function finish();
+    public function finish(): ProfilerInterface;
 
     /**
      * Get end
      *
      * @return float
      */
-    public function getFinish();
+    public function getFinish(): float;
 
     /**
      * Get elapsed time
      *
      * @return string
      */
-    public function getElapsed();
+    public function getElapsed(): string;
 
 }

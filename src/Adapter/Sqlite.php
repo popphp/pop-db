@@ -21,34 +21,34 @@ namespace Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Sqlite extends AbstractAdapter
 {
 
     /**
      * SQLite flags
-     * @var int
+     * @var ?int
      */
-    protected $flags = null;
+    protected ?int $flags = null;
 
     /**
      * SQLite key
-     * @var string
+     * @var ?string
      */
-    protected $key = null;
+    protected ?string $key = null;
 
     /**
      * Last SQL query
-     * @var string
+     * @var ?string
      */
-    protected $lastSql = null;
+    protected ?string $lastSql = null;
 
     /**
      * Last result
-     * @var resource
+     * @var mixed
      */
-    protected $lastResult;
+    protected mixed $lastResult = null;
 
     /**
      * Constructor
@@ -70,7 +70,7 @@ class Sqlite extends AbstractAdapter
      * @param  array $options
      * @return Sqlite
      */
-    public function connect(array $options = [])
+    public function connect(array $options = []): Sqlite
     {
         if (!empty($options)) {
             $this->setOptions($options);
@@ -91,7 +91,7 @@ class Sqlite extends AbstractAdapter
      * @param  array $options
      * @return Sqlite
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): Sqlite
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
@@ -116,7 +116,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return bool
      */
-    public function hasOptions()
+    public function hasOptions(): bool
     {
         return (isset($this->options['database']));
     }
@@ -126,7 +126,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return bool
      */
-    public function dbFileExists()
+    public function dbFileExists(): bool
     {
         return (isset($this->options['database']) && file_exists($this->options['database']));
     }
@@ -136,7 +136,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return Sqlite
      */
-    public function beginTransaction()
+    public function beginTransaction(): Sqlite
     {
         $this->query('BEGIN TRANSACTION');
         return $this;
@@ -147,7 +147,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return Sqlite
      */
-    public function commit()
+    public function commit(): Sqlite
     {
         $this->query('COMMIT');
         return $this;
@@ -158,7 +158,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return Sqlite
      */
-    public function rollback()
+    public function rollback(): Sqlite
     {
         $this->query('ROLLBACK');
         return $this;
@@ -170,7 +170,7 @@ class Sqlite extends AbstractAdapter
      * @param  mixed $sql
      * @return Sqlite
      */
-    public function query($sql)
+    public function query(mixed $sql): Sqlite
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -203,7 +203,7 @@ class Sqlite extends AbstractAdapter
      * @param  mixed $sql
      * @return Sqlite
      */
-    public function prepare($sql)
+    public function prepare(mixed $sql): Sqlite
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -234,7 +234,7 @@ class Sqlite extends AbstractAdapter
      * @param  array $params
      * @return Sqlite
      */
-    public function bindParams(array $params)
+    public function bindParams(array $params): Sqlite
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
@@ -267,7 +267,7 @@ class Sqlite extends AbstractAdapter
      * @param  int   $type
      * @return Sqlite
      */
-    public function bindParam($param, $value, $type = SQLITE3_BLOB)
+    public function bindParam(mixed $param, mixed $value, int $type = SQLITE3_BLOB): Sqlite
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
@@ -288,7 +288,7 @@ class Sqlite extends AbstractAdapter
      * @param  int   $type
      * @return Sqlite
      */
-    public function bindValue($param, $value, $type = SQLITE3_BLOB)
+    public function bindValue(mixed $param, mixed $value, int $type = SQLITE3_BLOB): Sqlite
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParam($param, $value);
@@ -306,7 +306,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return Sqlite
      */
-    public function execute()
+    public function execute(): Sqlite
     {
         if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set.');
@@ -333,7 +333,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return array
      */
-    public function fetch()
+    public function fetch(): array
     {
         if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
@@ -347,7 +347,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return array
      */
-    public function fetchAll()
+    public function fetchAll(): array
     {
         $rows = [];
 
@@ -363,7 +363,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return void
      */
-    public function disconnect()
+    public function disconnect(): void
     {
         if ($this->isConnected()) {
             $this->connection->close();
@@ -378,7 +378,7 @@ class Sqlite extends AbstractAdapter
      * @param  string $value
      * @return string
      */
-    public function escape($value)
+    public function escape(string $value): string
     {
         return $this->connection->escapeString($value);
     }
@@ -388,7 +388,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return int
      */
-    public function getLastId()
+    public function getLastId(): int
     {
         return $this->connection->lastInsertRowID();
     }
@@ -398,7 +398,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return int
      */
-    public function getNumberOfRows()
+    public function getNumberOfRows(): int
     {
         if ($this->lastSql === null) {
             return $this->connection->changes();
@@ -422,7 +422,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         $version = $this->connection->version();
         return 'SQLite ' . $version['versionString'];
@@ -433,7 +433,7 @@ class Sqlite extends AbstractAdapter
      *
      * @return array
      */
-    public function getTables()
+    public function getTables(): array
     {
         $tables = [];
         $sql    = "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' " .

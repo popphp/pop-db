@@ -21,7 +21,7 @@ namespace Pop\Db\Record;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Encoded extends \Pop\Db\Record
 {
@@ -30,61 +30,61 @@ class Encoded extends \Pop\Db\Record
      * JSON-encoded fields
      * @var array
      */
-    protected $jsonFields = [];
+    protected array $jsonFields = [];
 
     /**
      * PHP-serialized fields
      * @var array
      */
-    protected $phpFields = [];
+    protected array $phpFields = [];
 
     /**
      * Base64-encoded fields
      * @var array
      */
-    protected $base64Fields = [];
+    protected array $base64Fields = [];
 
     /**
      * Password-hashed fields
      * @var array
      */
-    protected $hashFields = [];
+    protected array $hashFields = [];
 
     /**
      * Encrypted fields
      * @var array
      */
-    protected $encryptedFields = [];
+    protected array $encryptedFields = [];
 
     /**
      * Hash algorithm
      * @var string
      */
-    protected $hashAlgorithm = PASSWORD_BCRYPT;
+    protected string $hashAlgorithm = PASSWORD_BCRYPT;
 
     /**
      * Hash options
      * @var array
      */
-    protected $hashOptions = ['cost' => 10];
+    protected array $hashOptions = ['cost' => 10];
 
     /**
      * Cipher method
-     * @var string
+     * @var ?string
      */
-    protected $cipherMethod = null;
+    protected ?string $cipherMethod = null;
 
     /**
      * Encrypted field key
-     * @var string
+     * @var ?string
      */
-    protected $key = null;
+    protected ?string $key = null;
 
     /**
      * Encrypted field IV (base64-encoded)
-     * @var string
+     * @var ?string
      */
-    protected $iv = null;
+    protected ?string $iv = null;
 
     /**
      * Set all the table column values at once
@@ -93,7 +93,7 @@ class Encoded extends \Pop\Db\Record
      * @throws Exception
      * @return Encoded
      */
-    public function setColumns($columns = null)
+    public function setColumns(mixed $columns = null): Encoded
     {
         if ($columns !== null) {
             if (is_array($columns) || ($columns instanceof \ArrayObject)) {
@@ -113,9 +113,10 @@ class Encoded extends \Pop\Db\Record
     /**
      * Get column values as array
      *
+     * @throws Exception
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $result = parent::toArray();
 
@@ -136,7 +137,7 @@ class Encoded extends \Pop\Db\Record
      * @throws Exception
      * @return string
      */
-    public function encodeValue($key, $value)
+    public function encodeValue(string $key, mixed $value): string
     {
         if (in_array($key, $this->jsonFields)) {
             if (!((is_string($value) && (json_decode($value) !== false)) && (json_last_error() == JSON_ERROR_NONE))) {
@@ -177,7 +178,7 @@ class Encoded extends \Pop\Db\Record
      * @throws Exception
      * @return mixed
      */
-    public function decodeValue($key, $value)
+    public function decodeValue(string $key, string $value): mixed
     {
         if (in_array($key, $this->jsonFields)) {
             if ($value !== null) {
@@ -221,10 +222,10 @@ class Encoded extends \Pop\Db\Record
      * Verify value against hash
      *
      * @param  string $key
-     * @param  string  $value
+     * @param  string $value
      * @return bool
      */
-    public function verify($key, $value)
+    public function verify(string $key, string $value): bool
     {
         return password_verify($value, $this->{$key});
     }
@@ -233,9 +234,10 @@ class Encoded extends \Pop\Db\Record
      * Scrub the column values and encode them
      *
      * @param  array $columns
+     * @throws Exception
      * @return array
      */
-    public function encode(array $columns)
+    public function encode(array $columns): array
     {
         foreach ($columns as $key => $value) {
             if (($value !== null) && ($this->isEncodedColumn($key))) {
@@ -250,9 +252,10 @@ class Encoded extends \Pop\Db\Record
      * Scrub the column values and decode them
      *
      * @param  array $columns
+     * @throws Exception
      * @return array
      */
-    public function decode(array $columns)
+    public function decode(array $columns): array
     {
         foreach ($columns as $key => $value) {
             if ($this->isEncodedColumn($key)) {
@@ -269,7 +272,7 @@ class Encoded extends \Pop\Db\Record
      * @param  string $key
      * @return bool
      */
-    public function isEncodedColumn($key)
+    public function isEncodedColumn(string $key): bool
     {
         return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) ||
             in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields));
@@ -279,10 +282,11 @@ class Encoded extends \Pop\Db\Record
      * Magic method to set the property to the value of $this->rowGateway[$name]
      *
      * @param  string $name
-     * @param  mixed $value
+     * @param  mixed  $value
+     * @throws Exception
      * @return void
      */
-    public function __set($name, $value)
+    public function __set(string $name, mixed $value): void
     {
         if (($value !== null) && ($this->isEncodedColumn($name))) {
             $value = $this->encodeValue($name, $value);
@@ -294,9 +298,10 @@ class Encoded extends \Pop\Db\Record
      * Magic method to return the value of $this->rowGateway[$name]
      *
      * @param  string $name
+     * @throws Exception
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         $value = parent::__get($name);
 

@@ -21,7 +21,7 @@ namespace Pop\Db\Gateway;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 interface GatewayInterface
 {
@@ -31,13 +31,13 @@ interface GatewayInterface
      *
      * @return string
      */
-    public function getTable();
+    public function getTable(): string;
 
     /**
      * Get table info
      *
      * @return array
      */
-    public function getTableInfo();
+    public function getTableInfo(): array;
 
 }

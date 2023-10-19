@@ -24,7 +24,7 @@ use Pop\Db\Sql\Parser;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class HasOneOf extends AbstractRelationship
 {
@@ -33,7 +33,7 @@ class HasOneOf extends AbstractRelationship
      * Parent record
      * @var Record
      */
-    protected $parent = null;
+    protected ?Record $parent = null;
 
     /**
      * Constructor
@@ -43,9 +43,9 @@ class HasOneOf extends AbstractRelationship
      * @param Record $parent
      * @param string $foreignTable
      * @param string $foreignKey
-     * @param array  $options
+     * @param ?array $options
      */
-    public function __construct(Record $parent, $foreignTable, $foreignKey, array $options = null)
+    public function __construct(Record $parent, string $foreignTable, string $foreignKey, ?array $options = null)
     {
         parent::__construct($foreignTable, $foreignKey, $options);
         $this->parent = $parent;
@@ -54,9 +54,9 @@ class HasOneOf extends AbstractRelationship
     /**
      * Get parent record
      *
-     * @return Record
+     * @return ?Record
      */
-    public function getParent()
+    public function getParent(): ?Record
     {
         return $this->parent;
     }
@@ -66,7 +66,7 @@ class HasOneOf extends AbstractRelationship
      *
      * @return Record
      */
-    public function getChild()
+    public function getChild(): Record
     {
         $table = $this->foreignTable;
         if (!empty($this->children)) {
@@ -83,7 +83,7 @@ class HasOneOf extends AbstractRelationship
      * @throws Exception
      * @return array
      */
-    public function getEagerRelationships(array $ids)
+    public function getEagerRelationships(array $ids): array
     {
         if (($this->foreignTable === null) || ($this->foreignKey === null)) {
             throw new Exception('Error: The foreign table and key values have not been set.');
@@ -132,7 +132,7 @@ class HasOneOf extends AbstractRelationship
             }
             if (isset($this->options['order'])) {
                 if (!is_array($this->options['order'])) {
-                    $orders = (strpos($this->options['order'], ',') !== false) ?
+                    $orders = (str_contains($this->options['order'], ',')) ?
                         explode(',', $this->options['order']) : [$this->options['order']];
                 } else {
                     $orders = $this->options['order'];
@@ -174,7 +174,7 @@ class HasOneOf extends AbstractRelationship
         if (!empty($childRelationships)) {
             $children    = $this->children;
             $subChildren = null;
-            if (strpos($children, '.') !== false) {
+            if (str_contains($children, '.')) {
                 $names       = explode('.', $children);
                 $children    = array_shift($names);
                 $subChildren = implode('.', $names);

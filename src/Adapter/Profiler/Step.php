@@ -21,28 +21,28 @@ namespace Pop\Db\Adapter\Profiler;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Step extends AbstractProfiler
 {
 
     /**
      * Query SQL
-     * @var string
+     * @var ?string
      */
-    protected $query = null;
+    protected ?string $query = null;
 
     /**
      * Statement parameters
      * @var array
      */
-    protected $params = [];
+    protected array $params = [];
 
     /**
      * Errors
      * @var array
      */
-    protected $errors = [];
+    protected array $errors = [];
 
     /**
      * Set query
@@ -50,7 +50,7 @@ class Step extends AbstractProfiler
      * @param  string $sql
      * @return Step
      */
-    public function setQuery($sql)
+    public function setQuery(string $sql): Step
     {
         $this->query = $sql;
         return $this;
@@ -61,7 +61,7 @@ class Step extends AbstractProfiler
      *
      * @return bool
      */
-    public function hasQuery()
+    public function hasQuery(): bool
     {
         return ($this->query !== null);
     }
@@ -69,9 +69,9 @@ class Step extends AbstractProfiler
     /**
      * Get query
      *
-     * @return string
+     * @return ?string
      */
-    public function getQuery()
+    public function getQuery(): ?string
     {
         return $this->query;
     }
@@ -83,7 +83,7 @@ class Step extends AbstractProfiler
      * @param  mixed  $value
      * @return Step
      */
-    public function addParam($name, $value)
+    public function addParam(string $name, mixed $value): Step
     {
         $this->params[$name] = $value;
         return $this;
@@ -95,7 +95,7 @@ class Step extends AbstractProfiler
      * @param  array $params
      * @return Step
      */
-    public function addParams(array $params)
+    public function addParams(array $params): Step
     {
         foreach ($params as $name => $value) {
             $this->addParam($name, $value);
@@ -108,7 +108,7 @@ class Step extends AbstractProfiler
      *
      * @return bool
      */
-    public function hasParams()
+    public function hasParams(): bool
     {
         return (count($this->params) > 0);
     }
@@ -118,7 +118,7 @@ class Step extends AbstractProfiler
      *
      * @return array
      */
-    public function getParams()
+    public function getParams(): array
     {
         return $this->params;
     }
@@ -130,7 +130,7 @@ class Step extends AbstractProfiler
      * @param  mixed  $number
      * @return Step
      */
-    public function addError($error, $number = null)
+    public function addError(string $error, mixed $number = null): Step
     {
         $this->errors[(string)microtime(true)] = [
             'error'  => $error,
@@ -145,7 +145,7 @@ class Step extends AbstractProfiler
      *
      * @return bool
      */
-    public function hasErrors()
+    public function hasErrors(): bool
     {
         return (count($this->errors) > 0);
     }
@@ -155,7 +155,7 @@ class Step extends AbstractProfiler
      *
      * @return array
      */
-    public function getErrors()
+    public function getErrors(): array
     {
         return $this->errors;
     }
@@ -166,7 +166,7 @@ class Step extends AbstractProfiler
      * @param  string $name
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         switch ($name) {
             case 'query':

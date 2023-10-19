@@ -21,7 +21,7 @@ namespace Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Mysql extends AbstractAdapter
 {
@@ -30,7 +30,7 @@ class Mysql extends AbstractAdapter
      * Statement result
      * @var bool
      */
-    protected $statementResult = false;
+    protected bool $statementResult = false;
 
     /**
      * Constructor
@@ -52,7 +52,7 @@ class Mysql extends AbstractAdapter
      * @param  array $options
      * @return Mysql
      */
-    public function connect(array $options = [])
+    public function connect(array $options = []): Mysql
     {
         if (!empty($options)) {
             $this->setOptions($options);
@@ -81,7 +81,7 @@ class Mysql extends AbstractAdapter
      * @param  array $options
      * @return Mysql
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): Mysql
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
@@ -107,7 +107,7 @@ class Mysql extends AbstractAdapter
      *
      * @return bool
      */
-    public function hasOptions()
+    public function hasOptions(): bool
     {
         return (isset($this->options['database']) && isset($this->options['username']) && isset($this->options['password']));
     }
@@ -115,11 +115,11 @@ class Mysql extends AbstractAdapter
     /**
      * Begin a transaction
      *
-     * @param  int    $flags
-     * @param  string $name
+     * @param  ?int    $flags
+     * @param  ?string $name
      * @return Mysql
      */
-    public function beginTransaction($flags = null, $name = null)
+    public function beginTransaction(?int $flags = null, ?string $name = null): Mysql
     {
         if (($flags !== null) && ($name !== null)) {
             $this->connection->begin_transaction($flags, $name);
@@ -135,11 +135,11 @@ class Mysql extends AbstractAdapter
     /**
      * Commit a transaction
      *
-     * @param  int    $flags
-     * @param  string $name
+     * @param  ?int    $flags
+     * @param  ?string $name
      * @return Mysql
      */
-    public function commit($flags = null, $name = null)
+    public function commit(?int $flags = null, ?string $name = null): Mysql
     {
         if (($flags !== null) && ($name !== null)) {
             $this->connection->commit($flags, $name);
@@ -155,11 +155,11 @@ class Mysql extends AbstractAdapter
     /**
      * Rollback a transaction
      *
-     * @param  int    $flags
-     * @param  string $name
+     * @param  ?int    $flags
+     * @param  ?string $name
      * @return Mysql
      */
-    public function rollback($flags = null, $name = null)
+    public function rollback(?int $flags = null, ?string $name = null): Mysql
     {
         if (($flags !== null) && ($name !== null)) {
             $this->connection->rollback($flags, $name);
@@ -178,7 +178,7 @@ class Mysql extends AbstractAdapter
      * @param  mixed $sql
      * @return Mysql
      */
-    public function query($sql)
+    public function query(mixed $sql): Mysql
     {
         $this->statement       = null;
         $this->statementResult = false;
@@ -212,7 +212,7 @@ class Mysql extends AbstractAdapter
      * @param  mixed $sql
      * @return Mysql
      */
-    public function prepare($sql)
+    public function prepare(mixed $sql): Mysql
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -240,7 +240,7 @@ class Mysql extends AbstractAdapter
      * @param  array $params
      * @return Mysql
      */
-    public function bindParams(array $params)
+    public function bindParams(array $params): Mysql
     {
         $bindParams = [''];
 
@@ -303,7 +303,7 @@ class Mysql extends AbstractAdapter
      * @throws Exception
      * @return Mysql
      */
-    public function execute()
+    public function execute(): Mysql
     {
         if ($this->statement === null) {
             $this->throwError('Error: The database statement resource is not currently set');
@@ -331,7 +331,7 @@ class Mysql extends AbstractAdapter
      * @throws Exception
      * @return array
      */
-    public function fetch()
+    public function fetch(): array
     {
         if (($this->statement !== null) && ($this->statementResult !== false)) {
             $params     = [];
@@ -370,7 +370,7 @@ class Mysql extends AbstractAdapter
      *
      * @return array
      */
-    public function fetchAll()
+    public function fetchAll(): array
     {
         $rows = [];
         while (($row = $this->fetch())) {
@@ -384,7 +384,7 @@ class Mysql extends AbstractAdapter
      *
      * @return void
      */
-    public function disconnect()
+    public function disconnect(): void
     {
         if ($this->isConnected()) {
             $this->connection->close();
@@ -399,7 +399,7 @@ class Mysql extends AbstractAdapter
      * @param  string $value
      * @return string
      */
-    public function escape($value)
+    public function escape(string $value): string
     {
         return (!empty($value)) ? $this->connection->real_escape_string($value) : '';
     }
@@ -409,7 +409,7 @@ class Mysql extends AbstractAdapter
      *
      * @return int
      */
-    public function getLastId()
+    public function getLastId(): int
     {
         return $this->connection->insert_id;
     }
@@ -419,7 +419,7 @@ class Mysql extends AbstractAdapter
      *
      * @return int
      */
-    public function getNumberOfRows()
+    public function getNumberOfRows(): int
     {
         if ($this->statement !== null) {
             $this->statement->store_result();
@@ -436,7 +436,7 @@ class Mysql extends AbstractAdapter
      *
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return 'MySQL ' . $this->connection->server_info;
     }
@@ -446,7 +446,7 @@ class Mysql extends AbstractAdapter
      *
      * @return array
      */
-    public function getTables()
+    public function getTables(): array
     {
         $tables = [];
 

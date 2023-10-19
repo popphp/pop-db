@@ -21,7 +21,7 @@ namespace Pop\Db\Adapter;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Pgsql extends AbstractAdapter
 {
@@ -30,31 +30,31 @@ class Pgsql extends AbstractAdapter
      * Statement index
      * @var int
      */
-    protected static $statementIndex = 0;
+    protected static int $statementIndex = 0;
 
     /**
      * Connection string
-     * @var string
+     * @var ?string
      */
-    protected $connectionString = null;
+    protected ?string $connectionString = null;
 
     /**
      * Prepared statement name
-     * @var string
+     * @var ?string
      */
-    protected $statementName = null;
+    protected ?string $statementName = null;
 
     /**
      * Prepared statement string
      * @var string
      */
-    protected $statementString = null;
+    protected ?string $statementString = null;
 
     /**
      * Prepared statement parameters
      * @var array
      */
-    protected $parameters = [];
+    protected array $parameters = [];
 
     /**
      * Constructor
@@ -76,7 +76,7 @@ class Pgsql extends AbstractAdapter
      * @param  array $options
      * @return Pgsql
      */
-    public function connect(array $options = [])
+    public function connect(array $options = []): Pgsql
     {
         if (!empty($options)) {
             $this->setOptions($options);
@@ -102,7 +102,7 @@ class Pgsql extends AbstractAdapter
      * @param  array $options
      * @return Pgsql
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): Pgsql
     {
         if (!isset($options['host'])) {
             $options['host'] = 'localhost';
@@ -141,7 +141,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return bool
      */
-    public function hasOptions()
+    public function hasOptions(): bool
     {
         return (isset($this->options['database']) && isset($this->options['username']) && isset($this->options['password']));
     }
@@ -151,7 +151,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return Pgsql
      */
-    public function beginTransaction()
+    public function beginTransaction(): Pgsql
     {
         $this->query('BEGIN TRANSACTION');
 
@@ -163,7 +163,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return Pgsql
      */
-    public function commit()
+    public function commit(): Pgsql
     {
         $this->query('COMMIT');
 
@@ -175,7 +175,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return Pgsql
      */
-    public function rollback()
+    public function rollback(): Pgsql
     {
         $this->query('ROLLBACK');
         return $this;
@@ -187,7 +187,7 @@ class Pgsql extends AbstractAdapter
      * @param  mixed $sql
      * @return Pgsql
      */
-    public function query($sql)
+    public function query(mixed $sql): Pgsql
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -219,7 +219,7 @@ class Pgsql extends AbstractAdapter
      * @param  mixed $sql
      * @return Pgsql
      */
-    public function prepare($sql)
+    public function prepare(mixed $sql): Pgsql
     {
         if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
             $sql = (string)$sql;
@@ -251,7 +251,7 @@ class Pgsql extends AbstractAdapter
      * @param  array $params
      * @return Pgsql
      */
-    public function bindParams(array $params)
+    public function bindParams(array $params): Pgsql
     {
         if ($this->profiler !== null) {
             $this->profiler->current->addParams($params);
@@ -271,7 +271,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return Pgsql
      */
-    public function execute()
+    public function execute(): Pgsql
     {
         if (($this->statement === null) || ($this->statementString === null) || ($this->statementName === null)) {
             $this->throwError('Error: The database statement resource is not currently set.');
@@ -296,7 +296,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return array
      */
-    public function fetch()
+    public function fetch(): array
     {
         if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
@@ -310,7 +310,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return array
      */
-    public function fetchAll()
+    public function fetchAll(): array
     {
         $rows = [];
 
@@ -326,7 +326,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return void
      */
-    public function disconnect()
+    public function disconnect(): void
     {
         if ($this->isConnected()) {
             pg_close($this->connection);
@@ -341,7 +341,7 @@ class Pgsql extends AbstractAdapter
      * @param  string $value
      * @return string
      */
-    public function escape($value)
+    public function escape(string $value): string
     {
         return (!empty($value)) ? pg_escape_string($this->connection, $value) : '';
     }
@@ -351,7 +351,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return int
      */
-    public function getLastId()
+    public function getLastId(): int
     {
         $insertQuery = pg_query($this->connection, "SELECT lastval();");
         $insertRow   = pg_fetch_row($insertQuery);
@@ -363,7 +363,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return int
      */
-    public function getNumberOfRows()
+    public function getNumberOfRows(): int
     {
         if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
@@ -377,7 +377,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         $version = pg_version($this->connection);
         return 'PostgreSQL ' . $version['server'];
@@ -388,7 +388,7 @@ class Pgsql extends AbstractAdapter
      *
      * @return array
      */
-    public function getTables()
+    public function getTables(): array
     {
         $tables = [];
 

@@ -14,7 +14,7 @@
 namespace Pop\Db\Gateway;
 
 use Pop\Db\Db;
-use ReturnTypeWillChange;
+use ArrayIterator;
 
 /**
  * Row gateway class
@@ -24,7 +24,7 @@ use ReturnTypeWillChange;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Row extends AbstractGateway implements \ArrayAccess, \Countable, \IteratorAggregate
 {
@@ -33,25 +33,25 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * Primary keys
      * @var array
      */
-    protected $primaryKeys = [];
+    protected array $primaryKeys = [];
 
     /**
      * Primary values
      * @var array
      */
-    protected $primaryValues = [];
+    protected array $primaryValues = [];
 
     /**
      * Row column values
      * @var array
      */
-    protected $columns = [];
+    protected array $columns = [];
 
     /**
      * Row fields that have been changed
      * @var array
      */
-    protected $dirty = [
+    protected array $dirty = [
         'old' => [],
         'new' => []
     ];
@@ -64,7 +64,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  string $table
      * @param  mixed  $primaryKeys
      */
-    public function __construct($table, $primaryKeys = null)
+    public function __construct(string $table, mixed $primaryKeys = null)
     {
         if ($primaryKeys !== null) {
             $this->setPrimaryKeys($primaryKeys);
@@ -78,7 +78,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $keys
      * @return Row
      */
-    public function setPrimaryKeys($keys)
+    public function setPrimaryKeys(mixed $keys): Row
     {
         $this->primaryKeys = (is_array($keys)) ? $keys : [$keys];
         return $this;
@@ -89,7 +89,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return array
      */
-    public function getPrimaryKeys()
+    public function getPrimaryKeys(): array
     {
         return $this->primaryKeys;
     }
@@ -100,7 +100,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $values
      * @return Row
      */
-    public function setPrimaryValues($values)
+    public function setPrimaryValues(mixed $values): Row
     {
         $this->primaryValues = (is_array($values)) ? $values : [$values];
         return $this;
@@ -111,7 +111,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return array
      */
-    public function getPrimaryValues()
+    public function getPrimaryValues(): array
     {
         return $this->primaryValues;
     }
@@ -122,7 +122,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @throws Exception
      * @return bool
      */
-    public function doesPrimaryCountMatch()
+    public function doesPrimaryCountMatch(): bool
     {
         if (count($this->primaryKeys) != count($this->primaryValues)) {
             throw new Exception('Error: The number of primary keys and primary values do not match.');
@@ -137,7 +137,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  array $columns
      * @return Row
      */
-    public function setColumns(array $columns = [])
+    public function setColumns(array $columns = []): Row
     {
         $this->columns = $columns;
         if (count($this->primaryValues) == 0) {
@@ -156,7 +156,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return array
      */
-    public function getColumns()
+    public function getColumns(): array
     {
         return $this->columns;
     }
@@ -166,7 +166,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return bool
      */
-    public function isDirty()
+    public function isDirty(): bool
     {
         return ($this->dirty['old'] !== $this->dirty['new']);
     }
@@ -176,7 +176,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return array
      */
-    public function getDirty()
+    public function getDirty(): array
     {
         return $this->dirty;
     }
@@ -186,7 +186,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return Row
      */
-    public function resetDirty()
+    public function resetDirty(): Row
     {
         $this->dirty['old'] = [];
         $this->dirty['new'] = [];
@@ -196,13 +196,13 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     /**
      * Find row by primary key values
      *
-     * @param  mixed $values
-     * @param  array $selectColumns
-     * @param  array $options
-     * @throws Exception
+     * @param  mixed  $values
+     * @param  array  $selectColumns
+     * @param  ?array $options
+     * @throws Exception|\Pop\Db\Exception
      * @return array
      */
-    public function find($values, array $selectColumns = [], array $options = null)
+    public function find(mixed $values, array $selectColumns = [], ?array $options = null): array
     {
         if (count($this->primaryKeys) == 0) {
             throw new Exception('Error: The primary key(s) have not been set.');
@@ -287,7 +287,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  array $columns
      * @return Row
      */
-    public function save(array $columns = [])
+    public function save(array $columns = []): Row
     {
         $db     = Db::getDb($this->table);
         $sql    = $db->createSql();
@@ -335,10 +335,10 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     /**
      * Update an existing row in the table
      *
-     * @throws Exception
+     * @throws Exception|\Pop\Db\Exception
      * @return Row
      */
-    public function update()
+    public function update(): Row
     {
         $db     = Db::getDb($this->table);
         $sql    = $db->createSql();
@@ -392,7 +392,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
                 }
             } else if (array_key_exists($this->primaryKeys[$key], $this->columns)) {
                 if ($this->primaryValues[$key] !== null) {
-                    if (substr($placeholder, 0, 1) == ':') {
+                    if (str_starts_with($placeholder, ':')) {
                         $params[$this->primaryKeys[$key]] = $this->columns[$this->primaryKeys[$key]];
                         $values[$this->primaryKeys[$key]] = $placeholder;
                     } else {
@@ -418,10 +418,10 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     /**
      * Delete row from the table using the primary key(s)
      *
-     * @throws Exception
+     * @throws Exception|\Pop\Db\Exception
      * @return Row
      */
-    public function delete()
+    public function delete(): Row
     {
         if (count($this->primaryKeys) == 0) {
             throw new Exception('Error: The primary key(s) have not been set.');
@@ -479,11 +479,11 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
     /**
      * Method to iterate over the columns
      *
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
-    public function getIterator(): \ArrayIterator
+    public function getIterator(): ArrayIterator
     {
-        return new \ArrayIterator($this->columns);
+        return new ArrayIterator($this->columns);
     }
 
     /**
@@ -491,7 +491,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      *
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         return $this->columns;
     }
@@ -503,7 +503,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $value
      * @return void
      */
-    public function __set($name, $value)
+    public function __set(string $name, mixed $value): void
     {
         if (!isset($this->dirty['old'][$name])) {
             if (array_key_exists($name, $this->columns) && ($value !== $this->columns[$name])) {
@@ -523,7 +523,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  string $name
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         return (isset($this->columns[$name])) ? $this->columns[$name] : null;
     }
@@ -534,7 +534,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  string $name
      * @return bool
      */
-    public function __isset($name)
+    public function __isset(string $name): bool
     {
         return isset($this->columns[$name]);
     }
@@ -545,7 +545,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  string $name
      * @return void
      */
-    public function __unset($name)
+    public function __unset(string $name): void
     {
         if (isset($this->columns[$name])) {
             if (!isset($this->dirty['old'][$name])) {
@@ -562,7 +562,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $offset
      * @return bool
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return $this->__isset($offset);
     }
@@ -573,8 +573,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $offset
      * @return mixed
      */
-    #[ReturnTypeWillChange]
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->__get($offset);
     }
@@ -586,8 +585,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $value
      * @return void
      */
-    #[ReturnTypeWillChange]
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->__set($offset, $value);
     }
@@ -598,8 +596,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
      * @param  mixed $offset
      * @return void
      */
-    #[ReturnTypeWillChange]
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         $this->__unset($offset);
     }

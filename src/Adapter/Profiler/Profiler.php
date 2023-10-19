@@ -21,7 +21,7 @@ namespace Pop\Db\Adapter\Profiler;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Profiler extends AbstractProfiler
 {
@@ -30,21 +30,21 @@ class Profiler extends AbstractProfiler
      * Profiler current index
      * @var int
      */
-    protected $current = 0;
+    protected int $current = 0;
 
     /**
      * Profiler steps
      * @var array
      */
-    protected $steps = [];
+    protected array $steps = [];
 
     /**
      * Add step
      *
-     * @param  Step $step
+     * @param  ?Step $step
      * @return Profiler
      */
-    public function addStep(Step $step = null)
+    public function addStep(?Step $step = null): Profiler
     {
         if ($step === null) {
             $step = new Step();
@@ -60,7 +60,7 @@ class Profiler extends AbstractProfiler
      *
      * @return array
      */
-    public function getSteps()
+    public function getSteps(): array
     {
         return $this->steps;
     }
@@ -68,11 +68,11 @@ class Profiler extends AbstractProfiler
     /**
      * Get current step
      *
-     * @return Step
+     * @return ?Step
      */
-    public function getCurrentStep()
+    public function getCurrentStep(): ?Step
     {
-        return (isset($this->steps[$this->current])) ? $this->steps[$this->current] : null;
+        return $this->steps[$this->current] ?? null;
     }
 
     /**
@@ -81,7 +81,7 @@ class Profiler extends AbstractProfiler
      * @param  string $name
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name)
     {
         switch ($name) {
             case 'start':

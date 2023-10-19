@@ -21,7 +21,7 @@ namespace Pop\Db\Record\Relationships;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 interface RelationshipInterface
 {
@@ -31,21 +31,21 @@ interface RelationshipInterface
      *
      * @return string
      */
-    public function getForeignTable();
+    public function getForeignTable(): string;
 
     /**
      * Get foreign key
      *
      * @return string
      */
-    public function getForeignKey();
+    public function getForeignKey(): string;
 
     /**
      * Get options
      *
      * @return array
      */
-    public function getOptions();
+    public function getOptions(): array;
 
     /**
      * Get eager relationships
@@ -54,6 +54,6 @@ interface RelationshipInterface
      * @throws Exception
      * @return array
      */
-    public function getEagerRelationships(array $ids);
+    public function getEagerRelationships(array $ids): array;
 
 }

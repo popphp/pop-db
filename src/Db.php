@@ -21,7 +21,7 @@ namespace Pop\Db;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  */
 class Db
 {
@@ -30,13 +30,13 @@ class Db
      * Database connection(s)
      * @var array
      */
-    protected static $db = ['default' => null];
+    protected static array $db = ['default' => null];
 
     /**
      * Database connection class to table relationship
      * @var array
      */
-    protected static $classToTable = [];
+    protected static array $classToTable = [];
 
     /**
      * Method to connect to a database and return the database adapter object
@@ -47,7 +47,7 @@ class Db
      * @throws Exception
      * @return Adapter\AbstractAdapter
      */
-    public static function connect($adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function connect(string $adapter, array $options, string $prefix = '\Pop\Db\Adapter\\'): Adapter\AbstractAdapter
     {
         $class = $prefix . ucfirst(strtolower($adapter));
 
@@ -66,7 +66,7 @@ class Db
      * @throws Exception
      * @return Adapter\Mysql|Adapter\AbstractAdapter
      */
-    public static function mysqlConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function mysqlConnect(array $options, string $prefix = '\Pop\Db\Adapter\\'): Adapter\Mysql|Adapter\AbstractAdapter
     {
         return self::connect('mysql', $options, $prefix);
     }
@@ -79,7 +79,7 @@ class Db
      * @throws Exception
      * @return Adapter\Pdo|Adapter\AbstractAdapter
      */
-    public static function pdoConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function pdoConnect(array $options, string $prefix = '\Pop\Db\Adapter\\'): Adapter\Pdo|Adapter\AbstractAdapter
     {
         return self::connect('pdo', $options, $prefix);
     }
@@ -92,7 +92,7 @@ class Db
      * @throws Exception
      * @return Adapter\Pgsql|Adapter\AbstractAdapter
      */
-    public static function pgsqlConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function pgsqlConnect(array $options, string $prefix = '\Pop\Db\Adapter\\'): Adapter\Pgsql|Adapter\AbstractAdapter
     {
         return self::connect('pgsql', $options, $prefix);
     }
@@ -105,7 +105,7 @@ class Db
      * @throws Exception
      * @return Adapter\Sqlsrv|Adapter\AbstractAdapter
      */
-    public static function sqlsrvConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function sqlsrvConnect(array $options, string $prefix = '\Pop\Db\Adapter\\'): Adapter\AbstractAdapter|Adapter\Sqlsrv
     {
         return self::connect('sqlsrv', $options, $prefix);
     }
@@ -118,7 +118,7 @@ class Db
      * @throws Exception
      * @return Adapter\Sqlite|Adapter\AbstractAdapter
      */
-    public static function sqliteConnect(array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function sqliteConnect(array $options, string $prefix = '\Pop\Db\Adapter\\'): Adapter\Sqlite|Adapter\AbstractAdapter
     {
         return self::connect('sqlite', $options, $prefix);
     }
@@ -131,7 +131,7 @@ class Db
      * @param  string $prefix
      * @return mixed
      */
-    public static function check($adapter, array $options, $prefix = '\Pop\Db\Adapter\\')
+    public static function check(string $adapter, array $options, string $prefix = '\Pop\Db\Adapter\\'): mixed
     {
         $result = true;
         $class  = $prefix . ucfirst(strtolower($adapter));
@@ -163,7 +163,7 @@ class Db
      * @throws Exception
      * @return void
      */
-    public static function executeSql($sql, $adapter, array $options = [], $prefix = '\Pop\Db\Adapter\\')
+    public static function executeSql(string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): void
     {
         if (is_string($adapter)) {
             $adapter = ucfirst(strtolower($adapter));
@@ -204,16 +204,16 @@ class Db
                         $lines[$i] = str_replace('[{prefix}]', $options['prefix'], trim($line));
                     }
                     if ($insideComment) {
-                        if (substr($line, -2) == '*/') {
+                        if (str_ends_with($line, '*/')) {
                             $insideComment = false;
                         }
                         unset($lines[$i]);
                     } else {
-                        if ((substr($line, 0, 1) == '-') || (substr($line, 0, 1) == '#')) {
+                        if ((str_starts_with($line, '-')) || (str_starts_with($line, '#'))) {
                             unset($lines[$i]);
-                        } else if (substr($line, 0, 2) == '/*') {
+                        } else if (str_starts_with($line, '/*')) {
                             $line = trim($line);
-                            if ((substr($line, -2) != '*/') && (substr($line, -3) != '*/;')) {
+                            if ((!str_ends_with($line, '*/')) && (!str_ends_with($line, '*/;'))) {
                                 $insideComment = true;
                             }
                             unset($lines[$i]);
@@ -232,7 +232,7 @@ class Db
             // Assemble statements based on ; delimiter
             foreach ($lines as $i => $line) {
                 $currentStatement .= ($currentStatement !== null) ? ' ' . $line : $line;
-                if (substr($line, -1) == ';') {
+                if (str_ends_with($line, ';')) {
                     $statements[]     = $currentStatement;
                     $currentStatement = null;
                 }
@@ -258,7 +258,7 @@ class Db
      * @throws Exception
      * @return void
      */
-    public static function executeSqlFile($sqlFile, $adapter, array $options = [], $prefix = '\Pop\Db\Adapter\\')
+    public static function executeSqlFile(string $sqlFile, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): void
     {
         if (!file_exists($sqlFile)) {
             throw new Exception("Error: The SQL file '" . $sqlFile . "' does not exist.");
@@ -272,7 +272,7 @@ class Db
      *
      * @return array
      */
-    public static function getAvailableAdapters()
+    public static function getAvailableAdapters(): array
     {
         $pdoDrivers = (class_exists('Pdo', false)) ? \PDO::getAvailableDrivers() : [];
 
@@ -296,14 +296,14 @@ class Db
      * @param  string $adapter
      * @return bool
      */
-    public static function isAvailable($adapter)
+    public static function isAvailable(string $adapter): bool
     {
         $adapter = strtolower($adapter);
         $result  = false;
         $type    = null;
 
         $pdoDrivers = (class_exists('Pdo', false)) ? \PDO::getAvailableDrivers() : [];
-        if (strpos($adapter, 'pdo_') !== false) {
+        if (str_contains($adapter, 'pdo_')) {
             $type    = substr($adapter, 4);
             $adapter = 'pdo';
         }
@@ -334,12 +334,12 @@ class Db
      * Set DB adapter
      *
      * @param  Adapter\AbstractAdapter $db
-     * @param  string                  $class
-     * @param  string                  $prefix
-     * @param  bool                 $isDefault
+     * @param  ?string                 $class
+     * @param  ?string                 $prefix
+     * @param  bool                    $isDefault
      * @return void
      */
-    public static function setDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null, $isDefault = false)
+    public static function setDb(Adapter\AbstractAdapter $db, ?string $class = null, ?string $prefix = null, bool $isDefault = false): void
     {
         if ($prefix !== null) {
             self::$db[$prefix] = $db;
@@ -361,11 +361,11 @@ class Db
     /**
      * Get DB adapter
      *
-     * @param  string $class
+     * @param  ?string $class
      * @throws Exception
      * @return Adapter\AbstractAdapter
      */
-    public static function getDb($class = null)
+    public static function getDb(?string $class = null): Adapter\AbstractAdapter
     {
         $dbAdapter = null;
 
@@ -375,7 +375,7 @@ class Db
         // Check for database adapter assigned to a namespace
         } else if ($class !== null) {
             foreach (self::$db as $prefix => $adapter) {
-                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                if (str_starts_with($class, $prefix)) {
                     $dbAdapter = $adapter;
                 }
             }
@@ -390,7 +390,7 @@ class Db
             // Check prefixes
             } else {
                 foreach (self::$db as $prefix => $adapter) {
-                    if (substr($class, 0, strlen($prefix)) == $prefix) {
+                    if (str_starts_with($class, $prefix)) {
                         $dbAdapter = $adapter;
                     }
                 }
@@ -411,10 +411,10 @@ class Db
     /**
      * Check for a DB adapter
      *
-     * @param  string $class
+     * @param  ?string $class
      * @return bool
      */
-    public static function hasDb($class = null)
+    public static function hasDb(?string $class = null): bool
     {
         $result = false;
 
@@ -422,7 +422,7 @@ class Db
             $result = true;
         } else if ($class !== null) {
             foreach (self::$db as $prefix => $adapter) {
-                if (substr($class, 0, strlen($prefix)) == $prefix) {
+                if (str_starts_with($class, $prefix)) {
                     $result = true;
                 }
             }
@@ -449,7 +449,7 @@ class Db
      * @param  string $table
      * @return void
      */
-    public static function addClassToTable($class, $table)
+    public static function addClassToTable(string $class, string $table): void
     {
         self::$classToTable[$class] = $table;
     }
@@ -460,7 +460,7 @@ class Db
      * @param  string $class
      * @return bool
      */
-    public static function hasClassToTable($class)
+    public static function hasClassToTable(string $class): bool
     {
         return isset(self::$classToTable[$class]);
     }
@@ -469,11 +469,11 @@ class Db
      * Set DB adapter
      *
      * @param  Adapter\AbstractAdapter $db
-     * @param  string                  $class
-     * @param  string                  $prefix
+     * @param  ?string                 $class
+     * @param  ?string                 $prefix
      * @return void
      */
-    public static function setDefaultDb(Adapter\AbstractAdapter $db, $class = null, $prefix = null)
+    public static function setDefaultDb(Adapter\AbstractAdapter $db, ?string $class = null, ?string $prefix = null): void
     {
         self::setDb($db, $class, $prefix, true);
     }
@@ -481,10 +481,11 @@ class Db
     /**
      * Get DB adapter (alias)
      *
-     * @param  string $class
+     * @param  ?string  $class
+     * @throws Exception
      * @return Adapter\AbstractAdapter
      */
-    public static function db($class = null)
+    public static function db(?string $class = null): Adapter\AbstractAdapter
     {
         return self::getDb($class);
     }
@@ -494,7 +495,7 @@ class Db
      *
      * @return array
      */
-    public static function getAll()
+    public static function getAll(): array
     {
         return self::$db;
     }

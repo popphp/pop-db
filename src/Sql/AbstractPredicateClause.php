@@ -21,7 +21,7 @@ namespace Pop\Db\Sql;
  * @author     Nick Sagona, III <dev@nolainteractive.com>
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
- * @version    5.3.0
+ * @version    6.0.0
  * @property   $where mixed
  */
 abstract class AbstractPredicateClause extends AbstractClause
@@ -29,9 +29,9 @@ abstract class AbstractPredicateClause extends AbstractClause
 
     /**
      * WHERE predicate object
-     * @var Where
+     * @var ?Where
      */
-    protected $where = null;
+    protected ?Where $where = null;
 
     /**
      * Access the WHERE clause
@@ -39,7 +39,7 @@ abstract class AbstractPredicateClause extends AbstractClause
      * @param  mixed $where
      * @return AbstractPredicateClause
      */
-    public function where($where = null)
+    public function where(mixed $where = null): AbstractPredicateClause
     {
         if ($this->where === null) {
             $this->where = new Where($this);
@@ -77,7 +77,7 @@ abstract class AbstractPredicateClause extends AbstractClause
      * @param  mixed $where
      * @return AbstractPredicateClause
      */
-    public function andWhere($where = null)
+    public function andWhere(mixed $where = null): AbstractPredicateClause
     {
         if ($this->where === null) {
             $this->where = new Where($this);
@@ -102,7 +102,7 @@ abstract class AbstractPredicateClause extends AbstractClause
      * @param  mixed $where
      * @return AbstractPredicateClause
      */
-    public function orWhere($where = null)
+    public function orWhere(mixed $where = null): AbstractPredicateClause
     {
         if ($this->where === null) {
             $this->where = new Where($this);
