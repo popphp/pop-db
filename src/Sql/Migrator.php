@@ -257,9 +257,11 @@ class Migrator extends Migration\AbstractMigrator
     */
     protected function loadCurrent(): void
     {
-        $cur = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.current');
-        if (false !== $cur) {
-            $this->current = (int)$cur;
+        if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
+            $cur = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.current');
+            if (false !== $cur) {
+                $this->current = (int)$cur;
+            }
         }
     }
 
