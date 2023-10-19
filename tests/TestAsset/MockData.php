@@ -7,7 +7,7 @@ use ReturnTypeWillChange;
 class MockData implements \ArrayAccess
 {
 
-    protected $data = [];
+    protected array $data = [];
 
     public function __construct(array $data = [])
     {

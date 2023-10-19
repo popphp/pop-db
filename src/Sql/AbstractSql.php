@@ -189,9 +189,9 @@ abstract class AbstractSql
     /**
      * Get the current database type
      *
-     * @return ?int
+     * @return ?string
      */
-    public function getDbType(): ?int
+    public function getDbType(): ?string
     {
         return $this->dbType;
     }
@@ -353,11 +353,11 @@ abstract class AbstractSql
     /**
      * Quote the value (if it is not a numeric value)
      *
-     * @param  string $value
-     * @param  bool   $force
+     * @param  ?string $value
+     * @param  bool    $force
      * @return float|int|string
      */
-    public function quote(string $value, bool $force = false): float|int|string
+    public function quote(?string $value = null, bool $force = false): float|int|string
     {
         if ($force) {
             if (($value == '') ||

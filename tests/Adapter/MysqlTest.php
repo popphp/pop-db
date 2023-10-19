@@ -355,11 +355,7 @@ class MysqlTest extends TestCase
 
     public function testQueryException()
     {
-        if (strpos(PHP_VERSION, '8.1') !== false) {
-            $this->expectException('mysqli_sql_exception');
-        } else {
-            $this->expectException('Pop\Db\Adapter\Exception');
-        }
+        $this->expectException('mysqli_sql_exception');
 
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
@@ -372,11 +368,7 @@ class MysqlTest extends TestCase
 
     public function testExecuteException2()
     {
-        if (strpos(PHP_VERSION, '8.1') !== false) {
-            $this->expectException('mysqli_sql_exception');
-        } else {
-            $this->expectException('Pop\Db\Adapter\Exception');
-        }
+        $this->expectException('mysqli_sql_exception');
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
             'username' => $_ENV['MYSQL_USER'],

@@ -331,9 +331,9 @@ class Sqlite extends AbstractAdapter
     /**
      * Fetch and return a row from the result
      *
-     * @return array
+     * @return mixed
      */
-    public function fetch(): array
+    public function fetch(): mixed
     {
         if ($this->result === null) {
             $this->throwError('Error: The database result resource is not currently set.');
@@ -375,10 +375,10 @@ class Sqlite extends AbstractAdapter
     /**
      * Escape the value
      *
-     * @param  string $value
+     * @param  ?string $value
      * @return string
      */
-    public function escape(string $value): string
+    public function escape(?string $value = null): string
     {
         return $this->connection->escapeString($value);
     }

@@ -29,9 +29,9 @@ interface ProfilerInterface
     /**
      * Get start
      *
-     * @return float
+     * @return float|null
      */
-    public function getStart(): float;
+    public function getStart(): float|null;
 
     /**
      * Finish profiler
@@ -43,15 +43,15 @@ interface ProfilerInterface
     /**
      * Get end
      *
-     * @return float
+     * @return float|null
      */
-    public function getFinish(): float;
+    public function getFinish(): float|null;
 
     /**
      * Get elapsed time
      *
-     * @return string
+     * @return string|null
      */
-    public function getElapsed(): string;
+    public function getElapsed(): string|null;
 
 }

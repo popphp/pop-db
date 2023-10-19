@@ -51,9 +51,9 @@ abstract class AbstractProfiler implements ProfilerInterface
     /**
      * Get start
      *
-     * @return float
+     * @return float|null
      */
-    public function getStart(): float
+    public function getStart(): float|null
     {
         return $this->start;
     }
@@ -72,9 +72,9 @@ abstract class AbstractProfiler implements ProfilerInterface
     /**
      * Get finish
      *
-     * @return float
+     * @return float|null
      */
-    public function getFinish(): float
+    public function getFinish(): float|null
     {
         return $this->finish;
     }

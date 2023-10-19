@@ -168,9 +168,9 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Fetch and return a row from the result
      *
-     * @return array
+     * @return mixed
      */
-    abstract public function fetch(): array;
+    abstract public function fetch(): mixed;
 
     /**
      * Fetch and return all rows from the result
@@ -267,7 +267,7 @@ abstract class AbstractAdapter implements AdapterInterface
      * @param  ?Profiler\Profiler $profiler
      * @return mixed
      */
-    public function listen(mixed $listener, mixed $params = null, ?Profiler\Profiler $profiler = null): AbstractAdapter
+    public function listen(mixed $listener, mixed $params = null, ?Profiler\Profiler $profiler = null): mixed
     {
         if ($profiler !== null) {
             $this->profiler = $profiler;
@@ -327,9 +327,9 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Get query profiler
      *
-     * @return Profiler\Profiler
+     * @return Profiler\Profiler|null
      */
-    public function getProfiler(): Profiler\Profiler
+    public function getProfiler(): Profiler\Profiler|null
     {
         return $this->profiler;
     }
@@ -427,10 +427,10 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Escape the value
      *
-     * @param  string $value
+     * @param  ?string $value
      * @return string
      */
-    abstract public function escape(string $value): string;
+    abstract public function escape(?string $value = null): string;
 
     /**
      * Return the last ID of the last query

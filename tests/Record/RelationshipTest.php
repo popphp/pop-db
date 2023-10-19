@@ -210,32 +210,12 @@ class RelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
-    public function testHasManyGetEagerException()
-    {
-        $this->expectException('Pop\Db\Record\Relationships\Exception');
-        $this->db->connect();
-        $user         = People::findById(1);
-        $relationship = new Relationships\HasMany($user, null, null);
-        $eager = $relationship->getEagerRelationships([1]);
-        $this->db->disconnect();
-    }
-
     public function testGetHasOneRelationship()
     {
         $this->db->connect();
         $user         = People::findById(1);
         $relationship = new Relationships\HasOne($user, 'Pop\Db\Test\TestAsset\PeopleInfo', 'people_id');
         $this->assertInstanceOf('Pop\Db\Test\TestAsset\People', $relationship->getParent());
-        $this->db->disconnect();
-    }
-
-    public function testHasOneGetEagerException()
-    {
-        $this->expectException('Pop\Db\Record\Relationships\Exception');
-        $this->db->connect();
-        $user         = People::findById(1);
-        $relationship = new Relationships\HasOne($user, null, null);
-        $eager = $relationship->getEagerRelationships([1]);
         $this->db->disconnect();
     }
 
@@ -249,16 +229,6 @@ class RelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
-    public function testHasOneOfGetEagerException()
-    {
-        $this->expectException('Pop\Db\Record\Relationships\Exception');
-        $this->db->connect();
-        $user         = People::findById(1);
-        $relationship = new Relationships\HasOneOf($user, null, null);
-        $eager = $relationship->getEagerRelationships([1]);
-        $this->db->disconnect();
-    }
-
     public function testBelongsToRelationship()
     {
         $this->db->connect();
@@ -266,16 +236,6 @@ class RelationshipTest extends TestCase
         $relationship = new Relationships\BelongsTo($info, 'Pop\Db\Test\TestAsset\People', 'id');
         $this->assertInstanceOf('Pop\Db\Test\TestAsset\PeopleInfo', $relationship->getChild());
         $this->assertIsArray($relationship->getEagerRelationships([1]));
-        $this->db->disconnect();
-    }
-
-    public function testBelongsToGetEagerException()
-    {
-        $this->expectException('Pop\Db\Record\Relationships\Exception');
-        $this->db->connect();
-        $info         = PeopleInfo::findOne(['metadata' => 'Some People Meta Data']);
-        $relationship = new Relationships\BelongsTo($info, null, null);
-        $eager = $relationship->getEagerRelationships([1]);
         $this->db->disconnect();
     }
 

@@ -5,7 +5,7 @@ use Pop\Db\Sql\Migration\AbstractMigration;
 class TestMigration extends AbstractMigration
 {
 
-    public function up()
+    public function up(): void
     {
         $schema = $this->db->createSchema();
         $schema->create('test_users')
@@ -17,7 +17,7 @@ class TestMigration extends AbstractMigration
         $this->db->query($schema);
     }
 
-    public function down()
+    public function down(): void
     {
         $schema = $this->db->createSchema();
         $schema->drop('test_users');

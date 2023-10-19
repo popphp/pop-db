@@ -7,7 +7,7 @@ use Pop\Db\Record;
 class PeopleInfo extends Record
 {
 
-    protected $primaryKeys = ['people_id'];
+    protected array $primaryKeys = ['people_id'];
 
     public function parent()
     {

@@ -330,7 +330,7 @@ class PredicateSet
      * @param  mixed  $values
      * @return PredicateSet
      */
-    public function in(string $column, string $values): PredicateSet
+    public function in(string $column, mixed $values): PredicateSet
     {
         return $this->addPredicate(new Predicate\In([$column, $values], $this->nextConjunction));
     }
@@ -342,7 +342,7 @@ class PredicateSet
      * @param  mixed  $values
      * @return PredicateSet
      */
-    public function notIn(string $column, string $values): PredicateSet
+    public function notIn(string $column, mixed $values): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotIn([$column, $values], $this->nextConjunction));
     }

@@ -329,9 +329,9 @@ class Mysql extends AbstractAdapter
      * Fetch and return a row from the result
      *
      * @throws Exception
-     * @return array
+     * @return mixed
      */
-    public function fetch(): array
+    public function fetch(): mixed
     {
         if (($this->statement !== null) && ($this->statementResult !== false)) {
             $params     = [];
@@ -396,10 +396,10 @@ class Mysql extends AbstractAdapter
     /**
      * Escape the value
      *
-     * @param  string $value
+     * @param  ?string $value
      * @return string
      */
-    public function escape(string $value): string
+    public function escape(?string $value = null): string
     {
         return (!empty($value)) ? $this->connection->real_escape_string($value) : '';
     }

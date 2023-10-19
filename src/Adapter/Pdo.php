@@ -443,9 +443,9 @@ class Pdo extends AbstractAdapter
      * Fetch and return a row from the result
      *
      * @param  int $dataType  Data type of the parameter, specified by the PDO::PARAM_* constants.
-     * @return array
+     * @return mixed
      */
-    public function fetch(int $dataType = \PDO::FETCH_ASSOC): array
+    public function fetch(int $dataType = \PDO::FETCH_ASSOC): mixed
     {
         if (($this->statement !== null) && ($this->statementResult !== false)) {
             return $this->statement->fetch($dataType);
@@ -471,10 +471,10 @@ class Pdo extends AbstractAdapter
     /**
      * Escape the value
      *
-     * @param  string $value
+     * @param  ?string $value
      * @return string
      */
-    public function escape(string $value): string
+    public function escape(?string $value = null): string
     {
         return substr($this->connection->quote($value), 1, -1);
     }

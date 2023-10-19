@@ -134,7 +134,7 @@ class RecordTest extends TestCase
         $user->setPrefix('prefix_');
         $this->assertEquals('prefix_', $user->getPrefix());
         $this->assertEquals('prefix_users', $user->getFullTable());
-        $user->setPrefix(null);
+        $user->setPrefix('');
         $this->db->disconnect();
     }
 

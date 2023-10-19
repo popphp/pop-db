@@ -5,7 +5,7 @@ namespace Pop\Db\Test\TestAsset;
 class MockIterator implements \IteratorAggregate
 {
 
-    protected $data = [];
+    protected array $data = [];
 
     public function __construct(array $data = [])
     {

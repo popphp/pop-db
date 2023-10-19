@@ -282,12 +282,12 @@ class PdoSqliteTest extends TestCase
 
             $sql->select()->from('bad_table');
             $db->query($sql);
-        } catch (\Exception|\Error $e) {
+        } catch (\Exception|\Error|\TypeError $e) {
             $class = get_class($e);
             if (strpos($class, 'PDO') !== false) {
                 $this->assertEquals('PDOException', $class);
             } else {
-                $this->assertEquals('Error', $class);
+                $this->assertEquals('TypeError', $class);
             }
         }
     }

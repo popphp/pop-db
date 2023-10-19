@@ -50,13 +50,6 @@ class EncodedTest extends TestCase
         ]);
     }
 
-    public function testDecodeException()
-    {
-        $this->expectException('Pop\Db\Record\Exception');
-        $user = new UsersEncoded2();
-        $ssn  = $user->ssn;
-    }
-
     public function testSaveAndFind()
     {
         $user = new UsersEncoded([

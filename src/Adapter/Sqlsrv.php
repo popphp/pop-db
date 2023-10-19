@@ -311,9 +311,9 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Fetch and return a row from the result
      *
-     * @return array
+     * @return mixed
      */
-    public function fetch(): array
+    public function fetch(): mixed
     {
         if (($this->statement !== null) && ($this->statementResult !== false)) {
             return sqlsrv_fetch_array($this->statement, SQLSRV_FETCH_ASSOC);
@@ -380,10 +380,10 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Escape the value
      *
-     * @param  string $value
+     * @param  ?string $value
      * @return string
      */
-    public function escape(string $value): string
+    public function escape(?string $value = null): string
     {
         $search  = ['\\', "\n", "\r", "\x00", "\x1a", '\'', '"'];
         $replace = ['\\\\', "\\n", "\\r", "\\x00", "\\x1a", '\\\'', '\\"'];

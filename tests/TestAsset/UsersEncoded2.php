@@ -7,30 +7,30 @@ use Pop\Db\Record\Encoded;
 class UsersEncoded2 extends Encoded
 {
 
-    protected $table = 'users_encoded';
+    protected ?string $table = 'users_encoded';
 
     /**
      * Encrypted fields
      * @var array
      */
-    protected $encryptedFields = ['ssn'];
+    protected array $encryptedFields = ['ssn'];
 
     /**
      * Cipher method
-     * @var string
+     * @var ?string
      */
-    protected $cipherMethod = null;
+    protected ?string $cipherMethod = null;
 
     /**
      * Encrypted field key
-     * @var string
+     * @var ?string
      */
-    protected $key = null;
+    protected ?string $key = null;
 
     /**
      * Encrypted field IV (base64-encoded)
-     * @var string
+     * @var ?string
      */
-    protected $iv = null;
+    protected ?string $iv = null;
 
 }

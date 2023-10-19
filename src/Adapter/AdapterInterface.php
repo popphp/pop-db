@@ -111,9 +111,9 @@ interface AdapterInterface
     /**
      * Fetch and return a row from the result
      *
-     * @return array
+     * @return mixed
      */
-    public function fetch(): array;
+    public function fetch(): mixed;
 
     /**
      * Fetch and return all rows from the result
@@ -181,10 +181,10 @@ interface AdapterInterface
     /**
      * Add query listener to the adapter
      *
-     * @param  mixed $listener
-     * @return AdapterInterface
+     * @param  mixed $listenerclear
+     * @return mixed
      */
-    public function listen(mixed $listener): AdapterInterface;
+    public function listen(mixed $listener): mixed;
 
     /**
      * Set query profiler
@@ -197,9 +197,9 @@ interface AdapterInterface
     /**
      * Get query profiler
      *
-     * @return Profiler\Profiler
+     * @return Profiler\Profiler|null
      */
-    public function getProfiler(): Profiler\Profiler;
+    public function getProfiler(): Profiler\Profiler|null;
 
     /**
      * Clear query profiler
@@ -255,10 +255,10 @@ interface AdapterInterface
     /**
      * Escape the value
      *
-     * @param  string $value
+     * @param  ?string $value
      * @return string
      */
-    public function escape(string $value): string;
+    public function escape(?string $value = null): string;
 
     /**
      * Return the last ID of the last query
