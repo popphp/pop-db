@@ -29,23 +29,23 @@ interface RelationshipInterface
     /**
      * Get foreign table
      *
-     * @return string
+     * @return string|null
      */
-    public function getForeignTable(): string;
+    public function getForeignTable(): string|null;
 
     /**
      * Get foreign key
      *
-     * @return string
+     * @return string|null
      */
-    public function getForeignKey(): string;
+    public function getForeignKey(): string|null;
 
     /**
      * Get options
      *
-     * @return array
+     * @return array|null
      */
-    public function getOptions(): array;
+    public function getOptions(): array|null;
 
     /**
      * Get eager relationships

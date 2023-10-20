@@ -71,9 +71,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get foreign table class
      *
-     * @return string
+     * @return string|null
      */
-    public function getForeignTable(): string
+    public function getForeignTable(): string|null
     {
         return $this->foreignTable;
     }
@@ -81,9 +81,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get foreign key
      *
-     * @return string
+     * @return string|null
      */
-    public function getForeignKey(): string
+    public function getForeignKey(): string|null
     {
         return $this->foreignKey;
     }
@@ -91,9 +91,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get options
      *
-     * @return array
+     * @return array|null
      */
-    public function getOptions(): array
+    public function getOptions(): array|null
     {
         return $this->options;
     }
@@ -101,9 +101,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get child relationships
      *
-     * @return string
+     * @return string|null
      */
-    public function getChildRelationships(): string
+    public function getChildRelationships(): string|null
     {
         return $this->children;
     }
