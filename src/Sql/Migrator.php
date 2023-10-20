@@ -159,9 +159,13 @@ class Migrator extends Migration\AbstractMigrator
         $stepsToRun = [];
         $class      = null;
 
-        foreach ($this->migrations as $timestamp => $migration) {
-            if (strtotime($timestamp) <= strtotime((int)$this->current)) {
-                $stepsToRun[] = $timestamp;
+        if (is_string($steps) && str_starts_with($steps, 'batch-')) {
+            $stepsToRun = $this->getByBatch($steps);
+        } else {
+            foreach ($this->migrations as $timestamp => $migration) {
+                if (strtotime($timestamp) <= strtotime((int)$this->current)) {
+                    $stepsToRun[] = $timestamp;
+                }
             }
         }
 
@@ -362,6 +366,54 @@ class Migrator extends Migration\AbstractMigrator
         }
 
         return $batch;
+    }
+
+    /**
+     * Get current batch
+     *
+     * @return int
+     */
+    public function getCurrentBatch(): int
+    {
+        $batch = 0;
+
+        if (($this->isTable()) && ($this->hasTable())) {
+            $class = $this->getTable();
+            if (!empty($class)) {
+                $current = $class::findOne(null, ['order' => 'batch DESC']);
+                if (!empty($current->batch)) {
+                    $batch = (int)$current->batch;
+                }
+            }
+        }
+
+        return $batch;
+    }
+
+    /**
+     * Get migrations by batch
+     *
+     * @param  string|int $batch
+     * @return array
+     */
+    public function getByBatch(string|int $batch): array
+    {
+        if (is_string($batch) && str_starts_with($batch, 'batch-')) {
+            $batch = substr($batch, 6);
+        }
+
+        $batchMigrations = [];
+
+        if (($this->isTable()) && ($this->hasTable()) && ($batch == $this->getCurrentBatch())) {
+            $class = $this->getTable();
+            if (!empty($class)) {
+                $batchMigrations = array_values(
+                    $class::findBy(['batch' => $batch], ['order' => 'migration_id DESC'])->toArray('migration_id')
+                );
+            }
+        }
+
+        return $batchMigrations;
     }
 
     /**
