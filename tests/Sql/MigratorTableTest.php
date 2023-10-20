@@ -41,6 +41,7 @@ class MigratorTableTest extends TestCase
         $this->assertFalse($this->db->hasTable('test_users'));
         $migrator->runAll();
         $this->assertTrue($this->db->hasTable('test_users'));
+        $this->assertCount(1, $migrator->getByBatch('batch-1'));
         $this->db->disconnect();
     }
 
