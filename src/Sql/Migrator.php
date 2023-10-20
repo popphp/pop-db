@@ -408,7 +408,7 @@ class Migrator extends Migration\AbstractMigrator
             $class = $this->getTable();
             if (!empty($class)) {
                 $batchMigrations = array_values(
-                    $class::findBy(['batch' => $batch], ['order' => 'migration_id DESC'])->toArray('migration_id')
+                    $class::findBy(['batch' => $batch], ['order' => 'migration_id DESC'])->toArray(['column' => 'migration_id'])
                 );
             }
         }
