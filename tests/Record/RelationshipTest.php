@@ -236,6 +236,10 @@ class RelationshipTest extends TestCase
         $relationship = new Relationships\BelongsTo($info, 'Pop\Db\Test\TestAsset\People', 'id');
         $this->assertInstanceOf('Pop\Db\Test\TestAsset\PeopleInfo', $relationship->getChild());
         $this->assertIsArray($relationship->getEagerRelationships([1]));
+        $this->assertEquals('Pop\Db\Test\TestAsset\People', $relationship->getForeignTable());
+        $this->assertEmpty($relationship->getOptions());
+        $relationship->setChildRelationships('TestChild');
+        $this->assertEquals('TestChild', $relationship->getChildRelationships());
         $this->db->disconnect();
     }
 

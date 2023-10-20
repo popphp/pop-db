@@ -280,7 +280,7 @@ class Migrator extends Migration\AbstractMigrator
     public function isTable(): bool
     {
         if (file_exists($this->path . DIRECTORY_SEPARATOR . '.table')) {
-            $table = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.table');
+            $table = trim(file_get_contents($this->path . DIRECTORY_SEPARATOR . '.table'));
             return (class_exists($table) && is_subclass_of($table, 'Pop\Db\Record'));
         } else {
             return false;
@@ -310,7 +310,7 @@ class Migrator extends Migration\AbstractMigrator
     public function getTable(): string
     {
         return (file_exists($this->path . DIRECTORY_SEPARATOR . '.table')) ?
-            file_get_contents($this->path . DIRECTORY_SEPARATOR . '.table') : '';
+            trim(file_get_contents($this->path . DIRECTORY_SEPARATOR . '.table')) : '';
     }
 
     /**

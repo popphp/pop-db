@@ -6,7 +6,7 @@ use Pop\Db\Db;
 use Pop\Db\Sql\Migrator;
 use PHPUnit\Framework\TestCase;
 
-class MigratorTest extends TestCase
+class MigratorFileTest extends TestCase
 {
 
     protected $db = null;
@@ -29,6 +29,8 @@ class MigratorTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Adapter\Mysql', $migrator->db());
         $this->assertEquals(__DIR__ . '/../tmp/migrations', $migrator->getPath());
         $this->assertNull($migrator->getCurrent());
+        $this->assertFalse($migrator->hasTable());
+        $this->assertEquals('', $migrator->getTable());
         $this->db->disconnect();
     }
 
