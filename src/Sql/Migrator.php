@@ -60,6 +60,11 @@ class Migrator extends Migration\AbstractMigrator
     {
         parent::__construct($db);
         $this->setPath($path);
+
+        // If migration is stored in a DB table, check for table and create if does not exist
+        if (($this->isTable()) && (!$this->hasTable())) {
+            $this->createTable();
+        }
     }
 
     /**
@@ -101,6 +106,7 @@ class Migrator extends Migration\AbstractMigrator
 
         $stepsToRun = [];
         $current    = null;
+        $batch      = $this->getNextBatch();
 
         foreach ($this->migrations as $timestamp => $migration) {
             if (strtotime($timestamp) > strtotime((int)$this->current)) {
@@ -108,8 +114,10 @@ class Migrator extends Migration\AbstractMigrator
             }
         }
 
-        if (count($stepsToRun) > 0) {
-            $stop = ($steps == 'all') ? count($stepsToRun) : (int)$steps;
+        $numOfSteps = count($stepsToRun);
+
+        if ($numOfSteps > 0) {
+            $stop = (($steps == 'all') || ($steps > $numOfSteps)) ? $numOfSteps : (int)$steps;
             for ($i = 0; $i < $stop; $i++) {
                 $class = $this->migrations[$stepsToRun[$i]]['class'];
                 if (!class_exists($class)) {
@@ -117,12 +125,12 @@ class Migrator extends Migration\AbstractMigrator
                 }
                 $migration = new $class($this->db);
                 $migration->up();
-                $current = $stepsToRun[$i];
-            }
-        }
 
-        if ($current !== null) {
-            $this->storeCurrent($current);
+                $current = $stepsToRun[$i];
+                if ($current !== null) {
+                    $this->storeCurrent($current, $this->migrations[$stepsToRun[$i]]['filename'], $batch);
+                }
+            }
         }
 
         return $this;
@@ -157,8 +165,10 @@ class Migrator extends Migration\AbstractMigrator
             }
         }
 
-        if (count($stepsToRun) > 0) {
-            $stop = ($steps == 'all') ? count($stepsToRun) : (int)$steps;
+        $numOfSteps = count($stepsToRun);
+
+        if ($numOfSteps > 0) {
+            $stop = (($steps == 'all') || ($steps > $numOfSteps)) ? $numOfSteps : (int)$steps;
             for ($i = 0; $i < $stop; $i++) {
                 $class = $this->migrations[$stepsToRun[$i]]['class'];
                 if (!class_exists($class)) {
@@ -166,12 +176,12 @@ class Migrator extends Migration\AbstractMigrator
                 }
                 $migration = new $class($this->db);
                 $migration->down();
+
+                $this->deleteCurrent($stepsToRun[$i], ($stepsToRun[$i + 1] ?? null));
             }
         }
 
-        if (isset($i) && isset($stepsToRun[$i])) {
-            $this->storeCurrent($stepsToRun[$i]);
-        } else {
+        if (!isset($i) || !isset($stepsToRun[$i])) {
             $this->clearCurrent();
         }
 
@@ -204,7 +214,8 @@ class Migrator extends Migration\AbstractMigrator
         $this->path = $path;
 
         $handle = opendir($this->path);
-        while (false !== ($filename = readdir($handle))) {
+
+        while (($filename = readdir($handle)) !== false) {
             if (($filename != '.') && ($filename != '..') &&
                 !is_dir($this->path . DIRECTORY_SEPARATOR . $filename) && (str_ends_with($filename, '.php'))) {
                 $fileContents = trim(file_get_contents($this->path . DIRECTORY_SEPARATOR . $filename));
@@ -223,6 +234,7 @@ class Migrator extends Migration\AbstractMigrator
                 }
             }
         }
+
         closedir($handle);
 
         $this->loadCurrent();
@@ -251,16 +263,126 @@ class Migrator extends Migration\AbstractMigrator
     }
 
     /**
+     * Determine if the migration source is stored in a file
+     *
+     * @return bool
+     */
+    public function isFile(): bool
+    {
+        return (file_exists($this->path . DIRECTORY_SEPARATOR . '.current'));
+    }
+
+    /**
+     * Determine if the migration source is stored in a DB
+     *
+     * @return bool
+     */
+    public function isTable(): bool
+    {
+        if (file_exists($this->path . DIRECTORY_SEPARATOR . '.table')) {
+            $table = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.table');
+            return (class_exists($table) && is_subclass_of($table, 'Pop\Db\Record'));
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Determine if the migration source has a table in the DB
+     *
+     * @return bool
+     */
+    public function hasTable(): bool
+    {
+        if ($this->isTable()) {
+            $migrationTable = $this->getTable();
+            return (in_array($migrationTable::table(), $this->db->getTables()));
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Get table class string
+     *
+     * @return string
+     */
+    public function getTable(): string
+    {
+        return (file_exists($this->path . DIRECTORY_SEPARATOR . '.table')) ?
+            file_get_contents($this->path . DIRECTORY_SEPARATOR . '.table') : '';
+    }
+
+    /**
+     * Create table
+     *
+     * @return Migrator
+     */
+    public function createTable(): Migrator
+    {
+        if (($this->isTable()) && (!$this->hasTable())) {
+            $migrationTable = $this->getTable();
+
+            $schema = $this->db->createSchema();
+            $schema->create($migrationTable::table())
+                ->int('id', 16)->notNullable()->increment()
+                ->varchar('migration_id', 255)
+                ->varchar('class_file', 255)
+                ->int('batch', 16)
+                ->datetime('timestamp')->notNullable()
+                ->primary('id')
+                ->index('migration_id', 'migration_id')
+                ->index('class_file', 'class_file')
+                ->index('batch', 'batch')
+                ->index('timestamp', 'timestamp');
+
+            $schema->execute();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get next batch
+     *
+     * @return int
+     */
+    public function getNextBatch(): int
+    {
+        $batch = 1;
+
+        if (($this->isTable()) && ($this->hasTable())) {
+            $class = $this->getTable();
+            if (!empty($class)) {
+                $current = $class::findOne(null, ['order' => 'batch DESC']);
+                if (!empty($current->batch)) {
+                    $batch = (int)$current->batch + 1;
+                }
+            }
+        }
+
+        return $batch;
+    }
+
+    /**
       * Load the current migration timestamp
       *
       * @return void
     */
     protected function loadCurrent(): void
     {
-        if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
-            $cur = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.current');
-            if (false !== $cur) {
-                $this->current = (int)$cur;
+        if (($this->isTable()) && ($this->hasTable())) {
+            $class = $this->getTable();
+            if (!empty($class)) {
+                $current = $class::findOne(null, ['order' => 'id DESC']);
+                if (isset($current->id)) {
+                    $this->current = (int)$current->migration_id;
+                }
+            }
+        } else if ($this->isFile()) {
+            $current = file_get_contents($this->path . DIRECTORY_SEPARATOR . '.current');
+            if ($current !== false) {
+                $this->current = (int)$current;
             }
         }
     }
@@ -268,24 +390,82 @@ class Migrator extends Migration\AbstractMigrator
     /**
      * Store the current migration timestamp
      *
-     * @param  int $current
+     * @param int    $current
+     * @param string $classFile
+     * @param ?int   $batch
      * @return void
      */
-    protected function storeCurrent(int $current): void
+    protected function storeCurrent(int $current, string $classFile, ?int $batch = null): void
     {
-        file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $current);
+        if (($this->isTable()) && ($this->hasTable())) {
+            $class = $this->getTable();
+            if (!empty($class)) {
+                $migration = new $class([
+                    'migration_id' => $current,
+                    'class_file'   => $classFile,
+                    'batch'        => $batch,
+                    'timestamp'    => date('Y-m-d H:i:s')
+                ]);
+                $migration->save();
+            }
+        } else {
+            file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $current);
+        }
+
+        $this->current = $current;
     }
 
     /**
-     * Clear the current migration timestamp
+     * Delete migration
+     *
+     * @param  int  $current
+     * @param  ?int $previous
+     * @return void
+     */
+    protected function deleteCurrent(int $current, ?int $previous = null): void
+    {
+        if (($this->isTable()) && ($this->hasTable())) {
+            if (($this->isTable()) && ($this->hasTable())) {
+                $class     = $this->getTable();
+                $migration = $class::findOne(['migration_id' => $current]);
+                if (isset($migration->id)) {
+                    $migration->delete();
+                }
+            }
+        } else if ($this->isFile()) {
+            if ($previous !== null) {
+                file_put_contents($this->path . DIRECTORY_SEPARATOR . '.current', $previous);
+            } else {
+                unlink($this->path . DIRECTORY_SEPARATOR . '.current');
+            }
+        }
+
+        $this->loadCurrent();
+    }
+
+    /**
+     * Clear migrations
      *
      * @return void
      */
     protected function clearCurrent(): void
     {
-        if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
-            unlink($this->path . DIRECTORY_SEPARATOR . '.current');
+        if (($this->isTable()) && ($this->hasTable())) {
+            if (($this->isTable()) && ($this->hasTable())) {
+                $class = $this->getTable();
+                $count = $class::total();
+                if ($count > 0) {
+                    $migrations = new $class();
+                    $migrations->delete();
+                }
+            }
+        } else if ($this->isFile()) {
+            if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {
+                unlink($this->path . DIRECTORY_SEPARATOR . '.current');
+            }
         }
+
+        $this->current = null;
     }
 
 }
