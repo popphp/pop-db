@@ -455,6 +455,13 @@ class Select extends AbstractPredicateClause
         // Else, if there is a nested SELECT statement.
         } else if ($this->table instanceof \Pop\Db\Sql\Select) {
             $sql .= (string)$this->table;
+        // Else, if there is an aliased table
+        } else if (is_array($this->table)) {
+            if (count($this->table) !== 1)
+                throw new Exception('Error: Only one table can be used in FROM clause.');
+            $alias = array_key_first($this->table);
+            $table = $this->table[$alias];
+            $sql .= $this->quoteId($table) . ' AS ' . $this->quoteId($alias);
         // Else, just select from the table
         } else {
             $sql .= $this->quoteId($this->table);
