@@ -37,6 +37,13 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testTableAlias()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['u.username'])->from(['u' => 'users']);
+        $this->assertEquals('SELECT `u`.`username` FROM `users` AS `u`', $sql->render());
+    }
+
     public function testJoin()
     {
         $sql = $this->db->createSql();
