@@ -69,6 +69,7 @@ class Join
      * @param  mixed       $foreignTable
      * @param  array       $columns
      * @param  string      $join
+     * @throws Exception
      */
     public function __construct(AbstractSql $sql, mixed $foreignTable, array $columns, string $join = 'JOIN')
     {
@@ -78,10 +79,12 @@ class Join
         if (($foreignTable instanceof Select) || ($foreignTable instanceof \Pop\Db\Sql)) {
             $this->foreignTable = (string)$foreignTable;
         } else if (is_array($foreignTable)) {
-            foreach ($foreignTable as $alias => $table) {
-                $this->foreignTable = $this->sql->quoteId($table) . ' AS ' . $this->sql->quoteId($alias);
-                break;
+            if (count($foreignTable) !== 1) {
+                throw new Exception('Error: Only one table can be used in JOIN clause.');
             }
+            $alias = array_key_first($foreignTable);
+            $table = $foreignTable[$alias];
+            $this->foreignTable = $this->sql->quoteId($table) . ' AS ' . $this->sql->quoteId($alias);
         } else {
             $this->foreignTable = $this->sql->quoteId($foreignTable);
         }

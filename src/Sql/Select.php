@@ -457,11 +457,12 @@ class Select extends AbstractPredicateClause
             $sql .= (string)$this->table;
         // Else, if there is an aliased table
         } else if (is_array($this->table)) {
-            if (count($this->table) !== 1)
+            if (count($this->table) !== 1) {
                 throw new Exception('Error: Only one table can be used in FROM clause.');
+            }
             $alias = array_key_first($this->table);
             $table = $this->table[$alias];
-            $sql .= $this->quoteId($table) . ' AS ' . $this->quoteId($alias);
+            $sql  .= $this->quoteId($table) . ' AS ' . $this->quoteId($alias);
         // Else, just select from the table
         } else {
             $sql .= $this->quoteId($this->table);
@@ -474,27 +475,27 @@ class Select extends AbstractPredicateClause
             }
         }
 
-        // Build any WHERE clauses
+        // Build WHERE clause
         if ($this->where !== null) {
             $sql .= ' WHERE ' . $this->where;
         }
 
-        // Build any HAVING clause
+        // Build HAVING clause
         if ($this->having !== null) {
             $sql .= ' HAVING ' . $this->having;
         }
 
-        // Build any GROUP BY clause
+        // Build GROUP BY clause
         if ($this->groupBy !== null) {
             $sql .= ' GROUP BY ' . $this->groupBy;
         }
 
-        // Build any ORDER BY clause
+        // Build ORDER BY clause
         if ($this->orderBy !== null) {
             $sql .= ' ORDER BY ' . $this->orderBy;
         }
 
-        // Build any LIMIT clause for all other database types.
+        // Build LIMIT clause for all other database types.
         if (!$this->isSqlsrv()) {
             if ($this->limit !== null) {
                 if ((str_contains($this->limit, ',')) && ($this->isPgsql())) {
@@ -506,7 +507,7 @@ class Select extends AbstractPredicateClause
             }
         }
 
-        // Build any OFFSET clause for all other database types.
+        // Build OFFSET clause for all other database types.
         if (!$this->isSqlsrv()) {
             if ($this->offset !== null) {
                 $sql .= ' OFFSET ' . $this->offset;
@@ -523,6 +524,7 @@ class Select extends AbstractPredicateClause
     /**
      * Render the SELECT statement
      *
+     * @throws Exception
      * @return string
      */
     public function __toString(): string

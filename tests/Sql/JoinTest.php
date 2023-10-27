@@ -36,6 +36,13 @@ class JoinTest extends TestCase
         $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` AS `userinfo` ON (`userinfo`.`user_id` = `users`.`id`)', $sql->render());
     }
 
+    public function testForeignTableAliasException()
+    {
+        $this->expectException('Pop\Db\Sql\Exception');
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->leftJoin(['userinfo' => 'user_info', 'another_table' => 'another_info'], ['userinfo.user_id' => 'users.id']);
+    }
+
     public function testForeignTableSql()
     {
         $sql1 = $this->db->createSql();
