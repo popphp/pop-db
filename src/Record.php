@@ -712,6 +712,17 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Copy the record (alias to replicate)
+     *
+     * @param  array $replace
+     * @return static
+     */
+    public function copy(array $replace = []): static
+    {
+        return $this->replicate($replace);
+    }
+
+    /**
      * Check if row is dirty
      *
      * @return bool
