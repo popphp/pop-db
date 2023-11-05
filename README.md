@@ -31,6 +31,7 @@ pop-db
 * [Schema Builder](#schema-builder)
 * [Migrator](#migrator)
 * [Seeder](#seeder)
+* [Profiler](#profiler)
 
 Overview
 --------
@@ -345,5 +346,10 @@ Migrator
 
 Seeder
 ------
+
+[Top](#pop-db)
+
+Profiler
+--------
 
 [Top](#pop-db)
