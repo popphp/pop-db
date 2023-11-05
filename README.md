@@ -164,7 +164,7 @@ class. This is so that any classes that extend `Pop\Db\Record` will be aware of 
 access to the database object.
 
 Then, a table class that represents the `users` table in the database extends the
-`Pop\Db\Record` class and inherited all of its built-in functionality. From there,
+`Pop\Db\Record` class and inherits all of its built-in functionality. From there,
 methods can be called to fetch data out of the `users` table or save new data to
 the `users` table.
 
