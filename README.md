@@ -606,7 +606,7 @@ hashing of some kind. The supported types are:
 - JSON
 - PHP Serialization
 - Base64
-- 1-Way Password Hashes
+- 1-Way Hashing
 - 2-Way Encryption
 
 The benefit of this class is that it handles the encoding and decoding for you. To use it, you
@@ -628,7 +628,9 @@ data will take place and the correct encoded data will be stored in the database
 fetch the record and retrieve those fields, the proper decoding will take place, giving you the
 original decoded data.
 
-Using a password hash field would be an advanced example that requires more configuration:
+#### 1-Way Hashing
+
+Using a password hash field would be an advanced example that would require more configuration:
 
 ```php
 use Pop\Db\Record\Encoded
@@ -642,9 +644,9 @@ class Users extends Encoded
 }
 ```
 
-This configuration will use the defined algorithm and options to safely store
-the one-way hash value in the database. Then, when needed, you can use the
-`verify()` method and check an attempted password against that stored hash.
+This configuration will use the defined algorithm and options to safely create and store the one-way
+hash value in the database. Then, when needed, you can use the `verify()` method and check an attempted
+password against that stored hash.
 
 ```php
 $user = Users::findOne(['username' => 'testuser']);
@@ -652,6 +654,8 @@ if ($user->verify('password', $attemptPassword)) {
     // The user submitted the correct password.
 }
 ```
+
+#### 2-Way Encryption
 
 An even more advanced example would be using an 2-way encrypted field, which uses the
 Open SSL library extension. It requires a few more table properties to be configured:
