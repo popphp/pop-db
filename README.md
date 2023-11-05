@@ -149,9 +149,9 @@ Array
 
 Part of the benefit of using an ORM-style database library like `pop-db` is to
 abstract away the layer of SQL required so that you only have to concern yourself
-with interacting with objects in PHP and not writing valid, secure SQL. The ORM
-does it for you. An example of this is using a table class that represents the
-active record pattern (which will be explored more in-depth below.)
+with interacting with objects in PHP and not writing SQL. The ORM does it for you.
+An example of this is using a table class that represents the active record pattern
+(which will be explored more in-depth below.)
 
 ```php
 use Pop\Db\Db;
