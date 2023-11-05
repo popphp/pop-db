@@ -409,9 +409,186 @@ PDO extension and its various available drivers.
 ORM
 ---
 
+The main concept of the `pop-db` component is that of ORM - object relational mapping. This means
+that all of complex things that make databases work - connections, SQL queries, etc. - are abstracted
+away so the developer only has to worry about interacting with objects in PHP. The rest is handled
+for you, under the hood, in a secure and efficient manner.
+
+Of course, if you prefer to directly work with those concepts that have been abstracted away, you
+can still do that with the `pop-db` component. It provides the flexibility for both styles of database
+interaction.
+
 [Top](#pop-db)
 
 ### Active Record
+
+Central to the ORM-style of `pop-db` is its use of the active record pattern, which is built into
+the `Pop\Db\Record` class. As hinted at in the [quickstart](#quickstart) section, the main concept
+is to write "table" classes that represent tables in the database and that extend the `Pop\Db\Record`
+class.
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Record;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+class Users extends Record {}
+
+Record::setDb($db);
+```
+
+#### Registering the database
+
+In the above example, a `users` table class has been created that inherits all of the functionality of
+`Pop\Db\Record`. The database adapter has been registered with the `Pop\Db\Record` class, which means
+any table class that extends it will have access to that database adapter.
+
+If you need to add specific database adapters to specific table classes, you can do that as well:
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Record;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$dbUsers = Db::mysqlConnect([
+    'database' => 'DATABASE_FOR_USERS',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+class Users extends Record {};
+
+Users::setDb($dbUsers); // Only the users table class uses the $dbUsers connection
+Record::setDb($db);     // All other table classes will use the $db connection
+```
+
+#### Table configuration
+
+A couple of things are configured by default:
+
+- The table name is automatically parsed from the class name
+- The primary ID is set to `id`
+- There is no table prefix
+
+However, you can override that through table properties:
+
+```php
+class Users extends Record
+{
+    protected string $table       = 'users_table';
+    protected string $prefix      = 'my_app_';
+    protected array  $primaryKeys = ['user_id'];
+}
+```
+
+Once a table class is configured, there is a basic set of static methods to get
+the database adapter or other objects or info:
+
+- `Users::getDb()`        // Get the db adapter object
+- `Users::db()`           // Alias to getDb()
+- `Users::getSql()`       // Get the SQL builder object
+- `Users::sql()`          // Alias to getSql()
+- `Users::table()`        // Get the full table name, for example `my_app_users_table`
+- `Users::getTableInfo()` // Get information about the table, like columns, etc.
+
+#### Fetch a record
+
+The basic way to use the table class is to fetch individual record objects from the database:
+
+```php
+// Fetch a single user record by ID
+$user = Users::findById(1);
+```
+
+```php
+// Search for a single user record
+$user = Users::findOne(['username' => 'testuser']);
+```
+
+```php
+// Search for a single user record, or create one if it doesn't exist
+$user = Users::findOneOrCreate(['username' => 'testuser']);
+```
+
+```php
+// Search for the latest single user record
+$user = Users::findLatest();
+```
+
+By default, `findLatest()` will use the primary key, like `id`. However, you can pass it another field
+to sort by:
+
+```php
+// Search for the latest single user record by 'last_login'
+$user = Users::findLatest('last_login');
+```
+
+#### Modify a record
+
+Once a record has been fetched, you can then modify it and save it or even delete it.
+
+```php
+$user->username = 'newusername';
+$user->save();
+```
+
+```php
+$user->delete();
+```
+
+Other methods are available to modify an existing record:
+
+```php
+$user->increment('attempts'); // Increment column by one
+$user->decrement('capacity'); // Decrement column by one
+```
+
+```php
+// Make a new copy of the user record in the database
+// The $replace parameter can be an array of new, overriding column values
+$newUser = $user->copy($replace);
+```
+
+#### Dirty records
+
+If a record has been modified, the changes are stored and you can get them like this:
+
+```php
+$user->username = 'newusername';
+$user->email    = 'newemail@test.com';
+
+if ($user->isDirty()) {
+    print_r($user->getDirty);
+}
+```
+
+```text
+Array
+(
+    [old] => Array
+        (
+            [username] => testuser
+            [email] => test@test.com
+        )
+    [new] => Array
+        (
+            [username] => newusername
+            [email] => newemail@test.com
+        )
+)
+```
+
+This is useful for application components that track and log changes to data in the database.
 
 [Top](#pop-db)
 
