@@ -505,7 +505,8 @@ the database adapter or other objects or info:
 
 #### Fetch a record
 
-The basic way to use the table class is to fetch individual record objects from the database:
+The basic way to use the table class is to fetch individual record objects from the database.
+All of the following examples return an instance of `Users`.
 
 ```php
 // Fetch a single user record by ID
