@@ -269,7 +269,7 @@ Adapters
 The basics of connecting to a database with an adapter was outlined in the [quickstart](#quickstart)
 section. In this section, we'll go over the basics of each database adapter. Each of them
 have slightly connection parameters, but once the different adapter objects are created, they all
-share the same common interface to interact with the database.
+share a common interface to interact with the database.
 
 - `connect(array $options = [])`
 - `beginTransaction()`
