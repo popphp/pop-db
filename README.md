@@ -10,7 +10,10 @@ pop-db
 * [Overview](#overview)
 * [Install](#install)
 * [Quickstart](#quickstart)
-* [Connecting](#connecting)
+    - [Connect to a Database](#connect-to-a-database)
+    - [Query a Database](#query-a-database)
+    - [Table Class](#table-class)
+* [Adapters](#adapters)
     - [MySQL](#mysql)
     - [Postgresql](#postgresql)
     - [SQLite](#sqlite)
@@ -67,7 +70,7 @@ Or, require it in your composer.json file
 Quickstart
 ----------
 
-### Connecting to a database
+### Connect to a database
 
 You can connect to a database using the `Pop\Db\Db::connect()` method:
 
@@ -103,7 +106,9 @@ $db = Db::mysqlConnect([
 
 If no `host` value is given, it will default to `localhost`.
 
-### Querying a database
+[Top](#pop-db)
+
+### Query a database
 
 Once you have a database object that represents a database connection, you can
 use it to query the database:
@@ -138,7 +143,9 @@ Array
 )
 ```
 
-### Using a table class
+[Top](#pop-db)
+
+### Table Class
 
 Part of the benefit of using an ORM-style database library like `pop-db` is to
 abstract away the layer of SQL required so that you only have to concern yourself
@@ -252,8 +259,8 @@ Array
 
 [Top](#pop-db)
 
-Connecting
-----------
+Adapters
+--------
 
 [Top](#pop-db)
 
