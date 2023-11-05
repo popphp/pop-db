@@ -93,10 +93,6 @@ class Sqlite extends AbstractAdapter
      */
     public function setOptions(array $options): Sqlite
     {
-        if (!isset($options['host'])) {
-            $options['host'] = 'localhost';
-        }
-
         $this->options = $options;
 
         if (!$this->hasOptions()) {
