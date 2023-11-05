@@ -21,13 +21,16 @@ pop-db
     - [SQL Server](#sql-server)
 * [ORM](#orm)
     - [Active Record](#active-record)
+    - [Encoded Record](#encoded-record)
     - [Table Gateway](#table-gateway)
+    - [Relationships](#relationships)
     - [Shorthand Syntax](#shorthand-syntax)
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
 * [Query Builder](#query-builder)
 * [Schema Builder](#schema-builder)
 * [Migrator](#migrator)
+* [Seeder](#seeder)
 
 Overview
 --------
@@ -262,9 +265,16 @@ Array
 Adapters
 --------
 
+The basics of connecting to a database with an adapter was outlined in the [quickstart](#quickstart)
+section. In this section, we'll go over the basics of each database adapter. Each of them
+have slightly connection parameters, but once the different adapter objects are created, they all
+share the same common interface to interact with the database.
+
 [Top](#pop-db)
 
 ### MySQL
+
+
 
 [Top](#pop-db)
 
@@ -293,7 +303,15 @@ ORM
 
 [Top](#pop-db)
 
+### Encoded Record
+
+[Top](#pop-db)
+
 ### Table Gateway
+
+[Top](#pop-db)
+
+### Relationships
 
 [Top](#pop-db)
 
@@ -322,5 +340,10 @@ Schema Builder
 
 Migrator
 --------
+
+[Top](#pop-db)
+
+Seeder
+------
 
 [Top](#pop-db)
