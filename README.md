@@ -474,7 +474,7 @@ Record::setDb($db);     // All other table classes will use the $db connection
 
 #### Table configuration
 
-A couple of things are configured by default:
+A few things are configured by default:
 
 - The table name is automatically parsed from the class name
     + `Users` becomes `users`
