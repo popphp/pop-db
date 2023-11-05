@@ -496,12 +496,12 @@ class Users extends Record
 Once a table class is configured, there is a basic set of static methods to get
 the database adapter or other objects or info:
 
-- `Users::getDb()`        // Get the db adapter object
-- `Users::db()`           // Alias to getDb()
-- `Users::getSql()`       // Get the SQL builder object
-- `Users::sql()`          // Alias to getSql()
-- `Users::table()`        // Get the full table name, for example `my_app_users_table`
-- `Users::getTableInfo()` // Get information about the table, like columns, etc.
+- `Users::getDb()` - Get the db adapter object
+- `Users::db()` - Alias to getDb()
+- `Users::getSql()` - Get the SQL builder object
+- `Users::sql()` - Alias to getSql()
+- `Users::table()` - Get the full table name, for example `my_app_users_table`
+- `Users::getTableInfo()` - Get information about the table, like columns, etc.
 
 #### Fetch a record
 
