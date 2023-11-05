@@ -538,12 +538,14 @@ $user = Users::findLatest('last_login');
 
 #### Modify a record
 
-Once a record has been fetched, you can then modify it and save it or even delete it.
+Once a record has been fetched, you can then modify it and save it:
 
 ```php
 $user->username = 'newusername';
 $user->save();
 ```
+
+or even delete it:
 
 ```php
 $user->delete();
