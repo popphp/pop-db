@@ -297,7 +297,7 @@ The supported options to create a MySQL database adapter and connect with a MySQ
 - `database` (required)
 - `username` (required)
 - `password` (required)
-- `host`
+- `host` (optional, defaults to `localhost`)
 - `port`
 - `socket`
 
@@ -321,7 +321,7 @@ The supported options to create a PostgreSQL database adapter and connect with a
 - `database` (required)
 - `username` (required)
 - `password` (required)
-- `host`
+- `host` (optional, defaults to `localhost`)
 - `hostaddr`
 - `port`
 - `connect_timeout`
@@ -371,7 +371,7 @@ The supported options to create a SQL Server database adapter and connect with a
 - `database` (required)
 - `username` (required)
 - `password` (required)
-- `host`
+- `host` (optional, defaults to `localhost`)
 - `info`
 - `ReturnDatesAsStrings`
 
