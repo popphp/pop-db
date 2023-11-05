@@ -605,8 +605,8 @@ hashing of some kind. The supported types are:
 
 - JSON
 - PHP Serialization
-- Base 64
-- Password Hashes
+- Base64
+- 1-Way Password Hashes
 - 2-Way Encryption
 
 The benefit of this class is that it handles the encoding and decoding for you. To use it, you
@@ -628,7 +628,7 @@ data will take place and the correct encoded data will be stored in the database
 fetch the record and retrieve those fields, the proper decoding will take place, giving you the
 original decoded data.
 
-An advanced example would be using a password hash field.
+Using a password hash field would be an advanced example that requires more configuration:
 
 ```php
 use Pop\Db\Record\Encoded
