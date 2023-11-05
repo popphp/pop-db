@@ -477,6 +477,8 @@ Record::setDb($db);     // All other table classes will use the $db connection
 A couple of things are configured by default:
 
 - The table name is automatically parsed from the class name
+    + `Users` becomes `users`
+    + `UserLogins` becomes `user_logins`
 - The primary ID is set to `id`
 - There is no table prefix
 

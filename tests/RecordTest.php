@@ -646,7 +646,7 @@ class RecordTest extends TestCase
 
         $user->save();
 
-        $newUser = $user->replicate(['password' => '123456']);
+        $newUser = $user->copy(['password' => '123456']);
         $this->assertEquals('testuser15', $newUser->username);
         $this->assertEquals('123456', $newUser->password);
         $this->assertEquals('testuser15@test.com', $newUser->email);
