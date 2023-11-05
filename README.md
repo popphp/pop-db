@@ -17,8 +17,8 @@ pop-db
     - [MySQL](#mysql)
     - [Postgresql](#postgresql)
     - [SQLite](#sqlite)
-    - [PDO](#pdo)
     - [SQL Server](#sql-server)
+    - [PDO](#pdo)
 * [ORM](#orm)
     - [Active Record](#active-record)
     - [Encoded Record](#encoded-record)
@@ -121,9 +121,9 @@ use it to query the database:
 use Pop\Db\Db;
 
 $db = Db::mysqlConnect([
-    'database' => 'popdb',
-    'username' => 'popuser',
-    'password' => '12pop34'
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
 ]);
 
 $db->query('SELECT * FROM `users`');
@@ -162,9 +162,9 @@ use Pop\Db\Db;
 use Pop\Db\Record;
 
 $db = Db::mysqlConnect([
-    'database' => 'popdb',
-    'username' => 'popuser',
-    'password' => '12pop34'
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
 ]);
 
 class Users extends Record {}
@@ -275,23 +275,117 @@ share the same common interface to interact with the database.
 
 ### MySQL
 
+The supported options to create a MySQL database adapter and connect with a MySQL database are:
 
+- `database` (required)
+- `username` (required)
+- `password` (required)
+- `host`
+- `port`
+- `socket`
+
+```php
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+```
+
+The `Pop\Db\Adapter\Mysql` object that is returned utilizes the `mysqli` class available with the `mysqli`
+PHP extension.
 
 [Top](#pop-db)
 
 ### Postgresql
 
+The supported options to create a PostgreSQL database adapter and connect with a PostgreSQL database are:
+
+- `database` (required)
+- `username` (required)
+- `password` (required)
+- `host`
+- `hostaddr`
+- `port`
+- `connect_timeout`
+- `options`
+- `sslmode`
+- `persist`
+
+```php
+$db = Db::pgsqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+```
+
+The `Pop\Db\Adapter\Pgsql` object that is returned utilizes the `pg_*` functions available with the `pgsql`
+PHP extension.
+
 [Top](#pop-db)
 
 ### SQLite
+
+The supported options to create a SQLite database adapter and connect with a SQLite database are:
+
+- `database` (required - path to database file on disk)
+- `flags`
+- `key`
+
+```php
+$db = Db::mysqlConnect([
+    'database' => '/path/to/my_database.sqlite',
+]);
+```
+
+The `Pop\Db\Adapter\Sqlite` object that is returned utilizes the `Sqlite3` class available with the `sqlite3`
+PHP extension.
+
+**NOTE:** It is important to make sure the database file has the appropriate permissions for the
+database adapter to be able to access and modify it.
+
+[Top](#pop-db)
+
+### SQL Server
+
+The supported options to create a SQL Server database adapter and connect with a SQL Server database are:
+
+- `database` (required)
+- `username` (required)
+- `password` (required)
+- `host`
+- `info`
+- `ReturnDatesAsStrings`
+
+```php
+$db = Db::sqlsrvConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+```
+
+The `Pop\Db\Adapter\Sqlsrv` object that is returned utilizes the `sqlsrv_*` functions available with the
+`sqlsrv` PHP extension.
 
 [Top](#pop-db)
 
 ### PDO
 
-[Top](#pop-db)
+The PDO adapter works with the popular PDO extension available with PHP. This encompasses multiple database
+drivers that PDO supports. They provide an alternate to the other native adapters.
 
-### SQL Server
+The supported options to create a PDO database adapter and connect with a POD-supported database are:
+
+- `type` (required - type of driver: `mysql`, `pgsql`, `sqlite`, `sqlsrv`, etc.)
+- `database` (required)
+- `username` (required for database drivers that require credentials)
+- `password` (required for database drivers that require credentials)
+- `host`
+
+The `Pop\Db\Adapter\Pdo` object that is returned utilizes the classes and functions made available by the
+PDO extension and its various available drivers.
 
 [Top](#pop-db)
 
