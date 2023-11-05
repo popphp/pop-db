@@ -160,7 +160,7 @@ class Encoded extends \Pop\Db\Record
             if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
                 throw new Exception('Error: The encryption properties have not been set for this class.');
             }
-            if (!(is_string($value) && (@base64_decode($value, true) !== false))) {
+            if (!(is_string($value) && ($this->decodeValue($key, $value) !== false))) {
                 $value = base64_encode(
                     openssl_encrypt($value, $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv))
                 );
