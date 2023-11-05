@@ -28,8 +28,8 @@ pop-db
 
 Overview
 --------
-`pop-db` is a robust database ORM-style component that provides a variety of features and
-functionality to easily interface with databases. Those features include:
+`pop-db` is a robust database ORM-style component that provides a wide range of features
+and functionality to easily interface with databases. Those features include:
 
 * Database Adapters
   - MySQL
@@ -37,13 +37,13 @@ functionality to easily interface with databases. Those features include:
   - Sqlite
   - PDO
   - SQL Server
+* ORM-style concepts
+  - Active Record
+  - Table Gateway
+  - Relationship Associations
 * SQL Query Builder
 * SQL Schema Builder
 * Migrator
-* ORM-style concepts
-    - Active Record
-    - Table Gateway
-    - Relationship Associations
 
 `pop-db`is a component of the [Pop PHP Framework](http://www.popphp.org/).
 
@@ -140,8 +140,9 @@ Array
 
 Part of the benefit of using an ORM-style database library like `pop-db` is to
 abstract away the layer of SQL required so that you only have to concern yourself
-with interacting with objects in PHP. An example of this that will be explored more
-in-depth below is using a table class that represents the active record pattern.
+with interacting with objects in PHP and not writing valid, secure SQL. The ORM
+does it for you. An example of this is using a table class that represents the
+active record pattern (which will be explored more in-depth below.)
 
 ```php
 use Pop\Db\Db;
