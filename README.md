@@ -271,6 +271,23 @@ section. In this section, we'll go over the basics of each database adapter. Eac
 have slightly connection parameters, but once the different adapter objects are created, they all
 share the same common interface to interact with the database.
 
+- `connect(array $options = [])`
+- `beginTransaction()`
+- `commit()`
+- `rollback()`
+- `query(mixed $sql)`
+- `prepare(mixed $sql)`
+- `bindParams(array $params)`
+- `execute()`
+- `fetch()`
+- `fetchAll()`
+- `disconnect()`
+- `escape(?string $value = null)`
+- `getLastId()`
+- `getNumberOfRows()`
+- `getVersion()`
+- `getTables()`
+
 [Top](#pop-db)
 
 ### MySQL
