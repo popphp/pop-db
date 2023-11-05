@@ -4,25 +4,50 @@ pop-db
 [![Build Status](https://github.com/popphp/pop-db/workflows/phpunit/badge.svg)](https://github.com/popphp/pop-db/actions)
 [![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-db)](http://cc.popphp.org/pop-db/)
 
-OVERVIEW
+[![Join the chat at https://popphp.slack.com](https://media.popphp.org/img/slack.svg)](https://popphp.slack.com)
+[![Join the chat at https://discord.gg/D9JBxPa5](https://media.popphp.org/img/discord.svg)](https://discord.gg/D9JBxPa5)
+
+* [Overview](#overview)
+* [Install](#install)
+* [Quickstart](#quickstart)
+* [Connecting](#connecting)
+    - [MySQL](#mysql)
+    - [Postgresql](#postgresql)
+    - [SQLite](#sqlite)
+    - [PDO](#pdf)
+    - [SQL Server](#sqlsrv)
+* [ORM](#orm)
+    - [Active Record](#active-record)
+    - [Table Gateway](#table-gateway)
+    - [Shorthand Syntax](#shorthand-syntax)
+* [Querying](#querying)
+    - [Prepared Statements](#prepared-statements)
+* [Query Builder](#query-builder)
+* [Schema Builder](#schema-builder)
+* [Migrator](#migrator)
+
+Overview
 --------
-`pop-db` is a robust database component that provides a variety of features and functionality
-to easily interface with databases. Those features include:
+`pop-db` is a robust database ORM-style component that provides a variety of features and
+functionality to easily interface with databases. Those features include:
 
 * Database Adapters
-    + MySQL
-    + PostgreSQL
-    + Sqlite
-    + PDO
-    + SQL Server
+  - MySQL
+  - PostgreSQL
+  - Sqlite
+  - PDO
+  - SQL Server
 * SQL Query Builder
-* SQL Schema Migrator
-* An Active Record Implementation
-    + Relationship association support
+* SQL Schema Builder
+* Migrator
+* ORM-style concepts
+    - Active Record
+    - Table Gateway
+    - Relationship Associations
 
 `pop-db`is a component of the [Pop PHP Framework](http://www.popphp.org/).
 
-INSTALL
+Install
 -------
 
 Install `pop-db` using Composer.
@@ -35,287 +60,189 @@ Or, require it in your composer.json file
         "popphp/pop-db" : "^6.0.0"
     }
 
-## BASIC USAGE
+[Top](#pop-db)
 
-* [Connect to a database](#connect-to-a-database)
-* [Using the SQL query builder](#using-the-sql-query-builder)
-* [Using active record](#using-active-record)
+Quickstart
+----------
 
-### Connect to a database
+### Connecting to a database
 
-Connecting to a database is easy. You can use the factory:
-
-```php
-use Pop\Db\Db;
-
-// Returns an instance of the Pop\Db\Adapter\Mysql
-$mysql = Db::connect('mysql', [
-    'database' => 'mysql_database',
-    'username' => 'mysql_username',
-    'password' => 'mysql_password',
-    'host'     => 'localhost'
-]);
-
-// Returns an instance of the Pop\Db\Adapter\Mysql
-$pgsql = Db::connect('pgsql', [
-    'database' => 'pgsql_database',
-    'username' => 'pgsql_username',
-    'password' => 'pgsql_password',
-    'host'     => 'localhost'
-]);
-
-// Returns an instance of the Pop\Db\Adapter\Pdo, with the DSN set to 'sqlite'
-$pdo = Db::connect('pdo', [
-    'database' => '/path/to/database.sqlite',
-    'type'     => 'sqlite'
-]);
-```
-
-Or, you can just directly create new database adapter objects:
-
-```php
-use Pop\Db\Adapter;
-
-$mysql = new Adapter\Mysql([
-    'database' => 'mysql_database',
-    'username' => 'mysql_username',
-    'password' => 'mysql_password',
-    'host'     => 'localhost'
-]);
-```
-
-[Top](#basic-usage)
-
-### Using the SQL query builder
-
-Once you have a database adapter object ready to go, you can utilize the
-SQL query builder to help you build queries with the correct syntax for
-that particular database. The beauty of this is that it takes the burden
-off of you, the user, from remembering all of the slight differences
-between the different database platforms.
+You can connect to a database using the `Pop\Db\Db::connect()` method:
 
 ```php
 use Pop\Db\Db;
-use Pop\Db\Sql;
 
 $db = Db::connect('mysql', [
-    'database' => 'mysql_database',
-    'username' => 'mysql_username',
-    'password' => 'mysql_password',
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS',
     'host'     => 'localhost'
 ]);
-
-// Create the SQL object, passing it the DB object and a table name.
-$sql = $db->createSql();
-
-$sql->select()->from('users');
-echo $sql;
 ```
 
-```sql
-SELECT * FROM `users`
-```
-
-##### INSERT example:
+Or, alternatively, there are shorthand methods for each database connection type:
 
 ```php
-$sql->insert('users')->values([
-    'username' => ':username',
-    'password' => ':password'
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS',
+    'host'     => 'localhost'
 ]);
-echo $sql;
 ```
 
-```sql
-INSERT INTO `users` (`username`, `password`) VALUES (?, ?)
-```
+- `mysqlConnect()`
+- `pgsqlConnect()`
+- `sqliteConnect()`
+- `pdoConnect()`
+- `sqlsrvConnect()`
 
-If the database adapter was PostgreSQL instead of MySQL, it would have produced:
+If no `host` value is given, it will default to `localhost`.
 
-```sql
-INSERT INTO "users" ("username", "password") VALUES ($1, $2)
-```
+### Querying a database
 
-##### DELETE example:
+Once you have a database object that represents a database connection, you can
+use it to query the database:
 
 ```php
-$sql->delete('users')->where('id = :id');
-echo $sql;
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'popdb',
+    'username' => 'popuser',
+    'password' => '12pop34'
+]);
+
+$db->query('SELECT * FROM `users`');
+$users = $db->fetchAll();
+print_r($users);
 ```
 
-```sql
-DELETE FROM `users` WHERE (`id` = ?)
+If there are any user records in the `users` table, the result will be:
+
+```text
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [username] => testuser
+            [password] => password
+            [email] => test@test.com
+        )
+
+)
 ```
 
-##### UPDATE example:
+### Using a table class
+
+Part of the benefit of using an ORM-style database library like `pop-db` is to
+abstract away the layer of SQL required so that you only have to concern yourself
+with interacting with objects in PHP. An example of this that will be explored more
+in-depth below is using a table class that represents the active record pattern.
 
 ```php
-$sql->update('users')->values([
-    'username' => ':username',
-    'password' => ':password'
-])->where('id = :id');
-echo $sql;
-```
-
-```sql
-UPDATE `users` SET `username` = ?, `password` = ? WHERE (`id` = ?)
-```
-
-##### A more complex SELECT example, using JOIN:
-
-```php
-$sql->select(['id', 'username', 'email'])->from('users')
-    ->leftJoin('user_info', ['users.id' => 'user_info.user_id'])
-    ->where('id < :id')
-    ->orderBy('id', 'DESC');
-echo $sql;
-```
-
-```sql
-SELECT `id`, `username`, `email` FROM `users`
-LEFT JOIN `user_info` ON (`users`.`id` = `user_info`.`user_id`)
-WHERE (`id` < ?) ORDER BY `id` DESC
-```
-
-##### Executing the query with the adapter
-
-For the simple example above (standard query without a parameter), you can use the `query()` method:
-
-```php
-$db->query((string)$sql);
-
-while (($row = $db->fetch())) {
-    print_r($row);
-}
-```
-
-For the prepared statement example, you would use the `execute()` method:
-
-```php
-$db->prepare((string)$sql)
-   ->bindParams(['id' => 1000])
-   ->execute();
-
-$rows = $db->fetchAll();
-
-foreach ($rows as $row) {
-    print_r($row);
-}
-```
-
-[Top](#basic-usage)
-
-### Using active record
-
-The implementation of the Active Record pattern is actually a bit of a hybrid between
-a Row Gateway and a Table Gateway pattern. It does follow the concept of selecting and
-modifying a single row entry, but also expands to allow you to select multiple rows
-at a time. There are a few helper methods to allow you a quick way to execute some
-common queries.
-
-The main idea behind this particular implementation of Active Record is that you would have a
-class that represents a table, and the class name is the table name (unless otherwise specified.)
-The table class would extend the `Pop\Db\Record` class. By default, the primary key is set to 'id',
-but that can be changed as well.
-
-```php
-namespace MyApp\Table;
-
+use Pop\Db\Db;
 use Pop\Db\Record;
 
-class Users extends Record {
-
-}
-```
-
-At some point at the beginning of the life-cycle of your application, you would need to set the
-database adapter object for the application to use:
-
-```php
-Pop\Db\Record::setDb(Db::connect('mysql', [
-    'database' => 'mysql_database',
-    'username' => 'mysql_username',
-    'password' => 'mysql_password',
-    'host'     => 'localhost'
-]));
-```
-
-Then from there simple queries are possible with the helper methods:
-
-```php
-use MyApp\Table\Users;
-
-// Find the user with id = 1001
-$user = Users::findById(1001);
-if (isset($user->id)) {
-    echo $user->username;
-}
-```
-
-```php
-use MyApp\Table\Users;
-
-// Find all active users
-$users = Users::findBy(['active' => 1]);
-if ($users->hasRows()) {
-    foreach ($users->rows() as $user) {
-        echo $user->username;
-    }
-}
-```
-
-```php
-use MyApp\Table\Users;
-
-// Find all users
-$users = Users::findAll();
-if ($users->hasRows()) {
-    foreach ($users->rows() as $user) {
-        echo $user->username;
-    }
-}
-```
-
-The examples above are basic SELECT examples. Let's look at some INSERT and UPDATE examples:
-
-```php
-use MyApp\Table\Users;
-
-$user = new Users([
-    'username' => 'testuser',
-    'password' => '12test34',
-    'email'    => 'test@test.com',
-    'active'   => 1
+$db = Db::mysqlConnect([
+    'database' => 'popdb',
+    'username' => 'popuser',
+    'password' => '12pop34'
 ]);
 
-// Perform an INSERT statement to save the new user record
+class Users extends Record {}
+
+Record::setDb($db);
+```
+
+In the above example, a database object is created and passed to the `Pop\Db\Record`
+class. This is so that any classes that extend `Pop\Db\Record` will be aware of and have
+access to the database object.
+
+Then, a table class that represents the `users` table in the database extends the
+`Pop\Db\Record` class and inherited all of its built-in functionality. From there,
+methods can be called to fetch data out of the `users` table or save new data to
+the `users` table.
+
+**Fetch users**
+
+```php
+$users = Users::findAll()->toArray();
+print_r($users);
+```
+
+```text
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [username] => testuser
+            [password] => 12test34
+            [email] => test@test.com
+        )
+
+)
+```
+
+**Fetch user ID 1**
+
+```php
+$user = Users::findById(1)->toArray();
+print_r($user);
+```
+
+```text
+Array
+(
+    [id] => 1
+    [username] => testuser
+    [password] => 12test34
+    [email] => test@test.com
+)
+```
+
+**Edit user ID 1**
+
+```php
+$user = Users::findById(1);
+$user->username = 'testuser2';
+$user->email    = 'test2@test.com'; 
 $user->save();
-
-// Echoes the newly assigned ID of that newly inserted user record
-echo $user->id;
+print_r($user->toArray());
 ```
+
+```text
+Array
+(
+    [id] => 1
+    [username] => testuser2
+    [password] => 12test34
+    [email] => test2@test.com
+)
+```
+
+**Create new user**
 
 ```php
-use MyApp\Table\Users;
-
-$user = Users::findById(1001);
-if (isset($user->id)) {
-    $user->email = 'new_email@test.com';
-
-    // Perform an UPDATE statement to modify the existing user record
-    $user->save();
-}
+$user = new Users([
+    'username' => 'newuser',
+    'password' => 'somepassword',
+    'email'    => 'newuser@test.com'
+]);
+$user->save();
+print_r($user->toArray());
 ```
 
-And here's an example of deleting a record:
-
-```php
-use MyApp\Table\Users;
-
-$user = Users::findById(1001);
-if (isset($user->id)) {
-    $user->delete();  // Performs a DELETE statement to delete the user record
-}
+```text
+Array
+(
+    [username] => newuser
+    [password] => somepassword
+    [email] => newuser@test.com
+    [id] => 2
+)
 ```
-
-[Top](#basic-usage)
