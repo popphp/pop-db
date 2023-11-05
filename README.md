@@ -600,8 +600,8 @@ This is useful for application components that track and log changes to data in 
 ### Encoded Record
 
 The `Pop\Db\Record\Encoded` class extends the `Pop\Db\Record` and provides the functionality
-to manage fields in the database record that require encoded, serialization or hashing of some
-kind. The supported types of encoding are:
+to manage fields in the database record that require encoding, serialization, encryption or
+hashing of some kind. The supported types of encoding are:
 
 - JSON
 - PHP Serialization
