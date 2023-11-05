@@ -393,7 +393,7 @@ The `Pop\Db\Adapter\Sqlsrv` object that is returned utilizes the `sqlsrv_*` func
 The PDO adapter works with the popular PDO extension available with PHP. This encompasses multiple database
 drivers that PDO supports. They provide an alternate to the other native adapters.
 
-The supported options to create a PDO database adapter and connect with a POD-supported database are:
+The supported options to create a PDO database adapter and connect with a PDO-supported database are:
 
 - `type` (required - type of driver: `mysql`, `pgsql`, `sqlite`, `sqlsrv`, etc.)
 - `database` (required)
