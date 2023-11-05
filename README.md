@@ -15,7 +15,7 @@ pop-db
     - [Postgresql](#postgresql)
     - [SQLite](#sqlite)
     - [PDO](#pdf)
-    - [SQL Server](#sqlsrv)
+    - [SQL Server](#sql-server)
 * [ORM](#orm)
     - [Active Record](#active-record)
     - [Table Gateway](#table-gateway)
