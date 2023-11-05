@@ -14,7 +14,7 @@ pop-db
     - [MySQL](#mysql)
     - [Postgresql](#postgresql)
     - [SQLite](#sqlite)
-    - [PDO](#pdf)
+    - [PDO](#pdo)
     - [SQL Server](#sql-server)
 * [ORM](#orm)
     - [Active Record](#active-record)
