@@ -15,7 +15,7 @@ pop-db
     - [Table Class](#table-class)
 * [Adapters](#adapters)
     - [MySQL](#mysql)
-    - [Postgresql](#postgresql)
+    - [PostgreSQL](#postgresql)
     - [SQLite](#sqlite)
     - [SQL Server](#sql-server)
     - [PDO](#pdo)
@@ -314,7 +314,7 @@ PHP extension.
 
 [Top](#pop-db)
 
-### Postgresql
+### PostgreSQL
 
 The supported options to create a PostgreSQL database adapter and connect with a PostgreSQL database are:
 
