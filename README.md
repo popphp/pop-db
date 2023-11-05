@@ -487,9 +487,9 @@ However, you can override that through table properties:
 ```php
 class Users extends Record
 {
-    protected string $table       = 'users_table';
-    protected string $prefix      = 'my_app_';
-    protected array  $primaryKeys = ['user_id'];
+    protected ?string $table       = 'users_table';
+    protected ?string $prefix      = 'my_app_';
+    protected array   $primaryKeys = ['user_id'];
 }
 ```
 
@@ -598,6 +598,84 @@ This is useful for application components that track and log changes to data in 
 [Top](#pop-db)
 
 ### Encoded Record
+
+The `Pop\Db\Record\Encoded` class extends the `Pop\Db\Record` and provides the functionality
+to manage fields in the database record that require encoded, serialization or hashing of some
+kind. The supported types of encoding are:
+
+- JSON
+- PHP Serialization
+- Base 64
+- Password Hashes
+- 2-Way Encryption
+
+The benefit of this class is that it handles the encoding and decoding for you. To use it, you
+would configure your class like this below, defining the fields that need to be encoded/decoded:
+
+```php
+use Pop\Db\Record\Encoded
+
+class Users extends Encoded
+{
+    protected array $jsonFields   = ['metadata'];
+    protected array $phpFields    = ['user_info'];
+    protected array $base64Fields = ['user_image'];
+} 
+```
+
+The above example means that any time you save to those fields, the proper encoding of the field
+data will take place and the correct encoded data will be stored in the database. Then, when you
+fetch the record and retrieve those fields, the proper decoding will take place, giving you the
+original decoded data.
+
+An advanced example would be using a password hash field.
+
+```php
+use Pop\Db\Record\Encoded
+
+class Users extends Encoded
+{
+
+    protected array  $hashFields    = ['password'];
+    protected string $hashAlgorithm = PASSWORD_BCRYPT;
+    protected array  $hashOptions   = ['cost' => 10];
+}
+```
+
+This configuration will use the defined algorithm and options to safely store
+the one-way hash value in the database. Then, when needed, you can use the
+`verify()` method and check an attempted password against that stored hash.
+
+```php
+$user = Users::findOne(['username' => 'testuser']);
+if ($user->verify('password', $attemptPassword)) {
+    // The user submitted the correct password.
+}
+```
+
+An even more advanced example would be using an 2-way encrypted field, which uses the
+Open SSL library extension. It requires a few more table properties to be configured:
+
+- `$cipherMethod`
+- `$key`
+- `$iv`
+
+You have to create an IV value and base64 encode it to set it as the `$iv` property.
+
+```php
+use Pop\Db\Record\Encoded
+
+class Users extends Encoded
+{
+    protected array   $encryptedFields = ['sensitive_data'];
+    protected ?string $cipherMethod    = 'aes-256-cbc';
+    protected ?string $key             = 'YOUR_KEY';
+    protected ?string $iv              = 'BASE64_ENCODED_IV_STRING';
+}
+```
+
+This configuration will allow you to store the encrypted value in the database and
+securely extract it when you fetch the record.
 
 [Top](#pop-db)
 
