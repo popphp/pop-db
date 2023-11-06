@@ -45,10 +45,10 @@ pop-db
     - [Drop Table](#drop-table)
     - [Execute Schema](#execute-schema)
     - [Schema Builder API](#schema-builder-api)
-* [SQL Data](#sql-data)
-* [Migrator](#migrator)
 * [Seeder](#seeder)
+* [Migrator](#migrator)
 * [Profiler](#profiler)
+* [SQL Data](#sql-data)
 
 Overview
 --------
@@ -1679,22 +1679,131 @@ The following methods are all related to the creation of foreign key constraints
 
 [Top](#pop-db)
 
-SQL Data
---------
+Seeder
+------
 
 [Top](#pop-db)
 
 Migrator
 --------
 
-[Top](#pop-db)
+Database migrations are scripts that assist in implementing new changes to the database, as well
+rolling back any changes to a previous state. It works by storing a directory of migration class
+files and keeping track of the current state, or the last one that was processed. From that, you
+can write scripts to run the next migration state or rollback to the previous one. The state can
+be stored locally in the migration folder, or can be stored in its own table in the database.
 
-Seeder
-------
+You can create a blank template migration class like this:
+
+```php
+use Pop\Db\Sql\Migrator;
+
+Migrator::create('MyNewMigration', 'migrations');
+```
+
+The code above will create a file that look like `migrations/20170225100742_my_new_migration.php`
+and it will contain a blank class template:
+
+```php
+<?php
+
+use Pop\Db\Sql\Migration\AbstractMigration;
+
+class MyNewMigration extends AbstractMigration
+{
+
+    public function up()
+    {
+
+    }
+
+    public function down()
+    {
+
+    }
+
+}
+```
+
+From there, you can write your forward migration steps in the `up()` method, or your rollback steps
+in the `down()` method. Here's an example that creates a table when stepped forward, and drops
+that table when rolled back:
+
+```php
+<?php
+
+use Pop\Db\Sql\Migration\AbstractMigration;
+
+class MyNewMigration extends AbstractMigration
+{
+
+    public function up()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)->increment()
+            ->varchar('username', 255)
+            ->varchar('password', 255)
+            ->primary('id');
+
+        $schema->execute();
+    }
+
+    public function down()
+    {
+        $schema = $this->db->createSchema();
+        $schema->drop('users');
+        $schema->execute();
+    }
+
+}
+```
+
+To step forward, you would call the migrator like this:
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Sql\Migrator;
+
+$db = Pop\Db\Db::connect('mysql', [
+    'database' => 'my_database',
+    'username' => 'my_db_user',
+    'password' => 'my_db_password',
+    'host'     => 'mydb.server.com'
+]);
+
+$migrator = new Migrator($db, 'migrations');
+$migrator->run();
+```
+
+The above code would have created the table `users` with the defined columns.
+To roll back the migration, you would call the migrator like this:
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Sql\Migrator;
+
+$db = Pop\Db\Db::connect('mysql', [
+    'database' => 'my_database',
+    'username' => 'my_db_user',
+    'password' => 'my_db_password',
+    'host'     => 'mydb.server.com'
+]);
+
+$migrator = new Migrator($db, 'migrations');
+$migrator->rollback();
+```
+
+And the above code here would have dropped the table `users` from the database.
 
 [Top](#pop-db)
 
 Profiler
+--------
+
+[Top](#pop-db)
+
+SQL Data
 --------
 
 [Top](#pop-db)
