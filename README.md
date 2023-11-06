@@ -2027,7 +2027,7 @@ Profiler
 --------
 
 The profiler object works in conjunction with the `pop-debug` component to set up a
-query listen to monitor performance and record any potential issues.
+query listener to monitor performance and record any potential issues.
 
 ```php
 use Pop\Db\Db;
@@ -2060,7 +2060,24 @@ $user->save();
 ```
 
 With the debugger and query handler registered with the database profiler, any queries
-that are executed will get automatically logged with the debugger.
+that are executed will get automatically logged with the debugger. The debugger log output
+from the above example might look like this:
+
+```text
+Start:			1699246221.25475
+Finish:			0.00000
+Elapsed:		0.00997 seconds
+
+Queries:
+--------
+INSERT INTO `users` (`username`, `password`, `email`) VALUES (?, ?, ?) [0.00674]
+Start:			1699246221.25796
+Finish:			1699246221.26470
+Params:
+	username => admin
+	password => password
+	email => admin@test.com
+```
 
 If you'd like more control over when the debugger fires, you can manually save it as well:
 
