@@ -2090,7 +2090,7 @@ $debugger = new Debugger();
 $debugger->addHandler($queryHandler);
 $debugger->setStorage(new File(__DIR__ . '/log'));
 
-// Interact with the database
+// Save a user to the database
 $user = new Users([
     'username' => 'admin',
     'password' => 'password',
