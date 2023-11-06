@@ -1992,7 +1992,7 @@ $users = [
     ]
 ];
 
-$data = new Data($db, 'users', 10);
+$data = new Data($db, 'users', 10); // Set the divide to 10
 $data->streamToFile($users, __DIR__ . '/seeds/users.sql');
 ```
 
