@@ -812,8 +812,8 @@ $users = Users::findBy(['logins' => 0], [
 ```
 
 The `join` option defines the table to join with as well as which columns to join by.
-Notice that the `select` option was used to craft the required fields - all of user
-fields and the `role` fields from the roles table.
+Notice that the `select` option was used to craft the required fields - in this case,
+all of user fields and just the `role` field from the roles table.
 
 The type of join defaults to a `LEFT JOIN`, but a `type` key can be added to define
 alternate join types.
