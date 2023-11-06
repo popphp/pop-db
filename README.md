@@ -1177,7 +1177,7 @@ Array
 Query Builder
 -------------
 
-The query build is available to build valid SQL queries that will work across the different database
+The query builder is available to build valid SQL queries that will work across the different database
 adapters. So, this is useful if the application being built may deploy to different environments with
 different database servers.
 
@@ -1203,19 +1203,22 @@ echo $sql;
 The following SQL query is produced for the MySQL adapter:
 
 ```sql
+-- MySQL
 SELECT `id`, `username` FROM `users` WHERE (`id` = ?)
 ```
 
-Switching to the SQLite adapter, and the same code will produce:
+Switching to the PostgeSQL adapter, the same code will produce:
 
 ```sql
-SELECT "id", "username" FROM "users" WHERE ("id" = :id)
+-- PostgreSQL
+SELECT "id", "username" FROM "users" WHERE ("id" = $1)
 ```
 
-And switching to the PostgeSQL adapter, the same code will produce:
+And Switching to the SQLite adapter, and the same code will produce:
 
 ```sql
-SELECT "id", "username" FROM "users" WHERE ("id" = $1)
+-- SQLite
+SELECT "id", "username" FROM "users" WHERE ("id" = :id)
 ```
 
 And of course, the `$sql` builder object can be passed directly to the database adapter:
