@@ -1023,7 +1023,7 @@ class Orders extends Pop\Db\Record
 }
 ```
 
-With those relationships define, you can now call the related data like this:
+With those relationships defined, you can now call the related data like this:
 
 ```php
 // The two 1:1 relationships
