@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Adapter\Profiler;
 
+use Pop\Debug\Debugger;
+
 /**
  * MySQL database adapter profiler class
  *
@@ -37,6 +39,68 @@ class Profiler extends AbstractProfiler
      * @var array
      */
     protected array $steps = [];
+
+    /**
+     * Debugger
+     * @var ?Debugger
+     */
+    protected ?Debugger $debugger = null;
+
+    /**
+     * Constructor
+     *
+     * Instantiate the profiler object
+     * @param ?Debugger $debugger
+     */
+    public function __construct(?Debugger $debugger = null)
+    {
+        parent::__construct();
+        if ($debugger !== null) {
+            $this->setDebugger($debugger);
+        }
+    }
+    /**
+
+     * Set debugger
+     *
+     * @param  Debugger $debugger
+     * @return Profiler
+     */
+    public function setDebugger(Debugger $debugger): Profiler
+    {
+        $this->debugger = $debugger;
+        return $this;
+    }
+
+    /**
+     * Get debugger
+     *
+     * @return ?Debugger
+     */
+    public function getDebugger(): ?Debugger
+    {
+        return $this->debugger;
+    }
+
+    /**
+     * Get debugger (alias)
+     *
+     * @return ?Debugger
+     */
+    public function debugger(): ?Debugger
+    {
+        return $this->debugger;
+    }
+
+    /**
+     * Has debugger
+     *
+     * @return bool
+     */
+    public function hasDebugger(): bool
+    {
+        return ($this->debugger !== null);
+    }
 
     /**
      * Add step
