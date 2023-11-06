@@ -2101,7 +2101,7 @@ $user->save();
 $debugger->save();
 ```
 
-In the above example, the query handler is returned form the `listen()` method call, which 
+In the above example, the query handler is returned from the `listen()` method call, which 
 in turn can be registered with the stand-alone debugger. Once the final query runs on the user
 `save()` method, you can trigger the debugger `save()` method. 
 
