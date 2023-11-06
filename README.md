@@ -935,13 +935,13 @@ can be 1:1 or 1:many, and you can define them as methods in your table class. Th
 being leveraged here from within the `Pop\Db\Record` class are:
 
 * `hasOneOf()`
-    - 1:1 relationship where a foreign key in the sibling object is a primary key(s) in different sibling object 
+    - 1:1 relationship where a foreign key in the sibling object is a primary key in different sibling object 
 * `hasOne()`
-    - 1:1 relationship where a foreign key in the child object is a primary key(s) in the parent object
+    - 1:1 relationship where a foreign key in the child object is a primary key in the parent object
 * `hasMany()`
-    - 1:1 relationship where a foreign key in many child objects is a primary key(s) in the parent object
+    - 1:1 relationship where a foreign key in many child objects is a primary key in the parent object
 * `belongsTo()`
-    - 1:1 relationship where a foreign key in the child object is a primary key(s) in the parent object (Inverse "hasOne")
+    - 1:1 relationship where a foreign key in the child object is a primary key in the parent object (Inverse "hasOne")
 
 Let's consider the following tables classes that represent tables in the database:
 
