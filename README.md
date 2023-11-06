@@ -23,6 +23,8 @@ pop-db
     - [Active Record](#active-record)
     - [Encoded Record](#encoded-record)
     - [Table Gateway](#table-gateway)
+    - [Options](#options)
+    - [Execute Queries](#execute-queries)
     - [Relationships](#relationships)
     - [Shorthand Syntax](#shorthand-syntax)
 * [Querying](#querying)
@@ -684,6 +686,146 @@ securely extract it when you fetch the record.
 [Top](#pop-db)
 
 ### Table Gateway
+
+The `Pop\Db\Record` class actually has functionality that allows you to fetch multiple records,
+or rows, at a time, much like a table data gateway. The default value returned from most of these
+calls is a `Pop\Db\Record\Collection`, which provides functionality to perform array-like
+operations on the rows. By default, each object in the collection is an instance of the table
+class that extends `Pop\Db\Record`, which allows you to work directly with those objects and
+modify or delete them.
+
+#### Find records
+
+```php
+// Find all users who have never logged in.
+$users = Users::findBy(['logins' => 0]);
+```
+
+```php
+// Find a group of users
+$users = Users::findIn('username', ['testuser', 'someotheruser', 'anotheruser']);
+```
+
+```php
+// Find all users
+$users = Users::findAll();
+```
+
+#### Get count of records
+
+If you just need to get a count of records, you can do that like this:
+
+```php
+// Get count of all users
+$count = Users::getTotal();
+```
+
+```php
+// Get count of all users who have never logged in.
+$count = Users::getTotal(['logins' => 0]);
+```
+
+[Top](#pop-db)
+
+### Options
+
+In most of the methods described above, there is an available `$options` array
+that allows you to really tailor the query. These are the supported options:
+
+- `select`
+- `offset`
+- `limit`
+- `order`
+- `group`
+- `join`
+
+##### Select
+
+Pass an array of the fields you want to select with the query. This can help
+cut the amount of unwanted data that's return, or help define data to select
+across multiple joined tables. If this option is not used, it will default to
+`table_name.*`
+
+##### Offset
+
+The start offset of the returned set of data. Used typically with pagination
+
+##### Limit
+
+The value by which to limit the results
+
+##### Order
+
+The field or fields by which to order the results
+
+##### Group
+
+The field or fields by which to group the results
+
+##### Join
+
+This option allows you to define multiple tables to use in a JOIN query.
+
+**Basic Options Example**
+
+```php
+$users = Users::findBy(['logins' => 0], [
+    'select' => ['id', 'username'],
+    'order'  => ['id DESC'],
+    'offset' => 10
+    'limit'  => 25
+]);
+```
+
+**Options Example Using Join**
+
+Assume there is another table called `Roles` and the users table stores a
+`role_id` foreign key:
+
+```php
+$users = Users::findBy(['logins' => 0], [
+    'select' => [
+        Users::table() . '.*',
+        Roles::table() . '.role',
+    ],
+    'join' => [
+        'table' => Roles::table(),
+        'columns' => [
+            Roles::table() . '.id' => Users::table() . '.role_id',
+        ],
+    ],
+]);
+```
+
+Notice that the `select` option was used to craft the required fields - all of user
+fields and the `role` fields from the roles table.
+
+The type of join defaults to a `LEFT JOIN`, but a `type` key can be added to define
+alternate join types.
+
+[Top](#pop-db)
+
+### Execute Queries
+
+If any of the available methods listed above don't provide what is needed,
+you can execute direct queries through the table class.
+
+#### Query (no parameters)
+
+This will return a `Pop\Db\Record\Collection` object:
+
+```php
+$users = Users::query('SELECT * FROM ' . Users::table());
+```
+
+#### Prepared statement (w/ parameters)
+
+This will return a `Pop\Db\Record\Collection` object:
+
+```php
+$sql   = 'SELECT * FROM ' . Users::table() . ' WHERE last_login = :last_login';
+$users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
+```
 
 [Top](#pop-db)
 

@@ -166,11 +166,17 @@ class Record extends Record\AbstractRecord
     /**
      * Get table name
      *
+     * @param  bool $quotes
      * @return string
      */
-    public static function table(): string
+    public static function table(bool $quotes = false): string
     {
-        return (new static())->getFullTable();
+        $table = (new static())->getFullTable();
+        $sql   = static::sql();
+        if ($quotes) {
+            $table = $sql->quoteId($table);
+        }
+        return $table;
     }
 
     /**
