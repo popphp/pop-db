@@ -1181,7 +1181,7 @@ The query builder is available to build valid SQL queries that will work across 
 adapters. So, this is useful if the application being built may deploy to different environments with
 different database servers.
 
-### SELECT
+### Select
 
 ```php
 use Pop\Db\Db;
