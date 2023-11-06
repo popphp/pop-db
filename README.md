@@ -286,8 +286,8 @@ Adapters
 
 The basics of connecting to a database with an adapter was outlined in the [quickstart](#quickstart)
 section. In this section, we'll go over the basics of each database adapter. Each of them
-have slightly connection parameters, but once the different adapter objects are created, they all
-share a common interface to interact with the database.
+have slightly different connection parameters, but once the different adapter objects are
+created, they all share a common interface to interact with the database.
 
 - `connect(array $options = [])`
 - `beginTransaction()`
@@ -409,7 +409,7 @@ The `Pop\Db\Adapter\Sqlsrv` object that is returned utilizes the `sqlsrv_*` func
 ### PDO
 
 The PDO adapter works with the popular PDO extension available with PHP. This encompasses multiple database
-drivers that PDO supports. They provide an alternate to the other native adapters.
+drivers that PDO supports. They provide an alternate to the other native drivers.
 
 The supported options to create a PDO database adapter and connect with a PDO-supported database are:
 
@@ -572,8 +572,8 @@ $user->delete();
 Other methods are available to modify an existing record:
 
 ```php
-$user->increment('attempts'); // Increment column by one
-$user->decrement('capacity'); // Decrement column by one
+$user->increment('attempts'); // Increment column by one and save
+$user->decrement('capacity', 5); // Decrement column by 5 and save
 ```
 
 ```php
@@ -668,7 +668,7 @@ password against that stored hash.
 
 ```php
 $user = Users::findOne(['username' => 'testuser']);
-if ($user->verify('password', $attemptPassword)) {
+if ($user->verify('password', $attemptedPassword)) {
     // The user submitted the correct password.
 }
 ```
@@ -706,8 +706,8 @@ securely extract it when you fetch the record.
 The `Pop\Db\Record` class actually has functionality that allows you to fetch multiple records,
 or rows, at a time, much like a table data gateway. The default value returned from most of these
 calls is a `Pop\Db\Record\Collection`, which provides functionality to perform array-like
-operations on the rows. By default, each object in the collection is an instance of the table
-class that extends `Pop\Db\Record`, which allows you to work directly with those objects and
+operations on the rows or data. By default, each object in the collection is an instance of the
+table class that extends `Pop\Db\Record`, which allows you to work directly with those objects and
 modify or delete them.
 
 #### Find records
@@ -737,7 +737,7 @@ $users = Users::findBy(['logins' => 0])->toArray();
 Or, in most methods, there is an `$asArray` parameter that will do the same:
 
 ```php
-// 3rd param $asArray set to true; Returns an array
+// 3rd parameter $asArray set to true; Returns an array
 $users = Users::findBy(['logins' => 0], null, true);
 ```
 
@@ -771,30 +771,30 @@ that allows you to really tailor the query. These are the supported options:
 
 ##### Select Columns
 
-Pass an array of the fields you want to select with the query. This can help
-cut the amount of unwanted data that's return, or help define data to select
-across multiple joined tables. If this option is not used, it will default to
+Pass an array of the fields you want to select with the query with the `select` key.
+This can help cut the amount of unwanted data that's return, or help define data to
+select across multiple joined tables. If this option is not used, it will default to
 `table_name.*`
 
 ##### Offset
 
-The start offset of the returned set of data. Used typically with pagination
+The start `offset` of the returned set of data. Used typically with pagination
 
 ##### Limit
 
-The value by which to limit the results
+The value by which to `limit` the results
 
 ##### Order
 
-The field or fields by which to order the results
+The field or fields by which to `order` the results
 
 ##### Group
 
-The field or fields by which to group the results
+The field or fields by which to `group` the results
 
 ##### Join
 
-This option allows you to define multiple tables to use in a JOIN query.
+The `join` option allows you to define multiple tables to use in a JOIN query.
 
 **Basic Options Example**
 
@@ -832,7 +832,7 @@ Notice that the `select` option was used to craft the required fields - in this 
 all of user fields and just the `role` field from the roles table.
 
 The type of join defaults to a `LEFT JOIN`, but a `type` key can be added to define
-alternate join types.
+alternate join types. You can also define multiple joins at a time in a nested array.
 
 [Top](#pop-db)
 
@@ -1014,6 +1014,12 @@ class Info extends Pop\Db\Record
      *    - address
      *    - phone
      */
+    // Define the parent relationship up to the user that owns this info record
+    public function user()
+    {
+        return $this->belongsTo('Users', 'user_id');
+    }
+
 }
 ```
 
@@ -1074,7 +1080,7 @@ foreach ($orders as $order) {
 ```php
 // The inverse 1:1 relationship
 $userInfo = UserInfo::findOne(['user_id' => 1]);
-print_r($userInfo->users()->toArray());
+print_r($userInfo->user()->toArray());
 ```
 
 ```text
