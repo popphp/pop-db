@@ -49,10 +49,11 @@ and functionality to easily interface with databases. Those features include:
 * ORM-style concepts
   - Active Record
   - Table Gateway
-  - Relationships
+* Relationships
 * SQL Query Builder
 * SQL Schema Builder
 * Migrator
+* Profiler
 
 `pop-db`is a component of the [Pop PHP Framework](http://www.popphp.org/).
 
