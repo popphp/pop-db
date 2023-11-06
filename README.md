@@ -1921,9 +1921,9 @@ use Pop\Db\Db;
 use Pop\Db\Sql\Data;
 
 $db = Db::mysqlConnect([
-    'database' => 'popdb',
-    'username' => 'popuser',
-    'password' => '12pop34'
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS',
 ]);
 
 $users = [
@@ -1971,9 +1971,9 @@ use Pop\Db\Db;
 use Pop\Db\Sql\Data;
 
 $db = Db::mysqlConnect([
-    'database' => 'popdb',
-    'username' => 'popuser',
-    'password' => '12pop34'
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS',
 ]);
 
 $users = [
@@ -2025,5 +2025,66 @@ INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
 
 Profiler
 --------
+
+The profiler object works in conjunction with the `pop-debug` component to set up a
+query listen to monitor performance and record any potential issues.
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Record;
+use Pop\Debug\Debugger;
+use Pop\Debug\Storage\File;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS',
+]);
+
+class Users extends Record {}
+
+Record::setDb($db);
+
+// Register the debugger and query handler with the DB adapter
+$debugger = new Debugger(new File(__DIR__ . '/log'));
+$db->listen('Pop\Debug\Handler\QueryHandler', null, new Profiler($debugger));
+
+// Interact with the database
+$user = new Users([
+    'username' => 'admin',
+    'password' => 'password',
+    'email'    => 'admin@test.com'
+]);
+
+$user->save();
+```
+
+With the debugger and query handler registered with the database profiler, any queries
+that are executed will get automatically logged with the debugger.
+
+If you'd like more control over when the debugger fires, you can manually save it as well:
+
+```php
+// Register the query handler with the DB adapter
+$queryHandler = $db->listen('Pop\Debug\Handler\QueryHandler');
+
+$debugger = new Debugger();
+$debugger->addHandler($queryHandler);
+$debugger->setStorage(new File(__DIR__ . '/log'));
+
+// Interact with the database
+$user = new Users([
+    'username' => 'admin',
+    'password' => 'password',
+    'email'    => 'admin@test.com'
+]);
+
+$user->save();
+$debugger->save();
+```
+
+In the above example, the query handler is returned form the `listen()` method call, which 
+in turn can be registered with the stand-alone debugger. Once the final query runs on the user
+`save()` method, you can trigger the debugger `save()` method. 
 
 [Top](#pop-db)

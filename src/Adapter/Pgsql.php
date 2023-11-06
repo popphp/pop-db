@@ -208,6 +208,9 @@ class Pgsql extends AbstractAdapter
 
         if ($this->profiler !== null) {
             $this->profiler->current->finish();
+            if ($this->profiler->hasDebugger()) {
+                $this->profiler->debugger()->save();
+            }
         }
 
         return $this;
@@ -286,6 +289,9 @@ class Pgsql extends AbstractAdapter
 
         if ($this->profiler !== null) {
             $this->profiler->current->finish();
+            if ($this->profiler->hasDebugger()) {
+                $this->profiler->debugger()->save();
+            }
         }
 
         return $this;

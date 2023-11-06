@@ -262,19 +262,14 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Add query listener to the adapter
      *
-     * @param  mixed              $listener
-     * @param  mixed              $params
-     * @param  ?Profiler\Profiler $profiler
+     * @param  mixed             $listener
+     * @param  mixed             $params
+     * @param  Profiler\Profiler $profiler
      * @return mixed
      */
-    public function listen(mixed $listener, mixed $params = null, ?Profiler\Profiler $profiler = null): mixed
+    public function listen(mixed $listener, mixed $params = null, Profiler\Profiler $profiler = new Profiler\Profiler()): mixed
     {
-        if ($profiler !== null) {
-            $this->profiler = $profiler;
-        }
-        if ($this->profiler === null) {
-            $this->profiler = new Profiler\Profiler();
-        }
+        $this->profiler = $profiler;
 
         if (!($listener instanceof CallableObject)) {
             $this->listener = new CallableObject($listener, [$this->profiler]);
@@ -299,7 +294,12 @@ abstract class AbstractAdapter implements AdapterInterface
             }
         }
 
-        return $this->listener->call();
+        $handler = $this->listener->call();
+        if ($this->profiler->hasDebugger()) {
+            $this->profiler->getDebugger()->addHandler($handler);
+        }
+
+        return $handler;
     }
 
     /**
