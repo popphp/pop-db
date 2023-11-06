@@ -27,7 +27,7 @@ pop-db
     - [Shorthand Syntax](#shorthand-syntax)
     - [Execute Queries](#execute-queries)
 * [Relationships](#relationships)
-    -[Eager-Loading](#eager-loading)
+    - [Eager-Loading](#eager-loading)
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
 * [Query Builder](#query-builder)
