@@ -1896,8 +1896,8 @@ INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
 (3, 'testuser3', '74185296', 'test3@test.com');
 ```
 
-Either way, when call the `run()` method on the seeder class, it will scan the folder for
-either seeder classes or SQL files.
+Either way, when you call the `run()` method on the seeder class, it will scan the folder for
+either seeder classes or SQL files and execute them:
 
 ```php
 $db = Db::mysqlConnect([
