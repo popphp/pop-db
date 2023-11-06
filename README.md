@@ -27,6 +27,7 @@ pop-db
     - [Shorthand Syntax](#shorthand-syntax)
     - [Execute Queries](#execute-queries)
 * [Relationships](#relationships)
+    -[Eager-Loading](#eager-loading)
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
 * [Query Builder](#query-builder)
@@ -1072,6 +1073,36 @@ Array
     [email] => test@test.com
 )
 ```
+
+### Eager-Loading
+
+In the above examples, the related data is "lazy-loaded", meaning it isn't called until those relationship
+methods are called. However, you can call those relationship methods at the same time as you call the primary
+record using the static `with()` method:
+
+```php
+$users = Users::with('orders')->getById(1);
+foreach ($user->orders as $order) {
+    echo 'Order Total: $' . $order->order_total . PHP_EOL;
+}
+```
+
+Multiple relationships can be passed as well:
+
+```php
+$users = Users::with(['role', 'info', 'orders'])->getById(1);
+```
+
+And nested relationships are supported too. Assume there is a `Posts` class and a `Comments` class.
+Also, let's assume a user object owns posts and a posts object owns comments, and the proper relationships
+are set up in each table class. Then this call would be valid:
+
+```php
+$user = Users::with('posts.comments')->getById(1);
+```
+
+And would give you a user object with all of the user's `posts` and each of those post objects would have
+their `comments` attached as well.
 
 [Top](#pop-db)
 
