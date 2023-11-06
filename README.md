@@ -45,8 +45,8 @@ pop-db
     - [Drop Table](#drop-table)
     - [Execute Schema](#execute-schema)
     - [Schema Builder API](#schema-builder-api)
-* [Seeder](#seeder)
 * [Migrator](#migrator)
+* [Seeder](#seeder)
 * [Profiler](#profiler)
 * [SQL Data](#sql-data)
 
@@ -1679,11 +1679,6 @@ The following methods are all related to the creation of foreign key constraints
 
 [Top](#pop-db)
 
-Seeder
-------
-
-[Top](#pop-db)
-
 Migrator
 --------
 
@@ -1700,10 +1695,10 @@ You can create a blank template migration class like this:
 ```php
 use Pop\Db\Sql\Migrator;
 
-Migrator::create('MyNewMigration', 'migrations');
+Migrator::create('MyNewMigration', __DIR__ . 'migrations');
 ```
 
-The code above will create a file that look like `migrations/20170225100742_my_new_migration.php`
+The code above will create a file that looks like `migrations/20170225100742_my_new_migration.php`
 and it will contain a blank class template:
 
 ```php
@@ -1797,6 +1792,122 @@ $migrator->rollback();
 ```
 
 And the above code here would have dropped the table `users` from the database.
+
+[Top](#pop-db)
+
+Seeder
+------
+
+Similar to migrations, you can create a database seed class to assist with populating some
+initial data into your database. This functionality is built into the `pop-kettle` component
+as well.
+
+```php
+use Pop\Db\Sql\Seeder;
+
+Seeder::create('MyFirstSeeder', __DIR__ . '/seeds'
+```
+
+The code above will create a file that looks like `seeds/20231105215257_my_first_seeder.php`
+and it will contain a blank class template:
+
+```php
+<?php
+
+use Pop\Db\Adapter\AbstractAdapter;
+use Pop\Db\Sql\Seeder\AbstractSeeder;
+
+class MyFirstSeeder extends AbstractSeeder
+{
+
+    public function run(AbstractAdapter $db): void
+    {
+
+    }
+
+}
+```
+
+From there, you can write your seed queries steps in the `run()` method. You can interact
+with both the schema builder and the query builder.
+
+```php
+<?php
+
+use Pop\Db\Adapter\AbstractAdapter;
+use Pop\Db\Sql\Seeder\AbstractSeeder;
+
+class MyFirstSeeder extends AbstractSeeder
+{
+
+    public function run(AbstractAdapter $db): void
+    {
+        $schema = $db->createSchema();
+        $schema->create('users')
+            ->int('id', 16)->notNullable()->increment()
+            ->varchar('username', 255)->notNullable()
+            ->varchar('password', 255)->notNullable()
+            ->varchar('email', 255)->nullable()
+            ->primary('id');
+
+        $db->query($schema);
+
+        $sql = $db->createSql();
+        $sql->insert('users')->values([
+            'username' => 'testuser1',
+            'password' => '12345678',
+            'email'    => 'testuser1@test.com'
+        ]);
+        $db->query($sql);
+
+        $sql->insert('users')->values([
+            'username' => 'testuser2',
+            'password' => '87654321',
+            'email'    => 'testuser2@test.com'
+        ]);
+        $db->query($sql);
+
+        $sql->insert('users')->values([
+            'username' => 'testuser3',
+            'password' => '74185296',
+            'email'    => 'testuser3@test.com'
+        ]);
+        $db->query($sql);
+    }
+
+}
+```
+
+Alternatively, you can use a plain SQL file as well and the seeder will parse it and execute
+the queries inside:
+
+```sql
+CREATE TABLE `users` (
+  `id` INT(16) NOT NULL AUTO_INCREMENT,
+  `username` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+
+INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
+(1, 'testuser1', '12345678', 'test1@test.com'),
+(2, 'testuser2', '87654321', 'test2@test.com'),
+(3, 'testuser3', '74185296', 'test3@test.com');
+```
+
+Either way, when call the `run()` method on the seeder class, it will scan the folder for
+either seeder classes or SQL files.
+
+```php
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+Seeder::run($db, __DIR__ . '/seeds');
+```
 
 [Top](#pop-db)
 
