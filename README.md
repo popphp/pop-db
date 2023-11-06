@@ -935,11 +935,11 @@ can be 1:1 or 1:many, and you can define them as methods in your table class. Th
 being leveraged here from within the `Pop\Db\Record` class are:
 
 * `hasOneOf()`
-    - 1:1 relationship where a foreign key in the parent object is a primary key(s) in the child object 
+    - 1:1 relationship where a foreign key in the sibling object is a primary key(s) in different sibling object 
 * `hasOne()`
     - 1:1 relationship where a foreign key in the child object is a primary key(s) in the parent object
 * `hasMany()`
-    - 1:1 relationship where a foreign key in the child objects is a primary key(s) in the parent object
+    - 1:1 relationship where a foreign key in many child objects is a primary key(s) in the parent object
 * `belongsTo()`
     - 1:1 relationship where a foreign key in the child object is a primary key(s) in the parent object (Inverse "hasOne")
 
