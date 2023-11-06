@@ -829,44 +829,44 @@ and what it translates into:
 **Basic operators**
 
 ```php
-$users = Users::findBy(['id' => 1]);   => WHERE id = 1
-$users = Users::findBy(['id!=' => 1]); => WHERE id != 1
-$users = Users::findBy(['id>' => 1]);  => WHERE id > 1
-$users = Users::findBy(['id>=' => 1]); => WHERE id >= 1
-$users = Users::findBy(['id<' => 1]);  => WHERE id < 1
-$users = Users::findBy(['id<=' => 1]); => WHERE id <= 1
+$users = Users::findBy(['id' => 1]);   // WHERE id = 1
+$users = Users::findBy(['id!=' => 1]); // WHERE id != 1
+$users = Users::findBy(['id>' => 1]);  // WHERE id > 1
+$users = Users::findBy(['id>=' => 1]); // WHERE id >= 1
+$users = Users::findBy(['id<' => 1]);  // WHERE id < 1
+$users = Users::findBy(['id<=' => 1]); // WHERE id <= 1
 ```
 
 **LIKE and NOT LIKE**
 
 ```php
-$users = Users::findBy(['%username%'   => 'test']); => WHERE username LIKE '%test%'
-$users = Users::findBy(['username%'    => 'test']); => WHERE username LIKE 'test%'
-$users = Users::findBy(['%username'    => 'test']); => WHERE username LIKE '%test'
-$users = Users::findBy(['-%username'   => 'test']); => WHERE username NOT LIKE '%test'
-$users = Users::findBy(['username%-'   => 'test']); => WHERE username NOT LIKE 'test%'
-$users = Users::findBy(['-%username%-' => 'test']); => WHERE username NOT LIKE '%test%'
+$users = Users::findBy(['%username%'   => 'test']); // WHERE username LIKE '%test%'
+$users = Users::findBy(['username%'    => 'test']); // WHERE username LIKE 'test%'
+$users = Users::findBy(['%username'    => 'test']); // WHERE username LIKE '%test'
+$users = Users::findBy(['-%username'   => 'test']); // WHERE username NOT LIKE '%test'
+$users = Users::findBy(['username%-'   => 'test']); // WHERE username NOT LIKE 'test%'
+$users = Users::findBy(['-%username%-' => 'test']); // WHERE username NOT LIKE '%test%'
 ```
 
 **NULL and NOT NULL**
 
 ```php
-$users = Users::findBy(['username' => null]);  => WHERE username IS NULL
-$users = Users::findBy(['username-' => null]); => WHERE username IS NOT NULL
+$users = Users::findBy(['username' => null]);  // WHERE username IS NULL
+$users = Users::findBy(['username-' => null]); // WHERE username IS NOT NULL
 ```
 
 **IN and NOT IN**
 
 ```php
-$users = Users::findBy(['id' => [2, 3]]);  => WHERE id IN (2, 3)
-$users = Users::findBy(['id-' => [2, 3]]); => WHERE id NOT IN (2, 3)
+$users = Users::findBy(['id' => [2, 3]]);  // WHERE id IN (2, 3)
+$users = Users::findBy(['id-' => [2, 3]]); // WHERE id NOT IN (2, 3)
 ```
 
 **BETWEEN and NOT BETWEEN**
 
 ```php
-$users = Users::findBy(['id' => '(1, 5)']);  => WHERE id BETWEEN (1, 5)
-$users = Users::findBy(['id-' => '(1, 5)']); => WHERE id NOT BETWEEN (1, 5)
+$users = Users::findBy(['id' => '(1, 5)']);  // WHERE id BETWEEN (1, 5)
+$users = Users::findBy(['id-' => '(1, 5)']); // WHERE id NOT BETWEEN (1, 5)
 ```
 
 Additionally, if you need use multiple conditions for your query, you can and they will be
