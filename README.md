@@ -711,6 +711,20 @@ $users = Users::findIn('username', ['testuser', 'someotheruser', 'anotheruser'])
 $users = Users::findAll();
 ```
 
+You can use the `toArray()` method to convert the collection object into a plain array:
+
+```php
+// Returns an array
+$users = Users::findBy(['logins' => 0])->toArray();
+```
+
+Or, in most methods, there is an `$asArray` parameter that will do the same:
+
+```php
+// 3rd param $asArray set to true; Returns an array
+$users = Users::findBy(['logins' => 0], null, true);
+```
+
 #### Get count of records
 
 If you just need to get a count of records, you can do that like this:
