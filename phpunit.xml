@@ -28,6 +28,7 @@
     <exclude>
       <file>src/Adapter/Sqlsrv.php</file>
       <file>src/Sql/Migration/Template/MigrationTemplate.php</file>
+      <file>src/Sql/Seeder/Template/SeederTemplate.php</file>
     </exclude>
   </source>
 </phpunit>
