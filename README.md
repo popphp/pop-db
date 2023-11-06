@@ -946,14 +946,13 @@ being leveraged here from within the `Pop\Db\Record` class are:
 Let's consider the following tables classes that represent tables in the database:
 
 ```php
-// Foreign key to the related role is `role_id`
 class Users extends Pop\Db\Record
 {
 
     /**
      * Mock Schema
      *    - id
-     *    - role_id (FK to roles)
+     *    - role_id (FK to roles.id)
      *    - username
      *    - password
      *    - email
@@ -992,7 +991,6 @@ class Roles extends Pop\Db\Record
 ```
 
 ```php
-// Foreign key to the related user is `user_id`
 class Info extends Pop\Db\Record
 {
     /**
@@ -1005,7 +1003,6 @@ class Info extends Pop\Db\Record
 ```
 
 ```php
-// Foreign key to the related user is `user_id`
 class Orders extends Pop\Db\Record
 {
     /**
