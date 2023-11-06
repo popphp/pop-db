@@ -1180,8 +1180,8 @@ Query Builder
 The query builder is available to build valid SQL queries that will work across the different database
 adapters. So, this is useful if the application being built may deploy to different environments with
 different database servers. When a prepared query statement requires placeholders for binding parameters,
-use the normalized named parameter format (e.g., `'id = :id'`). It will be translated to the correct
-placeholder value for the database adapter.
+use the named parameter format (e.g., `'id = :id'`). It will be translated to the correct placeholder
+value for the database adapter.
 
 ### Select
 
