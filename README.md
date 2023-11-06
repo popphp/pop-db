@@ -2050,7 +2050,7 @@ Record::setDb($db);
 $debugger = new Debugger(new File(__DIR__ . '/log'));
 $db->listen('Pop\Debug\Handler\QueryHandler', null, new Profiler($debugger));
 
-// Interact with the database
+// Save a user to the database
 $user = new Users([
     'username' => 'admin',
     'password' => 'password',
