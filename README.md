@@ -47,8 +47,8 @@ pop-db
     - [Schema Builder API](#schema-builder-api)
 * [Migrator](#migrator)
 * [Seeder](#seeder)
-* [Profiler](#profiler)
 * [SQL Data](#sql-data)
+* [Profiler](#profiler)
 
 Overview
 --------
@@ -1911,12 +1911,119 @@ Seeder::run($db, __DIR__ . '/seeds');
 
 [Top](#pop-db)
 
-Profiler
+SQL Data
 --------
+
+You can use the SQL data class to output large sets of data to a valid a SQL file.
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Sql\Data;
+
+$db = Db::mysqlConnect([
+    'database' => 'popdb',
+    'username' => 'popuser',
+    'password' => '12pop34'
+]);
+
+$users = [
+    [
+        'id'       => 1,
+        'username' => 'testuser1',
+        'password' => 'mypassword1',
+        'email'    => 'testuser1@test.com'
+    ],
+    [
+        'id'       => 2,
+        'username' => 'testuser2',
+        'password' => 'mypassword2',
+        'email'    => 'testuser2@test.com'
+    ],
+    [
+        'id'       => 3,
+        'username' => 'testuser3',
+        'password' => 'mypassword3',
+        'email'    => 'testuser3@test.com'
+    ]
+];
+
+$data = new Data($db, 'users');
+$data->streamToFile($users, __DIR__ . '/seeds/users.sql');
+```
+
+The above example code would produce a `users.sql` file that contains:
+
+```sql
+INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
+(1, 'testuser1', 'mypassword1', 'testuser1@test.com');
+INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
+(2, 'testuser2', 'mypassword2', 'testuser2@test.com');
+INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
+(3, 'testuser3', 'mypassword3', 'testuser3@test.com');
+```
+
+If you have a larger set that you'd like divide out over fewer `INSERT` queries, you can set
+the `divide` parameter:
+
+
+```php
+use Pop\Db\Db;
+use Pop\Db\Sql\Data;
+
+$db = Db::mysqlConnect([
+    'database' => 'popdb',
+    'username' => 'popuser',
+    'password' => '12pop34'
+]);
+
+$users = [
+    [
+        'id'       => 1,
+        'username' => 'testuser1',
+        'password' => 'mypassword1',
+        'email'    => 'testuser1@test.com'
+    ],
+    // ... large array of data ...
+    [
+        'id'       => 18,
+        'username' => 'testuser3',
+        'password' => 'mypassword3',
+        'email'    => 'testuser3@test.com'
+    ]
+];
+
+$data = new Data($db, 'users', 10);
+$data->streamToFile($users, __DIR__ . '/seeds/users.sql');
+```
+
+which would produce:
+
+```sql
+INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
+(1, 'testuser1', 'mypassword1', 'testuser1@test.com'),
+(2, 'testuser2', 'mypassword2', 'testuser2@test.com'),
+(3, 'testuser3', 'mypassword3', 'testuser3@test.com'),
+(4, 'testuser4', 'mypassword4', 'testuser4@test.com'),
+(5, 'testuser5', 'mypassword5', 'testuser5@test.com'),
+(6, 'testuser6', 'mypassword6', 'testuser6@test.com'),
+(7, 'testuser7', 'mypassword7', 'testuser7@test.com'),
+(8, 'testuser8', 'mypassword8', 'testuser8@test.com'),
+(9, 'testuser9', 'mypassword9', 'testuser9@test.com'),
+(10, 'testuser10', 'mypassword10', 'testuser10@test.com');
+INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
+(11, 'testuser11', 'mypassword11', 'testuser11@test.com'),
+(12, 'testuser12', 'mypassword12', 'testuser12@test.com'),
+(13, 'testuser13', 'mypassword13', 'testuser13@test.com'),
+(14, 'testuser14', 'mypassword14', 'testuser14@test.com'),
+(15, 'testuser15', 'mypassword15', 'testuser15@test.com'),
+(16, 'testuser16', 'mypassword16', 'testuser16@test.com'),
+(17, 'testuser17', 'mypassword17', 'testuser17@test.com'),
+(18, 'testuser18', 'mypassword18', 'testuser18@test.com');
+```
 
 [Top](#pop-db)
 
-SQL Data
+Profiler
 --------
 
 [Top](#pop-db)

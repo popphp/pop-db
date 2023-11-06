@@ -16,7 +16,7 @@ namespace Pop\Db\Sql;
 use Pop\Db\Adapter\AbstractAdapter;
 
 /**
- * Data parser class
+ * Data class to output data to a valid SQL file
  *
  * @category   Pop
  * @package    Pop\Db
@@ -268,7 +268,7 @@ class Data extends AbstractSql
             touch($to);
         }
 
-        $handle = fopen($to, 'w+');
+        $handle = fopen($to, 'a');
 
         if ($header !== null) {
             fwrite($handle, $header);
