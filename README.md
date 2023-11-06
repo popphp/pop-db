@@ -49,7 +49,7 @@ and functionality to easily interface with databases. Those features include:
 * ORM-style concepts
   - Active Record
   - Table Gateway
-  - Relationship Associations
+  - Relationships
 * SQL Query Builder
 * SQL Schema Builder
 * Migrator
@@ -929,8 +929,8 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 Relationships
 -------------
 
-Relationships and associations are supported to allow for a simple way to select related data within the database.
-These relationships can be 1:1 or 1:many and you can define them as methods in your table class. The primary 
+Relationships are supported to allow for a simple way to select related data within the database. These
+relationships can be 1:1 or 1:many and you can define them as methods in your table class. The primary 
 methods being leveraged here from within the `Pop\Db\Record` class are:
 
 * `hasOneOf()`
