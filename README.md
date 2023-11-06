@@ -24,9 +24,9 @@ pop-db
     - [Encoded Record](#encoded-record)
     - [Table Gateway](#table-gateway)
     - [Options](#options)
-    - [Execute Queries](#execute-queries)
-    - [Relationships](#relationships)
     - [Shorthand Syntax](#shorthand-syntax)
+    - [Execute Queries](#execute-queries)
+* [Relationships](#relationships)
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
 * [Query Builder](#query-builder)
@@ -820,6 +820,88 @@ alternate join types.
 
 [Top](#pop-db)
 
+### Shorthand Syntax
+
+To help with making custom queries more quickly and without having to utilize the Sql Builder, there is
+shorthand SQL syntax that is supported by the ``Pop\Db\Record`` class. Here's a list of what is supported
+and what it translates into:
+
+**Basic operators**
+
+```php
+$users = Users::findBy(['id' => 1]);   => WHERE id = 1
+$users = Users::findBy(['id!=' => 1]); => WHERE id != 1
+$users = Users::findBy(['id>' => 1]);  => WHERE id > 1
+$users = Users::findBy(['id>=' => 1]); => WHERE id >= 1
+$users = Users::findBy(['id<' => 1]);  => WHERE id < 1
+$users = Users::findBy(['id<=' => 1]); => WHERE id <= 1
+```
+
+**LIKE and NOT LIKE**
+
+```php
+$users = Users::findBy(['%username%'   => 'test']); => WHERE username LIKE '%test%'
+$users = Users::findBy(['username%'    => 'test']); => WHERE username LIKE 'test%'
+$users = Users::findBy(['%username'    => 'test']); => WHERE username LIKE '%test'
+$users = Users::findBy(['-%username'   => 'test']); => WHERE username NOT LIKE '%test'
+$users = Users::findBy(['username%-'   => 'test']); => WHERE username NOT LIKE 'test%'
+$users = Users::findBy(['-%username%-' => 'test']); => WHERE username NOT LIKE '%test%'
+```
+
+**NULL and NOT NULL**
+
+```php
+$users = Users::findBy(['username' => null]);  => WHERE username IS NULL
+$users = Users::findBy(['username-' => null]); => WHERE username IS NOT NULL
+```
+
+**IN and NOT IN**
+
+```php
+$users = Users::findBy(['id' => [2, 3]]);  => WHERE id IN (2, 3)
+$users = Users::findBy(['id-' => [2, 3]]); => WHERE id NOT IN (2, 3)
+```
+
+**BETWEEN and NOT BETWEEN**
+
+```php
+$users = Users::findBy(['id' => '(1, 5)']);  => WHERE id BETWEEN (1, 5)
+$users = Users::findBy(['id-' => '(1, 5)']); => WHERE id NOT BETWEEN (1, 5)
+```
+
+Additionally, if you need use multiple conditions for your query, you can and they will be
+stitched together with AND:
+
+```php
+$users = Users::findBy([
+    'id>'       => 1,
+    '%username' => 'user1'
+]);
+```
+which will be translated into:
+
+```sql
+WHERE (id > 1) AND (username LIKE '%test')
+```
+
+If you need to use OR instead, you can specify it like this:
+
+```php
+$users = Users::findBy([
+    'id>'       => 1,
+    '%username' => 'user1 OR'
+]);
+```
+
+Notice the ` OR` added as a suffix to the second condition's value. That will apply the OR
+to that part of the predicate like this:
+
+```sql
+WHERE (id > 1) OR (username LIKE '%test')
+```
+
+[Top](#pop-db)
+
 ### Execute Queries
 
 If any of the available methods listed above don't provide what is needed,
@@ -844,11 +926,8 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 
 [Top](#pop-db)
 
-### Relationships
-
-[Top](#pop-db)
-
-### Shorthand Syntax
+Relationships
+-------------
 
 [Top](#pop-db)
 
