@@ -838,7 +838,7 @@ $users = Users::query('SELECT * FROM ' . Users::table());
 This will return a `Pop\Db\Record\Collection` object:
 
 ```php
-$sql   = 'SELECT * FROM ' . Users::table() . ' WHERE last_login = :last_login';
+$sql   = 'SELECT * FROM ' . Users::table() . ' WHERE last_login >= :last_login';
 $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 ```
 
