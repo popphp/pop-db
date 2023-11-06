@@ -769,7 +769,7 @@ that allows you to really tailor the query. These are the supported options:
 - `group`
 - `join`
 
-##### Select
+##### Select Columns
 
 Pass an array of the fields you want to select with the query. This can help
 cut the amount of unwanted data that's return, or help define data to select
