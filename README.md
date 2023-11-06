@@ -793,7 +793,7 @@ $users = Users::findBy(['logins' => 0], [
 
 **Options Example Using Join**
 
-Assume there is another table called `Roles` and the users table stores a
+Assume there is another table called `Roles` and the users table contains a
 `role_id` foreign key:
 
 ```php
@@ -803,7 +803,7 @@ $users = Users::findBy(['logins' => 0], [
         Roles::table() . '.role',
     ],
     'join' => [
-        'table' => Roles::table(),
+        'table'   => Roles::table(),
         'columns' => [
             Roles::table() . '.id' => Users::table() . '.role_id',
         ],
@@ -811,6 +811,7 @@ $users = Users::findBy(['logins' => 0], [
 ]);
 ```
 
+The `join` option defines the table to join with as well as which columns to join by.
 Notice that the `select` option was used to craft the required fields - all of user
 fields and the `role` fields from the roles table.
 
