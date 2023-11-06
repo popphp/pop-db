@@ -31,7 +31,15 @@ pop-db
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
 * [Query Builder](#query-builder)
+    - [Insert](#insert)
+    - [Update](#update)
+    - [Delete](#delete)
+    - [Joins](#joins)
+    - [Predicates](#predicates)
+    - [Nested Predicates](#nested-predicates)
+    - [Sorting, Order, Limits](#sorting-order-limits)
 * [Schema Builder](#schema-builder)
+* [SQL Data](#sql-data)
 * [Migrator](#migrator)
 * [Seeder](#seeder)
 * [Profiler](#profiler)
@@ -1109,19 +1117,353 @@ their `comments` attached as well.
 Querying
 --------
 
+Instead of using the ORM-based components, you can directly query the database from the database adapter:
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$db->query('SELECT * FROM `users`');
+$users = $db->fetchAll();
+print_r($users);
+```
+
 [Top](#pop-db)
 
 ### Prepared Statements
+
+Taken it a step further, you can execute prepared statements as well:
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$db->prepare('SELECT * FROM `users` WHERE `id` = ?');
+$db->bindParams(['id' => 1]);
+$db->execute();
+
+$users = $db->fetchAll();
+print_r($users);
+```
+
+```text
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [role_id] => 1
+            [username] => testuser
+            [password] => 12test34
+            [email] => test@test.com
+        )
+
+)
+```
 
 [Top](#pop-db)
 
 Query Builder
 -------------
 
+The query build is available to build valid SQL queries that will work across the different database
+adapters. So, this is useful if the application being built may deploy to different environments with
+different database servers.
+
+### SELECT
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$sql = $db->createSql();
+$sql->select(['id', 'username'])
+    ->from('users')
+    ->where('id = :id');
+
+echo $sql;
+```
+
+The following SQL query is produced for the MySQL adapter:
+
+```sql
+SELECT `id`, `username` FROM `users` WHERE (`id` = ?)
+```
+
+Switching to the SQLite adapter, and the same code will produce:
+
+```sql
+SELECT "id", "username" FROM "users" WHERE ("id" = :id)
+```
+
+And switching to the PostgeSQL adapter, the same code will produce:
+
+```sql
+SELECT "id", "username" FROM "users" WHERE ("id" = $1)
+```
+
+And of course, the `$sql` builder object can be passed directly to the database adapter:
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$sql = $db->createSql();
+$sql->select(['id', 'username'])
+    ->from('users')
+    ->where('id = :id');
+
+$db->prepare($sql);
+$db->bindParams(['id' => 1]);
+$db->execute();
+
+$users = $db->fetchAll();
+print_r($users);
+```
+
+### Insert
+
+```php
+$sql->insert('users')->values([
+    'username' => ':username',
+    'password' => ':password'
+]);
+echo $sql;
+```
+
+```sql
+-- MySQL
+INSERT INTO `users` (`username`, `password`) VALUES (?, ?)
+```
+
+```sql
+-- PostgreSQL
+INSERT INTO "users" ("username", "password") VALUES ($1, $2)
+```
+
+```sql
+-- SQLite
+INSERT INTO "users" ("username", "password") VALUES (:username, :password)
+```
+### Update
+
+```php
+$sql->update('users')->values([
+    'username' => ':username',
+    'password' => ':password'
+])->where('id = :id');
+echo $sql;
+```
+
+```sql
+-- MySQL
+UPDATE `users` SET `username` = ?, `password` = ? WHERE (`id` = ?)
+```
+
+```sql
+-- PostgreSQL
+UPDATE "users" SET "username" = $1, "password" = $2 WHERE ("id" = $3)
+```
+
+```sql
+-- SQLite
+UPDATE "users" SET "username" = :username, "password" = :password WHERE ("id" = :id)
+```
+
+### Delete
+
+```php
+$sql->delete('users')
+    ->where('id = :id');
+echo $sql;
+```
+
+```sql
+-- MySQL
+DELETE FROM `users` WHERE (`id` = ?)
+```
+
+```sql
+-- PostgreSQL
+DELETE FROM "users" WHERE ("id" = $1)
+```
+
+```sql
+-- SQLite
+DELETE FROM "users" WHERE ("id" = :id)
+```
+
+### Joins
+
+The SQL Builder has an API to assist you in constructing complex SQL statements that use joins. Typically,
+the join methods take two parameters: the foreign table and an array with a 'key => value' of the two related
+columns across the two tables. Here's a SQL builder example using a LEFT JOIN:
+
+```php
+$sql->select(['id', 'username', 'email'])->from('users')
+    ->leftJoin('user_info', ['users.id' => 'user_info.user_id'])
+    ->where('id < :id')
+    ->orderBy('id', 'DESC');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT `id`, `username`, `email` FROM `users`
+    LEFT JOIN `user_info` ON (`users`.`id` = `user_info`.`user_id`)
+    WHERE (`id` < ?) ORDER BY `id` DESC
+```
+
+```sql
+-- PostgreSQL
+SELECT "id", "username", "email" FROM "users"
+    LEFT JOIN "user_info" ON ("users"."id" = "user_info"."user_id")
+    WHERE ("id" < $1) ORDER BY "id" DESC
+```
+
+```sql
+-- SQLite
+SELECT "id", "username", "email" FROM "users"
+    LEFT JOIN "user_info" ON ("users"."id" = "user_info"."user_id")
+    WHERE ("id" < :id) ORDER BY "id" DESC
+```
+
+Here's the available API for joins:
+
+* `$sql->join($foreignTable, array $columns, $join = 'JOIN');` - Basic join
+* `$sql->leftJoin($foreignTable, array $columns);` - Left join
+* `$sql->rightJoin($foreignTable, array $columns);` - Right join
+* `$sql->fullJoin($foreignTable, array $columns);` -  Full join
+* `$sql->outerJoin($foreignTable, array $columns);` -  Outer join
+* `$sql->leftOuterJoin($foreignTable, array $columns);` -  Left outer join
+* `$sql->rightOuterJoin($foreignTable, array $columns);` -  Right outer join
+* `$sql->fullOuterJoin($foreignTable, array $columns);` -  Full outer join
+* `$sql->innerJoin($foreignTable, array $columns);` -  Outer join
+* `$sql->leftInnerJoin($foreignTable, array $columns);` -  Left inner join
+* `$sql->rightInnerJoin($foreignTable, array $columns);` -  Right inner join
+* `$sql->fullInnerJoin($foreignTable, array $columns);` -  Full inner join
+
+### Predicates
+
+The SQL Builder also has an extensive API to assist you in constructing predicates with which to filter your
+SQL statements. Here's a list of some of the available methods to help you construct your predicate clauses:
+
+* `$sql->where($where);` - Add a WHERE predicate
+* `$sql->andWhere($where);` - Add another WHERE predicate using the AND conjunction
+* `$sql->orWhere($where);` - Add another WHERE predicate using the OR conjunction
+* `$sql->having($having);` - Add a HAVING predicate
+* `$sql->andHaving($having);` - Add another HAVING predicate using the AND conjunction
+* `$sql->orHaving($having);` - Add another HAVING predicate using the OR conjunction
+
+**AND WHERE**
+
+```php
+$sql->select()
+    ->from('users')
+    ->where('id > :id')->andWhere('email LIKE :email');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE ((`id` > ?) AND (`email` LIKE ?))
+```
+
+**OR WHERE**
+
+```php
+$sql->select()
+    ->from('users')
+    ->where('id > :id')->orWhere('email LIKE :email');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE ((`id` > ?) OR (`email` LIKE ?))
+```
+
+There is even a more detailed and granular API that comes with the predicate objects.
+
+```php
+$sql->select()
+    ->from('users')
+    ->where->greaterThan('id', ':id')->and()->equalTo('email', ':email');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE ((`id` > ?) AND (`email` = ?))
+```
+
+### Nested Predicates
+
+If you need to nest a predicate, there are API methods to allow you to do that as well:
+
+* `$sql->nest($conjunction = 'AND');` - Create a nested predicate set
+* `$sql->andNest();` - Create a nested predicate set using the AND conjunction
+* `$sql->orNest();` - Create a nested predicate set using the OR conjunction
+
+```php
+$sql->select()
+    ->from('users')
+    ->where->greaterThan('id', ':id')
+        ->nest()->greaterThan('logins', ':logins')
+            ->or()->lessThanOrEqualTo('failed', ':failed');
+
+echo $sql;
+```
+
+The output below shows the predicates for `logins` and `failed` are nested together:
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE ((`id` > ?) AND ((`logins` > ?) OR (`failed` <= ?)))
+```
+
+### Sorting, Order, Limits
+
+The SQL Builder also has methods to allow to further control your SQL statement's result set:
+
+* `$sql->groupBy($by);` - Add a GROUP BY
+* `$sql->orderBy($by, $order = 'ASC');` - Add an ORDER BY
+* `$sql->limit($limit);` - Add a LIMIT
+* `$sql->offset($offset);` - Add an OFFSET
+
 [Top](#pop-db)
 
 Schema Builder
 --------------
+
+[Top](#pop-db)
+
+SQL Data
+--------
 
 [Top](#pop-db)
 
