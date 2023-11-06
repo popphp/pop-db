@@ -1254,6 +1254,7 @@ $sql->insert('users')->values([
     'username' => ':username',
     'password' => ':password'
 ]);
+
 echo $sql;
 ```
 
@@ -1278,6 +1279,7 @@ $sql->update('users')->values([
     'username' => ':username',
     'password' => ':password'
 ])->where('id = :id');
+
 echo $sql;
 ```
 
@@ -1301,6 +1303,7 @@ UPDATE "users" SET "username" = :username, "password" = :password WHERE ("id" = 
 ```php
 $sql->delete('users')
     ->where('id = :id');
+
 echo $sql;
 ```
 
