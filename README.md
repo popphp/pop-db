@@ -1076,9 +1076,9 @@ Array
 
 ### Eager-Loading
 
-In the above examples, the related data is "lazy-loaded", meaning it isn't called until those relationship
-methods are called. However, you can call those relationship methods at the same time as you call the primary
-record using the static `with()` method:
+In the above examples, the related data is "lazy-loaded", meaning the related data isn't available until those
+relationship methods are called. However, you can call those relationship methods at the same time as you call
+the primary record using the static `with()` method:
 
 ```php
 $users = Users::with('orders')->getById(1);
