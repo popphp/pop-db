@@ -1567,6 +1567,8 @@ The above code would produced the following SQL:
 ALTER TABLE `users` ADD `email` VARCHAR(255);
 ```
 
+[Top](#pop-db)
+
 ### Drop Table
 
 ```php
