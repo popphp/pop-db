@@ -1189,7 +1189,7 @@ Query Builder
 -------------
 
 The query builder is available to build valid SQL queries that will work across the different database
-adapters. So, this is useful if the application being built may deploy to different environments with
+adapters. This is useful if the application being built may deploy to different environments with
 different database servers. When a prepared query statement requires placeholders for binding parameters,
 use the named parameter format (e.g., `'id = :id'`). It will be translated to the correct placeholder
 value for the database adapter.
@@ -1234,7 +1234,8 @@ And Switching to the SQLite adapter, and the same code will produce:
 SELECT "id", "username" FROM "users" WHERE ("id" = :id)
 ```
 
-And of course, the `$sql` builder object can be passed directly to the database adapter:
+And of course, the `$sql` builder object can be passed directly to the database adapter
+to directly execute the SQL query that has been created:
 
 ```php
 use Pop\Db\Db;
