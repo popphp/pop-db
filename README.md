@@ -1597,7 +1597,7 @@ $schema->drop('users');
 echo $schema;
 ```
 
-The above code would produced the following SQL:
+The above code would produce the following SQL:
 
 ```sql
 -- MySQL
