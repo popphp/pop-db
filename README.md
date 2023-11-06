@@ -197,7 +197,7 @@ Array
         (
             [id] => 1
             [username] => testuser
-            [password] => 12test34
+            [password] => 12345678
             [email] => test@test.com
         )
 
@@ -216,7 +216,7 @@ Array
 (
     [id] => 1
     [username] => testuser
-    [password] => 12test34
+    [password] => 12345678
     [email] => test@test.com
 )
 ```
@@ -236,7 +236,7 @@ Array
 (
     [id] => 1
     [username] => testuser2
-    [password] => 12test34
+    [password] => 12345678
     [email] => test2@test.com
 )
 ```
@@ -928,6 +928,152 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 
 Relationships
 -------------
+
+Relationships and associations are supported to allow for a simple way to select related data within the database.
+These relationships can be 1:1 or 1:many and you can define them as methods in your table class. The primary 
+methods being leveraged here from within the `Pop\Db\Record` class are:
+
+* `hasOneOf()`
+    - 1:1 relationship where a foreign key in the parent object is a primary key(s) in the child object 
+* `hasOne()`
+    - 1:1 relationship where a foreign key in the child object is a primary key(s) in the parent object
+* `hasMany()`
+    - 1:1 relationship where a foreign key in the child objects is a primary key(s) in the parent object
+* `belongsTo()`
+    - 1:1 relationship where a foreign key in the child object is a primary key(s) in the parent object (Inverse "hasOne")
+
+Let's consider the following tables classes that represent tables in the database:
+
+```php
+// Foreign key to the related role is `role_id`
+class Users extends Pop\Db\Record
+{
+
+    /**
+     * Mock Schema
+     *    - id
+     *    - role_id (FK to roles)
+     *    - username
+     *    - password
+     *    - email
+     */
+
+    // Define the 1:1 relationship of the user's role
+    public function role()
+    {
+        return $this->hasOneOf('Roles', 'role_id');
+    }
+
+    // Define the 1:1 relationship of the info record this user owns
+    public function info()
+    {
+        return $this->hasOne('Info', 'user_id')
+    }
+
+    // Define the 1:many relationship to all the orders this user owns
+    public function orders()
+    {
+        return $this->hasMany('Orders', 'user_id');
+    }
+
+}
+```
+
+```php
+class Roles extends Pop\Db\Record
+{
+    /**
+     * Mock Schema
+     *    - id (FK to users.role_id)
+     *    - role
+     */
+}
+```
+
+```php
+// Foreign key to the related user is `user_id`
+class Info extends Pop\Db\Record
+{
+    /**
+     * Mock Schema
+     *    - user_id (FK to users.id)
+     *    - address
+     *    - phone
+     */
+}
+```
+
+```php
+// Foreign key to the related user is `user_id`
+class Orders extends Pop\Db\Record
+{
+    /**
+     * Mock Schema
+     *    - id
+     *    - user_id (FK to users.id)
+     *    - order_date
+     *    - order_total
+     *    - products
+     */
+
+    // Define the parent relationship up to the user that owns this order record
+    public function user()
+    {
+        return $this->belongsTo('Users', 'user_id');
+    }
+
+}
+```
+
+With those relationships define, you can now call the related data like this:
+
+```php
+// The two 1:1 relationships
+$user = Users::findById(1);
+print_r($user->role()->toArray());
+print_r($user->info()->toArray());
+```
+
+```text
+Array
+(
+    [id] => 1
+    [role] => Admin
+)
+Array
+(
+    [user_id] => 1
+    [address] => 123 Main St
+    [phone] => 504-555-5555
+)
+```
+
+```php
+// The 1:many relationship
+$user   = Users::findById(1);
+$orders = $users->orders();
+
+foreach ($orders as $order) {
+    echo 'Order Total: $' . $order->order_total . PHP_EOL;
+}
+```
+
+```php
+// The inverse 1:1 relationship
+$userInfo = UserInfo::findOne(['user_id' => 1]);
+print_r($userInfo->users()->toArray());
+```
+
+```text
+Array
+(
+    [id] => 1
+    [role_id] => 1
+    [username] => testuser
+    [password] => 12345678
+    [email] => test@test.com
+)
+```
 
 [Top](#pop-db)
 
