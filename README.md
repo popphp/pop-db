@@ -31,6 +31,7 @@ pop-db
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
 * [Query Builder](#query-builder)
+    - [Select](#select)
     - [Insert](#insert)
     - [Update](#update)
     - [Delete](#delete)
