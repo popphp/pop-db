@@ -1693,7 +1693,7 @@ files and keeping track of the current state, or the last one that was processed
 can write scripts to run the next migration state or rollback to the previous one. The state can
 be stored locally in the migration folder, or can be stored in its own table in the database.
 The [pop-kettle](https://github.com/popphp/pop-kettle) component has this functionality built in to assist with managing database
-migrations for your app. 
+migrations for your application.
 
 You can create a blank template migration class like this:
 
