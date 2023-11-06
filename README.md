@@ -822,9 +822,9 @@ alternate join types.
 
 ### Shorthand Syntax
 
-To help with making custom queries more quickly and without having to utilize the Sql Builder, there is
-shorthand SQL syntax that is supported by the ``Pop\Db\Record`` class. Here's a list of what is supported
-and what it translates into:
+There is shorthand SQL syntax that is available and supported by the ``Pop\Db\Record`` class to help
+give even a more granular control over your queries without having write your own or use the query builder.
+Here's a list of what is supported and what it translates into:
 
 **Basic operators**
 
