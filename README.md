@@ -930,9 +930,9 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 Relationships
 -------------
 
-Relationships are supported to allow for a simple way to select related data within the database. These
-relationships can be 1:1 or 1:many and you can define them as methods in your table class. The primary 
-methods being leveraged here from within the `Pop\Db\Record` class are:
+Relationships allow for a simple way to select related data within the database. These relationships
+can be 1:1 or 1:many, and you can define them as methods in your table class. The primary methods
+being leveraged here from within the `Pop\Db\Record` class are:
 
 * `hasOneOf()`
     - 1:1 relationship where a foreign key in the parent object is a primary key(s) in the child object 
