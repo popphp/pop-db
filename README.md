@@ -40,6 +40,11 @@ pop-db
     - [Nested Predicates](#nested-predicates)
     - [Sorting, Order, Limits](#sorting-order-limits)
 * [Schema Builder](#schema-builder)
+    - [Create Table](#create-table)
+    - [Alter Table](#alter-table)
+    - [Drop Table](#drop-table)
+    - [Execute Schema](#execute-schema)
+    - [Schema Builder API](#schema-builder-api)
 * [SQL Data](#sql-data)
 * [Migrator](#migrator)
 * [Seeder](#seeder)
@@ -1247,6 +1252,8 @@ $users = $db->fetchAll();
 print_r($users);
 ```
 
+[Top](#pop-db)
+
 ### Insert
 
 ```php
@@ -1272,6 +1279,9 @@ INSERT INTO "users" ("username", "password") VALUES ($1, $2)
 -- SQLite
 INSERT INTO "users" ("username", "password") VALUES (:username, :password)
 ```
+
+[Top](#pop-db)
+
 ### Update
 
 ```php
@@ -1298,6 +1308,8 @@ UPDATE "users" SET "username" = $1, "password" = $2 WHERE ("id" = $3)
 UPDATE "users" SET "username" = :username, "password" = :password WHERE ("id" = :id)
 ```
 
+[Top](#pop-db)
+
 ### Delete
 
 ```php
@@ -1321,6 +1333,8 @@ DELETE FROM "users" WHERE ("id" = $1)
 -- SQLite
 DELETE FROM "users" WHERE ("id" = :id)
 ```
+
+[Top](#pop-db)
 
 ### Joins
 
@@ -1372,6 +1386,8 @@ Here's the available API for joins:
 * `$sql->leftInnerJoin($foreignTable, array $columns);` -  Left inner join
 * `$sql->rightInnerJoin($foreignTable, array $columns);` -  Right inner join
 * `$sql->fullInnerJoin($foreignTable, array $columns);` -  Full inner join
+
+[Top](#pop-db)
 
 ### Predicates
 
@@ -1430,6 +1446,8 @@ echo $sql;
 SELECT * FROM `users` WHERE ((`id` > ?) AND (`email` = ?))
 ```
 
+[Top](#pop-db)
+
 ### Nested Predicates
 
 If you need to nest a predicate, there are API methods to allow you to do that as well:
@@ -1455,6 +1473,8 @@ The output below shows the predicates for `logins` and `failed` are nested toget
 SELECT * FROM `users` WHERE ((`id` > ?) AND ((`logins` > ?) OR (`failed` <= ?)))
 ```
 
+[Top](#pop-db)
+
 ### Sorting, Order, Limits
 
 The SQL Builder also has methods to allow to further control your SQL statement's result set:
@@ -1468,6 +1488,172 @@ The SQL Builder also has methods to allow to further control your SQL statement'
 
 Schema Builder
 --------------
+
+In addition to the query builder, there is also a schema builder to assist with database table
+structures and their management. In a similar fashion to the query builder, the schema builder
+has an API that mirrors the SQL that would be used to create, alter and drop tables in a database.
+It is also built to be portable and work across different environments that may have different chosen
+database adapters with which to work. And like the query builder, in order for it to function correctly,
+you need to pass it the database adapter your application is currently using so that it can properly
+build the SQL. The easiest way to do this is to just call the `createSchema()` method from the
+database adapter. It will inject itself into the Schema builder object being created.
+
+The examples below show separate schema statements, but a single schema builder object can have multiple
+schema statements within one schema builder object's life cycle.
+
+[Top](#pop-db)
+
+### Create Table
+
+```php
+$db = Pop\Db\Db::mysqlConnect($options);
+
+$schema = $db->createSchema();
+$schema->create('users')
+    ->int('id', 16)
+    ->varchar('username', 255)
+    ->varchar('password', 255);
+
+echo $schema;
+```
+
+The above code would produced the following SQL:
+
+```sql
+-- MySQL
+CREATE TABLE `users` (
+  `id` INT(16),
+  `username` VARCHAR(255),
+  `password` VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+**Foreign Key Example**
+
+Here is an example of creating an additional `user_info` table that references the above `users` table
+with a foreign key:
+
+```php
+$schema->create('user_info')
+    ->int('user_id', 16)
+    ->varchar('email', 255)
+    ->varchar('phone', 255)
+    ->foreignKey('user_id')->references('users')->on('id')->onDelete('CASCADE');
+```
+
+The above code would produced the following SQL:
+
+```sql
+-- MySQL
+ALTER TABLE `user_info` ADD CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`)
+  REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+```
+
+[Top](#pop-db)
+
+### Alter Table
+
+```php
+$schema->alter('users')
+    ->addColumn('email', 'VARCHAR', 255);
+
+echo $schema;
+```
+
+The above code would produced the following SQL:
+
+```sql
+-- MySQL
+ALTER TABLE `users` ADD `email` VARCHAR(255);
+```
+
+### Drop Table
+
+```php
+$schema->drop('users');
+
+echo $schema;
+```
+
+The above code would produced the following SQL:
+
+```sql
+-- MySQL
+DROP TABLE `users`;
+```
+
+[Top](#pop-db)
+
+### Execute Schema
+
+You can execute the schema by using the `execute()` method within the schema builder object:
+
+```php
+$schema->execute();
+```
+
+[Top](#pop-db)
+
+### Schema Builder API
+
+In the above code samples, if you want to access the table object directly, you can like this:
+
+```php
+$createTable   = $schema->create('users');
+$alterTable    = $schema->alter('users');
+$truncateTable = $schema->truncate('users');
+$renameTable   = $schema->rename('users');
+$dropTable     = $schema->drop('users');
+```
+
+Here's a list of common methods available with which to build your schema:
+
+* `$createTable->ifNotExists();` - Add a IF NOT EXISTS flag
+* `$createTable->addColumn($name, $type, $size = null, $precision = null, array $attributes = []);` - Add a column
+* `$createTable->increment($start = 1);` - Set an increment value
+* `$createTable->defaultIs($value);` - Set the default value for the current column
+* `$createTable->nullable();` - Make the current column nullable
+* `$createTable->notNullable();` - Make the current column not nullable
+* `$createTable->index($column, $name = null, $type = 'index');` - Create an index on the column
+* `$createTable->unique($column, $name = null);` - Create a unique index on the column
+* `$createTable->primary($column, $name = null);` - Create a primary index on the column
+
+The following methods are shorthand methods for adding columns of various common types. Please note, if the
+selected column type isn't supported by the current database adapter, the column type is normalized to
+the closest type.
+
+* `$createTable->integer($name, $size = null, array $attributes = []);`
+* `$createTable->int($name, $size = null, array $attributes = []);`
+* `$createTable->bigInt($name, $size = null, array $attributes = []);`
+* `$createTable->mediumInt($name, $size = null, array $attributes = []);`
+* `$createTable->smallInt($name, $size = null, array $attributes = []);`
+* `$createTable->tinyInt($name, $size = null, array $attributes = []);`
+* `$createTable->float($name, $size = null, $precision = null, array $attributes = []);`
+* `$createTable->real($name, $size = null, $precision = null, array $attributes = [])`
+* `$createTable->double($name, $size = null, $precision = null, array $attributes = []);`
+* `$createTable->decimal($name, $size = null, $precision = null, array $attributes = []);`
+* `$createTable->numeric($name, $size = null, $precision = null, array $attributes = []);`
+* `$createTable->date($name, array $attributes = []);`
+* `$createTable->time($name, array $attributes = []);`
+* `$createTable->datetime($name, array $attributes = []);`
+* `$createTable->timestamp($name, array $attributes = []);`
+* `$createTable->year($name, $size = null, array $attributes = []);`
+* `$createTable->text($name, array $attributes = []);`
+* `$createTable->tinyText($name, array $attributes = []);`
+* `$createTable->mediumText($name, array $attributes = []));`
+* `$createTable->longText($name, array $attributes = []);`
+* `$createTable->blob($name, array $attributes = []);`
+* `$createTable->mediumBlob($name, array $attributes = []);`
+* `$createTable->longBlob($name, array $attributes = []);`
+* `$createTable->char($name, $size = null, array $attributes = []);`
+* `$createTable->varchar($name, $size = null, array $attributes = []);`
+
+The following methods are all related to the creation of foreign key constraints and their relationships:
+
+* `$createTable->int($name, $size = null, array $attributes = [])` - Create a foreign key on the column
+* `$createTable->references($foreignTable);` - Create a reference to a table for the current foreign key constraint
+* `$createTable->on($foreignColumn);` - Used in conjunction with `references()` to designate the foreign column
+* `$createTable->onDelete($action = null)` - Set the ON DELETE parameter for a foreign key constraint
 
 [Top](#pop-db)
 
