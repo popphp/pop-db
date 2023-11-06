@@ -1510,22 +1510,25 @@ $db = Pop\Db\Db::mysqlConnect($options);
 
 $schema = $db->createSchema();
 $schema->create('users')
-    ->int('id', 16)
+    ->int('id', 16)->increment()
     ->varchar('username', 255)
-    ->varchar('password', 255);
+    ->varchar('password', 255)
+    ->primary('id');
 
 echo $schema;
 ```
 
-The above code would produced the following SQL:
+The above code would produce the following SQL:
 
 ```sql
 -- MySQL
 CREATE TABLE `users` (
-  `id` INT(16),
+  `id` INT(16) NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(255),
-  `password` VARCHAR(255)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `password` VARCHAR(255),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+
 ```
 
 **Foreign Key Example**
@@ -1541,10 +1544,16 @@ $schema->create('user_info')
     ->foreignKey('user_id')->references('users')->on('id')->onDelete('CASCADE');
 ```
 
-The above code would produced the following SQL:
+The above code would produce the following SQL:
 
 ```sql
 -- MySQL
+CREATE TABLE `user_info` (
+  `user_id` INT(16),
+  `email` VARCHAR(255),
+  `phone` VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 ALTER TABLE `user_info` ADD CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`)
   REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ```
@@ -1555,16 +1564,27 @@ ALTER TABLE `user_info` ADD CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`)
 
 ```php
 $schema->alter('users')
-    ->addColumn('email', 'VARCHAR', 255);
+    ->varchar('email', 255)
+    ->after('password');
 
 echo $schema;
 ```
 
-The above code would produced the following SQL:
+which is the same as:
+
+```php
+$schema->alter('users')
+    ->addColumn('email', 'VARCHAR', 255)
+    ->after('password');
+
+echo $schema;
+```
+
+And would produce the following SQL:
 
 ```sql
 -- MySQL
-ALTER TABLE `users` ADD `email` VARCHAR(255);
+ALTER TABLE `users` ADD `email` VARCHAR(255) AFTER `password`;
 ```
 
 [Top](#pop-db)
@@ -1652,7 +1672,7 @@ the closest type.
 
 The following methods are all related to the creation of foreign key constraints and their relationships:
 
-* `$createTable->int($name, $size = null, array $attributes = [])` - Create a foreign key on the column
+* `$createTable->foreignKey(string $column, ?string $name = null)` - Create a foreign key on the column
 * `$createTable->references($foreignTable);` - Create a reference to a table for the current foreign key constraint
 * `$createTable->on($foreignColumn);` - Used in conjunction with `references()` to designate the foreign column
 * `$createTable->onDelete($action = null)` - Set the ON DELETE parameter for a foreign key constraint
