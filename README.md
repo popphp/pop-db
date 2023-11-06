@@ -2034,6 +2034,7 @@ use Pop\Db\Db;
 use Pop\Db\Record;
 use Pop\Debug\Debugger;
 use Pop\Debug\Storage\File;
+use Pop\Db\Adapter\Profiler\Profiler;
 
 $db = Db::mysqlConnect([
     'database' => 'DATABASE',
