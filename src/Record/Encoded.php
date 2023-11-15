@@ -121,7 +121,7 @@ class Encoded extends \Pop\Db\Record
         $result = parent::toArray();
 
         foreach ($result as $key => $value) {
-            if ($this->isEncodedColumn($key)) {
+            if (($this->isEncodedColumn($key)) && ($value !== null)) {
                 $result[$key] = $this->decodeValue($key, $value);
             }
         }
@@ -258,7 +258,7 @@ class Encoded extends \Pop\Db\Record
     public function decode(array $columns): array
     {
         foreach ($columns as $key => $value) {
-            if ($this->isEncodedColumn($key)) {
+            if (($this->isEncodedColumn($key)) && ($value !== null)) {
                 $columns[$key] = $this->decodeValue($key, $value);
             }
         }
@@ -305,7 +305,7 @@ class Encoded extends \Pop\Db\Record
     {
         $value = parent::__get($name);
 
-        if ($this->isEncodedColumn($name)) {
+        if (($this->isEncodedColumn($name)) && ($value !== null)) {
             $value = $this->decodeValue($name, $value);
         }
 
