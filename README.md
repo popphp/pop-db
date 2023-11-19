@@ -202,8 +202,8 @@ the `users` table.
 **Fetch users**
 
 ```php
-$users = Users::findAll()->toArray();
-print_r($users);
+$users = Users::findAll();
+print_r($users->toArray());
 ```
 
 ```text
@@ -223,8 +223,8 @@ Array
 **Fetch user ID 1**
 
 ```php
-$user = Users::findById(1)->toArray();
-print_r($user);
+$user = Users::findById(1);
+print_r($user->toArray());
 ```
 
 ```text
@@ -277,6 +277,13 @@ Array
     [email] => newuser@test.com
     [id] => 2
 )
+```
+
+**Delete user ID 1**
+
+```php
+$user = Users::findById(1);
+$user->delete();
 ```
 
 [Top](#pop-db)
@@ -417,7 +424,16 @@ The supported options to create a PDO database adapter and connect with a PDO-su
 - `database` (required)
 - `username` (required for database drivers that require credentials)
 - `password` (required for database drivers that require credentials)
-- `host`
+- `host` (optional, defaults to `localhost`)
+
+```php
+$db = Db::pdoConnect([
+    'type'     => 'mysql'
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+```
 
 The `Pop\Db\Adapter\Pdo` object that is returned utilizes the classes and functions made available by the
 PDO extension and its various available drivers.
@@ -772,7 +788,7 @@ that allows you to really tailor the query. These are the supported options:
 ##### Select Columns
 
 Pass an array of the fields you want to select with the query with the `select` key.
-This can help cut the amount of unwanted data that's return, or help define data to
+This can help cut the amount of unwanted data that's returned, or help define data to
 select across multiple joined tables. If this option is not used, it will default to
 `table_name.*`
 
@@ -956,7 +972,7 @@ being leveraged here from within the `Pop\Db\Record` class are:
 * `hasMany()`
     - 1:1 relationship where a foreign key in many child objects is a primary key in the parent object
 * `belongsTo()`
-    - 1:1 relationship where a foreign key in the child object is a primary key in the parent object (Inverse "hasOne")
+    - 1:1 relationship where a foreign key in the child object is a primary key in the parent object (inverse "hasOne")
 
 Let's consider the following tables classes that represent tables in the database:
 
@@ -1149,7 +1165,7 @@ print_r($users);
 
 ### Prepared Statements
 
-Taken it a step further, you can execute prepared statements as well:
+Taking it a step further, you can execute prepared statements as well:
 
 ```php
 use Pop\Db\Db;
@@ -1227,7 +1243,7 @@ Switching to the PostgeSQL adapter, the same code will produce:
 SELECT "id", "username" FROM "users" WHERE ("id" = $1)
 ```
 
-And Switching to the SQLite adapter, and the same code will produce:
+And switching to the SQLite adapter, and the same code will produce:
 
 ```sql
 -- SQLite
@@ -1812,7 +1828,7 @@ as well.
 ```php
 use Pop\Db\Sql\Seeder;
 
-Seeder::create('MyFirstSeeder', __DIR__ . '/seeds'
+Seeder::create('MyFirstSeeder', __DIR__ . '/seeds');
 ```
 
 The code above will create a file that looks like `seeds/20231105215257_my_first_seeder.php`
