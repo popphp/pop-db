@@ -78,6 +78,13 @@ interface AdapterInterface
     public function rollback(): AdapterInterface;
 
     /**
+     * Check if adapter is in the middle of an open transaction
+     *
+     * @return bool
+     */
+    public function isTransaction(): bool;
+
+    /**
      * Check is transaction is success
      *
      * @return bool

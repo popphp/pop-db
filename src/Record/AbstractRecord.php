@@ -13,6 +13,7 @@
  */
 namespace Pop\Db\Record;
 
+use Pop\Db\Db;
 use Pop\Db\Gateway;
 use Pop\Db\Sql\Parser;
 use ArrayIterator;
@@ -65,6 +66,12 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @var bool
      */
     protected bool $isNew = false;
+
+    /**
+     * Is transaction flag
+     * @var bool
+     */
+    protected bool $isTransaction = false;
 
     /**
      * With relationships
@@ -146,6 +153,63 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     public function setPrimaryKeys(array $keys): AbstractRecord
     {
         $this->primaryKeys = $keys;
+        return $this;
+    }
+
+    /**
+     * Start transaction
+     *
+     * @return AbstractRecord
+     */
+    public function startTransaction(): AbstractRecord
+    {
+        $class = get_called_class();
+        if ((Db::hasDb($class)) && (!Db::db($class)->isTransaction())) {
+            Db::db($class)->beginTransaction();
+        }
+        $this->isTransaction = true;
+        return $this;
+    }
+
+    /**
+     * Is transaction
+     *
+     * @return bool
+     */
+    public function isTransaction(): bool
+    {
+        return $this->isTransaction;
+    }
+
+    /**
+     * Commit transaction
+     *
+     * @throws \Pop\Db\Exception
+     * @return AbstractRecord
+     */
+    public function commitTransaction(): AbstractRecord
+    {
+        $class = get_called_class();
+        if (($this->isTransaction) && (Db::hasDb($class))) {
+            Db::db($class)->commit();
+        }
+        $this->isTransaction = false;
+        return $this;
+    }
+
+    /**
+     * Rollback transaction
+     *
+     * @throws \Pop\Db\Exception
+     * @return AbstractRecord
+     */
+    public function rollback(): AbstractRecord
+    {
+        $class = get_called_class();
+        if (($this->isTransaction) && (Db::hasDb($class))) {
+            Db::db($class)->rollback();
+        }
+        $this->isTransaction = false;
         return $this;
     }
 

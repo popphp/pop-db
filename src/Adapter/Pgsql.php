@@ -154,7 +154,7 @@ class Pgsql extends AbstractAdapter
     public function beginTransaction(): Pgsql
     {
         $this->query('BEGIN TRANSACTION');
-
+        $this->isTransaction = true;
         return $this;
     }
 
@@ -166,7 +166,7 @@ class Pgsql extends AbstractAdapter
     public function commit(): Pgsql
     {
         $this->query('COMMIT');
-
+        $this->isTransaction = false;
         return $this;
     }
 
@@ -178,6 +178,7 @@ class Pgsql extends AbstractAdapter
     public function rollback(): Pgsql
     {
         $this->query('ROLLBACK');
+        $this->isTransaction = false;
         return $this;
     }
 
