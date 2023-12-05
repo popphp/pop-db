@@ -14,6 +14,7 @@
 namespace Pop\Db;
 
 use Pop\Db\Record\Collection;
+use Pop\Utils\CallableObject;
 
 /**
  * Record class
@@ -224,6 +225,30 @@ class Record extends Record\AbstractRecord
         $class = get_called_class();
         if (Db::hasDb($class)) {
             Db::db($class)->rollback();
+        }
+    }
+
+    /**
+     * Execute complete transaction with the DB adapter
+     *
+     * @param  mixed $callable
+     * @param  mixed $params
+     * @return void
+     *@throws \Exception
+     */
+    public static function transaction(mixed $callable, mixed $params = null): void
+    {
+        if (!($callable instanceof CallableObject)) {
+            $callable = new CallableObject($callable, $params);
+        }
+
+        try {
+            static::start();
+            $callable->call();
+            static::commit();
+        } catch (\Exception $e) {
+            static::rollback();
+            throw $e;
         }
     }
 
