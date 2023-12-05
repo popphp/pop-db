@@ -164,6 +164,16 @@ class Sqlsrv extends AbstractAdapter
     }
 
     /**
+     * Check is transaction is success
+     *
+     * @return bool
+     */
+    public function isSuccess(): bool
+    {
+        return ($this->result) || ($this->statementResult);
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  mixed $sql

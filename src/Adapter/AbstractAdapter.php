@@ -135,6 +135,13 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function rollback(): AbstractAdapter;
 
     /**
+     * Check is transaction is success
+     *
+     * @return bool
+     */
+    abstract public function isSuccess(): bool;
+
+    /**
      * Execute a SQL query directly
      *
      * @param  mixed $sql
