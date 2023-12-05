@@ -203,7 +203,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @throws \Pop\Db\Exception
      * @return AbstractRecord
      */
-    public function rollback(): AbstractRecord
+    public function rollbackTransaction(): AbstractRecord
     {
         $class = get_called_class();
         if (($this->isTransaction) && (Db::hasDb($class))) {

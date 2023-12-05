@@ -215,6 +215,19 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Rollback transaction with the DB adapter
+     *
+     * @return void
+     */
+    public static function rollback(): void
+    {
+        $class = get_called_class();
+        if (Db::hasDb($class)) {
+            Db::db($class)->rollback();
+        }
+    }
+
+    /**
      * Find by ID static method
      *
      * @param  mixed  $id
@@ -828,7 +841,7 @@ class Record extends Record\AbstractRecord
             }
         } catch (\Exception $e) {
             if ($this->isTransaction()) {
-                $this->rollback();
+                $this->rollbackTransaction();
             }
             throw $e;
         }
@@ -869,7 +882,7 @@ class Record extends Record\AbstractRecord
             }
         } catch (\Exception $e) {
             if ($this->isTransaction()) {
-                $this->rollback();
+                $this->rollbackTransaction();
             }
             throw $e;
         }
