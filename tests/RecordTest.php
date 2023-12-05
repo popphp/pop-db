@@ -3,6 +3,7 @@
 namespace Pop\Db\Test;
 
 use Pop\Db\Db;
+use Pop\Db\Exception;
 use Pop\Db\Record;
 use Pop\Db\Test\TestAsset\MockData;
 use Pop\Db\Test\TestAsset\Users;
@@ -835,6 +836,78 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testTransaction()
+    {
+        $user = new Users([
+            'username' => 'testuser262',
+            'password' => 'password262',
+            'email'    => 'testuser262@test.com',
+            'logins'   => 1
+        ]);
+        $user->startTransaction();
+        $user->save();
+
+
+        $newUsers = Users::findWhereUsername('testuser262');
+        $this->assertEquals(1, $newUsers->count());
+        $this->assertEquals('testuser262', $newUsers[0]->username);
+
+        $this->db->disconnect();
+    }
+
+    public function testTransactionRollback()
+    {
+        $user = new Users([
+            'username' => 'testuser263',
+            'password' => 'password263',
+            'email'    => 'testuser263@test.com',
+            'logins'   => 1
+        ]);
+        $user->startTransaction();
+        $user->save(null, false);
+        $user->rollbackTransaction();
+
+        $newUsers = Users::findWhereUsername('testuser263');
+        $this->assertEquals(0, $newUsers->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testGlobalTransaction()
+    {
+        Users::transaction(function(){
+            $user = new Users([
+                'username' => 'testuser26',
+                'password' => 'password26',
+                'email'    => 'testuser26@test.com',
+                'logins'   => 1
+            ]);
+            $user->save();
+        });
+
+
+        $newUsers = Users::findWhereUsername('testuser26');
+        $this->assertEquals(1, $newUsers->count());
+        $this->assertEquals('testuser26', $newUsers[0]->username);
+
+        $this->db->disconnect();
+    }
+
+    public function testGlobalTransactionRollback()
+    {
+        $this->expectException('Pop\Db\Exception');
+
+        Users::transaction(function(){
+            $user = new Users([
+                'username' => 'testuser27',
+                'password' => 'password27',
+                'email'    => 'testuser26@test.com',
+                'logins'   => 1
+            ]);
+            throw new Exception('Whoops!');
+        });
+    }
+
     public function testFindWhere()
     {
         $user = new Users([
@@ -848,6 +921,9 @@ class RecordTest extends TestCase
         $newUsers = Users::findWhereUsername('testuser24');
         $this->assertEquals(1, $newUsers->count());
         $this->assertEquals('testuser24', $newUsers[0]->username);
+
+        $newUsers2 = Users::findWhereUsername('testuser27');
+        $this->assertEquals(0, $newUsers2->count());
 
         $schema = $this->db->createSchema();
         $schema->dropIfExists('users');
