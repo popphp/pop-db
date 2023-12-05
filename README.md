@@ -1280,7 +1280,7 @@ Array
 
 ### Query Transactions
 
-When using a database adapter directly, you can utilize transactions with it.
+When using a database adapter directly, you can utilize transactions with it, like these examples below:
 
 ```php
 try {
