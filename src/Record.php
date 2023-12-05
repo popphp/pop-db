@@ -835,10 +835,11 @@ class Record extends Record\AbstractRecord
      * Save or update the record
      *
      * @param  ?array $columns
+     * @param  bool   $commit
      * @throws \Exception
      * @return void
      */
-    public function save(array $columns = null): void
+    public function save(array $columns = null, bool $commit = true): void
     {
         try {
             // Save or update the record
@@ -861,11 +862,11 @@ class Record extends Record\AbstractRecord
                     $this->tableGateway->insert($columns);
                 }
             }
-            if ($this->isTransaction()) {
+            if (($this->isTransaction()) && ($commit)) {
                 $this->commitTransaction();
             }
         } catch (\Exception $e) {
-            if ($this->isTransaction()) {
+            if (($this->isTransaction()) && ($commit)) {
                 $this->rollbackTransaction();
             }
             throw $e;
@@ -876,9 +877,10 @@ class Record extends Record\AbstractRecord
      * Delete the record
      *
      * @param  ?array $columns
+     * @param  bool   $commit
      * @return void
      */
-    public function delete(array $columns = null): void
+    public function delete(array $columns = null, bool $commit = true): void
     {
         try {
             // Delete the record
@@ -902,11 +904,11 @@ class Record extends Record\AbstractRecord
             $this->setRows();
             $this->setColumns();
 
-            if ($this->isTransaction()) {
+            if (($this->isTransaction()) && ($commit)) {
                 $this->commitTransaction();
             }
         } catch (\Exception $e) {
-            if ($this->isTransaction()) {
+            if (($this->isTransaction()) && ($commit)) {
                 $this->rollbackTransaction();
             }
             throw $e;
