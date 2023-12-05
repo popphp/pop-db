@@ -962,12 +962,11 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 
 ### Active Record Transactions
 
-Transactions are available through the ORM active records. There are a few ways to
-execute a transaction with the main record class:
-
-In the below example, the transaction is started by calling the `startTransaction()` method.
-Once that has been called, the subsequent `commitTransaction()` will be called within the `save()`
-method. Or, the `rollback` method will be called upon an exception being thrown.
+Transactions are available through the ORM active record class. There are a few ways to
+execute a transaction with the main record class. In the below example, the transaction
+is started by calling the `startTransaction()` method. Once that has been called, the
+subsequent `commitTransaction()` will be called within the `save()` method. Or, the
+`rollback` method will be called upon an exception being thrown.
 
 ```php
 $user = new Users([
