@@ -183,6 +183,7 @@ class Pdo extends AbstractAdapter
     public function beginTransaction(): Pdo
     {
         $this->connection->beginTransaction();
+        $this->isTransaction = true;
         return $this;
     }
 
@@ -194,6 +195,7 @@ class Pdo extends AbstractAdapter
     public function commit(): Pdo
     {
         $this->connection->commit();
+        $this->isTransaction = false;
         return $this;
     }
 
@@ -215,6 +217,7 @@ class Pdo extends AbstractAdapter
     public function rollback(): Pdo
     {
         $this->connection->rollBack();
+        $this->isTransaction = false;
         return $this;
     }
 

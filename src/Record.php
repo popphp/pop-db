@@ -180,6 +180,41 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Start transaction with the DB adapter
+     *
+     * @return static|null
+     */
+    public static function start(): static|null
+    {
+        $args  = func_get_args();
+        $class = get_called_class();
+        if (Db::hasDb($class)) {
+            Db::db($class)->beginTransaction();
+        }
+
+        if ($class !== 'Pop\Db\Record') {
+            $record = (!empty($args)) ? (new \ReflectionClass($class))->newInstanceArgs($args) : new static();
+            $record->startTransaction();
+            return $record;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Commit transaction with the DB adapter
+     *
+     * @return void
+     */
+    public static function commit(): void
+    {
+        $class = get_called_class();
+        if (Db::hasDb($class)) {
+            Db::db($class)->commit();
+        }
+    }
+
+    /**
      * Find by ID static method
      *
      * @param  mixed  $id
@@ -762,29 +797,40 @@ class Record extends Record\AbstractRecord
      * Save or update the record
      *
      * @param  ?array $columns
+     * @throws \Exception
      * @return void
      */
     public function save(array $columns = null): void
     {
-        // Save or update the record
-        if ($columns === null) {
-            if ($this->isNew) {
-                $this->rowGateway->save();
-                $this->isNew = false;
+        try {
+            // Save or update the record
+            if ($columns === null) {
+                if ($this->isNew) {
+                    $this->rowGateway->save();
+                    $this->isNew = false;
+                } else {
+                    $this->rowGateway->update();
+                    $record = $this->getById($this->rowGateway->getPrimaryValues());
+                    if (isset($record[0])) {
+                        $this->setColumns($record[0]);
+                    }
+                }
+                // Else, save multiple rows
             } else {
-                $this->rowGateway->update();
-                $record = $this->getById($this->rowGateway->getPrimaryValues());
-                if (isset($record[0])) {
-                    $this->setColumns($record[0]);
+                if (isset($columns[0])) {
+                    $this->tableGateway->insertRows($columns);
+                } else {
+                    $this->tableGateway->insert($columns);
                 }
             }
-        // Else, save multiple rows
-        } else {
-            if (isset($columns[0])) {
-                $this->tableGateway->insertRows($columns);
-            } else {
-                $this->tableGateway->insert($columns);
+            if ($this->isTransaction()) {
+                $this->commitTransaction();
             }
+        } catch (\Exception $e) {
+            if ($this->isTransaction()) {
+                $this->rollback();
+            }
+            throw $e;
         }
     }
 
@@ -796,26 +842,38 @@ class Record extends Record\AbstractRecord
      */
     public function delete(array $columns = null): void
     {
-        // Delete the record
-        if ($columns === null) {
-            $this->rowGateway->delete();
-        // Delete multiple rows
-        } else {
-            $expressions = null;
-            $params      = [];
+        try {
+            // Delete the record
+            if ($columns === null) {
+                $this->rowGateway->delete();
+                // Delete multiple rows
+            } else {
+                $expressions = null;
+                $params      = [];
 
-            if ($columns !== null) {
-                $db            = Db::getDb($this->getFullTable());
-                $sql           = $db->createSql();
-                ['expressions' => $expressions, 'params' => $params] =
-                    Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+                if ($columns !== null) {
+                    $db            = Db::getDb($this->getFullTable());
+                    $sql           = $db->createSql();
+                    ['expressions' => $expressions, 'params' => $params] =
+                        Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+                }
+
+                $this->tableGateway->delete($expressions, $params);
             }
 
-            $this->tableGateway->delete($expressions, $params);
+            $this->setRows();
+            $this->setColumns();
+
+            if ($this->isTransaction()) {
+                $this->commitTransaction();
+            }
+        } catch (\Exception $e) {
+            if ($this->isTransaction()) {
+                $this->rollback();
+            }
+            throw $e;
         }
 
-        $this->setRows();
-        $this->setColumns();
     }
 
     /**

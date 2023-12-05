@@ -129,6 +129,8 @@ class Mysql extends AbstractAdapter
             $this->connection->begin_transaction();
         }
 
+        $this->isTransaction = true;
+
         return $this;
     }
 
@@ -149,6 +151,8 @@ class Mysql extends AbstractAdapter
             $this->connection->commit();
         }
 
+        $this->isTransaction = false;
+
         return $this;
     }
 
@@ -168,6 +172,8 @@ class Mysql extends AbstractAdapter
         } else {
             $this->connection->rollback();
         }
+
+        $this->isTransaction = false;
 
         return $this;
     }

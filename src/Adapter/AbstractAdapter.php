@@ -72,6 +72,12 @@ abstract class AbstractAdapter implements AdapterInterface
     protected ?Profiler\Profiler $profiler = null;
 
     /**
+     * Is open transaction flag
+     * @var bool
+     */
+    protected bool $isTransaction = false;
+
+    /**
      * Constructor
      *
      * Instantiate the database adapter object
@@ -133,6 +139,16 @@ abstract class AbstractAdapter implements AdapterInterface
      * @return AbstractAdapter
      */
     abstract public function rollback(): AbstractAdapter;
+
+    /**
+     * Check if adapter is in the middle of an open transaction
+     *
+     * @return bool
+     */
+    public function isTransaction(): bool
+    {
+        return $this->isTransaction;
+    }
 
     /**
      * Check is transaction is success

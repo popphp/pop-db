@@ -138,6 +138,7 @@ class Sqlsrv extends AbstractAdapter
     public function beginTransaction(): Sqlsrv
     {
         sqlsrv_begin_transaction($this->connection);
+        $this->isTransaction = true;
         return $this;
     }
 
@@ -149,6 +150,7 @@ class Sqlsrv extends AbstractAdapter
     public function commit(): Sqlsrv
     {
         sqlsrv_commit($this->connection);
+        $this->isTransaction = false;
         return $this;
     }
 
@@ -160,6 +162,7 @@ class Sqlsrv extends AbstractAdapter
     public function rollback(): Sqlsrv
     {
         sqlsrv_rollback($this->connection);
+        $this->isTransaction = false;
         return $this;
     }
 

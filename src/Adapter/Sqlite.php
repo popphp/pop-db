@@ -135,6 +135,7 @@ class Sqlite extends AbstractAdapter
     public function beginTransaction(): Sqlite
     {
         $this->query('BEGIN TRANSACTION');
+        $this->isTransaction = true;
         return $this;
     }
 
@@ -146,6 +147,7 @@ class Sqlite extends AbstractAdapter
     public function commit(): Sqlite
     {
         $this->query('COMMIT');
+        $this->isTransaction = false;
         return $this;
     }
 
@@ -157,6 +159,7 @@ class Sqlite extends AbstractAdapter
     public function rollback(): Sqlite
     {
         $this->query('ROLLBACK');
+        $this->isTransaction = false;
         return $this;
     }
 
