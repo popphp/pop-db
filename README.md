@@ -1295,7 +1295,7 @@ try {
 ```php
 try {
     $db->beginTransaction();
-    $db->prepare("INSERT INTO `users` (`username`, `email`) VALUES ('testuser', 'test@test.com')")
+    $db->prepare("INSERT INTO `users` (`username`, `email`) VALUES (?, ?)")
         ->bindParam([
             'username' => 'testuser',
             'email'    => 'test@test.com'
