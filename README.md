@@ -26,10 +26,12 @@ pop-db
     - [Options](#options)
     - [Shorthand Syntax](#shorthand-syntax)
     - [Execute Queries](#execute-queries)
+    - [Transactions](#active-record-transactions)
 * [Relationships](#relationships)
     - [Eager-Loading](#eager-loading)
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
+    - [Transactions](#query-transactions)
 * [Query Builder](#query-builder)
     - [Select](#select)
     - [Insert](#insert)
@@ -958,6 +960,82 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 
 [Top](#pop-db)
 
+### Active Record Transactions
+
+Transactions are available through the ORM active records. There are a few ways to
+execute a transaction with the main record class:
+
+In the below example, the transaction is started by calling the `startTransaction()` method.
+Once that has been called, the subsequent `commitTransaction()` will be called within the `save()`
+method. Or, the `rollback` method will be called upon an exception being thrown.
+
+```php
+$user = new Users([
+    'username' => 'testuser',
+    'password' => 'password',
+    'email'    => 'test@test.com'
+]);
+$user->startTransaction();
+$user->save();
+```
+
+A shorthand way of doing the same would be to call the static `start()` method:
+
+```php
+$user = Users::start([
+    'username' => 'testuser',
+    'password' => 'password',
+    'email'    => 'test@test.com'
+]);
+$user->save();
+```
+
+If you need to execute a transaction consisting of multiple queries across multiple
+active record objects, you can do that as well:
+
+```php
+try {
+    Record::start();
+
+    $user = new Users([
+        'username' => 'testuser',
+        'password' => 'password',
+        'email'    => 'test@test.com'
+    ]);
+    $user->save();
+
+    $role = new Roles([
+        'role' => 'Admin'
+    ]);
+    $role->save();
+
+    Record::commit();
+} catch (\Exception $e) {
+    Record::rollback();
+    echo $e->getMessage();
+}
+```
+
+A shorthand method to achieve the same thing would be to use the `transaction` method with a callable:
+
+```php
+Record::transaction(function(){
+    $user = new Users([
+        'username' => 'testuser',
+        'password' => 'password',
+        'email'    => 'test@test.com'
+    ]);
+    $user->save();
+
+    $role = new Roles([
+        'role' => 'Admin'
+    ]);
+    $role->save();
+});
+```
+
+[Top](#pop-db)
+
 Relationships
 -------------
 
@@ -1197,6 +1275,37 @@ Array
         )
 
 )
+```
+
+[Top](#pop-db)
+
+### Query Transactions
+
+When using a database adapter directly, you can utilize transactions with it.
+
+```php
+try {
+    $db->beginTransaction();
+    $db->query("INSERT INTO `users` (`username`, `email`) VALUES ('testuser', 'test@test.com')");
+    $db->commit();
+} catch (\Exception $e) {
+    $db->rollback();
+}
+```
+
+```php
+try {
+    $db->beginTransaction();
+    $db->prepare("INSERT INTO `users` (`username`, `email`) VALUES ('testuser', 'test@test.com')")
+        ->bindParam([
+            'username' => 'testuser',
+            'email'    => 'test@test.com'
+        ]);
+    $db->execute();
+    $db->commit();
+} catch (\Exception $e) {
+    $db->rollback();
+}
 ```
 
 [Top](#pop-db)
