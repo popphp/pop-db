@@ -78,6 +78,13 @@ interface AdapterInterface
     public function rollback(): AdapterInterface;
 
     /**
+     * Check is transaction is success
+     *
+     * @return bool
+     */
+    public function isSuccess(): bool;
+
+    /**
      * Execute a SQL query directly
      *
      * @param  mixed $sql

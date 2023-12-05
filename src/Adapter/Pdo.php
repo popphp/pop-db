@@ -219,6 +219,16 @@ class Pdo extends AbstractAdapter
     }
 
     /**
+     * Check is transaction is success
+     *
+     * @return bool
+     */
+    public function isSuccess(): bool
+    {
+        return ($this->result) || ($this->statementResult);
+    }
+
+    /**
      * Method sets the value of the request attribute PDO.
      *
      * @param  int    $attribute A request attribute
