@@ -5,9 +5,4 @@ vendor
 kettle
 .phpunit.result.cache
 .phpunit.cache
-test1.php
-test2.php
-test3.php
-test4.php
-app
-bootstrap.php
+
