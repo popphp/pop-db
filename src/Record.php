@@ -29,6 +29,8 @@ use Pop\Utils\CallableObject;
 class Record extends Record\AbstractRecord
 {
 
+    public static $depth = 0;
+
     /**
      * Constructor
      *
@@ -190,14 +192,20 @@ class Record extends Record\AbstractRecord
         $args  = func_get_args();
         $class = get_called_class();
         if (Db::hasDb($class)) {
-            Db::db($class)->beginTransaction();
+            if (self::$depth == 0){
+                Db::db($class)->beginTransaction();
+            }
         }
 
         if ($class !== 'Pop\Db\Record') {
             $record = (!empty($args)) ? (new \ReflectionClass($class))->newInstanceArgs($args) : new static();
-            $record->startTransaction();
+            if (self::$depth == 0){
+                $record->startTransaction();
+            }
+            self::$depth++;
             return $record;
         } else {
+            self::$depth++;
             return null;
         }
     }
@@ -211,20 +219,34 @@ class Record extends Record\AbstractRecord
     {
         $class = get_called_class();
         if (Db::hasDb($class)) {
-            Db::db($class)->commit();
+            self::$depth--;
+            if (self::$depth == 0) {
+                Db::db($class)->commit();
+            }
         }
     }
 
     /**
      * Rollback transaction with the DB adapter
      *
+     * @param  mixed $params
      * @return void
+     * @throws \Exception
      */
-    public static function rollback(): void
+    public static function rollback(\Exception $exception = null): void
     {
         $class = get_called_class();
         if (Db::hasDb($class)) {
-            Db::db($class)->rollback();
+            self::$depth--;
+            if (self::$depth == 0) {
+                Db::db($class)->rollback();
+            }
+            else{
+                if(is_null($exception)){
+                    $exception = new \Exception("Rollback executed!");
+                }
+                throw $exception;
+            }
         }
     }
 
@@ -247,8 +269,8 @@ class Record extends Record\AbstractRecord
             $callable->call();
             static::commit();
         } catch (\Exception $e) {
-            static::rollback();
-            throw $e;
+            static::rollback($e);
+            // throw $e;
         }
     }
 
