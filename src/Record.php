@@ -29,7 +29,11 @@ use Pop\Utils\CallableObject;
 class Record extends Record\AbstractRecord
 {
 
-    public static $depth = 0;
+    /**
+     * Transaction depth
+     * @var int
+     */
+    protected static int $depth = 0;
 
     /**
      * Constructor
@@ -185,6 +189,7 @@ class Record extends Record\AbstractRecord
     /**
      * Start transaction with the DB adapter
      *
+     * @throws \ReflectionException|Exception
      * @return static|null
      */
     public static function start(): static|null
@@ -192,14 +197,14 @@ class Record extends Record\AbstractRecord
         $args  = func_get_args();
         $class = get_called_class();
         if (Db::hasDb($class)) {
-            if (self::$depth == 0){
+            if (self::$depth == 0) {
                 Db::db($class)->beginTransaction();
             }
         }
 
         if ($class !== 'Pop\Db\Record') {
             $record = (!empty($args)) ? (new \ReflectionClass($class))->newInstanceArgs($args) : new static();
-            if (self::$depth == 0){
+            if (self::$depth == 0) {
                 $record->startTransaction();
             }
             self::$depth++;
@@ -213,6 +218,7 @@ class Record extends Record\AbstractRecord
     /**
      * Commit transaction with the DB adapter
      *
+     * @throws Exception
      * @return void
      */
     public static function commit(): void
@@ -229,25 +235,26 @@ class Record extends Record\AbstractRecord
     /**
      * Rollback transaction with the DB adapter
      *
-     * @param  mixed $params
-     * @return void
-     * @throws \Exception
+     * @param  \Exception|null $exception
+     * @return \Exception|null
      */
-    public static function rollback(\Exception $exception = null): void
+    public static function rollback(\Exception $exception = null): \Exception|null
     {
         $class = get_called_class();
+
         if (Db::hasDb($class)) {
             self::$depth--;
             if (self::$depth == 0) {
                 Db::db($class)->rollback();
-            }
-            else{
-                if(is_null($exception)){
-                    $exception = new \Exception("Rollback executed!");
+            } else {
+                if ($exception == null) {
+                    $exception = new Exception('Error: A rollback has been executed from within a nested transaction.');
                 }
-                throw $exception;
+                return $exception;
             }
         }
+
+        return null;
     }
 
     /**
@@ -255,8 +262,8 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed $callable
      * @param  mixed $params
+     * @throws \Exception
      * @return void
-     *@throws \Exception
      */
     public static function transaction(mixed $callable, mixed $params = null): void
     {
@@ -269,8 +276,8 @@ class Record extends Record\AbstractRecord
             $callable->call();
             static::commit();
         } catch (\Exception $e) {
-            static::rollback($e);
-            // throw $e;
+            $result = static::rollback($e);
+            throw (!empty($result)) ? $result : $e;
         }
     }
 
@@ -908,7 +915,7 @@ class Record extends Record\AbstractRecord
             // Delete the record
             if ($columns === null) {
                 $this->rowGateway->delete();
-                // Delete multiple rows
+            // Delete multiple rows
             } else {
                 $expressions = null;
                 $params      = [];
