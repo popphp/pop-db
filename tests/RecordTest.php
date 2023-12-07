@@ -925,6 +925,67 @@ class RecordTest extends TestCase
         $newUsers2 = Users::findWhereUsername('testuser27');
         $this->assertEquals(0, $newUsers2->count());
 
+        $this->db->disconnect();
+    }
+
+    public function testFindWhereConditions()
+    {
+        $user = new Users([
+            'username' => 'testuser24',
+            'password' => 'password24',
+            'email'    => 'testuser24@test.com',
+            'logins'   => 1
+        ]);
+        $user->save();
+
+        $users = Users::findWhereGreaterThan('logins', 0);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereGreaterThanOrEqual('logins', 1);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereLessThan('logins', 2);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereLessThanOrEqual('logins', 1);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereEquals('logins', 1);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereNotEquals('logins', -1);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereIn('logins', [1]);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereNotIn('logins', [10000000]);
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereNull('logins');
+        $this->assertEquals(0, $users->count());
+
+        $users = Users::findWhereNotNull('logins');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereBetween('logins', '(0, 10)');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereNotBetween('logins', '(1000000, 1000010)');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereLike('username', 'testuser%');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereNotLike('username', 'baduser%');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereLike('username', '%testuser24');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $users = Users::findWhereNotLike('username', '%baduser');
+        $this->assertGreaterThanOrEqual(1, $users->count());
+
         $schema = $this->db->createSchema();
         $schema->dropIfExists('users');
         $schema->execute();
