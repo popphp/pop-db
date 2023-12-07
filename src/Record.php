@@ -25,6 +25,20 @@ use Pop\Utils\CallableObject;
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    6.0.0
+ * @method     static findWhereEquals($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereNotEquals($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereGreaterThan($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereGreaterThanOrEqual($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereLessThan($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereLessThanOrEqual($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereLike($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereNotLike($column, $value, array $options = null, bool $asArray = false)
+ * @method     static findWhereIn($column, $values, array $options = null, bool $asArray = false)
+ * @method     static findWhereNotIn($column, $values, array $options = null, bool $asArray = false)
+ * @method     static findWhereBetween($column, $values, array $options = null, bool $asArray = false)
+ * @method     static findWhereNotBetween($column, $values, array $options = null, bool $asArray = false)
+ * @method     static findWhereNull($column, array $options = null, bool $asArray = false)
+ * @method     static findWhereNotNull($column, array $options = null, bool $asArray = false)
  */
 class Record extends Record\AbstractRecord
 {
@@ -935,7 +949,26 @@ class Record extends Record\AbstractRecord
     /**
      * Call static method for 'findWhere'
      *
-     *      $users = Users::findWhereUsername('testuser');
+     *     $users = Users::findWhereUsername($value);
+     *
+     *     $users = Users::findWhereEquals($column, $value);
+     *     $users = Users::findWhereNotEquals($column, $value);
+     *     $users = Users::findWhereGreaterThan($column, $value);
+     *     $users = Users::findWhereGreaterThanOrEqual($column, $value);
+     *     $users = Users::findWhereLessThan($column, $value);
+     *     $users = Users::findWhereLessThanOrEqual($column, $value);
+     *
+     *     $users = Users::findWhereLike($column, $value);
+     *     $users = Users::findWhereNotLike($column, $value);
+     *
+     *     $users = Users::findWhereIn($column, $values);
+     *     $users = Users::findWhereNotIn($column, $values);
+     *
+     *     $users = Users::findWhereBetween($column, $values);
+     *     $users = Users::findWhereNotBetween($column, $values);
+     *
+     *     $users = Users::findWhereNull($column);
+     *     $users = Users::findWhereNotNull($column);
      *
      * @param  string $name
      * @param  array  $arguments
@@ -943,19 +976,92 @@ class Record extends Record\AbstractRecord
      */
     public static function __callStatic(string $name, array $arguments): Collection|array|null
     {
-        $record = null;
+        $columns    = null;
+        $options    = null;
+        $asArray    = false;
+        $conditions = [
+            'Equals', 'NotEquals', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
+            'Like', 'NotLike', 'In', 'NotIn', 'Between', 'NotBetween', 'Null', 'NotNull'
+        ];
 
-        if (substr($name, 0, 9) == 'findWhere') {
-            $column = Sql\Parser\Table::parse(substr($name, 9));
-            $arg1   = $arguments[0] ?? null;
-            $arg2   = $arguments[1] ?? null;
+        if (str_starts_with($name, 'findWhere')) {
+            if (in_array(substr($name, 9), $conditions)) {
+                $condition = substr($name, 9);
+                $column    = $arguments[0];
 
-            if ($arg1 !== null) {
-                $record = static::findBy([$column => $arg1], $arg2);
+                if (str_contains($condition, 'Null')) {
+                    $value     = null;
+                    $options   = $arguments[1] ?? null;
+                    $asArray   = $arguments[2] ?? false;
+                } else {
+                    $value     = $arguments[1];
+                    $options   = $arguments[2] ?? null;
+                    $asArray   = $arguments[3] ?? false;
+                }
+
+                switch ($condition) {
+                    case 'Equals':
+                    case 'In':
+                    case 'Between':
+                    case 'Null':
+                        $columns = [$column => $value];
+                        break;
+                    case 'NotEquals':
+                        $columns = [$column . '!=' => $value];
+                        break;
+                    case 'GreaterThan':
+                        $columns = [$column . '>' => $value];
+                        break;
+                    case 'GreaterThanOrEqual':
+                        $columns = [$column . '>=' => $value];
+                        break;
+                    case 'LessThan':
+                        $columns = [$column . '<' => $value];
+                        break;
+                    case 'LessThanOrEqual':
+                        $columns = [$column . '<=' => $value];
+                        break;
+                    case 'Like':
+                        if (str_starts_with($value, '%')) {
+                            $column = '%' . $column;
+                            $value  = substr($value, 1);
+                        }
+                        if (str_ends_with($value, '%')) {
+                            $column .= '%';
+                            $value   = substr($value, 0, -1);
+                        }
+                        $columns = [$column => $value];
+                        break;
+                    case 'NotLike':
+                        if (str_starts_with($value, '%')) {
+                            $column = '-%' . $column;
+                            $value  = substr($value, 1);
+                        }
+                        if (str_ends_with($value, '%')) {
+                            $column .= '%-';
+                            $value   = substr($value, 0, -1);
+                        }
+                        $columns = [$column => $value];
+                        break;
+                    case 'NotIn':
+                    case 'NotBetween':
+                    case 'NotNull':
+                        $columns = [$column . '-' => $value];
+                        break;
+                }
+            } else {
+                $column  = Sql\Parser\Table::parse(substr($name, 9));
+                $value   = $arguments[0] ?? null;
+                $options = $arguments[1] ?? null;
+                $asArray = $arguments[2] ?? false;
+
+                if ($value !== null) {
+                    $columns = [$column => $value];
+                }
             }
         }
 
-        return $record;
+        return ($columns !== null) ? static::findBy($columns, $options, $asArray) : null;
     }
 
 }
