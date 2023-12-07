@@ -582,7 +582,7 @@ These are available static methods to find a record or records in the database t
 - `findLatest($by = null, array $columns = null, array $options = null, bool $asArray = false)`
 - `findBy(array $columns = null, array $options = null, bool $asArray = false)`
 - `findByOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
-- `findIn(string $key, array $values, array $columns = null, array $options = null, bool $asArray = false)`
+- `findIn($key, array $values, array $columns = null, array $options = null, bool $asArray = false)`
 - `findAll(array $options = null, bool $asArray = false)`
 
 These are available static magic helper methods to find a record or records in the database table,
