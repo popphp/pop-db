@@ -572,6 +572,37 @@ to sort by:
 $user = Users::findLatest('last_login');
 ```
 
+#### Find API
+
+These are available static methods to find a record or records in the database table:
+
+- `findById(mixed $id, ?array $options = null, bool $asArray = false)`
+- `findOne(?array $columns = null, ?array $options = null, bool $asArray = false)`
+- `findOneOrCreate(?array $columns = null, ?array $options = null, bool $asArray = false)`
+- `findLatest(?string $by = null, ?array $columns = null, ?array $options = null, bool $asArray = false)`
+- `findBy(?array $columns = null, ?array $options = null, bool $asArray = false)`
+- `findByOrCreate(?array $columns = null, ?array $options = null, bool $asArray = false)`
+- `findIn(string $key, array $values, ?array $columns = null, ?array $options = null, bool $asArray = false)`
+- `findAll(?array $options = null, bool $asArray = false)`
+
+These are available static magic helper methods to find a record or records in the database table,
+based on certain conditions:
+
+- `findWhereEquals($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereNotEquals($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereGreaterThan($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereGreaterThanOrEqual($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereLessThan($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereLessThanOrEqual($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereLike($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereNotLike($column, $value, array $options = null, bool $asArray = false)`
+- `findWhereIn($column, $values, array $options = null, bool $asArray = false)`
+- `findWhereNotIn($column, $values, array $options = null, bool $asArray = false)`
+- `findWhereBetween($column, $values, array $options = null, bool $asArray = false)`
+- `findWhereNotBetween($column, $values, array $options = null, bool $asArray = false)`
+- `findWhereNull($column, array $options = null, bool $asArray = false)`
+- `findWhereNotNull($column, array $options = null, bool $asArray = false)`
+
 #### Modify a record
 
 Once a record has been fetched, you can then modify it and save it:
