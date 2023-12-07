@@ -1049,19 +1049,23 @@ try {
 A shorthand method to achieve the same thing would be to use the `transaction` method with a callable:
 
 ```php
-Record::transaction(function(){
-    $user = new Users([
-        'username' => 'testuser',
-        'password' => 'password',
-        'email'    => 'test@test.com'
-    ]);
-    $user->save();
-
-    $role = new Roles([
-        'role' => 'Admin'
-    ]);
-    $role->save();
-});
+try {
+    Record::transaction(function() {
+        $user = new Users([
+            'username' => 'testuser',
+            'password' => 'password',
+            'email'    => 'test@test.com'
+        ]);
+        $user->save();
+    
+        $role = new Roles([
+            'role' => 'Admin'
+        ]);
+        $role->save();
+    });
+} catch (\Exception $e) {
+    echo $e->getMessage() . PHP_EOL . PHP_EOL;
+}
 ```
 
 
@@ -1069,21 +1073,21 @@ Nested transactions are supported as well:
 
 ```php
 try {
-Record::transaction(function(){
-    $user = new Users([
-        'username' => 'testuser',
-        'password' => 'password',
-        'email'    => 'test@test.com'
-    ]);
-    $user->save();
-    
-    Record::transaction(function(){
-        $role = new Roles([
-            'role' => 'Admin'
+    Record::transaction(function() {
+        $user = new Users([
+            'username' => 'testuser',
+            'password' => 'password',
+            'email'    => 'test@test.com'
         ]);
-        $role->save();
+        $user->save();
+        
+        Record::transaction(function(){
+            $role = new Roles([
+                'role' => 'Admin'
+            ]);
+            $role->save();
+        });
     });
-});
 } catch (\Exception $e) {
     echo $e->getMessage() . PHP_EOL . PHP_EOL;
 }
