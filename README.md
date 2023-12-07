@@ -579,7 +579,7 @@ These are available static methods to find a record or records in the database t
 - `findById($id, array $options = null, bool $asArray = false)`
 - `findOne(array $columns = null, array $options = null, bool $asArray = false)`
 - `findOneOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
-- `findLatest(?string $by = null, array $columns = null, array $options = null, bool $asArray = false)`
+- `findLatest($by = null, array $columns = null, array $options = null, bool $asArray = false)`
 - `findBy(array $columns = null, array $options = null, bool $asArray = false)`
 - `findByOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
 - `findIn(string $key, array $values, array $columns = null, array $options = null, bool $asArray = false)`
