@@ -121,15 +121,18 @@ class Mysql extends AbstractAdapter
      */
     public function beginTransaction(?int $flags = null, ?string $name = null): Mysql
     {
-        if (($flags !== null) && ($name !== null)) {
-            $this->connection->begin_transaction($flags, $name);
-        } else if ($flags !== null) {
-            $this->connection->begin_transaction($flags);
-        } else {
-            $this->connection->begin_transaction();
-        }
+        if ($this->transactionDepth == 0) {
+            if (($flags !== null) && ($name !== null)) {
+                $this->connection->begin_transaction($flags, $name);
+            } else if ($flags !== null) {
+                $this->connection->begin_transaction($flags);
+            } else {
+                $this->connection->begin_transaction();
+            }
 
-        $this->isTransaction = true;
+            $this->isTransaction = true;
+            $this->transactionDepth++;
+        }
 
         return $this;
     }
@@ -143,15 +146,19 @@ class Mysql extends AbstractAdapter
      */
     public function commit(?int $flags = null, ?string $name = null): Mysql
     {
-        if (($flags !== null) && ($name !== null)) {
-            $this->connection->commit($flags, $name);
-        } else if ($flags !== null) {
-            $this->connection->commit($flags);
-        } else {
-            $this->connection->commit();
-        }
+        $this->transactionDepth--;
 
-        $this->isTransaction = false;
+        if ($this->transactionDepth == 0) {
+            if (($flags !== null) && ($name !== null)) {
+                $this->connection->commit($flags, $name);
+            } else if ($flags !== null) {
+                $this->connection->commit($flags);
+            } else {
+                $this->connection->commit();
+            }
+
+            $this->isTransaction = false;
+        }
 
         return $this;
     }
@@ -165,15 +172,19 @@ class Mysql extends AbstractAdapter
      */
     public function rollback(?int $flags = null, ?string $name = null): Mysql
     {
-        if (($flags !== null) && ($name !== null)) {
-            $this->connection->rollback($flags, $name);
-        } else if ($flags !== null) {
-            $this->connection->rollback($flags);
-        } else {
-            $this->connection->rollback();
-        }
+        $this->transactionDepth--;
 
-        $this->isTransaction = false;
+        if ($this->transactionDepth == 0) {
+            if (($flags !== null) && ($name !== null)) {
+                $this->connection->rollback($flags, $name);
+            } else if ($flags !== null) {
+                $this->connection->rollback($flags);
+            } else {
+                $this->connection->rollback();
+            }
+
+            $this->isTransaction = false;
+        }
 
         return $this;
     }

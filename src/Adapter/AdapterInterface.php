@@ -85,6 +85,23 @@ interface AdapterInterface
     public function isTransaction(): bool;
 
     /**
+     * Get transaction depth
+     *
+     * @return int
+     */
+    public function getTransactionDepth(): int;
+
+    /**
+     * Execute complete transaction with the DB adapter
+     *
+     * @param  mixed $callable
+     * @param  mixed $params
+     * @throws \Exception
+     * @return void
+     */
+    public function transaction(mixed $callable, mixed $params = null): void;
+
+    /**
      * Check is transaction is success
      *
      * @return bool

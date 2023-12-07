@@ -78,6 +78,12 @@ abstract class AbstractAdapter implements AdapterInterface
     protected bool $isTransaction = false;
 
     /**
+     * Transaction depth
+     * @var int
+     */
+    protected int $transactionDepth = 0;
+
+    /**
      * Constructor
      *
      * Instantiate the database adapter object
@@ -148,6 +154,43 @@ abstract class AbstractAdapter implements AdapterInterface
     public function isTransaction(): bool
     {
         return $this->isTransaction;
+    }
+
+    /**
+     * Get transaction depth
+     *
+     * @return int
+     */
+    public function getTransactionDepth(): int
+    {
+        return $this->transactionDepth;
+    }
+
+    /**
+     * Execute complete transaction with the DB adapter
+     *
+     * @param  mixed $callable
+     * @param  mixed $params
+     * @throws \Exception
+     * @return void
+     */
+    public function transaction(mixed $callable, mixed $params = null): void
+    {
+        if (!($callable instanceof CallableObject)) {
+            $callable = new CallableObject($callable, $params);
+        }
+
+        try {
+            $this->beginTransaction();
+            $callable->call();
+            $this->commit();
+        } catch (\Exception $e) {
+            if ($this->transactionDepth == 0) {
+                $this->rollback();
+            } else {
+                throw $e;
+            }
+        }
     }
 
     /**
