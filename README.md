@@ -1064,10 +1064,9 @@ try {
         $role->save();
     });
 } catch (\Exception $e) {
-    echo $e->getMessage() . PHP_EOL . PHP_EOL;
+    echo $e->getMessage();
 }
 ```
-
 
 Nested transactions are supported as well:
 
@@ -1089,7 +1088,7 @@ try {
         });
     });
 } catch (\Exception $e) {
-    echo $e->getMessage() . PHP_EOL . PHP_EOL;
+    echo $e->getMessage();
 }
 ```
 
@@ -1377,7 +1376,7 @@ try {
         );
     });
 } catch (\Exception $e) {
-    echo $e->getMessage() . PHP_EOL . PHP_EOL;
+    echo $e->getMessage();
 }
 ```
 
@@ -1396,7 +1395,7 @@ try {
         });
     });
 } catch (\Exception $e) {
-    echo $e->getMessage() . PHP_EOL . PHP_EOL;
+    echo $e->getMessage();
 }
 ```
 
