@@ -30,12 +30,6 @@ class Record extends Record\AbstractRecord
 {
 
     /**
-     * Transaction depth
-     * @var int
-     */
-    protected static int $depth = 0;
-
-    /**
      * Constructor
      *
      * Instantiate the database record object
@@ -197,20 +191,16 @@ class Record extends Record\AbstractRecord
         $args  = func_get_args();
         $class = get_called_class();
         if (Db::hasDb($class)) {
-            if (self::$depth == 0) {
+            if (Db::db($class)->getTransactionDepth() == 0) {
                 Db::db($class)->beginTransaction();
             }
         }
 
         if ($class !== 'Pop\Db\Record') {
             $record = (!empty($args)) ? (new \ReflectionClass($class))->newInstanceArgs($args) : new static();
-            if (self::$depth == 0) {
-                $record->startTransaction();
-            }
-            self::$depth++;
+            $record->startTransaction();
             return $record;
         } else {
-            self::$depth++;
             return null;
         }
     }
@@ -225,10 +215,7 @@ class Record extends Record\AbstractRecord
     {
         $class = get_called_class();
         if (Db::hasDb($class)) {
-            self::$depth--;
-            if (self::$depth == 0) {
-                Db::db($class)->commit();
-            }
+            Db::db($class)->commit();
         }
     }
 
@@ -236,6 +223,7 @@ class Record extends Record\AbstractRecord
      * Rollback transaction with the DB adapter
      *
      * @param  \Exception|null $exception
+     * @throws Exception
      * @return \Exception|null
      */
     public static function rollback(\Exception $exception = null): \Exception|null
@@ -243,8 +231,7 @@ class Record extends Record\AbstractRecord
         $class = get_called_class();
 
         if (Db::hasDb($class)) {
-            self::$depth--;
-            if (self::$depth == 0) {
+            if (Db::db($class)->getTransactionDepth() == 1) {
                 Db::db($class)->rollback();
             } else {
                 if ($exception == null) {

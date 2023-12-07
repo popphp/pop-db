@@ -182,8 +182,11 @@ class Pdo extends AbstractAdapter
      */
     public function beginTransaction(): Pdo
     {
-        $this->connection->beginTransaction();
-        $this->isTransaction = true;
+        if ($this->transactionDepth == 0) {
+            $this->connection->beginTransaction();
+            $this->isTransaction = true;
+            $this->transactionDepth++;
+        }
         return $this;
     }
 
@@ -194,8 +197,30 @@ class Pdo extends AbstractAdapter
      */
     public function commit(): Pdo
     {
-        $this->connection->commit();
-        $this->isTransaction = false;
+        $this->transactionDepth--;
+
+        if ($this->transactionDepth == 0) {
+            $this->connection->commit();
+            $this->isTransaction = false;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Rollback a transaction
+     *
+     * @return Pdo
+     */
+    public function rollback(): Pdo
+    {
+        $this->transactionDepth--;
+
+        if ($this->transactionDepth == 0) {
+            $this->connection->rollBack();
+            $this->isTransaction = false;
+        }
+
         return $this;
     }
 
@@ -207,18 +232,6 @@ class Pdo extends AbstractAdapter
     public function inTransaction(): bool
     {
         return $this->connection->inTransaction();
-    }
-
-    /**
-     * Rollback a transaction
-     *
-     * @return Pdo
-     */
-    public function rollback(): Pdo
-    {
-        $this->connection->rollBack();
-        $this->isTransaction = false;
-        return $this;
     }
 
     /**

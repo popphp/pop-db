@@ -153,8 +153,12 @@ class Pgsql extends AbstractAdapter
      */
     public function beginTransaction(): Pgsql
     {
-        $this->query('BEGIN TRANSACTION');
-        $this->isTransaction = true;
+        if ($this->transactionDepth == 0) {
+            $this->query('BEGIN TRANSACTION');
+            $this->isTransaction = true;
+            $this->transactionDepth++;
+        }
+
         return $this;
     }
 
@@ -165,8 +169,13 @@ class Pgsql extends AbstractAdapter
      */
     public function commit(): Pgsql
     {
-        $this->query('COMMIT');
-        $this->isTransaction = false;
+        $this->transactionDepth--;
+
+        if ($this->transactionDepth == 0) {
+            $this->query('COMMIT');
+            $this->isTransaction = false;
+        }
+
         return $this;
     }
 
@@ -177,8 +186,13 @@ class Pgsql extends AbstractAdapter
      */
     public function rollback(): Pgsql
     {
-        $this->query('ROLLBACK');
-        $this->isTransaction = false;
+        $this->transactionDepth--;
+
+        if ($this->transactionDepth == 0) {
+            $this->query('ROLLBACK');
+            $this->isTransaction = false;
+        }
+
         return $this;
     }
 
