@@ -576,14 +576,14 @@ $user = Users::findLatest('last_login');
 
 These are available static methods to find a record or records in the database table:
 
-- `findById(mixed $id, ?array $options = null, bool $asArray = false)`
-- `findOne(?array $columns = null, ?array $options = null, bool $asArray = false)`
-- `findOneOrCreate(?array $columns = null, ?array $options = null, bool $asArray = false)`
-- `findLatest(?string $by = null, ?array $columns = null, ?array $options = null, bool $asArray = false)`
-- `findBy(?array $columns = null, ?array $options = null, bool $asArray = false)`
-- `findByOrCreate(?array $columns = null, ?array $options = null, bool $asArray = false)`
-- `findIn(string $key, array $values, ?array $columns = null, ?array $options = null, bool $asArray = false)`
-- `findAll(?array $options = null, bool $asArray = false)`
+- `findById($id, array $options = null, bool $asArray = false)`
+- `findOne(array $columns = null, array $options = null, bool $asArray = false)`
+- `findOneOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
+- `findLatest(?string $by = null, array $columns = null, array $options = null, bool $asArray = false)`
+- `findBy(array $columns = null, array $options = null, bool $asArray = false)`
+- `findByOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
+- `findIn(string $key, array $values, array $columns = null, array $options = null, bool $asArray = false)`
+- `findAll(array $options = null, bool $asArray = false)`
 
 These are available static magic helper methods to find a record or records in the database table,
 based on certain conditions:
