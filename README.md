@@ -1368,7 +1368,9 @@ You can also call a set of queries in one transaction like this:
 ```php
 try {
     $db->transaction(function() use ($db) {
-        $db->query("INSERT INTO `users` (`username`, `email`) VALUES ('testuser', 'test@test.com')");
+        $db->query(
+            "INSERT INTO `users` (`username`, `email`) VALUES ('testuser', 'test@test.com')"
+        );
     });
 } catch (\Exception $e) {
     echo $e->getMessage() . PHP_EOL . PHP_EOL;
@@ -1380,9 +1382,13 @@ Nested transactions are supported as well:
 ```php
 try {
     $db->transaction(function() use ($db) {
-        $db->query("INSERT INTO `users` (`username`, `email`) VALUES ('testuser1', 'test1@test.com')");
+        $db->query(
+            "INSERT INTO `users` (`username`, `email`) VALUES ('testuser1', 'test1@test.com')"
+        );
         $db->transaction(function() use ($db) {
-            $db->query("INSERT INTO `users` (`username`, `email`) VALUES ('testuser2', 'test2@test.com')");
+            $db->query(
+                "INSERT INTO `users` (`username`, `email`) VALUES ('testuser2', 'test2@test.com')"
+            );
         });
     });
 } catch (\Exception $e) {
