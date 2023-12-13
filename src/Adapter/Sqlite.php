@@ -137,8 +137,9 @@ class Sqlite extends AbstractAdapter
         if ($this->transactionDepth == 0) {
             $this->query('BEGIN TRANSACTION');
             $this->isTransaction = true;
-            $this->transactionDepth++;
         }
+
+        $this->transactionDepth++;
 
         return $this;
     }
@@ -167,12 +168,9 @@ class Sqlite extends AbstractAdapter
      */
     public function rollback(): Sqlite
     {
-        $this->transactionDepth--;
-
-        if ($this->transactionDepth == 0) {
-            $this->query('ROLLBACK');
-            $this->isTransaction = false;
-        }
+        $this->transactionDepth = 0;
+        $this->query('ROLLBACK');
+        $this->isTransaction = false;
 
         return $this;
     }

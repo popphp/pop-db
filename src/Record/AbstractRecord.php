@@ -164,7 +164,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     public function startTransaction(): AbstractRecord
     {
         $class = get_called_class();
-        if ((Db::hasDb($class)) && (!Db::db($class)->isTransaction())) {
+        if (Db::hasDb($class)) {
             Db::db($class)->beginTransaction();
         }
         $this->isTransaction = true;

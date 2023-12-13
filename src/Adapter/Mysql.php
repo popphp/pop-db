@@ -131,8 +131,9 @@ class Mysql extends AbstractAdapter
             }
 
             $this->isTransaction = true;
-            $this->transactionDepth++;
         }
+
+        $this->transactionDepth++;
 
         return $this;
     }
@@ -172,19 +173,17 @@ class Mysql extends AbstractAdapter
      */
     public function rollback(?int $flags = null, ?string $name = null): Mysql
     {
-        $this->transactionDepth--;
+        $this->transactionDepth = 0;
 
-        if ($this->transactionDepth == 0) {
-            if (($flags !== null) && ($name !== null)) {
-                $this->connection->rollback($flags, $name);
-            } else if ($flags !== null) {
-                $this->connection->rollback($flags);
-            } else {
-                $this->connection->rollback();
-            }
-
-            $this->isTransaction = false;
+        if (($flags !== null) && ($name !== null)) {
+            $this->connection->rollback($flags, $name);
+        } else if ($flags !== null) {
+            $this->connection->rollback($flags);
+        } else {
+            $this->connection->rollback();
         }
+
+        $this->isTransaction = false;
 
         return $this;
     }
