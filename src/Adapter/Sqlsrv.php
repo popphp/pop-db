@@ -140,8 +140,9 @@ class Sqlsrv extends AbstractAdapter
         if ($this->transactionDepth == 0) {
             sqlsrv_begin_transaction($this->connection);
             $this->isTransaction = true;
-            $this->transactionDepth++;
         }
+
+        $this->transactionDepth++;
 
         return $this;
     }
@@ -170,12 +171,9 @@ class Sqlsrv extends AbstractAdapter
      */
     public function rollback(): Sqlsrv
     {
-        $this->transactionDepth--;
-
-        if ($this->transactionDepth == 0) {
-            sqlsrv_rollback($this->connection);
-            $this->isTransaction = false;
-        }
+        $this->transactionDepth = 0;
+        sqlsrv_rollback($this->connection);
+        $this->isTransaction = false;
 
         return $this;
     }

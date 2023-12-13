@@ -185,8 +185,10 @@ class Pdo extends AbstractAdapter
         if ($this->transactionDepth == 0) {
             $this->connection->beginTransaction();
             $this->isTransaction = true;
-            $this->transactionDepth++;
         }
+
+        $this->transactionDepth++;
+
         return $this;
     }
 
@@ -214,12 +216,9 @@ class Pdo extends AbstractAdapter
      */
     public function rollback(): Pdo
     {
-        $this->transactionDepth--;
-
-        if ($this->transactionDepth == 0) {
-            $this->connection->rollBack();
-            $this->isTransaction = false;
-        }
+        $this->transactionDepth = 0;
+        $this->connection->rollBack();
+        $this->isTransaction = false;
 
         return $this;
     }
