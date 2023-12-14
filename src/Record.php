@@ -204,15 +204,15 @@ class Record extends Record\AbstractRecord
     {
         $args  = func_get_args();
         $class = get_called_class();
-        if (Db::hasDb($class)) {
-            Db::db($class)->beginTransaction();
-        }
 
         if ($class !== 'Pop\Db\Record') {
             $record = (!empty($args)) ? (new \ReflectionClass($class))->newInstanceArgs($args) : new static();
             $record->startTransaction();
             return $record;
         } else {
+            if (Db::hasDb($class)) {
+                Db::db($class)->beginTransaction();
+            }
             return null;
         }
     }
