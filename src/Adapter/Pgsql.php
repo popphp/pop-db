@@ -197,7 +197,7 @@ class Pgsql extends AbstractAdapter
      */
     public function isSuccess(): bool
     {
-        return (($this->result !== null) && ($this->result !== false));
+        return ((($this->result !== null) && ($this->result !== false)) && (!$this->hasError()));
     }
 
     /**
