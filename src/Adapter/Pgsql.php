@@ -386,6 +386,7 @@ class Pgsql extends AbstractAdapter
     /**
      * Return the number of rows from the last query
      *
+     * @throws Exception
      * @return int
      */
     public function getNumberOfRows(): int
@@ -395,6 +396,16 @@ class Pgsql extends AbstractAdapter
         }
 
         return pg_num_rows($this->result);
+    }
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfAffectedRows(): int
+    {
+        return pg_affected_rows($this->result);
     }
 
     /**

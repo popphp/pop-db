@@ -436,17 +436,43 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Return the number of rows from the last query
      *
+     * @throws Exception
      * @return int
      */
     public function getNumberOfRows(): int
     {
+        $count = 0;
+
         if ($this->statement !== null) {
-            return sqlsrv_num_rows($this->statement);
+            $count = sqlsrv_num_rows($this->statement);
         } else if ($this->result !== null) {
-            return sqlsrv_num_rows($this->result);
+            $count = sqlsrv_num_rows($this->result);
         } else {
             $this->throwError('Error: The database result resource is not currently set.');
         }
+
+        return $count;
+    }
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @throws Exception
+     * @return int
+     */
+    public function getNumberOfAffectedRows(): int
+    {
+        $count = 0;
+
+        if ($this->statement !== null) {
+            $count = (int)sqlsrv_rows_affected($this->statement);
+        } else if ($this->result !== null) {
+            $count = (int)sqlsrv_rows_affected($this->result);
+        } else {
+            $this->throwError('Error: The database result resource is not currently set.');
+        }
+
+        return $count;
     }
 
     /**
