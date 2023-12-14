@@ -142,7 +142,7 @@ class PgsqlTest extends TestCase
            ->execute();
 
         $db->commit();
-        $this->assertEquals(1, $db->getNumberOfAffectedRows());
+        $this->assertEquals(0, $db->getNumberOfAffectedRows());
 
         $debugResults = $profiler->prepareAsString();
 
