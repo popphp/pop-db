@@ -1046,8 +1046,8 @@ $users = Users::execute($sql, ['last_login' => '2023-11-01 08:00:00']);
 Transactions are available through the ORM active record class. There are a few ways to
 execute a transaction with the main record class. In the below example, the transaction
 is started by calling the `startTransaction()` method. Once that has been called, the
-subsequent `commitTransaction()` will be called within the `save()` method. Or, the
-`rollback` method will be called upon an exception being thrown.
+subsequent `save()` will automatically call `commitTransaction()` on successful save or
+the `rollback` method will be called upon an exception being thrown.
 
 ```php
 $user = new Users([
@@ -1059,7 +1059,8 @@ $user->startTransaction();
 $user->save();
 ```
 
-A shorthand way of doing the same would be to call the static `start()` method:
+A shorthand way of doing the same would be to call the static `start()` method, which combines the
+constructor and `startTransaction` calls:
 
 ```php
 $user = Users::start([
