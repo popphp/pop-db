@@ -234,7 +234,7 @@ class Pdo extends AbstractAdapter
     }
 
     /**
-     * Check is transaction is success
+     * Check if transaction is success
      *
      * @return bool
      */
