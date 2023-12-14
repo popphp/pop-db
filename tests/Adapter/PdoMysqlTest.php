@@ -182,6 +182,7 @@ class PdoMysqlTest extends TestCase
         $this->assertEquals(1, count($rows));
         $this->assertEquals(1, $db->getNumberOfRows());
         $this->assertNull($db->getError());
+        $this->assertTrue($db->isSuccess());
 
         $db->disconnect();
     }
@@ -201,6 +202,7 @@ class PdoMysqlTest extends TestCase
            ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
            ->execute();
         $db->commit();
+        $this->assertEquals(1, $db->getNumberOfAffectedRows());
 
         $db->prepare('SELECT * FROM users WHERE id != ?')
             ->bindParams([0])
