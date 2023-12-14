@@ -169,7 +169,7 @@ class Pgsql extends AbstractAdapter
      */
     public function commit(): Pgsql
     {
-        $this->transactionDepth = 0;
+        $this->transactionDepth--;
         $this->query('COMMIT');
         $this->isTransaction = false;
 
