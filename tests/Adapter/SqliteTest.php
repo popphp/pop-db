@@ -175,6 +175,7 @@ class SqliteTest extends TestCase
             ])->execute();
 
         $db->commit();
+        $this->assertEquals(1, $db->getNumberOfAffectedRows());
 
         $db->query('SELECT * FROM users');
 

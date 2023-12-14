@@ -211,11 +211,124 @@ class MysqlTest extends TestCase
         $this->assertInstanceOf('mysqli_stmt', $db->getStatement());
         $this->assertEquals(1, count($rows));
         $this->assertNull($db->getError());
+        $this->assertTrue($db->isSuccess());
 
         $db->disconnect();
     }
 
-    public function testTransaction()
+    public function testSelect()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $rows = $db->select('SELECT * FROM users WHERE id != ?', [0]);
+        $this->assertTrue($db->hasStatement());
+        $this->assertInstanceOf('mysqli_stmt', $db->getStatement());
+        $this->assertEquals(1, count($rows));
+        $this->assertNull($db->getError());
+
+        $db->disconnect();
+    }
+
+    public function testSelectException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $rows = $db->select('BAD QUERY');
+    }
+
+    public function testInsert()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $result = $db->insert("INSERT INTO users (`username`, `password`, `email`) VALUES ('testuser_update', '12test34', 'test@test.com')");
+        $this->assertEquals(1, $result);
+        $db->disconnect();
+    }
+
+    public function testInsertException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $rows = $db->insert('BAD QUERY');
+    }
+
+    public function testUpdate()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $result = $db->update("UPDATE users SET `password` = '56test78' WHERE `username` = 'testuser_update'");
+        $this->assertEquals(1, $result);
+        $db->disconnect();
+    }
+
+    public function testUpdateException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $rows = $db->update('BAD QUERY');
+    }
+
+    public function testDelete()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $result = $db->delete("DELETE FROM users  WHERE `username` = 'testuser_update'");
+        $this->assertEquals(1, $result);
+        $db->disconnect();
+    }
+
+    public function testDeleteException()
+    {
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $rows = $db->delete('BAD QUERY');
+    }
+
+    public function testTransaction1()
     {
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
@@ -238,6 +351,47 @@ class MysqlTest extends TestCase
         $db->disconnect();
     }
 
+    public function testTransaction2()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $db->transaction(function() use ($db) {
+            $db->prepare('INSERT INTO users (`username`, `password`, `email`) VALUES (?, ?, ?)')
+                ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
+                ->execute();
+        });
+
+        $db->prepare('SELECT * FROM users WHERE id != ?')
+            ->bindParams([0])
+            ->execute();
+
+        $this->assertEquals(3, $db->getNumberOfRows());
+        $db->disconnect();
+    }
+
+    public function testTransaction3Exception()
+    {
+        $this->expectException('Exception');
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $db->transaction(function() use ($db) {
+            $db->prepare('INSERT INTO users (`username`, `password`, `email`) VALUES (?, ?, ?)')
+                ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
+                ->execute();
+            throw new \Exception('Error: Test error');
+        });
+    }
+
     public function testRollback()
     {
         $db = new Mysql([
@@ -257,7 +411,7 @@ class MysqlTest extends TestCase
             ->bindParams([0])
             ->execute();
 
-        $this->assertEquals(2, $db->getNumberOfRows());
+        $this->assertEquals(3, $db->getNumberOfRows());
         $db->disconnect();
     }
 
@@ -271,6 +425,7 @@ class MysqlTest extends TestCase
         ]);
 
         $db->beginTransaction(MYSQLI_TRANS_START_READ_WRITE);
+        $this->assertTrue($db->isTransaction());
         $db->prepare('INSERT INTO users (`username`, `password`, `email`) VALUES (?, ?, ?)')
             ->bindParams(['testuser', '12test34', $db->escape('test@test.com')])
             ->execute();
@@ -280,7 +435,7 @@ class MysqlTest extends TestCase
             ->bindParams([0])
             ->execute();
 
-        $this->assertEquals(3, $db->getNumberOfRows());
+        $this->assertEquals(4, $db->getNumberOfRows());
         $db->disconnect();
     }
 
@@ -303,7 +458,7 @@ class MysqlTest extends TestCase
             ->bindParams([0])
             ->execute();
 
-        $this->assertEquals(3, $db->getNumberOfRows());
+        $this->assertEquals(4, $db->getNumberOfRows());
         $db->disconnect();
     }
 
@@ -326,7 +481,7 @@ class MysqlTest extends TestCase
             ->bindParams([0])
             ->execute();
 
-        $this->assertEquals(4, $db->getNumberOfRows());
+        $this->assertEquals(5, $db->getNumberOfRows());
         $db->disconnect();
     }
 
@@ -349,7 +504,7 @@ class MysqlTest extends TestCase
             ->bindParams([0])
             ->execute();
 
-        $this->assertEquals(4, $db->getNumberOfRows());
+        $this->assertEquals(5, $db->getNumberOfRows());
         $db->disconnect();
     }
 

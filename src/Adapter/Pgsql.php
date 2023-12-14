@@ -401,11 +401,22 @@ class Pgsql extends AbstractAdapter
     /**
      * Return the number of affected rows from the last query
      *
+     * @throws Exception
      * @return int
      */
     public function getNumberOfAffectedRows(): int
     {
-        return pg_affected_rows($this->result);
+        $count = 0;
+
+        if ($this->statement !== null) {
+            $count = pg_affected_rows($this->statement);
+        } else if ($this->result !== null) {
+            $count = pg_affected_rows($this->result);
+        } else {
+            $this->throwError('Error: The database result resource is not currently set.');
+        }
+
+        return $count;
     }
 
     /**
