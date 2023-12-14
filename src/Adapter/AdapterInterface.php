@@ -104,7 +104,7 @@ interface AdapterInterface
     public function transaction(mixed $callable, mixed $params = null): void;
 
     /**
-     * Check is transaction is success
+     * Check if transaction is success
      *
      * @return bool
      */
