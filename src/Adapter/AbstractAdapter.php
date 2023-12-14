@@ -185,11 +185,8 @@ abstract class AbstractAdapter implements AdapterInterface
             $callable->call();
             $this->commit();
         } catch (\Exception $e) {
-            if ($this->transactionDepth == 0) {
-                $this->rollback();
-            } else {
-                throw $e;
-            }
+            $this->rollback();
+            throw $e;
         }
     }
 
