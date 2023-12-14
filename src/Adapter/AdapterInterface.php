@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Adapter;
 
+use Pop\Db\Sql;
+
 /**
  * Db adapter interface
  *
@@ -107,6 +109,51 @@ interface AdapterInterface
      * @return bool
      */
     public function isSuccess(): bool;
+
+    /**
+     * Directly execute a SELECT SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @return array
+     */
+    public function select(string|Sql $sql, array $params = []): array;
+
+    /**
+     * Directly execute an INSERT SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @return int
+     */
+    public function insert(string|Sql $sql, array $params = []): int;
+
+    /**
+     * Directly execute an UPDATE SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @return int
+     */
+    public function update(string|Sql $sql, array $params = []): int;
+
+    /**
+     * Directly execute a DELETE SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @return int
+     */
+    public function delete(string|Sql $sql, array $params = []): int;
+
+    /**
+     * Execute a SQL query or prepared statement with params
+     *
+     * @param  string|Sql $sql
+     * @param  array $params
+     * @return AdapterInterface
+     */
+    public function executeSql(string|Sql $sql, array $params = []): AdapterInterface;
 
     /**
      * Execute a SQL query directly
@@ -304,6 +351,13 @@ interface AdapterInterface
      * @return int
      */
     public function getNumberOfRows(): int;
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfAffectedRows(): int;
 
     /**
      * Return the database version

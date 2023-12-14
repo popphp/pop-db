@@ -449,18 +449,33 @@ class Mysql extends AbstractAdapter
     /**
      * Return the number of rows from the last query
      *
+     * @throws Exception
      * @return int
      */
     public function getNumberOfRows(): int
     {
+        $count = 0;
+
         if ($this->statement !== null) {
             $this->statement->store_result();
-            return $this->statement->num_rows;
+            $count = $this->statement->num_rows;
         } else if ($this->result !== null) {
-            return $this->result->num_rows;
+            $count = $this->result->num_rows;
         } else {
             $this->throwError('Error: The database result resource is not currently set.');
         }
+
+        return $count;
+    }
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfAffectedRows(): int
+    {
+        return $this->connection->affected_rows;
     }
 
     /**

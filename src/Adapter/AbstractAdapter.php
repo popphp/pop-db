@@ -201,6 +201,102 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function isSuccess(): bool;
 
     /**
+     * Directly execute a SELECT SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @throws Exception
+     * @return array
+     */
+    public function select(string|Sql $sql, array $params = []): array
+    {
+        if ((is_string($sql) && !str_starts_with(strtolower(trim($sql)), 'select')) ||
+            (($sql instanceof Sql) && !($sql->hasSelect()))) {
+            throw new Exception('Error: The SQL statement is not a valid SELECT statement.');
+        }
+
+        $this->executeSql($sql, $params);
+        return $this->fetchAll();
+    }
+
+    /**
+     * Directly execute an INSERT SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @throws Exception
+     * @return int
+     */
+    public function insert(string|Sql $sql, array $params = []): int
+    {
+        if ((is_string($sql) && !str_starts_with(strtolower(trim($sql)), 'insert')) ||
+            (($sql instanceof Sql) && !($sql->hasInsert()))) {
+            throw new Exception('Error: The SQL statement is not a valid INSERT statement.');
+        }
+
+        $this->executeSql($sql, $params);
+        return $this->getNumberOfAffectedRows();
+    }
+
+    /**
+     * Directly execute an UPDATE SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @throws Exception
+     * @return int
+     */
+    public function update(string|Sql $sql, array $params = []): int
+    {
+        if ((is_string($sql) && !str_starts_with(strtolower(trim($sql)), 'update')) ||
+            (($sql instanceof Sql) && !($sql->hasUpdate()))) {
+            throw new Exception('Error: The SQL statement is not a valid UPDATE statement.');
+        }
+
+        $this->executeSql($sql, $params);
+        return $this->getNumberOfAffectedRows();
+    }
+
+    /**
+     * Directly execute a DELETE SQL query or prepared statement and return the results
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @throws Exception
+     * @return int
+     */
+    public function delete(string|Sql $sql, array $params = []): int
+    {
+        if ((is_string($sql) && !str_starts_with(strtolower(trim($sql)), 'delete')) ||
+            (($sql instanceof Sql) && !($sql->hasDelete()))) {
+            throw new Exception('Error: The SQL statement is not a valid DELETE statement.');
+        }
+
+        $this->executeSql($sql, $params);
+        return $this->getNumberOfAffectedRows();
+    }
+
+    /**
+     * Execute a SQL query or prepared statement with params
+     *
+     * @param  string|Sql $sql
+     * @param  array      $params
+     * @return AbstractAdapter
+     */
+    public function executeSql(string|Sql $sql, array $params = []): AbstractAdapter
+    {
+        if (!empty($params)) {
+            $this->prepare($sql)
+                ->bindParams($params)
+                ->execute();
+        } else {
+            $this->query($sql);
+        }
+
+        return $this;
+    }
+
+    /**
      * Execute a SQL query directly
      *
      * @param  mixed $sql
@@ -511,6 +607,13 @@ abstract class AbstractAdapter implements AdapterInterface
      * @return int
      */
     abstract public function getNumberOfRows(): int;
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @return int
+     */
+    abstract public function getNumberOfAffectedRows(): int;
 
     /**
      * Return the database version

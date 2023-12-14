@@ -542,6 +542,7 @@ class Pdo extends AbstractAdapter
     /**
      * Return the number of rows from the last query
      *
+     * @throws Exception
      * @return int
      */
     public function getNumberOfRows(): int
@@ -555,7 +556,19 @@ class Pdo extends AbstractAdapter
         } else {
             $this->throwError('Error: The database statement resource is not currently set.');
         }
+
         return $count;
+    }
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @throws Exception
+     * @return int
+     */
+    public function getNumberOfAffectedRows(): int
+    {
+        return $this->getNumberOfRows();
     }
 
     /**

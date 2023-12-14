@@ -423,25 +423,38 @@ class Sqlite extends AbstractAdapter
     /**
      * Return the number of rows from the last query
      *
+     * @throws Exception
      * @return int
      */
     public function getNumberOfRows(): int
     {
+        $count = 0;
+
         if ($this->lastSql === null) {
-            return $this->connection->changes();
+            $count = $this->connection->changes();
         } else {
             if (!($this->lastResult = $this->connection->query($this->lastSql))) {
                 $this->throwError(
                     'Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
                 );
             } else {
-                $num = 0;
                 while (($row = $this->lastResult->fetcharray(SQLITE3_ASSOC)) != false) {
-                    $num++;
+                    $count++;
                 }
-                return $num;
             }
         }
+
+        return $count;
+    }
+
+    /**
+     * Return the number of affected rows from the last query
+     *
+     * @return int
+     */
+    public function getNumberOfAffectedRows(): int
+    {
+        return $this->connection->changes();
     }
 
     /**
