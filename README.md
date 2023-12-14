@@ -135,7 +135,15 @@ If no `host` value is given, it will default to `localhost`.
 ### Query a database
 
 Once you have a database object that represents a database connection, you can
-use it to query the database:
+use it to query the database. There is an API to support making a query and
+returning the result:
+
+- `$db->select($sql, array $params = [])`
+- `$db->insert($sql, array $params = [])`
+- `$db->update($sql, array $params = [])`
+- `$db->delete($sql, array $params = [])`
+
+The above methods supports SQL queries as well as prepared statements with parameters.
 
 ```php
 use Pop\Db\Db;
@@ -146,8 +154,7 @@ $db = Db::mysqlConnect([
     'password' => 'DB_PASS'
 ]);
 
-$db->query('SELECT * FROM `users`');
-$users = $db->fetchAll();
+$suers = $db->select('SELECT * FROM `users`');
 print_r($users);
 ```
 
@@ -165,6 +172,39 @@ Array
         )
 
 )
+```
+
+**An INSERT Example**
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$db->insert(
+    'INSERT INTO `users` (`username`, `password`, `email`) VALUES (?, ?, ?)',
+    ['testuser1', 'password1', 'testuser1@test.com']
+);
+```
+
+The more verbose way to make a query would be:
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$db->query('SELECT * FROM `users`');
+$users = $db->fetchAll();
+print_r($users);
 ```
 
 [Top](#pop-db)
@@ -302,6 +342,15 @@ created, they all share a common interface to interact with the database.
 - `beginTransaction()`
 - `commit()`
 - `rollback()`
+- `isTransaction()`
+- `getTransactionDepth()`
+- `transaction($callable, array $params = [])`
+- `isSuccess()`
+- `select(string|Sql $sql, array $params = [])`
+- `insert(string|Sql $sql, array $params = [])`
+- `update(string|Sql $sql, array $params = [])`
+- `delete(string|Sql $sql, array $params = [])`
+- `executeSql(string|Sql $sql, array $params = [])`
 - `query(mixed $sql)`
 - `prepare(mixed $sql)`
 - `bindParams(array $params)`
@@ -312,6 +361,7 @@ created, they all share a common interface to interact with the database.
 - `escape(?string $value = null)`
 - `getLastId()`
 - `getNumberOfRows()`
+- `getNumberOfAffectedRows()`
 - `getVersion()`
 - `getTables()`
 
@@ -1281,7 +1331,48 @@ their `comments` attached as well.
 Querying
 --------
 
-Instead of using the ORM-based components, you can directly query the database from the database adapter:
+Instead of using the ORM-based components, you can directly query the database from the database adapter.
+The API helps make specific queries or execute prepared statements, while returning the results:
+
+- `$db->select(string|Sql $sql, array $params = []): array`
+- `$db->insert(string|Sql $sql, array $params = []): int`
+- `$db->update(string|Sql $sql, array $params = []): int`
+- `$db->delete(string|Sql $sql, array $params = []): int`
+
+In the case of `select()`, it will return an array of any found results. In the case of the others, it will
+return the number of affected rows.
+
+**Using a query**
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$users = $db->select('SELECT * FROM `users`');
+print_r($users);
+```
+
+**Using a prepared statements with parameters**
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+$users = $db->select('SELECT * FROM `users` WHERE `id` < ?', [10]);
+print_r($users);
+```
+
+The more verbose way to query the database would be:
 
 ```php
 use Pop\Db\Db;

@@ -240,7 +240,7 @@ class Pdo extends AbstractAdapter
      */
     public function isSuccess(): bool
     {
-        return ($this->result) || ($this->statementResult);
+        return ((($this->result) || ($this->statementResult)) && (!$this->hasError()));
     }
 
     /**
