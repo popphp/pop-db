@@ -182,12 +182,10 @@ class Pdo extends AbstractAdapter
      */
     public function beginTransaction(): Pdo
     {
-        if ($this->transactionDepth == 0) {
-            $this->connection->beginTransaction();
-            $this->isTransaction = true;
-        }
-
-        $this->transactionDepth++;
+        $this->getTransactionManager()->enter(
+            beginFunc: function () { $this->connection->beginTransaction(); },
+            savepointFunc: function (string $sp) { $this->query('SAVEPOINT ' . $sp); },
+        );
 
         return $this;
     }
@@ -199,13 +197,11 @@ class Pdo extends AbstractAdapter
      */
     public function commit(): Pdo
     {
-        $this->transactionDepth--;
-
-        if ($this->transactionDepth == 0) {
-            $this->connection->commit();
-            $this->isTransaction = false;
-        }
-
+        $this->getTransactionManager()->leave(true,
+            commitFunc: function () { $this->connection->commit(); },
+            rollbackFunc: function () { $this->connection->rollBack(); },
+            savepointReleaseFunc: function (string $sp) { $this->query('RELEASE SAVEPOINT ' . $sp); },
+        );
         return $this;
     }
 
@@ -216,9 +212,10 @@ class Pdo extends AbstractAdapter
      */
     public function rollback(): Pdo
     {
-        $this->transactionDepth = 0;
-        $this->connection->rollBack();
-        $this->isTransaction = false;
+        $this->getTransactionManager()->leave(false,
+            rollbackFunc: function () { $this->connection->rollBack(); },
+            savepointRollbackFunc: function (string $sp) { $this->query('ROLLBACK TO SAVEPOINT ' . $sp); },
+        );
 
         return $this;
     }
