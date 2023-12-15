@@ -72,16 +72,10 @@ abstract class AbstractAdapter implements AdapterInterface
     protected ?Profiler\Profiler $profiler = null;
 
     /**
-     * Is open transaction flag
-     * @var bool
+     * Transaction manager
+     * @var TransactionManager|null
      */
-    protected bool $isTransaction = false;
-
-    /**
-     * Transaction depth
-     * @var int
-     */
-    protected int $transactionDepth = 0;
+    protected ?TransactionManager $transactionManager = null;
 
     /**
      * Constructor
@@ -147,13 +141,23 @@ abstract class AbstractAdapter implements AdapterInterface
     abstract public function rollback(): AbstractAdapter;
 
     /**
+     * Return the transaction manager object, initialize on first use
+     *
+     * @return TransactionManager
+     */
+    protected function getTransactionManager(): TransactionManager
+    {
+        return ($this->transactionManager ??= new TransactionManager());
+    }
+
+    /**
      * Check if adapter is in the middle of an open transaction
      *
      * @return bool
      */
     public function isTransaction(): bool
     {
-        return $this->isTransaction;
+        return !is_null($this->transactionManager) && $this->transactionManager->isTransaction();
     }
 
     /**
@@ -163,7 +167,7 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     public function getTransactionDepth(): int
     {
-        return $this->transactionDepth;
+        return is_null($this->transactionManager) ? 0 : $this->transactionManager->getTransactionDepth();
     }
 
     /**
