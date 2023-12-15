@@ -234,8 +234,7 @@ class Sqlite extends AbstractAdapter
         }
 
         $this->statement = $this->connection->prepare($sql);
-
-        if ($this->statement === false) {
+        if (($this->statement === false) && ($this->connection->lastErrorCode() != 0)) {
             if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
@@ -338,7 +337,7 @@ class Sqlite extends AbstractAdapter
 
         $this->result = $this->statement->execute();
 
-        if ($this->result === false) {
+        if (($this->result === false) && ($this->connection->lastErrorCode() != 0)) {
             if ($this->profiler !== null) {
                 $this->profiler->current->addError($this->connection->lastErrorMsg(), $this->connection->lastErrorCode());
             }
@@ -433,7 +432,7 @@ class Sqlite extends AbstractAdapter
         if ($this->lastSql === null) {
             $count = $this->connection->changes();
         } else {
-            if (!($this->lastResult = $this->connection->query($this->lastSql))) {
+            if ((!($this->lastResult = $this->connection->query($this->lastSql)) && ($this->connection->lastErrorCode() != 0))) {
                 $this->throwError(
                     'Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
                 );
