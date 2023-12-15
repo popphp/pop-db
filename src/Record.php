@@ -72,6 +72,8 @@ class Record extends Record\AbstractRecord
 
         if ($table !== null) {
             $this->setTable($table);
+        } else if ($this->table !== null) {
+            $this->setTable($this->table);
         } else {
             $this->setTableFromClassName($class);
         }
