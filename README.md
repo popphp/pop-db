@@ -154,7 +154,7 @@ $db = Db::mysqlConnect([
     'password' => 'DB_PASS'
 ]);
 
-$suers = $db->select('SELECT * FROM `users`');
+$users = $db->select('SELECT * FROM `users`');
 print_r($users);
 ```
 
