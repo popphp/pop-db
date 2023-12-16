@@ -104,8 +104,7 @@ class Schema extends AbstractSql
      */
     public function dropIfExists(string $table): Schema\Drop
     {
-        $this->getDropTable($table)->ifExists();
-        return $this->getDropTable($table);
+        return $this->getDropTable($table)->ifExists();
     }
 
     /**
