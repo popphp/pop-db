@@ -197,18 +197,19 @@ class Record extends Record\AbstractRecord
     }
 
     /**
-     * Start transaction with the DB adapter
+     * Start transaction with the DB adapter. When called on a descendent class, construct
+     * a new object and use it for transaction management.
      *
-     * @throws \ReflectionException|Exception
+     * @param mixed ...$constructorArgs Arguments passed to descendent class constructor
      * @return static|null
+     * @throws Exception|Record\Exception
      */
-    public static function start(): static|null
+    public static function start(mixed ...$constructorArgs): static|null
     {
-        $args  = func_get_args();
         $class = get_called_class();
 
-        if ($class !== 'Pop\Db\Record') {
-            $record = (!empty($args)) ? (new \ReflectionClass($class))->newInstanceArgs($args) : new static();
+        if ($class !== Record::class) {
+            $record = new static(...$constructorArgs);
             $record->startTransaction();
             return $record;
         } else {

@@ -299,12 +299,12 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create an index
      *
-     * @param  string  $column
+     * @param  string|array $column
      * @param  ?string $name
-     * @param  string  $type
+     * @param  string $type
      * @return AbstractStructure
      */
-    public function index(string $column, ?string $name = null, string $type = 'index'): AbstractStructure
+    public function index(string|array $column, ?string $name = null, string $type = 'index'): AbstractStructure
     {
         if (!is_array($column)) {
             $column = [$column];
@@ -333,11 +333,11 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create a UNIQUE index
      *
-     * @param  ?string $column
+     * @param  string|array|null $column
      * @param  ?string $name
      * @return AbstractStructure
      */
-    public function unique(?string $column = null, ?string $name = null): AbstractStructure
+    public function unique(string|array|null $column = null, ?string $name = null): AbstractStructure
     {
         if ($column === null) {
             $column = $this->currentColumn;
@@ -348,11 +348,11 @@ abstract class AbstractStructure extends AbstractTable
     /**
      * Create a PRIMARY KEY index
      *
-     * @param  ?string $column
+     * @param  string|array|null $column
      * @param  ?string $name
      * @return AbstractStructure
      */
-    public function primary(?string $column = null, ?string $name = null): AbstractStructure
+    public function primary(string|array|null $column = null, ?string $name = null): AbstractStructure
     {
         if ($column === null) {
             $column = $this->currentColumn;

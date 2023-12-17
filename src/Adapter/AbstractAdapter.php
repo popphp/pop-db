@@ -194,7 +194,7 @@ abstract class AbstractAdapter implements AdapterInterface
     }
 
     /**
-     * Check is transaction is success
+     * Check if transaction is success
      *
      * @return bool
      */
