@@ -134,12 +134,10 @@ class Sqlite extends AbstractAdapter
      */
     public function beginTransaction(): Sqlite
     {
-        if ($this->transactionDepth == 0) {
-            $this->query('BEGIN TRANSACTION');
-            $this->isTransaction = true;
-        }
-
-        $this->transactionDepth++;
+        $this->getTransactionManager()->enter(
+            beginFunc: function () { $this->query('BEGIN TRANSACTION'); },
+            savepointFunc: function (string $sp) { $this->query('SAVEPOINT ' . $sp); },
+        );
 
         return $this;
     }
@@ -151,12 +149,10 @@ class Sqlite extends AbstractAdapter
      */
     public function commit(): Sqlite
     {
-        $this->transactionDepth--;
-
-        if ($this->transactionDepth == 0) {
-            $this->query('COMMIT');
-            $this->isTransaction = false;
-        }
+        $this->getTransactionManager()->leave(true,
+            commitFunc: function () { $this->query('COMMIT'); },
+            savepointReleaseFunc: function (string $sp) { $this->query('RELEASE SAVEPOINT ' . $sp); },
+        );
 
         return $this;
     }
@@ -168,9 +164,10 @@ class Sqlite extends AbstractAdapter
      */
     public function rollback(): Sqlite
     {
-        $this->transactionDepth = 0;
-        $this->query('ROLLBACK');
-        $this->isTransaction = false;
+        $this->getTransactionManager()->leave(false,
+            rollbackFunc: function () { $this->query('ROLLBACK'); },
+            savepointRollbackFunc: function (string $sp) { $this->query('ROLLBACK TO SAVEPOINT ' . $sp); },
+        );
 
         return $this;
     }

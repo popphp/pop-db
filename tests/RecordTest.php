@@ -908,6 +908,58 @@ class RecordTest extends TestCase
         });
     }
 
+    public function testTransactionNesting()
+    {
+        $this->assertFalse($this->db->isTransaction());
+        $this->assertEquals(0, $this->db->getTransactionDepth());
+        $user = Users::start([
+            'username' => 'testuser264',
+            'password' => 'password27',
+            'email'    => 'testuser26@test.com',
+            'logins'   => 1
+        ]);
+        $this->assertEquals(1, $this->db->getTransactionDepth());
+
+        // Adapter transaction management
+        $this->db->beginTransaction();
+        $this->assertEquals(2, $this->db->getTransactionDepth());
+        $this->db->query("INSERT INTO users (username, password, email) values ('testuser266', 'password27', 'testuser26@test.com')");
+        $this->db->commit();
+        $this->assertTrue($this->db->isTransaction());
+        $this->assertEquals(1, $this->db->getTransactionDepth());
+
+        // Record transaction management
+        $admin = new Users([
+            'username' => 'testuser265',
+            'password' => 'password27',
+            'email'    => 'testuser26@test.com',
+            'logins'   => 1
+        ]);
+        $admin->startTransaction();
+        $this->assertEquals(2, $this->db->getTransactionDepth());
+        $admin->save();
+        $this->assertEquals(1, $this->db->getTransactionDepth());
+
+        // Adapter transaction rollback, visibility
+        $this->db->beginTransaction();
+        $this->assertEquals(2, $this->db->getTransactionDepth());
+        $this->db->query("INSERT INTO users (username, password, email) values ('testuser267', 'password27', 'testuser26@test.com')");
+        $test = Users::findOne(['username' => 'testuser267']);
+        $this->assertNotNull($test->id);
+        $this->db->rollback();
+        $this->assertTrue($this->db->isTransaction());
+        $this->assertEquals(1, $this->db->getTransactionDepth());
+        $test = Users::findOne(['username' => 'testuser267']);
+        $this->assertNull($test->id);
+
+        // Commits outer transaction
+        $user->save();
+        $this->assertFalse($this->db->isTransaction());
+        $this->assertEquals(0, $this->db->getTransactionDepth());
+
+        $this->db->disconnect();
+    }
+
     public function testFindWhere()
     {
         $user = new Users([

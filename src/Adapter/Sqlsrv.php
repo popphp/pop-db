@@ -137,12 +137,10 @@ class Sqlsrv extends AbstractAdapter
      */
     public function beginTransaction(): Sqlsrv
     {
-        if ($this->transactionDepth == 0) {
-            sqlsrv_begin_transaction($this->connection);
-            $this->isTransaction = true;
-        }
-
-        $this->transactionDepth++;
+        $this->getTransactionManager()->enter(
+            beginFunc: function () { sqlsrv_begin_transaction($this->connection); },
+            savepointFunc: function (string $sp) { $this->query('SAVE TRANSACTION ' . $sp); },
+        );
 
         return $this;
     }
@@ -154,12 +152,10 @@ class Sqlsrv extends AbstractAdapter
      */
     public function commit(): Sqlsrv
     {
-        $this->transactionDepth--;
-
-        if ($this->transactionDepth == 0) {
-            sqlsrv_commit($this->connection);
-            $this->isTransaction = false;
-        }
+        $this->getTransactionManager()->leave(true,
+            commitFunc: function () { sqlsrv_commit($this->connection); },
+            savepointReleaseFunc: function (string $sp) { /* Sqlsrv does not manage successful savepoints explicitly */ },
+        );
 
         return $this;
     }
@@ -171,9 +167,10 @@ class Sqlsrv extends AbstractAdapter
      */
     public function rollback(): Sqlsrv
     {
-        $this->transactionDepth = 0;
-        sqlsrv_rollback($this->connection);
-        $this->isTransaction = false;
+        $this->getTransactionManager()->leave(false,
+            rollbackFunc: function () { sqlsrv_rollback($this->connection); },
+            savepointRollbackFunc: function (string $sp) { $this->query('ROLLBACK TRANSACTION ' . $sp); },
+        );
 
         return $this;
     }
