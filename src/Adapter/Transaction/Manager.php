@@ -12,7 +12,7 @@
  * @namespace
  */
 
-namespace Pop\Db\Adapter;
+namespace Pop\Db\Adapter\Transaction;
 
 /**
  * Nested transaction manager for use in AdapaterInterface implementations
@@ -25,7 +25,7 @@ namespace Pop\Db\Adapter;
  * @license    http://www.popphp.org/license     New BSD License
  * @version    6.0.0
  */
-class TransactionManager
+class Manager extends AbstractManager
 {
 
     /**
@@ -174,4 +174,5 @@ class TransactionManager
 
         return true;
     }
+
 }

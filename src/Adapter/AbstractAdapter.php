@@ -14,6 +14,7 @@
 namespace Pop\Db\Adapter;
 
 use Pop\Db\Sql;
+use Pop\Db\Adapter\Transaction;
 use Pop\Utils\CallableObject;
 
 /**
@@ -73,9 +74,9 @@ abstract class AbstractAdapter implements AdapterInterface
 
     /**
      * Transaction manager
-     * @var TransactionManager|null
+     * @var Transaction\Manager|null
      */
-    protected ?TransactionManager $transactionManager = null;
+    protected ?Transaction\Manager $transactionManager = null;
 
     /**
      * Constructor
@@ -143,11 +144,11 @@ abstract class AbstractAdapter implements AdapterInterface
     /**
      * Return the transaction manager object, initialize on first use
      *
-     * @return TransactionManager
+     * @return Transaction\Manager
      */
-    protected function getTransactionManager(): TransactionManager
+    protected function getTransactionManager(): Transaction\Manager
     {
-        return ($this->transactionManager ??= new TransactionManager());
+        return ($this->transactionManager ??= new Transaction\Manager());
     }
 
     /**
