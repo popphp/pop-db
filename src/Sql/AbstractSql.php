@@ -307,8 +307,15 @@ abstract class AbstractSql
 
         $this->incrementParameterCount();
 
-        if (($detectedDbType !== null) && ($this->dbType != $detectedDbType)) {
-            switch ($this->dbType) {
+        // If the parameter is given in a different format than what the db expects, translate it
+        $realDbType = $this->dbType;
+        if ($this->placeholder == ':') {
+            // Either native SQLITE or PDO, in which case also use :param syntax
+            $realDbType = self::SQLITE;
+        }
+
+        if (($detectedDbType !== null) && ($realDbType != $detectedDbType)) {
+            switch ($realDbType) {
                 case self::MYSQL:
                 case self::SQLSRV:
                     $parameter = '?';
