@@ -350,8 +350,12 @@ abstract class AbstractSql
                 $identifierAry[$key] = ($val != '*') ? $this->openQuote . $val . $this->closeQuote : $val;
             }
             $quotedId = implode('.', $identifierAry);
+        } else if (($identifier != '*') &&
+            ((preg_match('/^\$\d*\d$/', $identifier) == 0) && !is_int($identifier) &&
+                !is_float($identifier) && (preg_match('/^\d*$/', $identifier) == 0))) {
+            $quotedId = $this->openQuote . $identifier . $this->closeQuote;
         } else {
-            $quotedId = ($identifier != '*') ? $this->openQuote . $identifier . $this->closeQuote : $identifier;
+            $quotedId = $identifier;
         }
 
         return $quotedId;
