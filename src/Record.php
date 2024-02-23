@@ -809,7 +809,7 @@ class Record extends Record\AbstractRecord
 
         if (!empty($replace)) {
             foreach ($replace as $key => $value) {
-                if (isset($fields[$key])) {
+                if (array_key_exists($key, $fields)) {
                     $fields[$key] = $value;
                 }
             }
