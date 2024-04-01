@@ -355,8 +355,8 @@ class CollectionTest extends TestCase
             ]
         ]);
 
-        $newCollection1 = $collection->sortByAsc();
-        $newCollection2 = $collection->sortByDesc();
+        $newCollection1 = $collection->sort();
+        $newCollection2 = $collection->sortDesc();
         $newCollection3 = $collection->sort();
 
         $this->assertEquals(2, $newCollection1->count());
@@ -377,7 +377,7 @@ class CollectionTest extends TestCase
             ]
         ]);
 
-        $newCollection = $collection->sort(function($a, $b){
+        $newCollection = $collection->usort(function($a, $b){
             return ($a < $b) ? -1 : 1;
         });
         $this->assertEquals(2, $newCollection->count());
