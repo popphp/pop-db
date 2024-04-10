@@ -149,7 +149,7 @@ class Db
             $result = $e->getMessage();
         }
 
-        error_reporting($error);
+        error_reporting((int)$error);
         return $result;
     }
 
