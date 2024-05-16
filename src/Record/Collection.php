@@ -41,10 +41,10 @@ class Collection extends Utils\Collection
     /**
      * Method to get collection object as an array
      *
-     * @param  array $options
+     * @param  array|bool|null $options
      * @return array
      */
-    public function toArray(array $options = []): array
+    public function toArray(array|bool|null $options = null): array
     {
         $items = $this->data;
 
@@ -61,7 +61,7 @@ class Collection extends Utils\Collection
             }
         }
 
-        if (!empty($options)) {
+        if (!empty($options) && is_array($options)) {
             if (array_key_exists('column', $options) && !empty($options['column'])) {
                 // return simple array of one column
                 $items = array_column($items, $options['column']);

@@ -392,10 +392,10 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Set all the table rows at once
      *
      * @param  ?array $rows
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return AbstractRecord
      */
-    public function setRows(array $rows = null, bool $asArray = false): AbstractRecord
+    public function setRows(array $rows = null, bool|array $toArray = false): AbstractRecord
     {
         $this->rowGateway->setColumns();
         $this->tableGateway->setRows();
@@ -403,7 +403,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
         if ($rows !== null) {
             $this->rowGateway->setColumns(((isset($rows[0])) ? (array)$rows[0] : []));
             foreach ($rows as $i => $row) {
-                $rows[$i] = $this->processRow($row, $asArray);
+                $rows[$i] = $this->processRow($row, $toArray);
             }
             $this->tableGateway->setRows($rows);
         }
@@ -415,13 +415,13 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Process table rows
      *
      * @param  array $rows
-     * @param  bool  $asArray
+     * @param  bool  $toArray
      * @return array
      */
-    public function processRows(array $rows, bool $asArray = false): array
+    public function processRows(array $rows, bool|array $toArray = false): array
     {
         foreach ($rows as $i => $row) {
-            $rows[$i] = $this->processRow($row, $asArray);
+            $rows[$i] = $this->processRow($row, $toArray);
         }
         return $rows;
     }
@@ -430,16 +430,16 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * Process a table row
      *
      * @param  array $row
-     * @param  bool  $asArray
+     * @param  bool  $toArray
      * @return mixed
      */
-    public function processRow(array $row, bool $asArray = false): mixed
+    public function processRow(array $row, bool|array $toArray = false): mixed
     {
-        if ($asArray) {
-            return $row;
+        if ($toArray !== false) {
+            return (is_array($toArray)) ? (new Collection($row))->toArray($toArray): $row;
         } else {
             $record = new static();
-            $record->setColumns((array)$row);
+            $record->setColumns($row);
             return $record;
         }
     }

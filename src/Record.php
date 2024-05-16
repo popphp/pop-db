@@ -25,20 +25,20 @@ use Pop\Utils\CallableObject;
  * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
  * @license    http://www.popphp.org/license     New BSD License
  * @version    6.5.0
- * @method     static findWhereEquals($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereNotEquals($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereGreaterThan($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereGreaterThanOrEqual($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereLessThan($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereLessThanOrEqual($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereLike($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereNotLike($column, $value, array $options = null, bool $asArray = false)
- * @method     static findWhereIn($column, $values, array $options = null, bool $asArray = false)
- * @method     static findWhereNotIn($column, $values, array $options = null, bool $asArray = false)
- * @method     static findWhereBetween($column, $values, array $options = null, bool $asArray = false)
- * @method     static findWhereNotBetween($column, $values, array $options = null, bool $asArray = false)
- * @method     static findWhereNull($column, array $options = null, bool $asArray = false)
- * @method     static findWhereNotNull($column, array $options = null, bool $asArray = false)
+ * @method     static findWhereEquals($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereNotEquals($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereGreaterThan($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereGreaterThanOrEqual($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereLessThan($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereLessThanOrEqual($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereLike($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereNotLike($column, $value, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereIn($column, $values, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereNotIn($column, $values, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereBetween($column, $values, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereNotBetween($column, $values, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereNull($column, array $options = null, bool|array $toArray = false)
+ * @method     static findWhereNotNull($column, array $options = null, bool|array $toArray = false)
  */
 class Record extends Record\AbstractRecord
 {
@@ -288,12 +288,12 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed  $id
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return static|array
      */
-    public static function findById(mixed $id, ?array $options = null, bool $asArray = false): array|static
+    public static function findById(mixed $id, ?array $options = null, bool $toArray = false): array|static
     {
-        return (new static())->getById($id, $options, $asArray);
+        return (new static())->getById($id, $options, $toArray);
     }
 
     /**
@@ -301,12 +301,12 @@ class Record extends Record\AbstractRecord
      *
      * @param  ?array $columns
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return static|array
      */
-    public static function findOne(?array $columns = null, ?array $options = null, bool $asArray = false): array|static
+    public static function findOne(?array $columns = null, ?array $options = null, bool $toArray = false): array|static
     {
-        return (new static())->getOne($columns, $options, $asArray);
+        return (new static())->getOne($columns, $options, $toArray);
     }
 
     /**
@@ -314,10 +314,10 @@ class Record extends Record\AbstractRecord
      *
      * @param  ?array $columns
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return static|array
      */
-    public static function findOneOrCreate(?array $columns = null, ?array $options = null, bool $asArray = false): array|static
+    public static function findOneOrCreate(?array $columns = null, ?array $options = null, bool $toArray = false): array|static
     {
         $result = (new static())->getOne($columns, $options);
 
@@ -327,7 +327,7 @@ class Record extends Record\AbstractRecord
             $result = $newRecord;
         }
 
-        return ($asArray) ? $result->toArray() : $result;
+        return ($toArray) ? $result->toArray() : $result;
     }
 
     /**
@@ -336,10 +336,10 @@ class Record extends Record\AbstractRecord
      * @param  ?string $by
      * @param  ?array  $columns
      * @param  ?array  $options
-     * @param  bool    $asArray
+     * @param  bool    $toArray
      * @return static|array
      */
-    public static function findLatest(?string $by = null, ?array $columns = null, ?array $options = null, bool $asArray = false): array|static
+    public static function findLatest(?string $by = null, ?array $columns = null, ?array $options = null, bool $toArray = false): array|static
     {
         $record = new static();
 
@@ -355,31 +355,31 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        return $record->getOne($columns, $options, $asArray);
+        return $record->getOne($columns, $options, $toArray);
     }
 
     /**
      * Find by static method
      *
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  ?array     $columns
+     * @param  ?array     $options
+     * @param  bool|array $toArray
      * @return Collection|array
      */
-    public static function findBy(?array $columns = null, ?array $options = null, bool $asArray = false): Collection|array
+    public static function findBy(?array $columns = null, ?array $options = null, bool|array $toArray = false): Collection|array
     {
-        return (new static())->getBy($columns, $options, $asArray);
+        return (new static())->getBy($columns, $options, $toArray);
     }
 
     /**
      * Find by or create static method
      *
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  ?array     $columns
+     * @param  ?array     $options
+     * @param  bool|array $toArray
      * @return static|Collection|array
      */
-    public static function findByOrCreate(?array $columns = null, ?array $options = null, bool $asArray = false): Collection|array|static
+    public static function findByOrCreate(?array $columns = null, ?array $options = null, bool|array $toArray = false): Collection|array|static
     {
         $result = (new static())->getBy($columns, $options);
 
@@ -387,9 +387,10 @@ class Record extends Record\AbstractRecord
             $newRecord = new static($columns);
             $newRecord->save();
             $result = $newRecord;
+            return ($toArray !== false) ? $result->toArray() : $result;
+        } else {
+            return ($toArray !== false) ? $result->toArray($toArray) : $result;
         }
-
-        return ($asArray) ? $result->toArray() : $result;
     }
 
     /**
@@ -399,24 +400,24 @@ class Record extends Record\AbstractRecord
      * @param  array   $values
      * @param  ?array  $columns
      * @param  ?array  $options
-     * @param  bool    $asArray
+     * @param  bool    $toArray
      * @return array
      */
-    public static function findIn(string $key, array $values, ?array $columns = null, ?array $options = null, bool $asArray = false): array
+    public static function findIn(string $key, array $values, ?array $columns = null, ?array $options = null, bool|array $toArray = false): array
     {
-        return (new static())->getIn($key, $values, $columns, $options, $asArray);
+        return (new static())->getIn($key, $values, $columns, $options, $toArray);
     }
 
     /**
      * Find all static method
      *
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return Collection|array|static
      */
-    public static function findAll(?array $options = null, bool $asArray = false): Collection|array|static
+    public static function findAll(?array $options = null, bool|array $toArray = false): Collection|array|static
     {
-        return static::findBy(null, $options, $asArray);
+        return static::findBy(null, $options, $toArray);
     }
 
     /**
@@ -424,10 +425,10 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed $sql
      * @param  array $params
-     * @param  bool  $asArray
+     * @param  bool  $toArray
      * @return Collection|array|null
      */
-    public static function execute(mixed $sql, array $params = [], bool $asArray = false): Collection|array|null
+    public static function execute(mixed $sql, array $params = [], bool|array $toArray = false): Collection|array|null
     {
         $record = new static();
 
@@ -449,13 +450,13 @@ class Record extends Record\AbstractRecord
             $isSelect = true;
             $rows     = $db->fetchAll();
             foreach ($rows as $i => $row) {
-                $rows[$i] = $record->processRow($row, $asArray);
+                $rows[$i] = $record->processRow($row, $toArray);
             }
         }
 
         if ($isSelect) {
             $collection = new Record\Collection($rows);
-            return ($asArray) ? $collection->toArray() : $collection;
+            return ($toArray !== false) ? $collection->toArray($toArray) : $collection;
         } else {
             return null;
         }
@@ -465,10 +466,10 @@ class Record extends Record\AbstractRecord
      * Static method to execute a custom SQL query.
      *
      * @param  mixed $sql
-     * @param  bool  $asArray
+     * @param  bool  $toArray
      * @return Collection|array|null
      */
-    public static function query(mixed $sql, bool $asArray = false): Collection|array|null
+    public static function query(mixed $sql, bool|array $toArray = false): Collection|array|null
     {
         $record = new static();
 
@@ -485,13 +486,13 @@ class Record extends Record\AbstractRecord
         if (strtoupper(substr($sql, 0, 6)) == 'SELECT') {
             $isSelect = true;
             while (($row = $db->fetch())) {
-                $rows[] = $record->processRow($row, $asArray);
+                $rows[] = $record->processRow($row, $toArray);
             }
         }
 
         if ($isSelect) {
             $collection = new Record\Collection($rows);
-            return ($asArray) ? $collection->toArray() : $collection;
+            return ($toArray !== false) ? $collection->toArray($toArray) : $collection;
         } else {
             return null;
         }
@@ -567,16 +568,16 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed  $id
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return static|array
      */
-    public function getById($id, ?array $options = null, bool $asArray = false): Record|array|static
+    public function getById($id, ?array $options = null, bool $toArray = false): Record|array|static
     {
         $this->setColumns($this->getRowGateway()->find($id, [], $options));
         if ($this->hasWiths()) {
             $this->getWithRelationships(false);
         }
-        return ($asArray) ? $this->toArray() : $this;
+        return ($toArray) ? $this->toArray() : $this;
     }
 
     /**
@@ -584,10 +585,10 @@ class Record extends Record\AbstractRecord
      *
      * @param  ?array $columns
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return static|array
      */
-    public function getOne(?array $columns = null, ?array $options = null, bool $asArray = false): Record|array|static
+    public function getOne(?array $columns = null, ?array $options = null, bool $toArray = false): Record|array|static
     {
         if ($options === null) {
             $options = ['limit' => 1];
@@ -617,7 +618,7 @@ class Record extends Record\AbstractRecord
             $this->setColumns($rows[0]);
         }
 
-        return ($asArray) ? $this->toArray() : $this;
+        return ($toArray) ? $this->toArray() : $this;
     }
 
     /**
@@ -625,10 +626,10 @@ class Record extends Record\AbstractRecord
      *
      * @param  ?array $columns
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return Collection|array
      */
-    public function getBy(?array $columns = null, ?array $options = null, bool $asArray = false): Collection|array
+    public function getBy(?array $columns = null, ?array $options = null, bool|array $toArray = false): Collection|array
     {
         $expressions = null;
         $params      = null;
@@ -653,7 +654,7 @@ class Record extends Record\AbstractRecord
         }
 
         $collection = new Record\Collection($rows);
-        return ($asArray) ? $collection->toArray() : $collection;
+        return ($toArray !== false) ? $collection->toArray($toArray) : $collection;
     }
 
     /**
@@ -663,18 +664,18 @@ class Record extends Record\AbstractRecord
      * @param  array  $values
      * @param  ?array $columns
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return array
      */
-    public function getIn(string $key, array $values, array $columns = null, array $options = null, bool $asArray = false): array
+    public function getIn(string $key, array $values, array $columns = null, array $options = null, bool|array $toArray = false): array
     {
         $columns = ($columns !== null) ? array_merge([$key => $values], $columns) : [$key => $values];
-        $results = $this->getBy($columns, $options, $asArray);
+        $results = $this->getBy($columns, $options, $toArray);
         $rows    = [];
 
         foreach ($results as $row) {
             if (isset($row[$key])) {
-                $rows[$row[$key]] = (($asArray) && ($row instanceof Record)) ? $row->toArray() : $row;
+                $rows[$row[$key]] = (($toArray !== false) && ($row instanceof Record)) ? $row->toArray() : $row;
             }
         }
 
@@ -685,12 +686,12 @@ class Record extends Record\AbstractRecord
      * Get all method
      *
      * @param  ?array $options
-     * @param  bool   $asArray
+     * @param  bool   $toArray
      * @return Collection|array
      */
-    public function getAll(?array $options = null, bool $asArray = false): Collection|array
+    public function getAll(?array $options = null, bool|array $toArray = false): Collection|array
     {
-        return $this->getBy(null, $options, $asArray);
+        return $this->getBy(null, $options, $toArray);
     }
 
     /**
@@ -979,7 +980,7 @@ class Record extends Record\AbstractRecord
     {
         $columns    = null;
         $options    = null;
-        $asArray    = false;
+        $toArray    = false;
         $conditions = [
             'Equals', 'NotEquals', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
             'Like', 'NotLike', 'In', 'NotIn', 'Between', 'NotBetween', 'Null', 'NotNull'
@@ -993,11 +994,11 @@ class Record extends Record\AbstractRecord
                 if (str_contains($condition, 'Null')) {
                     $value     = null;
                     $options   = $arguments[1] ?? null;
-                    $asArray   = $arguments[2] ?? false;
+                    $toArray   = $arguments[2] ?? false;
                 } else {
                     $value     = $arguments[1];
                     $options   = $arguments[2] ?? null;
-                    $asArray   = $arguments[3] ?? false;
+                    $toArray   = $arguments[3] ?? false;
                 }
 
                 switch ($condition) {
@@ -1054,7 +1055,7 @@ class Record extends Record\AbstractRecord
                 $column  = Sql\Parser\Table::parse(substr($name, 9));
                 $value   = $arguments[0] ?? null;
                 $options = $arguments[1] ?? null;
-                $asArray = $arguments[2] ?? false;
+                $toArray = $arguments[2] ?? false;
 
                 if ($value !== null) {
                     $columns = [$column => $value];
@@ -1062,7 +1063,7 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        return ($columns !== null) ? static::findBy($columns, $options, $asArray) : null;
+        return ($columns !== null) ? static::findBy($columns, $options, $toArray) : null;
     }
 
 }
