@@ -93,11 +93,11 @@ class HasMany extends AbstractRelationship
      * Get eager relationships
      *
      * @param  array $ids
-     * @param  bool  $asArray
+     * @param  bool  $toArray
      * @throws Exception
      * @return array
      */
-    public function getEagerRelationships(array $ids, bool $asArray = false): array
+    public function getEagerRelationships(array $ids, bool|array $toArray = false): array
     {
         if (($this->foreignTable === null) || ($this->foreignKey === null)) {
             throw new Exception('Error: The foreign table and key values have not been set.');
@@ -166,7 +166,7 @@ class HasMany extends AbstractRelationship
 
         foreach ($rows as $row) {
             $parentIds[] = $row[$primaryKey];
-            if (!$asArray) {
+            if ($toArray === false) {
                 if (!isset($results[$row[$this->foreignKey]])) {
                     $results[$row[$this->foreignKey]] = new Record\Collection();
                 }
