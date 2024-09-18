@@ -426,9 +426,9 @@ class Record extends Record\AbstractRecord
      * @param  mixed $sql
      * @param  array $params
      * @param  bool  $toArray
-     * @return Collection|array|null
+     * @return Collection|array|int
      */
-    public static function execute(mixed $sql, array $params = [], bool|array $toArray = false): Collection|array|null
+    public static function execute(mixed $sql, array $params = [], bool|array $toArray = false): Collection|array|int
     {
         $record = new static();
 
@@ -458,7 +458,7 @@ class Record extends Record\AbstractRecord
             $collection = new Record\Collection($rows);
             return ($toArray !== false) ? $collection->toArray($toArray) : $collection;
         } else {
-            return null;
+            return self::db()->getNumberOfAffectedRows();
         }
     }
 
@@ -467,9 +467,9 @@ class Record extends Record\AbstractRecord
      *
      * @param  mixed $sql
      * @param  bool  $toArray
-     * @return Collection|array|null
+     * @return Collection|array|int
      */
-    public static function query(mixed $sql, bool|array $toArray = false): Collection|array|null
+    public static function query(mixed $sql, bool|array $toArray = false): Collection|array|int
     {
         $record = new static();
 
@@ -494,7 +494,7 @@ class Record extends Record\AbstractRecord
             $collection = new Record\Collection($rows);
             return ($toArray !== false) ? $collection->toArray($toArray) : $collection;
         } else {
-            return null;
+            return self::db()->getNumberOfAffectedRows();
         }
     }
 
