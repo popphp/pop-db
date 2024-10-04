@@ -414,7 +414,8 @@ class Column extends AbstractFormatter
         } else if (strtoupper((string)$column['default']) == 'NULL') {
             $columnString .= ' DEFAULT NULL';
         } else if ($column['default'] !== null) {
-            $columnString .= " DEFAULT '" . $column['default'] . "'";
+            $columnString .= " DEFAULT " . ((!Sql::isSupportedFunction($column['default'])) ?
+                    "'" . $column['default'] . "'" : $column['default']);
         }
 
         return $columnString;
