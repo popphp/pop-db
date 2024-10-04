@@ -87,6 +87,44 @@ abstract class AbstractSql
     protected int $parameterCount = 0;
 
     /**
+     * Supported standard SQL aggregate functions
+     * @var array
+     */
+    protected static array $aggregateFunctions = [
+        'AVG', 'COUNT', 'MAX', 'MIN', 'SUM'
+    ];
+
+    /**
+     * Supported standard SQL math functions
+     * @var array
+     */
+    protected static array $mathFunctions = [
+        'ABS', 'RAND', 'SQRT', 'POW', 'POWER', 'EXP', 'LN', 'LOG', 'LOG10', 'GREATEST', 'LEAST',
+        'DIV', 'MOD', 'ROUND', 'TRUNC', 'CEIL', 'CEILING', 'FLOOR', 'COS', 'ACOS', 'ACOSH', 'SIN',
+        'SINH', 'ASIN', 'ASINH', 'TAN', 'TANH', 'ATANH', 'ATAN2',
+    ];
+
+    /**
+     * Supported standard SQL string functions
+     * @var array
+     */
+    protected static array $stringFunctions = [
+        'CONCAT', 'FORMAT', 'INSTR', 'LCASE', 'LEFT', 'LENGTH', 'LOCATE', 'LOWER', 'LPAD',
+        'LTRIM', 'POSITION', 'QUOTE', 'REGEXP', 'REPEAT', 'REPLACE', 'REVERSE', 'RIGHT', 'RPAD',
+        'RTRIM', 'SPACE', 'STRCMP', 'SUBSTRING', 'SUBSTR', 'TRIM', 'UCASE', 'UPPER'
+    ];
+
+    /**
+     * Supported standard SQL date-time functions
+     * @var array
+     */
+    protected static array $dateTimeFunctions = [
+        'CURRENT_DATE', 'CURRENT_TIMESTAMP', 'CURRENT_TIME', 'CURDATE', 'CURTIME', 'DATE', 'DATETIME',
+        'DAY', 'EXTRACT', 'GETDATE', 'HOUR', 'LOCALTIME', 'LOCALTIMESTAMP', 'MINUTE', 'MONTH',
+        'NOW', 'SECOND', 'TIME', 'TIMEDIFF', 'TIMESTAMP', 'UNIX_TIMESTAMP', 'YEAR',
+    ];
+
+    /**
      * Constructor
      *
      * Instantiate the SQL object
@@ -454,6 +492,25 @@ abstract class AbstractSql
                 $this->closeQuote  = null;
                 break;
         }
+    }
+
+    /**
+     * Check if value contains a standard SQL supported function
+     *
+     * @param  string $value
+     * @return bool
+     */
+    public static function isSupportedFunction(string $value): bool
+    {
+        if (str_contains($value, '(')) {
+            $value = trim(substr($value, 0, strpos($value, '(')));
+        }
+        $value = strtoupper($value);
+
+        return (in_array($value, static::$aggregateFunctions) ||
+            in_array($value, static::$mathFunctions) ||
+            in_array($value, static::$stringFunctions) ||
+            in_array($value, static::$dateTimeFunctions));
     }
 
 }
