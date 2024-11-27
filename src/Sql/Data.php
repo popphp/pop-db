@@ -1,11 +1,11 @@
 <?php
 /**
- * Pop PHP Framework (http://www.popphp.org/)
+ * Pop PHP Framework (https://www.popphp.org/)
  *
  * @link       https://github.com/popphp/popphp-framework
- * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
- * @license    http://www.popphp.org/license     New BSD License
+ * @author     Nick Sagona, III <dev@noladev.com>
+ * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
+ * @license    https://www.popphp.org/license     New BSD License
  */
 
 /**
@@ -20,9 +20,9 @@ use Pop\Db\Adapter\AbstractAdapter;
  *
  * @category   Pop
  * @package    Pop\Db
- * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
- * @license    http://www.popphp.org/license     New BSD License
+ * @author     Nick Sagona, III <dev@noladev.com>
+ * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
+ * @license    https://www.popphp.org/license     New BSD License
  * @version    6.5.0
  */
 class Data extends AbstractSql
@@ -51,6 +51,12 @@ class Data extends AbstractSql
      * @var array
      */
     protected array $conflictColumns = [];
+
+    /**
+     * Force UPDATE instead of UPSERT if conflict keys/columns are provided
+     * @var bool
+     */
+    protected bool $forceUpdate = false;
 
     /**
      * SQL string
@@ -94,6 +100,30 @@ class Data extends AbstractSql
     public function getDivide(): int
     {
         return $this->divide;
+    }
+
+    /**
+     * Set force update
+     *
+     * @param  bool   $forceUpdate
+     * @param  string $conflictKey
+     * @return Data
+     */
+    public function setForceUpdate(bool $forceUpdate = true, string $conflictKey = 'id'): Data
+    {
+        $this->forceUpdate = $forceUpdate;
+        $this->conflictKey = $conflictKey;
+        return $this;
+    }
+
+    /**
+     * Is force update
+     *
+     * @return bool
+     */
+    public function isForceUpdate(): bool
+    {
+        return $this->forceUpdate;
     }
 
     /**
@@ -191,45 +221,76 @@ class Data extends AbstractSql
             }
         }
 
-        $columns  = array_map([$this, 'quoteId'], $columns);
-        $insert   = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
-        $onUpdate = $this->formatConflicts();
+        // Force UPDATE SQL
+        if (($this->forceUpdate) && !empty($this->conflictKey)) {
+            foreach ($data as $i => $row) {
+                $primaryValue = $row[$this->conflictKey];
+                unset($row[$this->conflictKey]);
 
-        foreach ($data as $i => $row) {
-            if (!empty($omit)) {
-                foreach ($omit as $o) {
-                    if (isset($row[$o])) {
-                        unset($row[$o]);
+                $update = "UPDATE " . $table . " SET ";
+                if (!empty($omit)) {
+                    foreach ($omit as $o) {
+                        if (isset($row[$o])) {
+                            unset($row[$o]);
+                        }
                     }
                 }
-            }
-            $value = "(" . implode(', ', array_map(function($value) use ($forceQuote) {
-                    return $this->quote($value, $forceQuote);
-                }, $row)) . ")";
-            if ($nullEmpty) {
-                $value = str_replace(["('',", " '', ", ", '')"], ["(NULL,", ' NULL, ', ', NULL)'], $value);
-            }
 
-            switch ($this->divide) {
-                case 0:
-                    if ($i == 0) {
-                        $this->sql .= $insert;
+                $values = [];
+                foreach ($row as $key => $value) {
+                    $values[] = $this->quoteId($key) . ' = ' . $this->quote($value, $forceQuote);
+                }
+                $values = implode(', ', $values);
+
+                if ($nullEmpty) {
+                    $values = str_replace(["('',", " '', ", ", '')"], ["(NULL,", ' NULL, ', ', NULL)'], $values);
+                }
+
+                $update .= $values . " WHERE " . $this->quoteId($this->conflictKey) . ' = ' . $primaryValue . ';';
+                $this->sql .= $update .  PHP_EOL;
+            }
+        // Else, INSERT/UPSERT SQL
+        } else {
+            $columns  = array_map([$this, 'quoteId'], $columns);
+            $insert   = "INSERT INTO " . $table . " (" . implode(', ', $columns) . ") VALUES" . PHP_EOL;
+            $onUpdate = $this->formatConflicts();
+
+            foreach ($data as $i => $row) {
+                if (!empty($omit)) {
+                    foreach ($omit as $o) {
+                        if (isset($row[$o])) {
+                            unset($row[$o]);
+                        }
                     }
-                    $this->sql .= $value;
-                    $this->sql .= ($i == (count($data) - 1)) ? $onUpdate . ';' : ',';
-                    $this->sql .= PHP_EOL;
-                    break;
-                case 1:
-                    $this->sql .= $insert . $value . $onUpdate . ';' . PHP_EOL;
-                    break;
-                default:
-                    if (($i % $this->divide) == 0) {
-                        $this->sql .= $insert . $value . (($i == (count($data) - 1)) ? $onUpdate . ';' : ',') . PHP_EOL;
-                    } else {
+                }
+                $value = "(" . implode(', ', array_map(function($value) use ($forceQuote) {
+                        return $this->quote($value, $forceQuote);
+                    }, $row)) . ")";
+                if ($nullEmpty) {
+                    $value = str_replace(["('',", " '', ", ", '')"], ["(NULL,", ' NULL, ', ', NULL)'], $value);
+                }
+
+                switch ($this->divide) {
+                    case 0:
+                        if ($i == 0) {
+                            $this->sql .= $insert;
+                        }
                         $this->sql .= $value;
-                        $this->sql .= (((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? $onUpdate . ';' : ',';
+                        $this->sql .= ($i == (count($data) - 1)) ? $onUpdate . ';' : ',';
                         $this->sql .= PHP_EOL;
-                    }
+                        break;
+                    case 1:
+                        $this->sql .= $insert . $value . $onUpdate . ';' . PHP_EOL;
+                        break;
+                    default:
+                        if (($i % $this->divide) == 0) {
+                            $this->sql .= $insert . $value . (($i == (count($data) - 1)) ? $onUpdate . ';' : ',') . PHP_EOL;
+                        } else {
+                            $this->sql .= $value;
+                            $this->sql .= (((($i + 1) % $this->divide) == 0) || ($i == (count($data) - 1))) ? $onUpdate . ';' : ',';
+                            $this->sql .= PHP_EOL;
+                        }
+                }
             }
         }
 
