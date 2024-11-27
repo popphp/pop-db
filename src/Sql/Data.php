@@ -223,7 +223,7 @@ class Data extends AbstractSql
 
         // Force UPDATE SQL
         if (($this->forceUpdate) && !empty($this->conflictKey)) {
-            foreach ($data as $i => $row) {
+            foreach ($data as $row) {
                 $primaryValue = $row[$this->conflictKey];
                 unset($row[$this->conflictKey]);
 
