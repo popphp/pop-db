@@ -150,6 +150,7 @@ class Db
         }
 
         error_reporting((int)$error);
+
         return $result;
     }
 
@@ -161,10 +162,12 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return void
+     * @return int
      */
-    public static function executeSql(string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): void
+    public static function executeSql(string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): int
     {
+        $affectedRows = 0;
+
         if (is_string($adapter)) {
             $adapter = ucfirst(strtolower($adapter));
             $class   = $prefix . $adapter;
@@ -190,8 +193,8 @@ class Db
             $db = $adapter;
         }
 
-        $lines      = explode("\n", $sql);
-        $statements = [];
+        $lines        = explode("\n", $sql);
+        $statements   = [];
 
         if (count($lines) > 0) {
             // Remove any comments, parse prefix if available
@@ -242,10 +245,13 @@ class Db
                 foreach ($statements as $statement) {
                     if (!empty($statement)) {
                         $db->query($statement);
+                        $affectedRows += $db->getNumberOfAffectedRows();
                     }
                 }
             }
         }
+
+        return $affectedRows;
     }
 
     /**
@@ -256,15 +262,17 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return void
+     * @return int
      */
-    public static function executeSqlFile(string $sqlFile, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): void
+    public static function executeSqlFile(
+        string $sqlFile, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'
+    ): int
     {
         if (!file_exists($sqlFile)) {
             throw new Exception("Error: The SQL file '" . $sqlFile . "' does not exist.");
         }
 
-        self::executeSql(file_get_contents($sqlFile), $adapter, $options, $prefix);
+        return self::executeSql(file_get_contents($sqlFile), $adapter, $options, $prefix);
     }
 
     /**
