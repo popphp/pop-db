@@ -164,7 +164,9 @@ class Db
      * @throws Exception
      * @return int
      */
-    public static function executeSql(string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): int
+    public static function executeSql(
+        string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'
+    ): int
     {
         $affectedRows = 0;
 
@@ -193,8 +195,8 @@ class Db
             $db = $adapter;
         }
 
-        $lines        = explode("\n", $sql);
-        $statements   = [];
+        $lines      = explode("\n", $sql);
+        $statements = [];
 
         if (count($lines) > 0) {
             // Remove any comments, parse prefix if available
