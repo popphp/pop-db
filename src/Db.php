@@ -1,11 +1,11 @@
 <?php
 /**
- * Pop PHP Framework (http://www.popphp.org/)
+ * Pop PHP Framework (https://www.popphp.org/)
  *
  * @link       https://github.com/popphp/popphp-framework
- * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
- * @license    http://www.popphp.org/license     New BSD License
+ * @author     Nick Sagona, III <dev@noladev.com>
+ * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
+ * @license    https://www.popphp.org/license     New BSD License
  */
 
 /**
@@ -18,9 +18,9 @@ namespace Pop\Db;
  *
  * @category   Pop
  * @package    Pop\Db
- * @author     Nick Sagona, III <dev@nolainteractive.com>
- * @copyright  Copyright (c) 2009-2024 NOLA Interactive, LLC. (http://www.nolainteractive.com)
- * @license    http://www.popphp.org/license     New BSD License
+ * @author     Nick Sagona, III <dev@noladev.com>
+ * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
+ * @license    https://www.popphp.org/license     New BSD License
  * @version    6.5.0
  */
 class Db
@@ -150,6 +150,7 @@ class Db
         }
 
         error_reporting((int)$error);
+
         return $result;
     }
 
@@ -161,10 +162,14 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return void
+     * @return int
      */
-    public static function executeSql(string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): void
+    public static function executeSql(
+        string $sql, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'
+    ): int
     {
+        $affectedRows = 0;
+
         if (is_string($adapter)) {
             $adapter = ucfirst(strtolower($adapter));
             $class   = $prefix . $adapter;
@@ -242,10 +247,13 @@ class Db
                 foreach ($statements as $statement) {
                     if (!empty($statement)) {
                         $db->query($statement);
+                        $affectedRows += $db->getNumberOfAffectedRows();
                     }
                 }
             }
         }
+
+        return $affectedRows;
     }
 
     /**
@@ -256,15 +264,17 @@ class Db
      * @param  array  $options
      * @param  string $prefix
      * @throws Exception
-     * @return void
+     * @return int
      */
-    public static function executeSqlFile(string $sqlFile, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'): void
+    public static function executeSqlFile(
+        string $sqlFile, mixed $adapter, array $options = [], string $prefix = '\Pop\Db\Adapter\\'
+    ): int
     {
         if (!file_exists($sqlFile)) {
             throw new Exception("Error: The SQL file '" . $sqlFile . "' does not exist.");
         }
 
-        self::executeSql(file_get_contents($sqlFile), $adapter, $options, $prefix);
+        return self::executeSql(file_get_contents($sqlFile), $adapter, $options, $prefix);
     }
 
     /**
