@@ -25,7 +25,7 @@ use Pop\Utils\CallableObject;
  * @author     Nick Sagona, III <dev@noladev.com>
  * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.5.0
+ * @version    6.6.0
  */
 abstract class AbstractAdapter implements AdapterInterface
 {

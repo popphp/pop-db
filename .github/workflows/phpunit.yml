@@ -19,7 +19,7 @@ jobs:
 
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: test_popdb
@@ -46,6 +46,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-versions }}
+        extensions: mysqli, pgsql, sqlite3, pdo
 
     - name: Cache Composer packages
       id: composer-cache
