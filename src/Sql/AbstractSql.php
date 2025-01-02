@@ -416,7 +416,10 @@ abstract class AbstractSql
             }
         } else {
             if (($value == '') ||
-                (($value != '?') && (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+                (($value != '?') &&
+                    (!empty($this->openQuote) && !empty($this->closeQuote) &&
+                        !(str_starts_with($value, $this->openQuote) && str_ends_with($value, $this->closeQuote))) &&
+                    (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
                     !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
                 $value = "'" . $this->db->escape($value) . "'";
             }
