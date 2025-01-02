@@ -35,7 +35,7 @@ class Update extends AbstractPredicateClause
      */
     public function set(string $name, mixed $value): Update
     {
-        $this->addNamedValue($name, $value);
+        $this->addValue($value, $name);
         return $this;
     }
 

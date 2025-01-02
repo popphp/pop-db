@@ -119,34 +119,21 @@ abstract class AbstractClause extends AbstractSql
     /**
      * Add a value
      *
-     * @param  mixed $value
-     * @return AbstractClause
-     */
-    public function addValue(mixed $value): AbstractClause
-    {
-        if (!is_array($value) && !is_object($value)) {
-            if ($this->isParameter($value)) {
-                $value = $this->getParameter($value);
-            }
-            $this->values[] = $value;
-        }
-        return $this;
-    }
-
-    /**
-     * Add a named value
-     *
-     * @param  string $name
      * @param  mixed  $value
+     * @param  ?string $name
      * @return AbstractClause
      */
-    public function addNamedValue(string $name, mixed $value): AbstractClause
+    public function addValue(mixed $value, ?string $name = null): AbstractClause
     {
-        if (!is_array($value) && !is_object($value)) {
+        if (!is_array($value) && (($value instanceof \Stringable) || !is_object($value))) {
             if ($this->isParameter($value, $name)) {
                 $value = $this->getParameter($value, $name);
             }
-            $this->values[$name] = $value;
+            if ($name !== null) {
+                $this->values[$name] = $value;
+            } else {
+                $this->values[] = $value;
+            }
         }
         return $this;
     }
