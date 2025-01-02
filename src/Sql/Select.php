@@ -426,12 +426,15 @@ class Select extends AbstractPredicateClause
         if (count($this->values) > 0) {
             $cols = [];
             foreach ($this->values as $as => $col) {
-                // If column is a SQL function, don't quote it
-                $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);
-                if (!is_numeric($as)) {
-                    $cols[] = $c . ' AS ' . $this->quoteId($as);
+                // If column is a nested SQL query
+                if ($col instanceof AbstractSql) {
+                    $cols[] = (!is_numeric($as)) ?
+                        '(' . $col . ') AS ' . $this->quoteId($as) : '(' .  $col . ')';
                 } else {
-                    $cols[] = $c;
+                    // If column is a SQL function, don't quote it
+                    $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);
+                    $cols[] = (!is_numeric($as)) ?
+                        $c . ' AS ' . $this->quoteId($as) : $c;
                 }
             }
             $sql .= implode(', ', $cols) . ' ';

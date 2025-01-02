@@ -73,7 +73,7 @@ class Sql extends AbstractSql
             }
             foreach ($columns as $name => $value) {
                 if (!is_numeric($name)) {
-                    $this->select->addNamedValue($name, $value);
+                    $this->select->addValue($value, $name);
                 } else {
                     $this->select->addValue($value);
                 }
