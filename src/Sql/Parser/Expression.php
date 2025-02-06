@@ -177,6 +177,19 @@ class Expression
     }
 
     /**
+     * Method to check if the column is shorthand
+     *
+     * @param  string $column
+     * @return bool
+     */
+    public static function isShorthand(string $column): bool
+    {
+        return str_contains($column, '%') || str_ends_with($column, '-') || str_ends_with($column, '>=') ||
+            str_ends_with($column, '<=') || str_ends_with($column, '!=') || str_ends_with($column, '>') ||
+            str_ends_with($column, '<');
+    }
+
+    /**
      * Method to parse the shorthand columns to create expressions and their parameters
      *
      * @param  array   $columns

@@ -13,6 +13,9 @@
  */
 namespace Pop\Db\Sql;
 
+use Pop\Db\Sql\Parser\Expression;
+use Pop\Db\Sql\Parser\Operator;
+
 /**
  * Join class
  *
@@ -131,14 +134,31 @@ class Join
     public function render(): string
     {
         $columns = [];
+
         foreach ($this->columns as $column1 => $column2) {
+            if (Expression::isShorthand($column1)) {
+                ['column' => $column1, 'operator' => $operator] = Operator::parse($column1);
+            } else {
+                $operator = '=';
+            }
+            $operator = ' ' . $operator . ' ';
+
             if (is_array($column2)) {
                 foreach ($column2 as $c) {
-                    $columns[] = ((str_contains($column1, '.')) ? $this->sql->quoteId($column1) : $column1) . ' = ' .
-                        ((str_contains($c, '.')) ? $this->sql->quoteId($c) : $c);
+                    if ($c === null) {
+                        $c = 'NULL';
+                    } else if (is_string($c) && str_contains($c, '.')) {
+                        $c = $this->sql->quoteId($c);
+                    }
+                    $columns[] = ((str_contains($column1, '.')) ? $this->sql->quoteId($column1) : $column1) . $operator . $c;
                 }
             } else {
-                $columns[] = $this->sql->quoteId($column1) . ' = ' . $this->sql->quoteId($column2);
+                if ($column2 === null) {
+                    $column2 = 'NULL';
+                } else if (is_string($column2)) {
+                    $column2 = $this->sql->quoteId($column2);
+                }
+                $columns[] = $this->sql->quoteId($column1) . $operator . $column2;
             }
         }
 

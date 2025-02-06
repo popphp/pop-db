@@ -32,7 +32,7 @@ class Operator
      * @param  string $column
      * @return array
      */
-    public static function parse(string$column): array
+    public static function parse(string $column): array
     {
         $operator = '=';
 
