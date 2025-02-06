@@ -138,8 +138,11 @@ class Join
         foreach ($this->columns as $column1 => $column2) {
             if (Expression::isShorthand($column1)) {
                 ['column' => $column1, 'operator' => $operator] = Operator::parse($column1);
+                if (($column2 === null) && ($operator == 'NOT')) {
+                    $operator = 'IS ' . $operator;
+                }
             } else {
-                $operator = '=';
+                $operator = ($column2 === null) ? 'IS' : '=';
             }
             $operator = ' ' . $operator . ' ';
 
