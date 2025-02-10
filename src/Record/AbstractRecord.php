@@ -98,6 +98,24 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected array $relationships = [];
 
     /**
+     * Relationship sort-by field
+     * @var string
+     */
+    protected string $relationshipSortBy = 'id';
+
+    /**
+     * Relationship latest flag
+     * @var bool
+     */
+    protected bool $latest = false;
+
+    /**
+     * Relationship oldest flag
+     * @var bool
+     */
+    protected bool $oldest = false;
+
+    /**
      * Set the table
      *
      * @param  string $table
@@ -615,6 +633,36 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     public function hasRelationships(): bool
     {
         return (count($this->relationships) > 0);
+    }
+
+    /**
+     * Method to set latest flag for relationships
+     *
+     * @param  string $sortBy
+     * @return static
+     */
+    public function latest(string $sortBy = 'id'): static
+    {
+        $this->relationshipSortBy = $sortBy;
+        $this->latest             = true;
+        $this->oldest             = false;
+
+        return $this;
+    }
+
+    /**
+     * Method to set oldest flag for relationships
+     *
+     * @param  string $sortBy
+     * @return static
+     */
+    public function oldest(string $sortBy = 'id'): static
+    {
+        $this->relationshipSortBy = $sortBy;
+        $this->latest             = false;
+        $this->oldest             = true;
+
+        return $this;
     }
 
     /**

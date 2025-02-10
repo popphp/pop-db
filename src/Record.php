@@ -737,15 +737,33 @@ class Record extends Record\AbstractRecord
      * @param  string $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
-     * @return Collection|Record\Relationships\HasMany
+     * @return mixed
      */
-    public function hasMany(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Collection|Record\Relationships\HasMany
+    public function hasMany(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): mixed
     {
+        if (($this->latest) || ($this->oldest)) {
+            if ($options !== null) {
+                $options['order'] = $this->relationshipSortBy . ' ' . (($this->latest) ? 'DESC' : 'ASC');
+                $options['limit'] = 1;
+            } else {
+                $options = [
+                    'order' => $this->relationshipSortBy . ' ' . (($this->latest) ? 'DESC' : 'ASC'),
+                    'limit' => 1
+                ];
+            }
+        }
+
         $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren)) {
             $relationship->setChildRelationships($this->withChildren);
         }
-        return ($eager) ? $relationship : $relationship->getChildren($options);
+
+        if ($eager) {
+            return $relationship;
+        } else {
+            $children = $relationship->getChildren($options);
+            return ((($this->latest) || ($this->oldest)) && (count($children) == 1)) ? $children[0] : $children;
+        }
     }
 
     /**
