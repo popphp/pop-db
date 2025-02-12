@@ -22,6 +22,6 @@ namespace Pop\Db\Adapter\Transaction;
  * @author     Martok <martok@martoks-place.de>
  * @copyright  Copyright (c) 2009-2025 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.6.0
+ * @version    6.6.5
  */
 class Exception extends \Exception {}
