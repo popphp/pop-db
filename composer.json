@@ -26,7 +26,7 @@
     ],
     "require": {
         "php": ">=8.2.0",
-        "popphp/pop-debug": "^2.2.1",
+        "popphp/pop-debug": "^2.2.2",
         "popphp/pop-utils": "^2.2.0"
     },
     "require-dev": {
