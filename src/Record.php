@@ -540,7 +540,7 @@ class Record extends Record\AbstractRecord
      * @param  ?array $options
      * @return static
      */
-    public static function with($name, ?array $options = null): static
+    public static function with(mixed $name, ?array $options = null): static
     {
         $record = new static();
 
@@ -571,7 +571,7 @@ class Record extends Record\AbstractRecord
      * @param  bool   $toArray
      * @return static|array
      */
-    public function getById($id, ?array $options = null, bool $toArray = false): Record|array|static
+    public function getById(mixed $id, ?array $options = null, bool $toArray = false): Record|array|static
     {
         $this->setColumns($this->getRowGateway()->find($id, [], $options));
         if ($this->hasWiths()) {
