@@ -87,9 +87,15 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
 
     /**
      * With relationship children
-     * @var ?string
+     * @var array
      */
-    protected ?string $withChildren = null;
+    protected array $withChildren = [];
+
+    /**
+     * Current with index
+     * @var int
+     */
+    protected int $currentWithIndex = 0;
 
     /**
      * Relationships
@@ -477,9 +483,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
             $name     = array_shift($names);
             $children = implode('.', $names);
         }
-        $this->with[]        = $name;
-        $this->withOptions[] = $options;
-        $this->withChildren  = $children;
+        $this->with[]         = $name;
+        $this->withOptions[]  = $options;
+        $this->withChildren[] = $children;
 
         return $this;
     }
@@ -526,6 +532,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
         foreach ($this->with as $i => $name) {
             $options = (isset($this->withOptions[$i])) ? $this->withOptions[$i] : null;
 
+            $this->currentWithIndex = $i;
             if (method_exists($this, $name)) {
                 $this->relationships[$name] = $this->{$name}($options, $eager);
             }
