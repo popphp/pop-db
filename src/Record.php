@@ -706,8 +706,8 @@ class Record extends Record\AbstractRecord
     public function hasOne(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOne
     {
         $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey, $options);
-        if (!empty($this->withChildren)) {
-            $relationship->setChildRelationships($this->withChildren);
+        if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
+            $relationship->setChildRelationships($this->withChildren[$this->currentWithIndex]);
         }
         return ($eager) ? $relationship : $relationship->getChild($options);
     }
@@ -724,8 +724,8 @@ class Record extends Record\AbstractRecord
     public function hasOneOf(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOneOf
     {
         $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey, $options);
-        if (!empty($this->withChildren)) {
-            $relationship->setChildRelationships($this->withChildren);
+        if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
+            $relationship->setChildRelationships($this->withChildren[$this->currentWithIndex]);
         }
         return ($eager) ? $relationship : $relationship->getChild();
     }
@@ -754,8 +754,8 @@ class Record extends Record\AbstractRecord
         }
 
         $relationship = new Record\Relationships\HasMany($this, $foreignTable, $foreignKey, $options);
-        if (!empty($this->withChildren)) {
-            $relationship->setChildRelationships($this->withChildren);
+        if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
+            $relationship->setChildRelationships($this->withChildren[$this->currentWithIndex]);
         }
 
         if ($eager) {
@@ -778,8 +778,8 @@ class Record extends Record\AbstractRecord
     public function belongsTo(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\BelongsTo
     {
         $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey, $options);
-        if (!empty($this->withChildren)) {
-            $relationship->setChildRelationships($this->withChildren);
+        if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
+            $relationship->setChildRelationships($this->withChildren[$this->currentWithIndex]);
         }
         return ($eager) ? $relationship : $relationship->getParent($options);
     }
