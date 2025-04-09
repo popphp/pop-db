@@ -609,6 +609,10 @@ class Record extends Record\AbstractRecord
 
         $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
 
+        foreach ($rows as $i => $row) {
+            $rows[$i] = $this->processRow($row);
+        }
+
         if ($this->hasWiths() && !empty($rows)) {
             $this->getWithRelationships();
             $this->processWithRelationships($rows);
@@ -616,6 +620,9 @@ class Record extends Record\AbstractRecord
 
         if (isset($rows[0])) {
             $this->setColumns($rows[0]);
+            if ($rows[0]->hasRelationships()) {
+                $this->relationships = $rows[0]->getRelationships();
+            }
         }
 
         return ($toArray) ? $this->toArray() : $this;
