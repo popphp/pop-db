@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Sql\Parser;
 
+use Pop\Db\Sql\AbstractSql;
+
 /**
  * Predicate expression parser class
  *
@@ -105,6 +107,94 @@ class Expression
         }
 
         return $components;
+    }
+
+    /**
+     * Prepare a basic expression as a direct prepared predicate clause
+     *
+     * @param  string       $expression
+     * @param  ?AbstractSql $sql
+     * @param  bool         $withParams
+     * @return array
+     */
+    public static function prepareExpression(
+        string $expression, ?AbstractSql $sql = null, bool $withParams = true
+    ): array
+    {
+        ['column' => $column, 'operator' => $operator, 'value' => $value] = self::parse($expression);
+
+        $clause = $sql->quoteId($column) . ' ' . $operator;
+        $params = [];
+
+        if ($value !== null) {
+            if (is_array($value)) {
+                if ($withParams) {
+                    $clause         .= ' (' . implode(', ', array_fill(0, count($value), $sql->getPlaceholder())) . ')';
+                    $params[$column] = $value;
+                } else {
+                    $quotedValues = [];
+                    foreach ($value as $val) {
+                        $quotedValues[] = $sql->quote($val);
+                    }
+                    $clause .= ' (' . implode(', ', $quotedValues) . ')';
+                }
+            } else {
+                if ($withParams) {
+                    $clause          .= ' ' . $sql->getPlaceholder();
+                    $params[$column]  = $value;
+                } else {
+                    $clause .= ' ' . $sql->quote($value);
+                }
+            }
+        }
+
+        return ['clause' => $clause, 'params' => $params];
+    }
+
+    /**
+     * Prepare basic expressions as direct prepared predicate clauses
+     *
+     * @param  array        $expressions
+     * @param  ?AbstractSql $sql
+     * @param  bool         $withParams
+     * @param  bool         $flatten
+     * @return array
+     */
+    public static function prepareExpressions(
+        array $expressions, ?AbstractSql $sql = null, bool $withParams = true, bool $flatten = true
+    ): array
+    {
+        $clauses = [];
+
+        foreach ($expressions as $expression) {
+            $clauses[] = self::prepareExpression($expression, $sql, $withParams);
+        }
+
+        if ($flatten) {
+            $flattenClauses = [];
+            $flattenParams  = [];
+            $placeholder    = $sql->getPlaceholder();
+
+            foreach ($clauses as $clause) {
+                $flattenClauses[] = $clause['clause'];
+                if (!empty($clause['params'])) {
+                    if (is_array($clause['params'])) {
+                        $i = 1;
+                        foreach ($clause['params'] as $k => $v) {
+                            if ($placeholder == ':') {
+                                $flattenParams[$k . ($i++)] = $v;
+                            } else {
+                                $flattenParams[] = $v;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return ['clauses' => $flattenClauses, 'params' => $flattenParams];
+        } else {
+            return $clauses;
+        }
     }
 
     /**
@@ -348,7 +438,6 @@ class Expression
         } else {
             return ['expressions' => $expressions, 'params' => $params];
         }
-
     }
 
     /**
