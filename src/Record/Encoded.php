@@ -280,6 +280,17 @@ class Encoded extends \Pop\Db\Record
     }
 
     /**
+     * Get raw un-encoded value
+     *
+     * @param  string $name
+     * @return mixed
+     */
+    public function getRawValue(string $name): mixed
+    {
+        return parent::__get($name);
+    }
+
+    /**
      * Magic method to set the property to the value of $this->rowGateway[$name]
      *
      * @param  string $name
