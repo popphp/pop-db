@@ -675,7 +675,7 @@ class Record extends Record\AbstractRecord
      * @return array
      */
     public function getIn(
-        string $key, array $values, ?array $columns = null, array $options = null, bool|array $toArray = false
+        string $key, array $values, ?array $columns = null, ?array $options = null, bool|array $toArray = false
     ): array
     {
         $columns = ($columns !== null) ? array_merge([$key => $values], $columns) : [$key => $values];
