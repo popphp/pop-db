@@ -636,7 +636,9 @@ class Record extends Record\AbstractRecord
      * @param  bool   $toArray
      * @return Collection|array
      */
-    public function getBy(?array $columns = null, ?array $options = null, bool|array $toArray = false): Collection|array
+    public function getBy(
+        ?array $columns = null, ?array $options = null, bool|array $toArray = false
+    ): Collection|array
     {
         $expressions = null;
         $params      = null;
