@@ -419,7 +419,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  bool   $toArray
      * @return AbstractRecord
      */
-    public function setRows(array $rows = null, bool|array $toArray = false): AbstractRecord
+    public function setRows(?array $rows = null, bool|array $toArray = false): AbstractRecord
     {
         $this->rowGateway->setColumns();
         $this->tableGateway->setRows();
@@ -475,7 +475,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @param  ?array $options
      * @return AbstractRecord
      */
-    public function addWith(string $name, array $options = null): AbstractRecord
+    public function addWith(string $name, ?array $options = null): AbstractRecord
     {
         $children = null;
         if (str_contains($name, '.')) {

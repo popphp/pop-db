@@ -241,7 +241,7 @@ class Record extends Record\AbstractRecord
      * @throws Exception
      * @return \Exception|null
      */
-    public static function rollback(\Exception $exception = null): \Exception|null
+    public static function rollback(\Exception|null $exception = null): \Exception|null
     {
         $class = get_called_class();
 
@@ -674,7 +674,9 @@ class Record extends Record\AbstractRecord
      * @param  bool   $toArray
      * @return array
      */
-    public function getIn(string $key, array $values, array $columns = null, array $options = null, bool|array $toArray = false): array
+    public function getIn(
+        string $key, array $values, ?array $columns = null, array $options = null, bool|array $toArray = false
+    ): array
     {
         $columns = ($columns !== null) ? array_merge([$key => $values], $columns) : [$key => $values];
         $results = $this->getBy($columns, $options, $toArray);
@@ -896,7 +898,7 @@ class Record extends Record\AbstractRecord
      * @throws \Exception
      * @return void
      */
-    public function save(array $columns = null, bool $commit = true): void
+    public function save(?array $columns = null, bool $commit = true): void
     {
         try {
             // Save or update the record
@@ -937,7 +939,7 @@ class Record extends Record\AbstractRecord
      * @param  bool   $commit
      * @return void
      */
-    public function delete(array $columns = null, bool $commit = true): void
+    public function delete(?array $columns = null, bool $commit = true): void
     {
         try {
             // Delete the record
