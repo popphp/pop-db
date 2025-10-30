@@ -67,7 +67,7 @@ class HasOne extends AbstractRelationship
      * @param  ?array $options
      * @return Record
      */
-    public function getChild(array $options = null): Record
+    public function getChild(?array $options = null): Record
     {
         $table  = $this->foreignTable;
         $values = array_values($this->parent->getPrimaryValues());

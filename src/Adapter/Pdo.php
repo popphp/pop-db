@@ -703,10 +703,10 @@ class Pdo extends AbstractAdapter
     /**
      * The method receives data of one column from the next row of the result set.
      *
-     * @param  int $num The number of the table column
+     * @param  ?int $num The number of the table column
      * @return mixed
      */
-    public function fetchColumn(int $num = null): mixed
+    public function fetchColumn(?int $num = null): mixed
     {
         return $this->statement->fetchColumn($num);
     }
