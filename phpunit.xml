@@ -13,8 +13,8 @@
   <logging/>
   <php>
     <env name="MYSQL_DB" value="test_popdb"/>
-    <env name="MYSQL_USER" value="admin"/>
-    <env name="MYSQL_PASS" value="12admin34"/>
+    <env name="MYSQL_USER" value="root"/>
+    <env name="MYSQL_PASS" value=""/>
     <env name="MYSQL_HOST" value="127.0.0.1"/>
     <env name="PGSQL_DB" value="test_popdb"/>
     <env name="PGSQL_USER" value="postgres"/>
