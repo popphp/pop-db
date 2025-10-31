@@ -196,7 +196,7 @@ class Sqlite extends AbstractAdapter
 
         $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
 
-        if (!($this->result = $this->connection->query($sql))) {
+        if (!($this->result = $this->connection->query($sql)) && ($this->connection->lastErrorCode() != 0)) {
             if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
