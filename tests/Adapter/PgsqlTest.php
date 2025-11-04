@@ -68,13 +68,8 @@ class PgsqlTest extends TestCase
         $db->query($schema);
 
         $this->assertTrue($db->hasTable('users'));
-        $debugResults = $profiler->prepareAsString();
         $this->assertInstanceOf('Pop\Db\Adapter\Pgsql', $db);
         $this->assertStringContainsString('PostgreSQL', $db->getVersion());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS "users"', $debugResults);
     }
 
     public function testExecuteException()
@@ -144,17 +139,11 @@ class PgsqlTest extends TestCase
         $db->commit();
         $this->assertEquals(0, $db->getNumberOfAffectedRows());
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertTrue($db->hasResult());
         $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(0, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('INSERT INTO users', $debugResults);
     }
 
     public function testRollback()

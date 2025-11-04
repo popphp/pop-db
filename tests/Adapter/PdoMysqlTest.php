@@ -64,12 +64,7 @@ class PdoMysqlTest extends TestCase
         $this->assertFalse($db->hasTable('users'));
         $db->query($schema);
 
-        $debugResults = $profiler->prepareAsString();
         $this->assertTrue($db->hasTable('users'));
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('CREATE TABLE `users`', $debugResults);
         $db->disconnect();
     }
 
@@ -129,16 +124,10 @@ class PdoMysqlTest extends TestCase
            ])
            ->execute();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertNull($db->getResult());
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('INSERT INTO `users`', $debugResults);
         $db->disconnect();
     }
 

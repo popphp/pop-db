@@ -13,6 +13,9 @@
  */
 namespace Pop\Db\Record;
 
+use Pop\Crypt\Hashing\Hasher;
+use Pop\Crypt\Encryption\Encrypter;
+
 /**
  * Encoded record class
  *
@@ -66,25 +69,19 @@ class Encoded extends \Pop\Db\Record
      * Hash options
      * @var array
      */
-    protected array $hashOptions = ['cost' => 10];
+    protected array $hashOptions = [];
 
     /**
      * Cipher method
      * @var ?string
      */
-    protected ?string $cipherMethod = null;
+    protected ?string $cipherMethod = 'aes-256-cbc';
 
     /**
      * Encrypted field key
      * @var ?string
      */
     protected ?string $key = null;
-
-    /**
-     * Encrypted field IV (base64-encoded)
-     * @var ?string
-     */
-    protected ?string $iv = null;
 
     /**
      * Set all the table column values at once
@@ -152,19 +149,24 @@ class Encoded extends \Pop\Db\Record
                 $value = base64_encode($value);
             }
         } else if (in_array($key, $this->hashFields)) {
-            $info = password_get_info($value);
+            $hasher = Hasher::create($this->hashAlgorithm, $this->hashOptions);
+            $info   = $hasher->getInfo($value);
             if (((int)$info['algo'] == 0) || (strtolower($info['algoName']) == 'unknown')) {
-                $value = password_hash($value, $this->hashAlgorithm, $this->hashOptions);
+                $value = $hasher->make($value);
             }
         } else if (in_array($key, $this->encryptedFields)) {
-            if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
+            if (empty($this->cipherMethod) || empty($this->key)) {
                 throw new Exception('Error: The encryption properties have not been set for this class.');
+            }
+            $keys      = str_contains($this->key, ',') ? explode(',', $this->key) : [$this->key];
+            $encrypter = new Encrypter($keys[0], $this->cipherMethod, false);
+            if (count($keys) > 1) {
+                unset($keys[0]);
+                $encrypter->setPreviousKeys(array_values($keys), false);
             }
             $decodedValue = $this->decodeValue($key, $value);
             if (!(is_string($value) && ($decodedValue !== false) && ($decodedValue != $value))) {
-                $value = base64_encode(
-                    openssl_encrypt($value, $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv))
-                );
+                $value = $encrypter->encrypt($value);
             }
         }
 
@@ -203,15 +205,19 @@ class Encoded extends \Pop\Db\Record
                 }
             }
         } else if (in_array($key, $this->encryptedFields)) {
-            if (empty($this->cipherMethod) || empty($this->key) || empty($this->iv)) {
+            if (empty($this->cipherMethod) || empty($this->key)) {
                 throw new Exception('Error: The encryption properties have not been set for this class.');
+            }
+            $keys      = str_contains($this->key, ',') ? explode(',', $this->key) : [$this->key];
+            $encrypter = new Encrypter($keys[0], $this->cipherMethod, false);
+            if (count($keys) > 1) {
+                unset($keys[0]);
+                $encrypter->setPreviousKeys(array_values($keys), false);
             }
             if ($value !== null) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
-                    $value = openssl_decrypt(
-                        base64_decode($value), $this->cipherMethod, $this->key, OPENSSL_RAW_DATA, base64_decode($this->iv)
-                    );
+                    $value = $encrypter->decrypt($value);
                 }
             }
         }
@@ -228,7 +234,8 @@ class Encoded extends \Pop\Db\Record
      */
     public function verify(string $key, string $value): bool
     {
-        return password_verify($value, $this->{$key});
+        $hasher = Hasher::create($this->hashAlgorithm, $this->hashOptions);
+        return $hasher->verify($value, $this->{$key});
     }
 
     /**
