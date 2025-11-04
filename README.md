@@ -756,7 +756,7 @@ class Users extends Encoded
 
     protected array  $hashFields    = ['password'];
     protected string $hashAlgorithm = PASSWORD_BCRYPT;
-    protected array  $hashOptions   = ['cost' => 10];
+    protected array  $hashOptions   = ['cost' => 12];
 }
 ```
 
@@ -776,21 +776,17 @@ if ($user->verify('password', $attemptedPassword)) {
 An even more advanced example would be using an 2-way encrypted field, which uses the
 Open SSL library extension. It requires a few more table properties to be configured:
 
-- `$cipherMethod`
-- `$key`
-- `$iv`
-
-You have to create an IV value and base64 encode it to set it as the `$iv` property.
+- `$cipherMethod` - available cipher method string from the `Pop\Crypt\Encryption\Encrypter` class
+- `$key` - base64 encoded value generated from the `Pop\Crypt\Encryption\Encrypter` class
 
 ```php
 use Pop\Db\Record\Encoded
 
 class Users extends Encoded
 {
-    protected array   $encryptedFields = ['sensitive_data'];
+    protected array   $encryptedFields = ['sensitive_data_field'];
     protected ?string $cipherMethod    = 'aes-256-cbc';
-    protected ?string $key             = 'YOUR_KEY';
-    protected ?string $iv              = 'BASE64_ENCODED_IV_STRING';
+    protected ?string $key             = 'BASE64_ENCODED_KEY';
 }
 ```
 
