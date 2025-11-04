@@ -72,16 +72,22 @@ class Encoded extends \Pop\Db\Record
     protected array $hashOptions = [];
 
     /**
-     * Cipher method
+     * Encryption cipher method
      * @var ?string
      */
-    protected ?string $cipherMethod = 'aes-256-cbc';
+    protected ?string $cipherMethod = null;
 
     /**
-     * Encrypted field key
+     * Encryption key
      * @var ?string
      */
     protected ?string $key = null;
+
+    /**
+     * Encryption previous keys
+     * @var array
+     */
+    protected array $previousKeys = [];
 
     /**
      * Set all the table column values at once
@@ -155,15 +161,21 @@ class Encoded extends \Pop\Db\Record
                 $value = $hasher->make($value);
             }
         } else if (in_array($key, $this->encryptedFields)) {
+            // Attempt to load encryption properties from $_ENV
             if (empty($this->cipherMethod) || empty($this->key)) {
-                throw new Exception('Error: The encryption properties have not been set for this class.');
+                $this->loadEncryptionProperties();
             }
-            $keys      = str_contains($this->key, ',') ? explode(',', $this->key) : [$this->key];
-            $encrypter = new Encrypter($keys[0], $this->cipherMethod, false);
-            if (count($keys) > 1) {
-                unset($keys[0]);
-                $encrypter->setPreviousKeys(array_values($keys), false);
+            if (empty($this->cipherMethod) || empty($this->key)) {
+                throw new Exception('Error: The encryption properties have not been set.');
             }
+
+            $encrypter = new Encrypter($this->key, $this->cipherMethod, false);
+
+            // Load any previous encryption keys
+            if (!empty($this->previousKeys)) {
+                $encrypter->setPreviousKeys($this->previousKeys, false);
+            }
+
             $decodedValue = $this->decodeValue($key, $value);
             if (!(is_string($value) && ($decodedValue !== false) && ($decodedValue != $value))) {
                 $value = $encrypter->encrypt($value);
@@ -205,15 +217,21 @@ class Encoded extends \Pop\Db\Record
                 }
             }
         } else if (in_array($key, $this->encryptedFields)) {
+            // Attempt to load encryption properties from $_ENV
             if (empty($this->cipherMethod) || empty($this->key)) {
-                throw new Exception('Error: The encryption properties have not been set for this class.');
+                $this->loadEncryptionProperties();
             }
-            $keys      = str_contains($this->key, ',') ? explode(',', $this->key) : [$this->key];
-            $encrypter = new Encrypter($keys[0], $this->cipherMethod, false);
-            if (count($keys) > 1) {
-                unset($keys[0]);
-                $encrypter->setPreviousKeys(array_values($keys), false);
+            if (empty($this->cipherMethod) || empty($this->key)) {
+                throw new Exception('Error: The encryption properties have not been set.');
             }
+
+            $encrypter = new Encrypter($this->key, $this->cipherMethod, false);
+
+            // Load any previous encryption keys
+            if (!empty($this->previousKeys)) {
+                $encrypter->setPreviousKeys($this->previousKeys, false);
+            }
+
             if ($value !== null) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
@@ -284,6 +302,24 @@ class Encoded extends \Pop\Db\Record
     {
         return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) ||
             in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields));
+    }
+
+    /**
+     * Attempt to load encryption properties from $_ENV vars
+     *
+     * @return void
+     */
+    public function loadEncryptionProperties(): void
+    {
+        if (empty($this->cipherMethod) && !empty($_ENV['APP_CIPHER_METHOD'])) {
+            $this->cipherMethod = trim($_ENV['APP_CIPHER_METHOD']);
+        }
+        if (empty($this->key) && !empty($_ENV['APP_KEY'])) {
+            $this->key = trim($_ENV['APP_KEY']);
+            if (!empty($_ENV['APP_PREVIOUS_KEYS'])) {
+                $this->previousKeys = array_map('trim', explode(',', $_ENV['APP_PREVIOUS_KEYS']));
+            }
+        }
     }
 
     /**
