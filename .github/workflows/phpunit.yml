@@ -50,6 +50,9 @@ jobs:
         tools: phpunit:${{ matrix.phpunit-versions }}
         extensions: mysqli, pgsql, sqlite3, pdo
 
+    - name: Clear Composer cache
+      run: composer clear-cache
+
     - name: Cache Composer packages
       id: composer-cache
       uses: actions/cache@v3
