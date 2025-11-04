@@ -50,16 +50,6 @@ jobs:
         tools: phpunit:${{ matrix.phpunit-versions }}
         extensions: mysqli, pgsql, sqlite3, pdo
 
-    - name: Cache Composer dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          vendor
-          ~/.composer/cache
-        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-composer-
-
     - name: Cache Composer packages
       id: composer-cache
       uses: actions/cache@v3
