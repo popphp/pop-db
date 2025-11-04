@@ -27,10 +27,4 @@ class UsersEncoded2 extends Encoded
      */
     protected ?string $key = null;
 
-    /**
-     * Encrypted field IV (base64-encoded)
-     * @var ?string
-     */
-    protected ?string $iv = null;
-
 }

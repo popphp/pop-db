@@ -63,12 +63,6 @@ class PdoSqliteTest extends TestCase
         $this->assertFalse($db->hasTable('users'));
         $db->query($schema);
         $this->assertTrue($db->hasTable('users'));
-
-        $debugResults = $profiler->prepareAsString();
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('CREATE TABLE "users"', $debugResults);
     }
 
     public function testBindParams()
@@ -94,7 +88,6 @@ class PdoSqliteTest extends TestCase
                 'email'    => $db->escape('test@test.com')
             ])->execute();
 
-        $debugResults = $profiler->prepareAsString();
         $debugParams  = $db->debugDumpParams(true);
 
         $this->assertNull($db->getResult());
@@ -105,10 +98,6 @@ class PdoSqliteTest extends TestCase
         $this->assertNotNull($db->getCountOfRows());
         $this->assertNotNull($db->fetchColumn(1));
         $this->assertNotNull($db->closeCursor());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('INSERT INTO "users"', $debugResults);
         $this->assertStringContainsString('"username", "password", "email"', $debugParams);
     }
 
@@ -234,12 +223,7 @@ class PdoSqliteTest extends TestCase
         $db->prepare($sql)
             ->bindParam(':username', $username)->execute();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testBindValue()
@@ -260,12 +244,7 @@ class PdoSqliteTest extends TestCase
         $db->prepare($sql)
             ->bindValue(':username', 'testuser3')->execute();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testError()

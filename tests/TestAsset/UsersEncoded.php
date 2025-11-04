@@ -47,24 +47,18 @@ class UsersEncoded extends Encoded
      * Hash options
      * @var array
      */
-    protected array $hashOptions = ['cost' => 15];
+    protected array $hashOptions = ['cost' => 12];
 
     /**
      * Cipher method
      * @var ?string
      */
-    protected ?string $cipherMethod = 'AES-128-CBC';
+    protected ?string $cipherMethod = 'aes-256-cbc';
 
     /**
      * Encrypted field key
      * @var ?string
      */
-    protected ?string $key = '992a889eb02ec33b251fa6d9cb2cb4bec32c7ac7';
-
-    /**
-     * Encrypted field IV (base64-encoded)
-     * @var ?string
-     */
-    protected ?string $iv = 'zR/wFGfs5Dr63/d8AnrDBg==';
+    protected ?string $key = 'vBTcBMBrauIpjy2oXhXOFxshW4//tXXnagOr2a+AqKI=';
 
 }

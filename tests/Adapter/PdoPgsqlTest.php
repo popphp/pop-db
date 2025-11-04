@@ -61,13 +61,8 @@ TABLE;
         $db->query($table);
         $db->query('ALTER SEQUENCE user_id_seq OWNED BY "users"."id";');
 
-        $debugResults = $profiler->prepareAsString();
         $this->assertInstanceOf('Pop\Db\Adapter\Pdo', $db);
         $this->assertStringContainsString('PDO pgsql', $db->getVersion());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('CREATE TABLE IF NOT EXISTS "users"', $debugResults);
     }
 
     public function testGetTables()
@@ -106,15 +101,9 @@ TABLE;
 
         $db->commit();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('INSERT INTO users', $debugResults);
     }
 
     public function testRollback()

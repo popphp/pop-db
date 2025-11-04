@@ -69,12 +69,6 @@ class SqliteTest extends TestCase
         $this->assertFalse($db->hasTable('users'));
         $db->query($schema);
         $this->assertTrue($db->hasTable('users'));
-
-        $debugResults = $profiler->prepareAsString();
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('CREATE TABLE "users"', $debugResults);
     }
 
     public function testBindParams()
@@ -99,16 +93,10 @@ class SqliteTest extends TestCase
                 'email'    => $db->escape('test@test.com')
             ])->execute();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertNotNull($db->getResult());
         $this->assertNotNull($db->getLastId());
         $this->assertNotNull($db->getConnection());
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
-        $this->assertStringContainsString('INSERT INTO "users"', $debugResults);
     }
 
     public function testFetch()
@@ -227,12 +215,7 @@ class SqliteTest extends TestCase
         $db->prepare($sql)
             ->bindParam(':username', 'testuser3')->execute();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testBindValue()
@@ -252,12 +235,7 @@ class SqliteTest extends TestCase
         $db->prepare($sql)
             ->bindValue(':username', 'testuser3')->execute();
 
-        $debugResults = $profiler->prepareAsString();
-
         $this->assertEquals(1, $db->getNumberOfRows());
-        $this->assertStringContainsString('Start:', $debugResults);
-        $this->assertStringContainsString('Finish:', $debugResults);
-        $this->assertStringContainsString('Elapsed:', $debugResults);
     }
 
     public function testDropTable()

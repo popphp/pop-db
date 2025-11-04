@@ -156,7 +156,7 @@ class EncodedTest extends TestCase
             'info'     => '{"foo":"bar"}',
             'notes'    => 'a:1:{s:9:"birthdate";s:8:"08/19/77";}',
             'file'     => 'c29tZSByZWFsbHkgbG9uZyBiaW5hcnkgc3RyaW5n',
-            'ssn'      => 'RQ4O1riQb6Vwr9wz32X9Lg=='
+            'ssn'      => 'eyJpdiI6IjlBYXR1TEpxQ1RBL3Z3VFdxUTJaQkE9PSIsInZhbHVlIjoiKzVEZmNTQVpTaE5qSkoyYmp4WTh2QT09IiwibWFjIjoiYmFhMmViZWU0OTU0ZjY0MDAwYjI1ZGI3ZmMwZjc1NTE2ODg2MWIxYmI4MzAxY2ExYmMyZDE3ZDU3Njg4ZjA5ZiIsInRhZyI6IiJ9'
         ];
 
         $decoded = (new UsersEncoded())->decode($encoded);

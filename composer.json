@@ -26,6 +26,7 @@
     ],
     "require": {
         "php": ">=8.3.0",
+        "popphp/pop-crypt": "^3.0.0",
         "popphp/pop-debug": "^3.0.0",
         "popphp/pop-utils": "^2.3.0"
     },
@@ -53,7 +54,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "6.6.x-dev"
+            "dev-master": "6.7.x-dev"
         }
     }
 }
