@@ -778,6 +778,10 @@ Open SSL library extension. It requires a few more table properties to be config
 
 - `$cipherMethod` - available cipher method string from the `Pop\Crypt\Encryption\Encrypter` class
 - `$key` - base64 encoded value generated from the `Pop\Crypt\Encryption\Encrypter` class
+- `$previousKeys` - base64 encoded values generated from the `Pop\Crypt\Encryption\Encrypter` class 
+  of previous keys to provide graceful key rotation
+
+The encryption properties can be stored within the class directly:
 
 ```php
 use Pop\Db\Record\Encoded
@@ -787,11 +791,15 @@ class Users extends Encoded
     protected array   $encryptedFields = ['sensitive_data_field'];
     protected ?string $cipherMethod    = 'aes-256-cbc';
     protected ?string $key             = 'BASE64_ENCODED_KEY';
+    protected array   $previousKeys    = ['BASE64_OLD_ENCODED_KEY1', 'BASE64_OLD_ENCODED_KEY2'];
 }
 ```
 
-This configuration will allow you to store the encrypted value in the database and
-securely extract it when you fetch the record.
+Or, they can be autoloaded from the application's `.env` file as the following values:
+
+- `APP_CIPHER_METHOD` - a string of the cipher to be used, e.g. `aes-256-cbc`
+- `APP_KEY` - a base-64 encoded string of the current active key
+- `APP_PREVIOUS_KEYS` - a comma-separated list of base-64 encoded strings of the previous keys
 
 [Top](#pop-db)
 
