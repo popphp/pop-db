@@ -14,6 +14,7 @@
 namespace Pop\Db;
 
 use Pop\Db\Record\Collection;
+use Pop\Db\Sql\PredicateSet;
 use Pop\Utils\CallableObject;
 
 /**
@@ -24,7 +25,7 @@ use Pop\Utils\CallableObject;
  * @author     Nick Sagona, III <dev@noladev.com>
  * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.7.0
+ * @version    6.8.0
  * @method     static findWhereEquals($column, $value, array $options = null, bool|array $toArray = false)
  * @method     static findWhereNotEquals($column, $value, array $options = null, bool|array $toArray = false)
  * @method     static findWhereGreaterThan($column, $value, array $options = null, bool|array $toArray = false)
@@ -181,6 +182,18 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Get a predicate set
+     *
+     * @param  mixed   $predicates
+     * @param  ?string $conjunction
+     * @return PredicateSet
+     */
+    public static function predicate(mixed $predicates = null, ?string $conjunction = null): PredicateSet
+    {
+        return new PredicateSet(static::getSql(), $predicates, $conjunction);
+    }
+
+    /**
      * Get table name
      *
      * @param  bool $quotes
@@ -299,12 +312,14 @@ class Record extends Record\AbstractRecord
     /**
      * Find one static method
      *
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $toArray
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return static|array
      */
-    public static function findOne(?array $columns = null, ?array $options = null, bool $toArray = false): array|static
+    public static function findOne(
+        array|PredicateSet|null $columns = null, ?array $options = null, bool $toArray = false
+    ): array|static
     {
         return (new static())->getOne($columns, $options, $toArray);
     }
@@ -312,16 +327,21 @@ class Record extends Record\AbstractRecord
     /**
      * Find one or create static method
      *
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $toArray
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return static|array
      */
-    public static function findOneOrCreate(?array $columns = null, ?array $options = null, bool $toArray = false): array|static
+    public static function findOneOrCreate(
+        array|PredicateSet|null $columns = null, ?array $options = null, bool $toArray = false
+    ): array|static
     {
         $result = (new static())->getOne($columns, $options);
 
         if (empty($result->toArray())) {
+            if ($columns instanceof PredicateSet) {
+                $columns = $columns->extractValues();
+            }
             $newRecord = new static($columns);
             $newRecord->save();
             $result = $newRecord;
@@ -333,13 +353,15 @@ class Record extends Record\AbstractRecord
     /**
      * Find latest static method
      *
-     * @param  ?string $by
-     * @param  ?array  $columns
-     * @param  ?array  $options
-     * @param  bool    $toArray
+     * @param  ?string                 $by
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return static|array
      */
-    public static function findLatest(?string $by = null, ?array $columns = null, ?array $options = null, bool $toArray = false): array|static
+    public static function findLatest(
+        ?string $by = null, array|PredicateSet|null $columns = null, ?array $options = null, bool $toArray = false
+    ): array|static
     {
         $record = new static();
 
@@ -361,12 +383,14 @@ class Record extends Record\AbstractRecord
     /**
      * Find by static method
      *
-     * @param  ?array     $columns
-     * @param  ?array     $options
-     * @param  bool|array $toArray
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool|array              $toArray
      * @return Collection|array
      */
-    public static function findBy(?array $columns = null, ?array $options = null, bool|array $toArray = false): Collection|array
+    public static function findBy(
+        array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
+    ): Collection|array
     {
         return (new static())->getBy($columns, $options, $toArray);
     }
@@ -374,16 +398,21 @@ class Record extends Record\AbstractRecord
     /**
      * Find by or create static method
      *
-     * @param  ?array     $columns
-     * @param  ?array     $options
-     * @param  bool|array $toArray
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool|array              $toArray
      * @return static|Collection|array
      */
-    public static function findByOrCreate(?array $columns = null, ?array $options = null, bool|array $toArray = false): Collection|array|static
+    public static function findByOrCreate(
+        array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
+    ): Collection|array|static
     {
         $result = (new static())->getBy($columns, $options);
 
         if ($result->count() == 0) {
+            if ($columns instanceof PredicateSet) {
+                $columns = $columns->extractValues();
+            }
             $newRecord = new static($columns);
             $newRecord->save();
             $result = $newRecord;
@@ -396,14 +425,16 @@ class Record extends Record\AbstractRecord
     /**
      * Find in static method
      *
-     * @param  string  $key
-     * @param  array   $values
-     * @param  ?array  $columns
-     * @param  ?array  $options
-     * @param  bool    $toArray
+     * @param  string                  $key
+     * @param  array                   $values
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return array
      */
-    public static function findIn(string $key, array $values, ?array $columns = null, ?array $options = null, bool|array $toArray = false): array
+    public static function findIn(
+        string $key, array $values, array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
+    ): array
     {
         return (new static())->getIn($key, $values, $columns, $options, $toArray);
     }
@@ -501,21 +532,18 @@ class Record extends Record\AbstractRecord
     /**
      * Static method to get the total count of a set from the DB table
      *
-     * @param  ?array $columns
-     * @param  ?array $options
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
      * @return int
      */
-    public static function getTotal(?array $columns = null, ?array $options = null): int
+    public static function getTotal(array|PredicateSet|null $columns = null, ?array $options = null): int
     {
         $record      = new static();
         $expressions = null;
         $params      = null;
 
         if ($columns !== null) {
-            $db            = Db::getDb($record->getFullTable());
-            $sql           = $db->createSql();
-            ['expressions' => $expressions, 'params' => $params] =
-                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+            ['expressions' => $expressions, 'params' => $params] = $record->parseColumns($columns);
         }
 
         $rows = $record->getTableGateway()->select(['total_count' => 'COUNT(1)'], $expressions, $params, $options);
@@ -583,12 +611,12 @@ class Record extends Record\AbstractRecord
     /**
      * Get one method
      *
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $toArray
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return static|array
      */
-    public function getOne(?array $columns = null, ?array $options = null, bool $toArray = false): Record|array|static
+    public function getOne(array|PredicateSet|null $columns = null, ?array $options = null, bool $toArray = false): Record|array|static
     {
         if ($options === null) {
             $options = ['limit' => 1];
@@ -601,10 +629,7 @@ class Record extends Record\AbstractRecord
         $select      = $options['select'] ?? null;
 
         if ($columns !== null) {
-            $db            = Db::getDb($this->getFullTable());
-            $sql           = $db->createSql();
-            ['expressions' => $expressions, 'params' => $params] =
-                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+            ['expressions' => $expressions, 'params' => $params] = $this->parseColumns($columns);
         }
 
         $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
@@ -631,13 +656,13 @@ class Record extends Record\AbstractRecord
     /**
      * Get by method
      *
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $toArray
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return Collection|array
      */
     public function getBy(
-        ?array $columns = null, ?array $options = null, bool|array $toArray = false
+        array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
     ): Collection|array
     {
         $expressions = null;
@@ -645,10 +670,7 @@ class Record extends Record\AbstractRecord
         $select      = $options['select'] ?? null;
 
         if ($columns !== null) {
-            $db            = Db::getDb($this->getFullTable());
-            $sql           = $db->createSql();
-            ['expressions' => $expressions, 'params' => $params] =
-                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+            ['expressions' => $expressions, 'params' => $params] = $this->parseColumns($columns);
         }
 
         $rows = $this->getTableGateway()->select($select, $expressions, $params, $options);
@@ -669,18 +691,18 @@ class Record extends Record\AbstractRecord
     /**
      * Get in method
      *
-     * @param  string $key
-     * @param  array  $values
-     * @param  ?array $columns
-     * @param  ?array $options
-     * @param  bool   $toArray
+     * @param  string                  $key
+     * @param  array                   $values
+     * @param  array|PredicateSet|null $columns
+     * @param  ?array                  $options
+     * @param  bool                    $toArray
      * @return array
      */
     public function getIn(
-        string $key, array $values, ?array $columns = null, ?array $options = null, bool|array $toArray = false
+        string $key, array $values, array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
     ): array
     {
-        $columns = ($columns !== null) ? array_merge([$key => $values], $columns) : [$key => $values];
+        $columns = (($columns !== null) && is_array($columns)) ? array_merge([$key => $values], $columns) : [$key => $values];
         $results = $this->getBy($columns, $options, $toArray);
         $rows    = [];
 
@@ -703,6 +725,30 @@ class Record extends Record\AbstractRecord
     public function getAll(?array $options = null, bool|array $toArray = false): Collection|array
     {
         return $this->getBy(null, $options, $toArray);
+    }
+
+    /**
+     * Parse columns and return expressions and params
+     *
+     * @param  array|PredicateSet $columns
+     * @return array
+     */
+    public function parseColumns(array|PredicateSet $columns): array
+    {
+        $expressions = null;
+        $params      = null;
+
+        if (is_array($columns)) {
+            $db            = Db::getDb($this->getFullTable());
+            $sql           = $db->createSql();
+            ['expressions' => $expressions, 'params' => $params] =
+                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+        } else if ($columns instanceof PredicateSet) {
+            $expressions = $columns;
+            $params      = ($columns->hasParameters()) ? $columns->getParameters() : null;
+        }
+
+        return ['expressions' => $expressions, 'params' => $params];
     }
 
     /**

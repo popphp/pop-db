@@ -21,7 +21,7 @@ namespace Pop\Db\Sql;
  * @author     Nick Sagona, III <dev@noladev.com>
  * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.7.0
+ * @version    6.8.0
  * @property   $where mixed
  */
 abstract class AbstractPredicateClause extends AbstractClause
@@ -29,9 +29,9 @@ abstract class AbstractPredicateClause extends AbstractClause
 
     /**
      * WHERE predicate object
-     * @var ?Where
+     * @var ?PredicateSet
      */
-    protected ?Where $where = null;
+    protected ?PredicateSet $where = null;
 
     /**
      * Access the WHERE clause
@@ -41,30 +41,34 @@ abstract class AbstractPredicateClause extends AbstractClause
      */
     public function where(mixed $where = null): AbstractPredicateClause
     {
-        if ($this->where === null) {
-            $this->where = new Where($this);
-        }
+        if ($where instanceof PredicateSet) {
+            $this->where = $where;
+        } else {
+            if ($this->where === null) {
+                $this->where = new Where($this);
+            }
 
-        if ($where !== null) {
-            if (is_string($where)) {
-                if ((stripos($where, ' AND ') !== false) || (stripos($where, ' OR ') !== false)) {
-                    $expressions = array_map('trim', preg_split(
-                        '/(AND|OR)/', $where, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
-                    ));
-                    foreach ($expressions as $i => $expression) {
-                        if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
-                            $this->where->and($expression);
-                        } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
-                            $this->where->or($expression);
-                        } else if (($expression != 'AND') && ($expression != 'OR')) {
-                            $this->where->add($expression);
+            if ($where !== null) {
+                if (is_string($where)) {
+                    if ((stripos($where, ' AND ') !== false) || (stripos($where, ' OR ') !== false)) {
+                        $expressions = array_map('trim', preg_split(
+                            '/(AND|OR)/', $where, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
+                        ));
+                        foreach ($expressions as $i => $expression) {
+                            if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
+                                $this->where->and($expression);
+                            } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
+                                $this->where->or($expression);
+                            } else if (($expression != 'AND') && ($expression != 'OR')) {
+                                $this->where->add($expression);
+                            }
                         }
+                    } else {
+                        $this->where->add($where);
                     }
-                } else {
-                    $this->where->add($where);
+                } else if (is_array($where)) {
+                    $this->where->addExpressions($where);
                 }
-            } else if (is_array($where)) {
-                $this->where->addExpressions($where);
             }
         }
 
