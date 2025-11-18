@@ -199,9 +199,10 @@ class PredicateSet
      * Add a predicate from a string expression
      *
      * @param  string $expression
+     * @param  mixed  $placeholder
      * @return PredicateSet
      */
-    public function add(string $expression): PredicateSet
+    public function add(string $expression, mixed $placeholder = false): PredicateSet
     {
         ['column' => $column, 'operator' => $operator, 'value' => $value] = Parser\Expression::parse($expression);
 
@@ -214,6 +215,17 @@ class PredicateSet
         } else {
             if ($this->sql->isParameter($value, $column)) {
                 $value = $this->sql->getParameter($value, $column);
+            }
+        }
+
+        if ($placeholder !== false) {
+            $this->addParameter($column, $value);
+            if ($this->sql->isSqlite()) {
+                $value = ':' . $column;
+            } else if ($this->sql->isPgsql()) {
+                $value = '$' . (int)$placeholder;
+            } else {
+                $value = $this->sql->getPlaceholder();
             }
         }
 
