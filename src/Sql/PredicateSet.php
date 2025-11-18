@@ -13,6 +13,8 @@
  */
 namespace Pop\Db\Sql;
 
+use Pop\Db\Sql\Predicate\EqualTo;
+
 /**
  * Predicate set class
  *
@@ -21,7 +23,7 @@ namespace Pop\Db\Sql;
  * @author     Nick Sagona, III <dev@noladev.com>
  * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.7.0
+ * @version    6.8.0
  */
 class PredicateSet
 {
@@ -36,7 +38,7 @@ class PredicateSet
      * Predicates
      * @var array
      */
-    protected array$predicates = [];
+    protected array $predicates = [];
 
     /**
      * Nested predicate sets
@@ -55,6 +57,12 @@ class PredicateSet
      * @var string
      */
     protected string $nextConjunction = 'AND';
+
+    /**
+     * Parameters (for binding)
+     * @var array
+     */
+    protected array $parameters = [];
 
     /**
      * Constructor
@@ -81,6 +89,110 @@ class PredicateSet
         if ($conjunction !== null) {
             $this->setConjunction($conjunction);
         }
+    }
+
+    /**
+     * Set parameters
+     *
+     * @param  array $parameters
+     * @return PredicateSet
+     */
+    public function setParameters(array $parameters): PredicateSet
+    {
+        $this->parameters = $parameters;
+        return $this;
+    }
+
+    /**
+     * Add parameters
+     *
+     * @param  array $parameters
+     * @return PredicateSet
+     */
+    public function addParameters(array $parameters): PredicateSet
+    {
+        foreach ($parameters as $name => $value) {
+            $this->addParameter($name, $value);
+        }
+        return $this;
+    }
+
+    /**
+     * Add parameter
+     *
+     * @param  mixed $name
+     * @param  mixed $value
+     * @return PredicateSet
+     */
+    public function addParameter(mixed $name, mixed $value): PredicateSet
+    {
+        $this->parameters[$name] = $value;
+        return $this;
+    }
+
+    /**
+     * Get parameters
+     *
+     * @return array
+     */
+    public function getParameters(): array
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * Get parameter
+     *
+     * @param  mixed $name
+     * @return mixed
+     */
+    public function getParameter(mixed $name): mixed
+    {
+        return $this->parameters[$name] ?? null;
+    }
+
+    /**
+     * Has parameters
+     *
+     * @return bool
+     */
+    public function hasParameters(): bool
+    {
+        return !empty($this->parameters);
+    }
+
+    /**
+     * Has parameter
+     *
+     * @param  mixed $name
+     * @return bool
+     */
+    public function hasParameter(mixed $name): bool
+    {
+        return !empty($this->parameters[$name]);
+    }
+
+    /**
+     * Extract values
+     *
+     * @param  bool $placeholder
+     * @return array
+     */
+    public function extractValues(bool $placeholder = false): array
+    {
+        $values = [];
+
+        foreach ($this->predicates as $i => $predicate) {
+            if (($predicate instanceof EqualTo) && ($predicate->getConjunction() == 'AND')) {
+                [$column, $value] = $predicate->getValues();
+                if ((!$placeholder) && isset($this->parameters[$i])) {
+                    $value = $this->parameters[$i];
+                }
+                $values[$column] = $value;
+            }
+        }
+
+        return $values;
     }
 
     /**

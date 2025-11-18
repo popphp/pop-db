@@ -33,6 +33,16 @@ class PredicateSetTest extends TestCase
         $this->assertEquals(1, count($predicateSet->getPredicates()));
     }
 
+    public function testParameters()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->setParameters(['foo' => 'bar']);
+        $predicateSet->addParameters(['baz' => 'qux']);
+        $this->assertTrue($predicateSet->hasParameters());
+        $this->assertTrue($predicateSet->hasParameter('foo'));
+        $this->assertEquals('qux', $predicateSet->getParameter('baz'));
+    }
+
     public function testConstructorWithArray()
     {
         $predicateSet = new PredicateSet($this->db->createSql(), [

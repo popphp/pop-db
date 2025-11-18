@@ -99,6 +99,12 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testGetPredicateSet()
+    {
+        $this->assertInstanceOf('Pop\Db\Sql\PredicateSet', Users::predicate());
+        $this->db->disconnect();
+    }
+
     public function testTable()
     {
         $this->assertEquals('users', Users::table());
