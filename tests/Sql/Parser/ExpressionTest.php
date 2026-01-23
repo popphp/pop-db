@@ -169,7 +169,7 @@ class ExpressionTest extends TestCase
         $this->assertEquals(1, $columns['id'][0]);
         $this->assertEquals(2, $columns['id'][1]);
         $this->assertEquals(3, $columns['id'][2]);
-        $this->assertEquals('(50, 100)', $columns['logins']);
+        $this->assertEquals('50 AND 100', $columns['logins']);
     }
 
     public function testParseShorthand()

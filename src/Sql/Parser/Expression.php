@@ -252,7 +252,7 @@ class Expression
         }
 
         if (str_contains($expression, ' BETWEEN ') && is_array($value) && count($value) == 2) {
-            $value = $value[0] . 'AND ' . $value[1];
+            $value = $value[0] . ' AND ' . $value[1];
         }
 
         return [$column => $value];
