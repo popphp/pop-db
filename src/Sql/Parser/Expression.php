@@ -128,15 +128,24 @@ class Expression
 
         if ($value !== null) {
             if (is_array($value)) {
-                if ($withParams) {
-                    $clause         .= ' (' . implode(', ', array_fill(0, count($value), $sql->getPlaceholder())) . ')';
-                    $params[$column] = $value;
-                } else {
-                    $quotedValues = [];
-                    foreach ($value as $val) {
-                        $quotedValues[] = $sql->quote($val);
+                if ((stripos($operator, 'BETWEEN') !== false) && (count($value) == 2)) {
+                    if ($withParams) {
+                        $clause .= ' ' . $sql->getPlaceholder() . ' AND ' . $sql->getPlaceholder();
+                        $params[$column] = $value;
+                    } else {
+                        $clause .= ' ' . $sql->quote($value[0]) . ' AND ' . $sql->quote($value[1]);
                     }
-                    $clause .= ' (' . implode(', ', $quotedValues) . ')';
+                } else {
+                    if ($withParams) {
+                        $clause         .= ' (' . implode(', ', array_fill(0, count($value), $sql->getPlaceholder())) . ')';
+                        $params[$column] = $value;
+                    } else {
+                        $quotedValues = [];
+                        foreach ($value as $val) {
+                            $quotedValues[] = $sql->quote($val);
+                        }
+                        $clause .= ' (' . implode(', ', $quotedValues) . ')';
+                    }
                 }
             } else {
                 if ($withParams) {
@@ -242,8 +251,8 @@ class Expression
                 break;
         }
 
-        if (str_contains($expression, ' BETWEEN ')) {
-            $value = '(' . implode(', ', $value) . ')';
+        if (str_contains($expression, ' BETWEEN ') && is_array($value) && count($value) == 2) {
+            $value = $value[0] . 'AND ' . $value[1];
         }
 
         return [$column => $value];
