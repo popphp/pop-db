@@ -359,13 +359,12 @@ class Expression
                 } else {
                     $params[$j] = $p;
                 }
-            // BETWEEN/NOT BETWEEN
-            } else if (is_string($value) && (str_starts_with($value, '(')) && (str_ends_with($value, ')')) &&
-                (str_contains($value, ','))) {
-                $values            = substr($value, (strpos($value, '(') + 1));
-                $values            = substr($values, 0, strpos($values, ')'));
-                [$value1, $value2] = array_map('trim', explode(',', $values));
-                $p                 = [$value1, $value2];
+                // BETWEEN/NOT BETWEEN
+            } else if (is_string($value) && (stripos($value, ' AND ') !== false)) {
+                $values = str_contains($value, ' AND ') ? explode(' AND ', $value) : explode(' and ', $value);
+                if (is_array($values) && (count($values) == 2)) {
+                    $p = [trim($values[0]), trim($values[1])];
+                }
 
                 if ($placeholder == ':') {
                     $pHolder2 = $pHolder . 2;
@@ -386,7 +385,7 @@ class Expression
                     }
                 } else {
                     $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
-                        'BETWEEN ' . self::quote($value1) . ' AND ' . self::quote($value2);
+                        'BETWEEN ' . self::quote($values[0]) . ' AND ' . self::quote($values[1]);
                 }
                 if ($placeholder == ':') {
                     $params[$parsedColumn] = $p;
