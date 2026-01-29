@@ -235,7 +235,11 @@ class Encoded extends \Pop\Db\Record
             if ($value !== null) {
                 $base64Value = @base64_decode($value, true);
                 if ($base64Value !== false) {
-                    $value = $encrypter->decrypt($value);
+                    // Test if payload is valid
+                    $payload = json_decode(base64_decode($value), true);
+                    if (is_array($payload) && isset($payload['iv']) && isset($payload['value'])) {
+                        $value = $encrypter->decrypt($value);
+                    }
                 }
             }
         }
