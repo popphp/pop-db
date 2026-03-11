@@ -31,29 +31,17 @@ trait IncrementTrait
 {
 
     /**
-     * Increment field
-     * @var string
-     */
-    protected static string $incrementField = 'row_id';
-
-    /**
-     * Increment start
-     *   - define static property in the class that consumes the trait if you want a start value other than 1
-     * @var int
-     */
-    //protected static int $incrementStart = 1001;
-
-    /**
      * Get next increment value
      *
-     * @param  mixed $columns
+     * @param  mixed  $columns
+     * @param  int    $start
+     * @param  string $field
      * @return int
      */
-    public static function next(array|PredicateSet $columns): int
+    public static function next(array|PredicateSet $columns, int $start = 1, string $field = 'row_id'): int
     {
-        $currentIndex = (int)static::findOne($columns, ['order' => static::$incrementField . ' DESC'])->{static::$incrementField};
-        $startIndex   = property_exists(static::class, 'incrementStart') ? (int)static::$incrementStart : 1;
-        return (!empty($currentIndex) ? ($currentIndex + 1) : $startIndex);
+        $currentIndex = (int)static::findOne($columns, ['order' => $field . ' DESC'])->{$field};
+        return (!empty($currentIndex) ? ($currentIndex + 1) : $start);
     }
 
 }
