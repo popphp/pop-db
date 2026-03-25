@@ -49,7 +49,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->join('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -58,7 +58,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->leftJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -67,7 +67,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->rightJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` RIGHT JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` RIGHT JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -76,7 +76,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->fullJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` FULL JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` FULL JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -85,7 +85,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->outerJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` OUTER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -94,7 +94,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->leftOuterJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` LEFT OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` LEFT OUTER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -103,7 +103,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->rightOuterJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` RIGHT OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` RIGHT OUTER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -112,7 +112,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->fullOuterJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` FULL OUTER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` FULL OUTER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -121,7 +121,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->innerJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` INNER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -130,7 +130,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->leftInnerJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` LEFT INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` LEFT INNER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -139,7 +139,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->rightInnerJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` RIGHT INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` RIGHT INNER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
@@ -148,7 +148,7 @@ class SelectTest extends TestCase
         $sql = $this->db->createSql();
         $sql->select()->from('users')
             ->fullInnerJoin('user_info', ['user_info.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` FULL INNER JOIN `user_info` ON (`user_info`.`user_id` = `users`.`id`)', (string)$sql);
+        $this->assertEquals('SELECT * FROM `users` FULL INNER JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`))', (string)$sql);
         $this->db->disconnect();
     }
 
