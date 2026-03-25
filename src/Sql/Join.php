@@ -142,7 +142,7 @@ class Join
                     $operator = 'IS ' . $operator;
                 }
             } else {
-                if (str_starts_with($column2, '(')) {
+                if (is_string($column2) && str_starts_with($column2, '(')) {
                     $operator = 'IN';
                 } else {
                     $operator = ($column2 === null) ? 'IS' : '=';
