@@ -267,7 +267,7 @@ class Data extends AbstractSql
                         return $this->quote($value, $forceQuote);
                     }, $row)) . ")";
                 if ($nullEmpty) {
-                    $value = str_replace(["('',", " '', ", ", '')"], ["(NULL,", ' NULL, ', ', NULL)'], $value);
+                    $value = str_replace(["('',", " '', ", ", '')", " '', "], ["(NULL,", ' NULL, ', ', NULL)', ' NULL, '], $value);
                 }
 
                 switch ($this->divide) {
