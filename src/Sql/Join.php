@@ -142,7 +142,11 @@ class Join
                     $operator = 'IS ' . $operator;
                 }
             } else {
-                $operator = ($column2 === null) ? 'IS' : '=';
+                if (str_starts_with($column2, '(')) {
+                    $operator = 'IN';
+                } else {
+                    $operator = ($column2 === null) ? 'IS' : '=';
+                }
             }
             $operator = ' ' . $operator . ' ';
 
@@ -158,14 +162,14 @@ class Join
             } else {
                 if ($column2 === null) {
                     $column2 = 'NULL';
-                } else if (is_string($column2)) {
+                } else if (($operator != ' IN ') && is_string($column2)) {
                     $column2 = $this->sql->quoteId($column2);
                 }
                 $columns[] = $this->sql->quoteId($column1) . $operator . $column2;
             }
         }
 
-        return $this->join . ' ' . $this->foreignTable . ' ON (' . implode(' AND ', $columns) . ')';
+        return $this->join . ' ' . $this->foreignTable . ' ON ((' . implode(') AND (', $columns) . '))';
     }
 
     /**
