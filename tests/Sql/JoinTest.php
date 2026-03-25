@@ -33,7 +33,7 @@ class JoinTest extends TestCase
     {
         $sql = $this->db->createSql();
         $sql->select()->from('users')->leftJoin(['userinfo' => 'user_info'], ['userinfo.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` AS `userinfo` ON (`userinfo`.`user_id` = `users`.`id`)', $sql->render());
+        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` AS `userinfo` ON ((`userinfo`.`user_id` = `users`.`id`))', $sql->render());
     }
 
     public function testForeignTableAliasException()
@@ -49,7 +49,7 @@ class JoinTest extends TestCase
         $sql2 = $this->db->createSql();
         $sql2->select('phone')->from('user_info')->setAlias('userinfo');
         $sql1->select()->from('users')->leftJoin($sql2, ['userinfo.user_id' => 'users.id']);
-        $this->assertEquals('SELECT * FROM `users` LEFT JOIN (SELECT `phone` FROM `user_info`) AS `userinfo` ON (`userinfo`.`user_id` = `users`.`id`)', $sql1->render());
+        $this->assertEquals('SELECT * FROM `users` LEFT JOIN (SELECT `phone` FROM `user_info`) AS `userinfo` ON ((`userinfo`.`user_id` = `users`.`id`))', $sql1->render());
     }
 
     public function testColumnsArray()
