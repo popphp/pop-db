@@ -534,9 +534,10 @@ class Record extends Record\AbstractRecord
      *
      * @param  array|PredicateSet|null $columns
      * @param  ?array                  $options
+     * @param  mixed                   $count
      * @return int
      */
-    public static function getTotal(array|PredicateSet|null $columns = null, ?array $options = null): int
+    public static function getTotal(array|PredicateSet|null $columns = null, ?array $options = null, mixed $count = 'COUNT(1)'): int
     {
         $record      = new static();
         $expressions = null;
@@ -546,7 +547,7 @@ class Record extends Record\AbstractRecord
             ['expressions' => $expressions, 'params' => $params] = $record->parseColumns($columns);
         }
 
-        $rows = $record->getTableGateway()->select(['total_count' => 'COUNT(1)'], $expressions, $params, $options);
+        $rows = $record->getTableGateway()->select(['total_count' => $count], $expressions, $params, $options);
 
         return (isset($rows[0]) && isset($rows[0]['total_count'])) ? (int)$rows[0]['total_count'] : 0;
     }
