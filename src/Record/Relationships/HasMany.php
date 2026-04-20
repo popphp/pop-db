@@ -109,14 +109,25 @@ class HasMany extends AbstractRelationship
         $sql     = $db->createSql();
         $columns = null;
 
-        if (!empty($this->options)) {
-            if (isset($this->options['select'])) {
-                $columns = $this->options['select'];
-            }
+        if (!empty($this->options) && isset($this->options['select'])) {
+            $columns = $this->options['select'];
         }
 
         $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+        $params       = $ids;
         $sql->select($columns)->from($table::table())->where->in($this->foreignKey, $placeholders);
+
+        if (!empty($this->options) && isset($this->options['columns'])) {
+            $additionalColumns = Parser\Expression::parseShorthand($this->options['columns'], $sql->getPlaceholder());
+            if (!empty($additionalColumns['expressions'])) {
+                foreach ($additionalColumns['expressions'] as $expression) {
+                    $sql->select()->where($expression);
+                }
+            }
+            if (!empty($additionalColumns['params'])) {
+                $params = array_merge($params, $additionalColumns['params']);
+            }
+        }
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
@@ -154,7 +165,7 @@ class HasMany extends AbstractRelationship
         }
 
         $db->prepare($sql)
-            ->bindParams($ids)
+            ->bindParams($params)
             ->execute();
 
         $rows               = $db->fetchAll();
