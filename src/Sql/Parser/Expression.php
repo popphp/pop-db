@@ -360,18 +360,11 @@ class Expression
                     $params[$j] = $p;
                 }
             // BETWEEN/NOT BETWEEN
-            } else if (is_string($value) && (((str_starts_with($value, '(')) && (str_ends_with($value, ')')) &&
-                (str_contains($value, ','))) || (stripos($value, ' AND ') !== false))) {
-                if (((str_starts_with($value, '(')) && (str_ends_with($value, ')')) &&
-                    (str_contains($value, ',')))) {
-                    $values            = substr($value, (strpos($value, '(') + 1));
-                    $values            = substr($values, 0, strpos($values, ')'));
-                    [$value1, $value2] = array_map('trim', explode(',', $values));
-                } else {
-                    $values = str_contains($value, ' AND ') ? explode(' AND ', $value) : explode(' and ', $value);
-                    $value1 = trim($values[0]);
-                    $value2 = trim($values[1]);
-                }
+            } else if (is_string($value) && str_starts_with($value, '(') && str_ends_with($value, ')')) {
+                $values            = substr($value, (strpos($value, '(') + 1));
+                $values            = substr($values, 0, strpos($values, ')'));
+                $delimiter         = (str_contains($values, ',')) ? ',' : 'AND';
+                [$value1, $value2] = array_map('trim', explode($delimiter, $values));
 
                 $p = [$value1, $value2];
 
