@@ -255,9 +255,21 @@ class PredicateSet
                 $this->notLike($column, $value);
                 break;
             case 'BETWEEN':
+                if (is_string($value) && str_contains($value, ' AND ')) {
+                    $betweenValues = explode(' AND ', $value);
+                    if (count($betweenValues) == 2) {
+                        $value = [str_replace('(', '', $betweenValues[0]), str_replace(')', '', $betweenValues[1])];
+                    }
+                }
                 $this->between($column, $value[0], $value[1]);
                 break;
             case 'NOT BETWEEN':
+                if (is_string($value) && str_contains($value, ' AND ')) {
+                    $betweenValues = explode(' AND ', $value);
+                    if (count($betweenValues) == 2) {
+                        $value = [str_replace('(', '', $betweenValues[0]), str_replace(')', '', $betweenValues[1])];
+                    }
+                }
                 $this->notBetween($column, $value[0], $value[1]);
                 break;
             case 'IN':
