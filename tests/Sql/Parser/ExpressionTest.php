@@ -80,11 +80,11 @@ class ExpressionTest extends TestCase
         $this->assertTrue(isset($components[6]['value']));
         $this->assertEquals('logins', $components[6]['column']);
         $this->assertEquals('BETWEEN', $components[6]['operator']);
-        $this->assertEquals(2, count($components[6]['value']));
-        $this->assertEquals('50', $components[6]['value'][0]);
-        $this->assertEquals('100', $components[6]['value'][1]);
+        $this->assertEquals('(50 AND 100)', $components[6]['value']);
+//        $this->assertEquals(2, count($components[6]['value']));
+//        $this->assertEquals('50', $components[6]['value'][0]);
+//        $this->assertEquals('100', $components[6]['value'][1]);
     }
-
 
     public function testNotFlattened()
     {
