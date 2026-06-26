@@ -127,6 +127,17 @@ class Expression
         $params = [];
 
         if ($value !== null) {
+            if ((stripos($operator, 'BETWEEN') !== false) && str_contains($value, 'AND')) {
+                $value = array_map('trim', explode('AND', $value));
+                if (count($value) == 2) {
+                    if (str_starts_with($value[0], '(')) {
+                        $value[0] = substr($value[0], 1);
+                    }
+                    if (str_ends_with($value[1], ')')) {
+                        $value[1] = substr($value[1], 0, -1);
+                    }
+                }
+            }
             if (is_array($value)) {
                 if ((stripos($operator, 'BETWEEN') !== false) && (count($value) == 2)) {
                     if ($withParams) {
