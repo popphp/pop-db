@@ -273,9 +273,15 @@ class PredicateSet
                 $this->notBetween($column, $value[0], $value[1]);
                 break;
             case 'IN':
+                if (is_string($value)) {
+                    $value = [$value, $value];
+                }
                 $this->in($column, $value);
                 break;
             case 'NOT IN':
+                if (is_string($value)) {
+                    $value = [$value, $value];
+                }
                 $this->notIn($column, $value);
                 break;
             case 'IS NULL':
