@@ -267,4 +267,41 @@ class ConditionTest extends TestCase
         $db->disconnect();
     }
 
+    public function testPostgresParameterCountingNoDoubleIncrement()
+    {
+        // Regression test for AbstractSql::getParameter() double-counting bug
+        // where unconditional incrementParameterCount() at method top caused
+        // PostgreSQL placeholders to skip ($1, $3, $5 instead of $1, $2, $3)
+        if (!extension_loaded('pgsql')) {
+            $this->markTestSkipped('PostgreSQL extension not loaded');
+        }
+
+        try {
+            $db = Db::pgsqlConnect([
+                'database' => $_ENV['PGSQL_DB'] ?? 'test_popdb',
+                'username' => $_ENV['PGSQL_USER'] ?? 'postgres',
+                'password' => $_ENV['PGSQL_PASS'] ?? 'postgres',
+                'host'     => $_ENV['PGSQL_HOST'] ?? '127.0.0.1'
+            ]);
+        } catch (\Exception $e) {
+            $this->markTestSkipped('Could not connect to PostgreSQL: ' . $e->getMessage());
+        }
+
+        $sql          = $db->createSql();
+        // Two new-syntax predicates that will use nextPlaceholder() and getParameter()
+        $predicateSet = Condition::parse(['logins' => ['>=', 18], 'age' => ['<', 30]], $sql);
+
+        // Before fix: render was '(("logins" >= $1) AND ("age" < $3))' (skipped $2)
+        // After fix: correct sequential numbering
+        $render = $predicateSet->render();
+        $this->assertEquals('(("logins" >= $1) AND ("age" < $2))', $render);
+
+        $params = $predicateSet->getParameters();
+        $this->assertContains(18, $params);
+        $this->assertContains(30, $params);
+        $this->assertEquals(2, count($params));
+
+        $db->disconnect();
+    }
+
 }
