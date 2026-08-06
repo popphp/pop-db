@@ -652,6 +652,10 @@ based on certain conditions:
 - `findWhereNull($column, array $options = null, bool $asArray = false)`
 - `findWhereNotNull($column, array $options = null, bool $asArray = false)`
 
+These build structured shorthand internally, so none of them emit a deprecation notice.
+`findWhereBetween()`/`findWhereNotBetween()` accept either the packed string form
+(`'(1, 5)'`) or an unambiguous 2-element array (`[1, 5]`).
+
 #### Modify a record
 
 Once a record has been fetched, you can then modify it and save it:
