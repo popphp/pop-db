@@ -740,10 +740,11 @@ class Record extends Record\AbstractRecord
         $params      = null;
 
         if (is_array($columns)) {
-            $db            = Db::getDb($this->getFullTable());
-            $sql           = $db->createSql();
-            ['expressions' => $expressions, 'params' => $params] =
-                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+            $db           = Db::getDb($this->getFullTable());
+            $sql          = $db->createSql();
+            $predicateSet = Sql\Parser\Condition::parse($columns, $sql);
+            $expressions  = $predicateSet;
+            $params       = ($predicateSet->hasParameters()) ? $predicateSet->getParameters() : null;
         } else if ($columns instanceof PredicateSet) {
             $expressions = $columns;
             $params      = ($columns->hasParameters()) ? $columns->getParameters() : null;

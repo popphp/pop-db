@@ -392,6 +392,60 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindByNewShorthandSyntax()
+    {
+        $user = new Users([
+            'username' => 'newsyntaxuser',
+            'password' => 'password',
+            'email'    => 'newsyntax@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        $found = Users::findBy(['logins' => ['>=', 40]]);
+        $this->assertGreaterThanOrEqual(1, $found->count());
+        $this->assertEquals('newsyntaxuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrGroupSyntax()
+    {
+        $user = new Users([
+            'username' => 'orgroupuser',
+            'password' => 'password',
+            'email'    => 'orgroup@test.com',
+            'logins'   => 0
+        ]);
+        $user->save();
+
+        $found = Users::findBy([
+            'username' => ['=', 'orgroupuser'],
+            'OR' => [
+                ['logins' => ['>=', 999]],
+                ['email' => ['=', 'orgroup@test.com']],
+            ],
+        ]);
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('orgroupuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
+    public function testFindByLegacySyntaxStillWorks()
+    {
+        $user = new Users([
+            'username' => 'legacyuser',
+            'password' => 'password',
+            'email'    => 'legacy@test.com',
+            'logins'   => 7
+        ]);
+        $user->save();
+
+        $found = @Users::findBy(['logins>=' => 7, 'username' => 'legacyuser']);
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('legacyuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
     public function testFindIn()
     {
 
