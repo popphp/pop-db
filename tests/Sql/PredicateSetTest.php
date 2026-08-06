@@ -331,4 +331,35 @@ class PredicateSetTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testGetParametersRecursesIntoNestedPredicateSets()
+    {
+        $sql = $this->db->createSql();
+
+        $child = new PredicateSet($sql);
+        $child->addParameter('role', 'admin');
+        $child->setConjunction('OR');
+
+        $predicateSet = new PredicateSet($sql);
+        $predicateSet->addParameter('status', 'active');
+        $predicateSet->addPredicateSet($child);
+
+        $this->assertTrue($predicateSet->hasParameters());
+        $this->assertEquals(['status' => 'active', 'role' => 'admin'], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testHasParametersTrueWhenOnlyNestedSetHasParameters()
+    {
+        $sql = $this->db->createSql();
+
+        $child = new PredicateSet($sql);
+        $child->addParameter('role', 'admin');
+
+        $predicateSet = new PredicateSet($sql);
+        $predicateSet->addPredicateSet($child);
+
+        $this->assertTrue($predicateSet->hasParameters());
+        $this->db->disconnect();
+    }
+
 }

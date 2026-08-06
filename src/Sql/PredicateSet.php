@@ -137,7 +137,13 @@ class PredicateSet
      */
     public function getParameters(): array
     {
-        return $this->parameters;
+        $parameters = $this->parameters;
+
+        foreach ($this->predicateSets as $predicateSet) {
+            $parameters = array_merge($parameters, $predicateSet->getParameters());
+        }
+
+        return $parameters;
     }
 
     /**
@@ -158,7 +164,17 @@ class PredicateSet
      */
     public function hasParameters(): bool
     {
-        return !empty($this->parameters);
+        if (!empty($this->parameters)) {
+            return true;
+        }
+
+        foreach ($this->predicateSets as $predicateSet) {
+            if ($predicateSet->hasParameters()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
