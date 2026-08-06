@@ -113,8 +113,8 @@ class ClauseTest extends TestCase
     public function testWhereIgnoresAndInsideColumnName()
     {
         $sql = $this->db->createSql();
-        $sql->select()->from('users')->where("brand = 'Nike'");
-        $this->assertEquals("SELECT * FROM `users` WHERE (`brand` = 'Nike')", $sql->render());
+        $sql->select()->from('users')->where("BRANDNAME = 'Nike'");
+        $this->assertEquals("SELECT * FROM `users` WHERE (`BRANDNAME` = 'Nike')", $sql->render());
         $this->db->disconnect();
     }
 
