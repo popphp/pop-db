@@ -68,14 +68,14 @@ class ConditionTest extends TestCase
         Condition::parse(['logins' => ['>=', 18, 21]], $sql);
     }
 
-    public function testArrayShapedLegacyValueIgnoredPendingTask8()
+    public function testArrayShapedLegacyValueNowHandledAsInClause()
     {
         $sql          = $this->db->createSql();
-        $predicateSet = Condition::parse(['role' => ['admin', 'editor']], $sql);
+        $predicateSet = @Condition::parse(['role' => ['admin', 'editor']], $sql);
 
-        // Should safely produce empty predicate set (no error, no predicates)
-        $this->assertEquals('', $predicateSet->render());
-        $this->assertEquals([], $predicateSet->getParameters());
+        // Should now properly treat array values as IN clauses (legacy behavior)
+        $this->assertEquals('(`role` IN (?, ?))', $predicateSet->render());
+        $this->assertEquals(['role1' => 'admin', 'role2' => 'editor'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -157,6 +157,65 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['discount-' => ['=', 5]], $sql);
 
         $this->assertEquals('(`discount-` = ?)', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    public function testLegacySuffixSyntaxStillWorks()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = @Condition::parse(['logins>=' => 18], $sql);
+
+        $this->assertEquals('(`logins` >= ?)', $predicateSet->render());
+        $this->assertEquals(['logins' => 18], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testLegacySyntaxTriggersDeprecation()
+    {
+        $sql = $this->db->createSql();
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno, $errstr) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+            return true; // mark as handled
+        });
+
+        try {
+            Condition::parse(['logins>=' => 18], $sql);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertTrue($deprecationTriggered, 'Expected a deprecation notice for legacy syntax.');
+        $this->db->disconnect();
+    }
+
+    public function testNewSyntaxDoesNotTriggerDeprecation()
+    {
+        $sql = $this->db->createSql();
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
+
+        $predicateSet = Condition::parse(['logins' => ['>=', 18]], $sql);
+
+        restore_error_handler();
+        $this->assertFalse($deprecationTriggered, 'Did not expect a deprecation notice for pure new-syntax input.');
+        $this->assertEquals('(`logins` >= ?)', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    public function testMixedLegacyAndNewSyntaxInSameCall()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = @Condition::parse(['username>' => 'a', 'logins' => ['>=', 18]], $sql);
+
+        $this->assertEquals(2, count($predicateSet->getPredicates()));
+        $this->assertEquals(['username' => 'a', 'logins' => 18], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 

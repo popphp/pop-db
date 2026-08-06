@@ -78,20 +78,70 @@ class Condition
             }
         }
 
+        if (!empty($legacyColumns)) {
+            self::parseLegacy($predicateSet, $legacyColumns, $sql);
+        }
+
         foreach ($newColumns as $column => $tuple) {
             self::parseTuple($predicateSet, (string)$column, $tuple, $sql);
         }
 
-        // Handle legacy/scalar columns as equals (but skip arrays pending Task 8)
-        foreach ($legacyColumns as $column => $value) {
-            if (!is_array($value)) {
-                $placeholder = self::nextPlaceholder($sql, $column);
-                $predicateSet->addParameter($column, $value);
-                $predicateSet->equalTo($column, $placeholder);
-            }
-        }
-
         return $predicateSet;
+    }
+
+    /**
+     * Parse legacy-shaped shorthand entries via the existing Expression parser,
+     * firing a deprecation notice and folding the result into the given PredicateSet
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  array        $legacyColumns
+     * @param  AbstractSql  $sql
+     * @return void
+     */
+    protected static function parseLegacy(PredicateSet $predicateSet, array $legacyColumns, AbstractSql $sql): void
+    {
+        $columnList = implode(', ', array_map('strval', array_keys($legacyColumns)));
+
+        trigger_error(
+            "Deprecated: The shorthand column format used for [" . $columnList . "] is deprecated and will be " .
+            "removed in pop-db v8. Use the structured format instead, e.g. ['column' => ['>=', value]]. " .
+            "See docs/POP-DB.md for the new syntax.",
+            E_USER_DEPRECATED
+        );
+
+        // Use ':' placeholder to preserve structure, then convert as needed
+        $result = Expression::parseShorthand($legacyColumns, ':');
+
+        // Build expressions with actual dialect placeholders
+        if ($sql->getPlaceholder() === ':') {
+            // Named placeholders - use as-is
+            $predicateSet->addExpressions($result['expressions']);
+            $predicateSet->addParameters($result['params']);
+        } else {
+            // For ? and $ placeholders, need to replace :colname placeholders with actual ones
+            $expressions = [];
+            $paramIndex = 0;
+
+            foreach ($result['expressions'] as $expr) {
+                // Replace :colname1, :colname2 etc with actual placeholders
+                $newExpr = $expr;
+                $i = 0;
+                while (preg_match('/:([a-zA-Z_][a-zA-Z0-9_]*)/', $newExpr, $matches)) {
+                    if ($sql->getPlaceholder() === '$') {
+                        $sql->incrementParameterCount();
+                        $newExpr = preg_replace('/:' . preg_quote($matches[1]) . '/', '$' . $sql->getParameterCount(), $newExpr, 1);
+                    } else {
+                        $newExpr = preg_replace('/:' . preg_quote($matches[1]) . '/', '?', $newExpr, 1);
+                    }
+                    $i++;
+                    if ($i > 100) break; // Safety limit
+                }
+                $expressions[] = $newExpr;
+            }
+
+            $predicateSet->addExpressions($expressions);
+            $predicateSet->addParameters($result['params']);
+        }
     }
 
     /**
