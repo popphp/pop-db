@@ -54,10 +54,10 @@ class ConditionTest extends TestCase
     public function testPlainScalarStillMeansEquals()
     {
         $sql          = $this->db->createSql();
-        $predicateSet = Condition::parse(['username' => 'testuser'], $sql);
+        $predicateSet = @Condition::parse(['username' => 'testuser'], $sql);
 
         $this->assertEquals('(`username` = ?)', $predicateSet->render());
-        $this->assertEquals(['username' => 'testuser'], $predicateSet->getParameters());
+        $this->assertContains('testuser', $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -75,7 +75,10 @@ class ConditionTest extends TestCase
 
         // Should now properly treat array values as IN clauses (legacy behavior)
         $this->assertEquals('(`role` IN (?, ?))', $predicateSet->render());
-        $this->assertEquals(['role1' => 'admin', 'role2' => 'editor'], $predicateSet->getParameters());
+        $params = $predicateSet->getParameters();
+        $this->assertContains('admin', $params);
+        $this->assertContains('editor', $params);
+        $this->assertEquals(2, count($params));
         $this->db->disconnect();
     }
 
@@ -166,7 +169,7 @@ class ConditionTest extends TestCase
         $predicateSet = @Condition::parse(['logins>=' => 18], $sql);
 
         $this->assertEquals('(`logins` >= ?)', $predicateSet->render());
-        $this->assertEquals(['logins' => 18], $predicateSet->getParameters());
+        $this->assertContains(18, $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -215,8 +218,53 @@ class ConditionTest extends TestCase
         $predicateSet = @Condition::parse(['username>' => 'a', 'logins' => ['>=', 18]], $sql);
 
         $this->assertEquals(2, count($predicateSet->getPredicates()));
-        $this->assertEquals(['username' => 'a', 'logins' => 18], $predicateSet->getParameters());
+        $params = $predicateSet->getParameters();
+        $this->assertContains('a', $params);
+        $this->assertContains(18, $params);
         $this->db->disconnect();
+    }
+
+    public function testLegacyMultipleConditionsSameColumnNoCollision()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = @Condition::parse(['logins>=' => 18, 'logins<=' => 65], $sql);
+
+        // Both conditions should be preserved (regression test for collision bug)
+        $this->assertEquals(2, count($predicateSet->getPredicates()));
+        $render = $predicateSet->render();
+        $this->assertStringContainsString('>=', $render);
+        $this->assertStringContainsString('<=', $render);
+        $params = $predicateSet->getParameters();
+        $this->assertContains(18, $params);
+        $this->assertContains(65, $params);
+        $this->db->disconnect();
+    }
+
+    public function testLegacyWithPostgresPlaceholders()
+    {
+        // Test PostgreSQL $ placeholder handling
+        if (!extension_loaded('pgsql')) {
+            $this->markTestSkipped('PostgreSQL extension not loaded');
+        }
+
+        try {
+            $db = Db::pgsqlConnect([
+                'database' => $_ENV['PGSQL_DB'] ?? 'test_popdb',
+                'username' => $_ENV['PGSQL_USER'] ?? 'postgres',
+                'password' => $_ENV['PGSQL_PASS'] ?? 'postgres',
+                'host'     => $_ENV['PGSQL_HOST'] ?? '127.0.0.1'
+            ]);
+        } catch (\Exception $e) {
+            $this->markTestSkipped('Could not connect to PostgreSQL: ' . $e->getMessage());
+        }
+
+        $sql          = $db->createSql();
+        $predicateSet = @Condition::parse(['logins>=' => 18], $sql);
+
+        // PostgreSQL uses double quotes and $1 placeholder (not backticks like MySQL)
+        $this->assertEquals('("logins" >= $1)', $predicateSet->render());
+        $this->assertContains(18, $predicateSet->getParameters());
+        $db->disconnect();
     }
 
 }

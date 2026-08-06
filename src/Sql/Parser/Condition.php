@@ -109,38 +109,15 @@ class Condition
             E_USER_DEPRECATED
         );
 
-        // Use ':' placeholder to preserve structure, then convert as needed
-        $result = Expression::parseShorthand($legacyColumns, ':');
+        $result = Expression::parseShorthand($legacyColumns, $sql->getPlaceholder());
 
-        // Build expressions with actual dialect placeholders
-        if ($sql->getPlaceholder() === ':') {
-            // Named placeholders - use as-is
-            $predicateSet->addExpressions($result['expressions']);
-            $predicateSet->addParameters($result['params']);
-        } else {
-            // For ? and $ placeholders, need to replace :colname placeholders with actual ones
-            $expressions = [];
-            $paramIndex = 0;
+        $predicateSet->addExpressions($result['expressions']);
+        $predicateSet->addParameters($result['params']);
 
-            foreach ($result['expressions'] as $expr) {
-                // Replace :colname1, :colname2 etc with actual placeholders
-                $newExpr = $expr;
-                $i = 0;
-                while (preg_match('/:([a-zA-Z_][a-zA-Z0-9_]*)/', $newExpr, $matches)) {
-                    if ($sql->getPlaceholder() === '$') {
-                        $sql->incrementParameterCount();
-                        $newExpr = preg_replace('/:' . preg_quote($matches[1]) . '/', '$' . $sql->getParameterCount(), $newExpr, 1);
-                    } else {
-                        $newExpr = preg_replace('/:' . preg_quote($matches[1]) . '/', '?', $newExpr, 1);
-                    }
-                    $i++;
-                    if ($i > 100) break; // Safety limit
-                }
-                $expressions[] = $newExpr;
+        if ($sql->getPlaceholder() === '$') {
+            foreach ($result['params'] as $ignored) {
+                $sql->incrementParameterCount();
             }
-
-            $predicateSet->addExpressions($expressions);
-            $predicateSet->addParameters($result['params']);
         }
     }
 
