@@ -1047,9 +1047,16 @@ $users = Users::findBy([
 // WHERE status = 'active' AND (role = 'admin' OR age >= 65)
 ```
 
-The older suffix-based shorthand (`'age>=' => 18`, etc., shown above) still works but is **deprecated** and will
-be removed in the next major version — it triggers an `E_USER_DEPRECATED` notice. New code should use the
-structured format.
+An operator given the wrong number of values throws a `Pop\Db\Sql\Parser\Exception` immediately rather than
+silently rendering something unintended — including `IN`/`NOT IN` given an empty array.
+
+The older shorthand shapes shown above still work but are **deprecated** and will be removed in the next major
+version — they trigger an `E_USER_DEPRECATED` notice. That covers the suffixed keys (`'age>=' => 18`,
+`'%username' => 'test'`, `'username-' => null`, …), the array-valued IN form (`'id' => [2, 3]`) and the packed
+BETWEEN form (`'id' => '(1, 5)'`). New code should use the structured format.
+
+Plain equality (`'id' => 1`) and a bare key with a `null` value (`'id' => null`, meaning `id IS NULL`) are **not**
+deprecated — they are first-class structured shorthand and can also be used inside `OR`/`AND` groups.
 
 [Top](#pop-db)
 
