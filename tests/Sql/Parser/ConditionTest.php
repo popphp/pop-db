@@ -68,4 +68,15 @@ class ConditionTest extends TestCase
         Condition::parse(['logins' => ['>=', 18, 21]], $sql);
     }
 
+    public function testArrayShapedLegacyValueIgnoredPendingTask8()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['role' => ['admin', 'editor']], $sql);
+
+        // Should safely produce empty predicate set (no error, no predicates)
+        $this->assertEquals('', $predicateSet->render());
+        $this->assertEquals([], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
 }

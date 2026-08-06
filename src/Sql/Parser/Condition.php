@@ -76,11 +76,13 @@ class Condition
             self::parseTuple($predicateSet, (string)$column, $tuple, $sql);
         }
 
-        // Handle legacy/scalar columns as equals
+        // Handle legacy/scalar columns as equals (but skip arrays pending Task 8)
         foreach ($legacyColumns as $column => $value) {
-            $placeholder = self::nextPlaceholder($sql, $column);
-            $predicateSet->addParameter($column, $value);
-            $predicateSet->equalTo($column, $placeholder);
+            if (!is_array($value)) {
+                $placeholder = self::nextPlaceholder($sql, $column);
+                $predicateSet->addParameter($column, $value);
+                $predicateSet->equalTo($column, $placeholder);
+            }
         }
 
         return $predicateSet;
