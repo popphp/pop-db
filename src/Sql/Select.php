@@ -264,17 +264,17 @@ class Select extends AbstractPredicateClause
 
         if ($having !== null) {
             if (is_string($having)) {
-                if ((stripos($having, ' AND ') !== false) || (stripos($having, ' OR ') !== false)) {
-                    $expressions = array_map('trim', preg_split(
-                        '/(AND|OR)/', $having, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
-                    ));
-                    foreach ($expressions as $i => $expression) {
-                        if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
-                            $this->having->and($expression);
-                        } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
-                            $this->having->or($expression);
-                        } else if (($expression != 'AND') && ($expression != 'OR')) {
-                            $this->having->add($expression);
+                $tokens = Parser\Keyword::split($having);
+                if (count($tokens) > 1) {
+                    foreach ($tokens as $i => $token) {
+                        if (($i > 0) && (($tokens[$i - 1] === 'AND') || ($tokens[$i - 1] === 'OR'))) {
+                            if ($tokens[$i - 1] === 'AND') {
+                                $this->having->and($token);
+                            } else {
+                                $this->having->or($token);
+                            }
+                        } else if (($token !== 'AND') && ($token !== 'OR')) {
+                            $this->having->add($token);
                         }
                     }
                 } else {

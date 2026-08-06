@@ -237,6 +237,14 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHavingIgnoresAndInsideQuotedValue()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->having("name = 'JOHNSON AND JOHNSON'");
+        $this->assertStringContainsString("HAVING (`name` = 'JOHNSON AND JOHNSON')", $sql->render());
+        $this->db->disconnect();
+    }
+
     public function testAndHavingArray()
     {
         $sql = $this->db->createSql();

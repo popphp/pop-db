@@ -102,4 +102,20 @@ class ClauseTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testWhereIgnoresAndInsideQuotedValue()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->where("name = 'JOHNSON AND JOHNSON'");
+        $this->assertEquals("SELECT * FROM `users` WHERE (`name` = 'JOHNSON AND JOHNSON')", $sql->render());
+        $this->db->disconnect();
+    }
+
+    public function testWhereIgnoresAndInsideColumnName()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->where("brand = 'Nike'");
+        $this->assertEquals("SELECT * FROM `users` WHERE (`brand` = 'Nike')", $sql->render());
+        $this->db->disconnect();
+    }
+
 }
