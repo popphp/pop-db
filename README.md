@@ -1018,6 +1018,39 @@ to that part of the predicate like this:
 WHERE (id > 1) OR (username LIKE '%test')
 ```
 
+#### Structured Shorthand (Recommended)
+
+As of v7, shorthand conditions can also be expressed with an explicit operator, avoiding any ambiguity between
+column names and operator suffixes:
+
+```php
+$users = Users::findBy([
+    'age'        => ['>=', 18],
+    'status'     => ['!=', 'inactive'],
+    'name'       => ['LIKE', '%smith%'],
+    'created_at' => ['BETWEEN', '2024-01-01', '2024-12-31'],
+    'role'       => ['IN', ['admin', 'editor']],
+    'deleted_at' => ['IS NULL'],
+]);
+```
+
+Plain equality (`'age' => 18`) is unchanged. `OR`/`AND` grouping is supported via reserved keys:
+
+```php
+$users = Users::findBy([
+    'status' => 'active',
+    'OR' => [
+        ['role' => 'admin'],
+        ['age'  => ['>=', 65]],
+    ],
+]);
+// WHERE status = 'active' AND (role = 'admin' OR age >= 65)
+```
+
+The older suffix-based shorthand (`'age>=' => 18`, etc., shown above) still works but is **deprecated** and will
+be removed in the next major version — it triggers an `E_USER_DEPRECATED` notice. New code should use the
+structured format.
+
 [Top](#pop-db)
 
 ### Execute Queries
