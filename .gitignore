@@ -5,3 +5,5 @@ vendor
 kettle
 .phpunit.result.cache
 .phpunit.cache
+CLAUDE.md
+/docs
