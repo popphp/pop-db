@@ -27,8 +27,8 @@ class Keyword
 {
 
     /**
-     * Find the position of the first occurrence of $needle in $haystack,
-     * ignoring any occurrence found inside a single- or double-quoted span.
+     * Find the position of the first occurrence of $needle in $haystack, ignoring any
+     * occurrence found inside a single-quoted, double-quoted or backtick-quoted span.
      *
      * @param  string $haystack
      * @param  string $needle
@@ -58,7 +58,7 @@ class Keyword
                 continue;
             }
 
-            if (($char === "'") || ($char === '"')) {
+            if (($char === "'") || ($char === '"') || ($char === '`')) {
                 $inQuote = $char;
                 $i++;
                 continue;
@@ -103,7 +103,7 @@ class Keyword
                 continue;
             }
 
-            if (($char === "'") || ($char === '"')) {
+            if (($char === "'") || ($char === '"') || ($char === '`')) {
                 $inQuote  = $char;
                 $current .= $char;
                 $i++;
