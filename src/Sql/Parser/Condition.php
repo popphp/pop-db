@@ -41,13 +41,13 @@ class Condition
         '<'           => ['method' => 'lessThan',             'arity' => 1],
         '<='          => ['method' => 'lessThanOrEqualTo',    'arity' => 1],
         'LIKE'        => ['method' => 'like',                 'arity' => 1],
-        'NOT LIKE'    => ['method' => 'notLike',               'arity' => 1],
-        'IN'          => ['method' => 'in',                    'arity' => 1, 'multi' => true],
-        'NOT IN'      => ['method' => 'notIn',                 'arity' => 1, 'multi' => true],
-        'BETWEEN'     => ['method' => 'between',               'arity' => 2],
-        'NOT BETWEEN' => ['method' => 'notBetween',            'arity' => 2],
-        'IS NULL'     => ['method' => 'isNull',                 'arity' => 0],
-        'IS NOT NULL' => ['method' => 'isNotNull',              'arity' => 0],
+        'NOT LIKE'    => ['method' => 'notLike',              'arity' => 1],
+        'IN'          => ['method' => 'in',                   'multi' => true],
+        'NOT IN'      => ['method' => 'notIn',                'multi' => true],
+        'BETWEEN'     => ['method' => 'between',              'arity' => 2],
+        'NOT BETWEEN' => ['method' => 'notBetween',           'arity' => 2],
+        'IS NULL'     => ['method' => 'isNull',               'arity' => 0],
+        'IS NOT NULL' => ['method' => 'isNotNull',            'arity' => 0],
     ];
 
     /**
@@ -61,6 +61,36 @@ class Condition
      */
     public static function parse(array $columns, AbstractSql $sql, bool $allowLegacy = true): PredicateSet
     {
+        // Bound-parameter keys must be unique across the WHOLE parse tree (every nested OR/AND
+        // group included), because PredicateSet::getParameters() merges nested sets with
+        // array_merge(), which silently drops duplicate string keys. This counter is threaded
+        // by reference through every recursive call so that a column repeated across branches
+        // (e.g. 'logins' in two OR branches) still gets two distinct parameter keys.
+        //
+        // It is deliberately NOT AbstractSql::$parameterCount - that counter is owned by
+        // AbstractSql and reserved for the PostgreSQL "$N" token-numbering rewrite in
+        // AbstractSql::getParameter(). The two concerns both need "a counter", but not the
+        // same one.
+        $parameterIndex = 0;
+
+        return self::parseConditions($columns, $sql, $allowLegacy, $parameterIndex);
+    }
+
+    /**
+     * Parse a shorthand columns array into a PredicateSet, threading the tree-wide
+     * parameter-key counter through each level of recursion
+     *
+     * @param  array       $columns
+     * @param  AbstractSql $sql
+     * @param  bool        $allowLegacy
+     * @param  int         $parameterIndex
+     * @throws Exception
+     * @return PredicateSet
+     */
+    protected static function parseConditions(
+        array $columns, AbstractSql $sql, bool $allowLegacy, int &$parameterIndex
+    ): PredicateSet
+    {
         $predicateSet  = new PredicateSet($sql);
         $legacyColumns = [];
         $newColumns    = [];
@@ -71,6 +101,13 @@ class Condition
                 $groups[$key] = $value;
             } else if (self::isNewSyntax($value)) {
                 $newColumns[$key] = $value;
+            } else if (self::isPlainEquality((string)$key, $value)) {
+                // A bare column key (no operator suffix) carrying a plain scalar value is
+                // first-class new syntax - 'age' => 18 means age = 18. It is classified here,
+                // BEFORE the $allowLegacy check, so it never counts as "legacy": it fires no
+                // deprecation notice and is permitted inside OR/AND groups. A bare key with a
+                // null value keeps its documented IS NULL semantics (never 'column = NULL').
+                $newColumns[$key] = ($value === null) ? ['IS NULL'] : ['=', $value];
             } else if ($allowLegacy) {
                 $legacyColumns[$key] = $value;
             } else {
@@ -81,16 +118,23 @@ class Condition
             }
         }
 
+        // The three buckets are always processed in this order - legacy entries, then
+        // new-syntax tuples, then OR/AND groups - regardless of the order the caller wrote
+        // the keys in. This is deliberate: parameters are registered (and, for PostgreSQL,
+        // "$N" placeholder tokens are numbered) in the order the predicates are appended to
+        // the set, and PredicateSet::render() emits them in that same order. Processing the
+        // buckets in a fixed order keeps the rendered "$N" sequence and the bound-parameter
+        // order in lockstep even when legacy and new-syntax entries are mixed in one call.
         if (!empty($legacyColumns)) {
             self::parseLegacy($predicateSet, $legacyColumns, $sql);
         }
 
         foreach ($newColumns as $column => $tuple) {
-            self::parseTuple($predicateSet, (string)$column, $tuple, $sql);
+            self::parseTuple($predicateSet, (string)$column, $tuple, $sql, $parameterIndex);
         }
 
         foreach ($groups as $conjunction => $groupList) {
-            self::parseGroup($predicateSet, $conjunction, $groupList, $sql, $allowLegacy);
+            self::parseGroup($predicateSet, $conjunction, $groupList, $sql, $parameterIndex);
         }
 
         return $predicateSet;
@@ -103,12 +147,12 @@ class Condition
      * @param  string       $conjunction
      * @param  mixed        $groups
      * @param  AbstractSql  $sql
-     * @param  bool         $allowLegacy
+     * @param  int          $parameterIndex
      * @throws Exception
      * @return void
      */
     protected static function parseGroup(
-        PredicateSet $predicateSet, string $conjunction, mixed $groups, AbstractSql $sql, bool $allowLegacy
+        PredicateSet $predicateSet, string $conjunction, mixed $groups, AbstractSql $sql, int &$parameterIndex
     ): void
     {
         if (!is_array($groups)) {
@@ -125,7 +169,7 @@ class Condition
                 continue;
             }
 
-            $child = self::parse($group, $sql, false);
+            $child = self::parseConditions($group, $sql, false, $parameterIndex);
             $child->setConjunction($conjunction);
             $combined->addPredicateSet($child);
         }
@@ -181,16 +225,45 @@ class Condition
     }
 
     /**
+     * Determine if a shorthand entry is plain equality, i.e. a bare column key carrying no
+     * operator suffix paired with a scalar (or null) value
+     *
+     * A '(value1, value2)'-shaped string value is excluded: that is the legacy packed
+     * BETWEEN shape, which must keep routing through Expression::parseShorthand(). Its
+     * documented replacement is the unambiguous ['column' => ['BETWEEN', v1, v2]] tuple.
+     *
+     * @param  string $key
+     * @param  mixed  $value
+     * @return bool
+     */
+    public static function isPlainEquality(string $key, mixed $value): bool
+    {
+        if (($value !== null) && !is_scalar($value)) {
+            return false;
+        }
+        if (is_string($value) && str_starts_with($value, '(') && str_ends_with($value, ')')) {
+            return false;
+        }
+
+        ['column' => $column, 'operator' => $operator] = Operator::parse($key);
+
+        return (($column === $key) && ($operator === '='));
+    }
+
+    /**
      * Parse a single new-syntax operator tuple onto the given PredicateSet
      *
      * @param  PredicateSet $predicateSet
      * @param  string       $column
      * @param  array        $tuple
      * @param  AbstractSql  $sql
+     * @param  int          $parameterIndex
      * @throws Exception
      * @return void
      */
-    protected static function parseTuple(PredicateSet $predicateSet, string $column, array $tuple, AbstractSql $sql): void
+    protected static function parseTuple(
+        PredicateSet $predicateSet, string $column, array $tuple, AbstractSql $sql, int &$parameterIndex
+    ): void
     {
         $operator = strtoupper(array_shift($tuple));
         $spec     = self::OPERATORS[$operator];
@@ -202,11 +275,16 @@ class Condition
                     "Error: The '" . $operator . "' operator for column '" . $column . "' requires an array of values."
                 );
             }
+            if (empty($tuple[0])) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator for column '" . $column .
+                    "' requires at least 1 value, 0 given."
+                );
+            }
 
             $placeholders = [];
-            foreach ($tuple[0] as $i => $val) {
-                $placeholders[] = self::nextPlaceholder($sql, $column, $i + 1);
-                $predicateSet->addParameter($column . '_' . ($i + 1), $val);
+            foreach ($tuple[0] as $val) {
+                $placeholders[] = self::addParameter($predicateSet, $sql, $column, $val, $parameterIndex);
             }
             $predicateSet->{$method}($column, $placeholders);
         } else if ($spec['arity'] === 0) {
@@ -223,8 +301,7 @@ class Condition
                     count($tuple) . ' given.'
                 );
             }
-            $placeholder = self::nextPlaceholder($sql, $column);
-            $predicateSet->addParameter($column, $tuple[0]);
+            $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
             $predicateSet->{$method}($column, $placeholder);
         } else {
             if (count($tuple) !== 2) {
@@ -233,34 +310,63 @@ class Condition
                     count($tuple) . ' given.'
                 );
             }
-            $placeholder1 = self::nextPlaceholder($sql, $column, 1);
-            $placeholder2 = self::nextPlaceholder($sql, $column, 2);
-            $predicateSet->addParameter($column . '_1', $tuple[0]);
-            $predicateSet->addParameter($column . '_2', $tuple[1]);
+            $placeholder1 = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
+            $placeholder2 = self::addParameter($predicateSet, $sql, $column, $tuple[1], $parameterIndex);
             $predicateSet->{$method}($column, $placeholder1, $placeholder2);
         }
     }
 
     /**
-     * Generate the next dialect-correct placeholder token
+     * Register a bound parameter under a tree-unique key and return the dialect-correct
+     * placeholder token that refers to it
      *
-     * @param  AbstractSql $sql
-     * @param  string      $column
-     * @param  ?int        $index
+     * For ':'-style dialects (SQLite/PDO) the returned token is ':' . the parameter key, so
+     * the token in the rendered SQL and the key in the parameter array always match exactly.
+     * For '?'-style (MySQL/SQL Server) and '$'-style (PostgreSQL) dialects only the parameter
+     * ORDER matters at bind time, but the key must still be unique so that the array_merge()
+     * in PredicateSet::getParameters() cannot drop it.
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  AbstractSql  $sql
+     * @param  string       $column
+     * @param  mixed        $value
+     * @param  int          $parameterIndex
      * @return string
      */
-    protected static function nextPlaceholder(AbstractSql $sql, string $column, ?int $index = null): string
+    protected static function addParameter(
+        PredicateSet $predicateSet, AbstractSql $sql, string $column, mixed $value, int &$parameterIndex
+    ): string
     {
+        $parameterIndex++;
+
+        $key = self::createParameterKey($column, $parameterIndex);
+        $predicateSet->addParameter($key, $value);
+
         $placeholder = $sql->getPlaceholder();
 
         if ($placeholder === ':') {
-            return ':' . $column . (($index !== null) ? $index : '');
+            return ':' . $key;
         } else if ($placeholder === '$') {
             $sql->incrementParameterCount();
             return '$' . $sql->getParameterCount();
         } else {
             return '?';
         }
+    }
+
+    /**
+     * Create a tree-unique, bind-safe parameter key for a column
+     *
+     * Any character that is not valid in a named placeholder (e.g. the '.' of a
+     * table-qualified column) is normalized to an underscore.
+     *
+     * @param  string $column
+     * @param  int    $parameterIndex
+     * @return string
+     */
+    protected static function createParameterKey(string $column, int $parameterIndex): string
+    {
+        return preg_replace('/[^a-zA-Z0-9_]/', '_', $column) . '_' . $parameterIndex;
     }
 
 }
