@@ -357,6 +357,13 @@ class Condition
     /**
      * Create a tree-unique, bind-safe parameter key for a column
      *
+     * The counter comes FIRST, so every generated key starts with a digit. That is what keeps
+     * these keys from ever colliding with the keys the legacy path emits: the (unmodified)
+     * Expression::parseShorthand() derives its keys straight from the column name, as either
+     * '<column>' or '<column><digit>', and a column name never starts with a digit. Putting
+     * the counter last would allow a column literally named 'line_1' to collide with the
+     * first generated key for a column named 'line'.
+     *
      * Any character that is not valid in a named placeholder (e.g. the '.' of a
      * table-qualified column) is normalized to an underscore.
      *
@@ -366,7 +373,7 @@ class Condition
      */
     protected static function createParameterKey(string $column, int $parameterIndex): string
     {
-        return preg_replace('/[^a-zA-Z0-9_]/', '_', $column) . '_' . $parameterIndex;
+        return $parameterIndex . '_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
     }
 
 }

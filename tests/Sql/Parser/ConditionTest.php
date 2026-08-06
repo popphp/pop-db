@@ -66,7 +66,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['username' => ['=', 'admin']],
-            '(%c%username%c% = %p1%)', ['username_1' => 'admin'], ['admin']
+            '(%c%username%c% = %p1%)', ['1_username' => 'admin'], ['admin']
         );
     }
 
@@ -75,7 +75,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['username' => ['!=', 'admin']],
-            '(%c%username%c% != %p1%)', ['username_1' => 'admin'], ['editor', 'ghost', 'viewer']
+            '(%c%username%c% != %p1%)', ['1_username' => 'admin'], ['editor', 'ghost', 'viewer']
         );
     }
 
@@ -84,7 +84,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['logins' => ['>', 30]],
-            '(%c%logins%c% > %p1%)', ['logins_1' => 30], ['admin']
+            '(%c%logins%c% > %p1%)', ['1_logins' => 30], ['admin']
         );
     }
 
@@ -93,7 +93,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['logins' => ['>=', 30]],
-            '(%c%logins%c% >= %p1%)', ['logins_1' => 30], ['admin', 'editor']
+            '(%c%logins%c% >= %p1%)', ['1_logins' => 30], ['admin', 'editor']
         );
     }
 
@@ -102,7 +102,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['logins' => ['<', 30]],
-            '(%c%logins%c% < %p1%)', ['logins_1' => 30], ['ghost', 'viewer']
+            '(%c%logins%c% < %p1%)', ['1_logins' => 30], ['ghost', 'viewer']
         );
     }
 
@@ -111,7 +111,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['logins' => ['<=', 30]],
-            '(%c%logins%c% <= %p1%)', ['logins_1' => 30], ['editor', 'ghost', 'viewer']
+            '(%c%logins%c% <= %p1%)', ['1_logins' => 30], ['editor', 'ghost', 'viewer']
         );
     }
 
@@ -120,7 +120,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['username' => ['LIKE', '%dmi%']],
-            '(%c%username%c% LIKE %p1%)', ['username_1' => '%dmi%'], ['admin']
+            '(%c%username%c% LIKE %p1%)', ['1_username' => '%dmi%'], ['admin']
         );
     }
 
@@ -129,7 +129,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['username' => ['NOT LIKE', '%dmi%']],
-            '(%c%username%c% NOT LIKE %p1%)', ['username_1' => '%dmi%'], ['editor', 'ghost', 'viewer']
+            '(%c%username%c% NOT LIKE %p1%)', ['1_username' => '%dmi%'], ['editor', 'ghost', 'viewer']
         );
     }
 
@@ -138,7 +138,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['username' => ['IN', ['admin', 'editor']]],
-            '(%c%username%c% IN (%p1%, %p2%))', ['username_1' => 'admin', 'username_2' => 'editor'],
+            '(%c%username%c% IN (%p1%, %p2%))', ['1_username' => 'admin', '2_username' => 'editor'],
             ['admin', 'editor']
         );
     }
@@ -148,7 +148,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['username' => ['NOT IN', ['admin', 'editor']]],
-            '(%c%username%c% NOT IN (%p1%, %p2%))', ['username_1' => 'admin', 'username_2' => 'editor'],
+            '(%c%username%c% NOT IN (%p1%, %p2%))', ['1_username' => 'admin', '2_username' => 'editor'],
             ['ghost', 'viewer']
         );
     }
@@ -158,7 +158,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['logins' => ['BETWEEN', 1, 40]],
-            '(%c%logins%c% BETWEEN %p1% AND %p2%)', ['logins_1' => 1, 'logins_2' => 40], ['editor', 'viewer']
+            '(%c%logins%c% BETWEEN %p1% AND %p2%)', ['1_logins' => 1, '2_logins' => 40], ['editor', 'viewer']
         );
     }
 
@@ -167,7 +167,7 @@ class ConditionTest extends TestCase
     {
         $this->assertCondition(
             $dialect, ['logins' => ['NOT BETWEEN', 1, 40]],
-            '(%c%logins%c% NOT BETWEEN %p1% AND %p2%)', ['logins_1' => 1, 'logins_2' => 40], ['admin', 'ghost']
+            '(%c%logins%c% NOT BETWEEN %p1% AND %p2%)', ['1_logins' => 1, '2_logins' => 40], ['admin', 'ghost']
         );
     }
 
@@ -189,7 +189,7 @@ class ConditionTest extends TestCase
     public function testPlainEqualityAcrossDialects(string $dialect)
     {
         $this->assertCondition(
-            $dialect, ['username' => 'admin'], '(%c%username%c% = %p1%)', ['username_1' => 'admin'], ['admin']
+            $dialect, ['username' => 'admin'], '(%c%username%c% = %p1%)', ['1_username' => 'admin'], ['admin']
         );
     }
 
@@ -211,7 +211,7 @@ class ConditionTest extends TestCase
             $dialect,
             ['OR' => [['logins' => ['>=', 65]], ['logins' => ['<=', 5]]]],
             '((%c%logins%c% >= %p1%) OR (%c%logins%c% <= %p2%))',
-            ['logins_1' => 65, 'logins_2' => 5],
+            ['1_logins' => 65, '2_logins' => 5],
             ['admin', 'ghost', 'viewer']
         );
     }
@@ -226,7 +226,7 @@ class ConditionTest extends TestCase
             $dialect,
             ['logins' => ['>=', 1], 'OR' => [['logins' => ['>=', 65]], ['logins' => ['<=', 5]]]],
             '((%c%logins%c% >= %p1%) AND ((%c%logins%c% >= %p2%) OR (%c%logins%c% <= %p3%)))',
-            ['logins_1' => 1, 'logins_2' => 65, 'logins_3' => 5],
+            ['1_logins' => 1, '2_logins' => 65, '3_logins' => 5],
             ['admin', 'viewer']
         );
     }
@@ -241,7 +241,7 @@ class ConditionTest extends TestCase
             $dialect,
             ['username' => 'admin', 'OR' => [['role' => 'editor'], ['logins' => ['>=', 65]]]],
             '((%c%username%c% = %p1%) AND ((%c%role%c% = %p2%) OR (%c%logins%c% >= %p3%)))',
-            ['username_1' => 'admin', 'role_2' => 'editor', 'logins_3' => 65],
+            ['1_username' => 'admin', '2_role' => 'editor', '3_logins' => 65],
             ['admin']
         );
     }
@@ -257,8 +257,32 @@ class ConditionTest extends TestCase
             $dialect,
             ['OR' => [['username' => ['IN', ['admin', 'ghost']]], ['logins' => ['BETWEEN', 25, 35]]]],
             '((%c%username%c% IN (%p1%, %p2%)) OR (%c%logins%c% BETWEEN %p3% AND %p4%))',
-            ['username_1' => 'admin', 'username_2' => 'ghost', 'logins_3' => 25, 'logins_4' => 35],
+            ['1_username' => 'admin', '2_username' => 'ghost', '3_logins' => 25, '4_logins' => 35],
             ['admin', 'editor', 'ghost']
+        );
+    }
+
+    /**
+     * Regression: a legacy entry on a column whose NAME matches the shape of another column's
+     * generated parameter key must not have its value clobbered. With the old
+     * '<column>_<n>' key format, ['line_1>' => 5, 'line' => ['=', 'admin']] rendered
+     * (("line_1" > :line_1) AND ("line" = :line_1)) on SQLite and kept only one parameter.
+     */
+    #[DataProvider('dialects')]
+    public function testLegacyKeyShapeDoesNotCollideWithGeneratedKeyAcrossDialects(string $dialect)
+    {
+        // The legacy path keys its parameters by column name only on ':' dialects; the '?' and
+        // '$' dialects get positional integer keys, so only SQLite could ever collide here.
+        $expectedParams = ($dialect === 'sqlite') ?
+            ['line_1' => 5, '1_line' => 'admin'] : [0 => 5, '1_line' => 'admin'];
+
+        $this->assertCondition(
+            $dialect,
+            ['line_1>' => 5, 'line' => ['=', 'admin']],
+            '((%c%line_1%c% > %p1%) AND (%c%line%c% = %p2%))',
+            $expectedParams,
+            ['admin'],
+            true
         );
     }
 
@@ -274,7 +298,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['email' => ['=', 'test@test.com']], $sql);
 
         $this->assertEquals('(`email` = ?)', $predicateSet->render());
-        $this->assertEquals(['email_1' => 'test@test.com'], $predicateSet->getParameters());
+        $this->assertEquals(['1_email' => 'test@test.com'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -284,7 +308,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['logins' => ['>=', 18]], $sql);
 
         $this->assertEquals('(`logins` >= ?)', $predicateSet->render());
-        $this->assertEquals(['logins_1' => 18], $predicateSet->getParameters());
+        $this->assertEquals(['1_logins' => 18], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -294,7 +318,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['username' => ['like', '%smith%']], $sql);
 
         $this->assertEquals('(`username` LIKE ?)', $predicateSet->render());
-        $this->assertEquals(['username_1' => '%smith%'], $predicateSet->getParameters());
+        $this->assertEquals(['1_username' => '%smith%'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -304,7 +328,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['username' => 'testuser'], $sql);
 
         $this->assertEquals('(`username` = ?)', $predicateSet->render());
-        $this->assertEquals(['username_1' => 'testuser'], $predicateSet->getParameters());
+        $this->assertEquals(['1_username' => 'testuser'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -335,7 +359,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['username' => ['IN', ['admin', 'editor']]], $sql);
 
         $this->assertEquals('(`username` IN (?, ?))', $predicateSet->render());
-        $this->assertEquals(['username_1' => 'admin', 'username_2' => 'editor'], $predicateSet->getParameters());
+        $this->assertEquals(['1_username' => 'admin', '2_username' => 'editor'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -377,7 +401,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['logins' => ['BETWEEN', 5, 10]], $sql);
 
         $this->assertEquals('(`logins` BETWEEN ? AND ?)', $predicateSet->render());
-        $this->assertEquals(['logins_1' => 5, 'logins_2' => 10], $predicateSet->getParameters());
+        $this->assertEquals(['1_logins' => 5, '2_logins' => 10], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -387,7 +411,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['amount' => ['BETWEEN', '1,000', '2,000']], $sql);
 
         $this->assertEquals('(`amount` BETWEEN ? AND ?)', $predicateSet->render());
-        $this->assertEquals(['amount_1' => '1,000', 'amount_2' => '2,000'], $predicateSet->getParameters());
+        $this->assertEquals(['1_amount' => '1,000', '2_amount' => '2,000'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -423,7 +447,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['discount-' => ['=', 5]], $sql);
 
         $this->assertEquals('(`discount-` = ?)', $predicateSet->render());
-        $this->assertEquals(['discount__1' => 5], $predicateSet->getParameters());
+        $this->assertEquals(['1_discount_' => 5], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -433,7 +457,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['users.username' => ['=', 'admin']], $sql);
 
         $this->assertEquals('(`users`.`username` = ?)', $predicateSet->render());
-        $this->assertEquals(['users_username_1' => 'admin'], $predicateSet->getParameters());
+        $this->assertEquals(['1_users_username' => 'admin'], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -509,7 +533,7 @@ class ConditionTest extends TestCase
             $deprecationTriggered, 'Plain scalar equality is first-class new syntax and must not be deprecated.'
         );
         $this->assertEquals('((`username` = ?) AND (`logins` = ?))', $predicateSet->render());
-        $this->assertEquals(['username_1' => 'admin', 'logins_2' => 5], $predicateSet->getParameters());
+        $this->assertEquals(['1_username' => 'admin', '2_logins' => 5], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -682,7 +706,7 @@ class ConditionTest extends TestCase
             '((`username` = ?) AND ((`logins` >= ?) OR (`email` = ?)))', $predicateSet->render()
         );
         $this->assertEquals(
-            ['username_1' => 'admin', 'logins_2' => 65, 'email_3' => 'vip@test.com'],
+            ['1_username' => 'admin', '2_logins' => 65, '3_email' => 'vip@test.com'],
             $predicateSet->getParameters()
         );
         $this->db->disconnect();
@@ -719,7 +743,7 @@ class ConditionTest extends TestCase
             '((`username` = ?) AND ((`logins` >= ?) OR (`email` = ?)))', $predicateSet->render()
         );
         $this->assertEquals(
-            ['username_1' => 'admin', 'logins_2' => 65, 'email_3' => 'vip@test.com'],
+            ['1_username' => 'admin', '2_logins' => 65, '3_email' => 'vip@test.com'],
             $predicateSet->getParameters()
         );
         $this->db->disconnect();
@@ -767,7 +791,7 @@ class ConditionTest extends TestCase
             '((`status` = ?) AND ((`role` = ?) OR (`age` >= ?)))', $predicateSet->render()
         );
         $this->assertEquals(
-            ['status_1' => 'active', 'role_2' => 'admin', 'age_3' => 65], $predicateSet->getParameters()
+            ['1_status' => 'active', '2_role' => 'admin', '3_age' => 65], $predicateSet->getParameters()
         );
         $this->db->disconnect();
     }
@@ -778,7 +802,7 @@ class ConditionTest extends TestCase
         $predicateSet = Condition::parse(['OR' => [['role' => null], ['logins' => ['>=', 65]]]], $sql);
 
         $this->assertEquals('((`role` IS NULL) OR (`logins` >= ?))', $predicateSet->render());
-        $this->assertEquals(['logins_1' => 65], $predicateSet->getParameters());
+        $this->assertEquals(['1_logins' => 65], $predicateSet->getParameters());
         $this->db->disconnect();
     }
 
@@ -793,14 +817,15 @@ class ConditionTest extends TestCase
      * rows when actually executed against the given live database
      */
     protected function assertCondition(
-        string $dialect, array $conditions, string $template, array $expectedParams, array $expectedUsernames
+        string $dialect, array $conditions, string $template, array $expectedParams, array $expectedUsernames,
+        bool $legacy = false
     ): void
     {
         $db = $this->connect($dialect);
         $this->seed($db);
 
         $sql          = $db->createSql();
-        $predicateSet = Condition::parse($conditions, $sql);
+        $predicateSet = ($legacy) ? @Condition::parse($conditions, $sql) : Condition::parse($conditions, $sql);
 
         $this->assertEquals(
             $this->expectedRender($dialect, $template, $expectedParams), $predicateSet->render()
@@ -894,6 +919,10 @@ class ConditionTest extends TestCase
             ->varchar('email', 255)
             ->int('logins', 16)->defaultIs(0)
             ->varchar('role', 255)->nullable()
+            // 'line' and 'line_1' exist purely so that one column's name matches the shape of
+            // another column's generated parameter key - see the key-collision regression test
+            ->varchar('line', 255)->nullable()
+            ->int('line_1', 16)->defaultIs(0)
             ->primary('id');
 
         $schema->execute();
@@ -908,8 +937,9 @@ class ConditionTest extends TestCase
         foreach ($rows as $row) {
             $role = ($row[3] === null) ? 'NULL' : "'" . $row[3] . "'";
             $db->query(
-                "INSERT INTO cond_users (username, email, logins, role) VALUES " .
-                "('" . $row[0] . "', '" . $row[1] . "', " . $row[2] . ", " . $role . ")"
+                "INSERT INTO cond_users (username, email, logins, role, line, line_1) VALUES " .
+                "('" . $row[0] . "', '" . $row[1] . "', " . $row[2] . ", " . $role . ", " .
+                "'" . $row[0] . "', " . $row[2] . ")"
             );
         }
     }
