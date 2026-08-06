@@ -7,3 +7,5 @@ kettle
 .phpunit.cache
 CLAUDE.md
 /docs
+phpunit.local.xml
+.env
