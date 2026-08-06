@@ -42,6 +42,12 @@ class Condition
         '<='          => ['method' => 'lessThanOrEqualTo',    'arity' => 1],
         'LIKE'        => ['method' => 'like',                 'arity' => 1],
         'NOT LIKE'    => ['method' => 'notLike',               'arity' => 1],
+        'IN'          => ['method' => 'in',                    'arity' => 1, 'multi' => true],
+        'NOT IN'      => ['method' => 'notIn',                 'arity' => 1, 'multi' => true],
+        'BETWEEN'     => ['method' => 'between',               'arity' => 2],
+        'NOT BETWEEN' => ['method' => 'notBetween',            'arity' => 2],
+        'IS NULL'     => ['method' => 'isNull',                 'arity' => 0],
+        'IS NOT NULL' => ['method' => 'isNotNull',              'arity' => 0],
     ];
 
     /**
@@ -116,16 +122,49 @@ class Condition
         $spec     = self::OPERATORS[$operator];
         $method   = $spec['method'];
 
-        if (count($tuple) !== $spec['arity']) {
-            throw new Exception(
-                "Error: The '" . $operator . "' operator for column '" . $column . "' requires exactly " .
-                $spec['arity'] . ' value(s), ' . count($tuple) . ' given.'
-            );
-        }
+        if (!empty($spec['multi'])) {
+            if (!isset($tuple[0]) || !is_array($tuple[0])) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator for column '" . $column . "' requires an array of values."
+                );
+            }
 
-        $placeholder = self::nextPlaceholder($sql, $column);
-        $predicateSet->addParameter($column, $tuple[0]);
-        $predicateSet->{$method}($column, $placeholder);
+            $placeholders = [];
+            foreach ($tuple[0] as $i => $val) {
+                $placeholders[] = self::nextPlaceholder($sql, $column, $i + 1);
+                $predicateSet->addParameter($column . '_' . ($i + 1), $val);
+            }
+            $predicateSet->{$method}($column, $placeholders);
+        } else if ($spec['arity'] === 0) {
+            if (count($tuple) !== 0) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator for column '" . $column . "' does not accept any values."
+                );
+            }
+            $predicateSet->{$method}($column);
+        } else if ($spec['arity'] === 1) {
+            if (count($tuple) !== 1) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator for column '" . $column . "' requires exactly 1 value, " .
+                    count($tuple) . ' given.'
+                );
+            }
+            $placeholder = self::nextPlaceholder($sql, $column);
+            $predicateSet->addParameter($column, $tuple[0]);
+            $predicateSet->{$method}($column, $placeholder);
+        } else {
+            if (count($tuple) !== 2) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator for column '" . $column . "' requires exactly 2 values, " .
+                    count($tuple) . ' given.'
+                );
+            }
+            $placeholder1 = self::nextPlaceholder($sql, $column, 1);
+            $placeholder2 = self::nextPlaceholder($sql, $column, 2);
+            $predicateSet->addParameter($column . '_1', $tuple[0]);
+            $predicateSet->addParameter($column . '_2', $tuple[1]);
+            $predicateSet->{$method}($column, $placeholder1, $placeholder2);
+        }
     }
 
     /**

@@ -79,4 +79,85 @@ class ConditionTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testIn()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['username' => ['IN', ['admin', 'editor']]], $sql);
+
+        $this->assertEquals('(`username` IN (?, ?))', $predicateSet->render());
+        $this->assertEquals(['username_1' => 'admin', 'username_2' => 'editor'], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testNotIn()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['username' => ['NOT IN', ['admin', 'editor']]], $sql);
+
+        $this->assertEquals('(`username` NOT IN (?, ?))', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    public function testInRequiresArrayValue()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['username' => ['IN', 'admin']], $sql);
+    }
+
+    public function testBetween()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['logins' => ['BETWEEN', 5, 10]], $sql);
+
+        $this->assertEquals('(`logins` BETWEEN ? AND ?)', $predicateSet->render());
+        $this->assertEquals(['logins_1' => 5, 'logins_2' => 10], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testBetweenWithCommaContainingValueDoesNotBreak()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['amount' => ['BETWEEN', '1,000', '2,000']], $sql);
+
+        $this->assertEquals('(`amount` BETWEEN ? AND ?)', $predicateSet->render());
+        $this->assertEquals(['amount_1' => '1,000', 'amount_2' => '2,000'], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testNotBetweenWrongArityThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['logins' => ['NOT BETWEEN', 5]], $sql);
+    }
+
+    public function testIsNull()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['deleted_at' => ['IS NULL']], $sql);
+
+        $this->assertEquals('(`deleted_at` IS NULL)', $predicateSet->render());
+        $this->assertFalse($predicateSet->hasParameters());
+        $this->db->disconnect();
+    }
+
+    public function testIsNotNull()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['deleted_at' => ['IS NOT NULL']], $sql);
+
+        $this->assertEquals('(`deleted_at` IS NOT NULL)', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    public function testColumnEndingInReservedSuffixCharacterWorksViaNewSyntax()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['discount-' => ['=', 5]], $sql);
+
+        $this->assertEquals('(`discount-` = ?)', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
 }
