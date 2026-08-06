@@ -304,4 +304,83 @@ class ConditionTest extends TestCase
         $db->disconnect();
     }
 
+    public function testOrGroup()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse([
+            'username' => ['=', 'admin'],
+            'OR' => [
+                ['logins' => ['>=', 65]],
+                ['email' => ['=', 'vip@test.com']],
+            ],
+        ], $sql);
+
+        $this->assertEquals(
+            '((`username` = ?) AND ((`logins` >= ?) OR (`email` = ?)))', $predicateSet->render()
+        );
+        $this->assertEquals(
+            ['username' => 'admin', 'logins' => 65, 'email' => 'vip@test.com'], $predicateSet->getParameters()
+        );
+        $this->db->disconnect();
+    }
+
+    public function testOrGroupWithOnlyGroupNoDanglingConjunction()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse([
+            'OR' => [
+                ['logins' => ['>=', 65]],
+                ['email' => ['=', 'vip@test.com']],
+            ],
+        ], $sql);
+
+        $this->assertEquals('((`logins` >= ?) OR (`email` = ?))', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    public function testNestedOrInsideAndGroup()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse([
+            'AND' => [
+                ['username' => ['=', 'admin']],
+                ['OR' => [
+                    ['logins' => ['>=', 65]],
+                    ['email' => ['=', 'vip@test.com']],
+                ]],
+            ],
+        ], $sql);
+
+        $this->assertEquals(
+            '((`username` = ?) AND ((`logins` >= ?) OR (`email` = ?)))', $predicateSet->render()
+        );
+        $this->assertEquals(
+            ['username' => 'admin', 'logins' => 65, 'email' => 'vip@test.com'], $predicateSet->getParameters()
+        );
+        $this->db->disconnect();
+    }
+
+    public function testEmptyGroupIsNoOp()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['username' => ['=', 'admin'], 'OR' => []], $sql);
+
+        $this->assertEquals('(`username` = ?)', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    public function testGroupWithNonArrayValueThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['OR' => 'not-an-array'], $sql);
+    }
+
+    public function testLegacySyntaxInsideGroupThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['OR' => [['logins>=' => 65]]], $sql);
+    }
+
 }

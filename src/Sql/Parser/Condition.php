@@ -64,9 +64,12 @@ class Condition
         $predicateSet  = new PredicateSet($sql);
         $legacyColumns = [];
         $newColumns    = [];
+        $groups        = [];
 
         foreach ($columns as $key => $value) {
-            if (self::isNewSyntax($value)) {
+            if (($key === 'OR') || ($key === 'AND')) {
+                $groups[$key] = $value;
+            } else if (self::isNewSyntax($value)) {
                 $newColumns[$key] = $value;
             } else if ($allowLegacy) {
                 $legacyColumns[$key] = $value;
@@ -86,7 +89,51 @@ class Condition
             self::parseTuple($predicateSet, (string)$column, $tuple, $sql);
         }
 
+        foreach ($groups as $conjunction => $groupList) {
+            self::parseGroup($predicateSet, $conjunction, $groupList, $sql, $allowLegacy);
+        }
+
         return $predicateSet;
+    }
+
+    /**
+     * Parse a reserved 'OR'/'AND' group key into a single combined nested PredicateSet
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $conjunction
+     * @param  mixed        $groups
+     * @param  AbstractSql  $sql
+     * @param  bool         $allowLegacy
+     * @throws Exception
+     * @return void
+     */
+    protected static function parseGroup(
+        PredicateSet $predicateSet, string $conjunction, mixed $groups, AbstractSql $sql, bool $allowLegacy
+    ): void
+    {
+        if (!is_array($groups)) {
+            throw new Exception("Error: The '" . $conjunction . "' key must contain an array of condition groups.");
+        }
+
+        $combined = new PredicateSet($sql);
+
+        foreach ($groups as $group) {
+            if (!is_array($group)) {
+                throw new Exception("Error: Each entry under '" . $conjunction . "' must be an array of conditions.");
+            }
+            if (empty($group)) {
+                continue;
+            }
+
+            $child = self::parse($group, $sql, false);
+            $child->setConjunction($conjunction);
+            $combined->addPredicateSet($child);
+        }
+
+        if ($combined->hasPredicateSets()) {
+            $combined->setConjunction('AND');
+            $predicateSet->addPredicateSet($combined);
+        }
     }
 
     /**
