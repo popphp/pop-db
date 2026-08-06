@@ -311,4 +311,24 @@ class PredicateSetTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testRenderWithOnlyNestedPredicateSetsNoDanglingConjunction()
+    {
+        $sql = $this->db->createSql();
+
+        $childA = new PredicateSet($sql);
+        $childA->equalTo('role', 'admin');
+        $childA->setConjunction('OR');
+
+        $childB = new PredicateSet($sql);
+        $childB->greaterThanOrEqualTo('age', '65');
+        $childB->setConjunction('OR');
+
+        $predicateSet = new PredicateSet($sql);
+        $predicateSet->addPredicateSet($childA);
+        $predicateSet->addPredicateSet($childB);
+
+        $this->assertEquals("((`role` = 'admin') OR (`age` >= 65))", $predicateSet->render());
+        $this->db->disconnect();
+    }
+
 }

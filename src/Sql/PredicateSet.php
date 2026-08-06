@@ -753,7 +753,7 @@ class PredicateSet
         $predicateString = '';
 
         foreach ($this->predicates as $i => $predicate) {
-            $predicateString .= ($i == 0) ?
+            $predicateString .= ($predicateString === '') ?
                 $predicate->render($this->sql) : ' ' . $predicate->getConjunction() . ' ' . $predicate->render($this->sql);
         }
 
@@ -761,7 +761,8 @@ class PredicateSet
             if (empty($predicateSet->getConjunction())) {
                 throw new Exception('Error: The combination conjunction was not set for this predicate set.');
             }
-            $predicateString .= ' ' . $predicateSet->getConjunction() . ' ' . $predicateSet->render();
+            $predicateString .= ($predicateString === '') ?
+                $predicateSet->render() : ' ' . $predicateSet->getConjunction() . ' ' . $predicateSet->render();
         }
 
         if (((count($this->predicateSets) > 0) && (count($this->predicates) > 0)) ||
