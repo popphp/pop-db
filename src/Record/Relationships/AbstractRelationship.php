@@ -164,14 +164,6 @@ abstract class AbstractRelationship implements RelationshipInterface
             return;
         }
 
-        // Distinct relationship names across the queued child paths ('a.b' and 'a.c' are both
-        // the 'a' relationship), so the accumulate loop can stop once it has seen them all.
-        $expectedNames = count(array_unique(array_map(
-            fn($childPath) => (str_contains($childPath, '.')) ?
-                substr($childPath, 0, strpos($childPath, '.')) : $childPath,
-            $this->children
-        )));
-
         $accumulated         = [];
         $relationshipsByName = [];
         $lookupColumns       = [];
@@ -195,9 +187,6 @@ abstract class AbstractRelationship implements RelationshipInterface
                     $accumulated[$name]         = $relationship->getEagerRelationships($ids);
                     $relationshipsByName[$name] = $relationship;
                 }
-            }
-            if (count($accumulated) >= $expectedNames) {
-                break;
             }
         }
 
