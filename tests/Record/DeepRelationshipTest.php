@@ -155,4 +155,80 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasManyEmptyRelationshipValuesAreNotAliased()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        // Both children have zero grand1 rows, so both hit the "no eager match" fallback
+        // in AbstractRelationship::hydrateChildRelationships(). Before the fix, they were
+        // handed the SAME cached empty Collection instance.
+        $child1 = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child1->save();
+        $child2 = new DlChild(['parent_id' => $parent->id, 'name' => 'C2']);
+        $child2->save();
+
+        $found = DlParent::with(['children.grand1'])->getOne(['id' => $parent->id]);
+
+        $children = $found->children;
+        $this->assertEquals(2, $children->count());
+
+        $c1 = null;
+        $c2 = null;
+        foreach ($children as $child) {
+            if ($child->name === 'C1') {
+                $c1 = $child;
+            } else {
+                $c2 = $child;
+            }
+        }
+
+        $this->assertNotNull($c1);
+        $this->assertNotNull($c2);
+        $this->assertInstanceOf(\Pop\Db\Record\Collection::class, $c1->grand1);
+        $this->assertInstanceOf(\Pop\Db\Record\Collection::class, $c2->grand1);
+        $this->assertEquals(0, $c1->grand1->count());
+        $this->assertEquals(0, $c2->grand1->count());
+
+        // The core aliasing assertion: distinct objects, not the same shared instance.
+        $this->assertNotEquals(spl_object_id($c1->grand1), spl_object_id($c2->grand1));
+
+        // Mutating one child's empty collection must not affect the other's.
+        $g = new DlGrand1(['child_id' => $c1->id, 'note' => 'in-memory-only']);
+        $c1->grand1->push($g);
+
+        $this->assertEquals(1, $c1->grand1->count());
+        $this->assertEquals(0, $c2->grand1->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testTopLevelWithDoesNotFatalOnEmptyNestedGrandchildren()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        // Only one child, with zero matching grand1 rows. Fetching the parent via getById()
+        // with a nested 'children.grand1' with-entry resolves the parent's 'children' via
+        // HasMany::getChildren()'s lazy path, which internally calls $table::with(...)->getBy(...)
+        // for the child records -- that inner getBy() resolves the child's own 'grand1'
+        // with-entry via AbstractRecord::processWithRelationships(), which previously fell back
+        // to a hardcoded [] on no match, fataling on $child->grand1->count().
+        $child = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child->save();
+
+        $found = DlParent::with(['children.grand1'])->getById($parent->id);
+
+        $this->assertInstanceOf(DlParent::class, $found);
+        $children = $found->children;
+        $this->assertEquals(1, $children->count());
+
+        $foundChild = $children[0];
+        $this->assertTrue($foundChild->hasRelationship('grand1'));
+        $this->assertInstanceOf(\Pop\Db\Record\Collection::class, $foundChild->grand1);
+        $this->assertEquals(0, $foundChild->grand1->count());
+
+        $this->db->disconnect();
+    }
+
 }

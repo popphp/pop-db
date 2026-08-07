@@ -137,7 +137,7 @@ abstract class AbstractRelationship implements RelationshipInterface
      *
      * @return mixed
      */
-    protected function getEmptyRelationshipValue(): mixed
+    public function getEmptyRelationshipValue(): mixed
     {
         return [];
     }
@@ -162,8 +162,8 @@ abstract class AbstractRelationship implements RelationshipInterface
             fn($record) => $record[$primaryKeyColumn], $leafRecords
         )));
 
-        $accumulated = [];
-        $emptyValues = [];
+        $accumulated         = [];
+        $relationshipsByName = [];
 
         foreach ($leafRecords as $record) {
             foreach ($this->children as $childPath) {
@@ -172,8 +172,8 @@ abstract class AbstractRelationship implements RelationshipInterface
             $record->getWithRelationships();
             foreach ($record->getRelationships() as $name => $relationship) {
                 if (!isset($accumulated[$name])) {
-                    $accumulated[$name] = $relationship->getEagerRelationships($parentIds);
-                    $emptyValues[$name] = $relationship->getEmptyRelationshipValue();
+                    $accumulated[$name]         = $relationship->getEagerRelationships($parentIds);
+                    $relationshipsByName[$name] = $relationship;
                 }
             }
         }
@@ -181,7 +181,10 @@ abstract class AbstractRelationship implements RelationshipInterface
         foreach ($leafRecords as $record) {
             $primaryValue = $record[$primaryKeyColumn] ?? null;
             foreach ($accumulated as $name => $resultsByParentId) {
-                $record->setRelationship($name, $resultsByParentId[$primaryValue] ?? $emptyValues[$name]);
+                $record->setRelationship(
+                    $name,
+                    $resultsByParentId[$primaryValue] ?? $relationshipsByName[$name]->getEmptyRelationshipValue()
+                );
             }
         }
     }

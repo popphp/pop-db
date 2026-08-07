@@ -94,7 +94,7 @@ class HasMany extends AbstractRelationship
      *
      * @return Record\Collection
      */
-    protected function getEmptyRelationshipValue(): mixed
+    public function getEmptyRelationshipValue(): mixed
     {
         return new Record\Collection();
     }
