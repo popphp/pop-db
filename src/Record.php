@@ -1107,6 +1107,11 @@ class Record extends Record\AbstractRecord
                 try {
                     $this->afterDelete();
                 } finally {
+                    // Whether afterDelete() throws or returns normally, the DELETE has already
+                    // run - clear the restored state back out so the record consistently reads
+                    // as deleted (matching its actual state in the database) rather than a throw
+                    // leaving columns populated while primaryValues is empty.
+                    $this->rowGateway->setColumns([]);
                     $this->rowGateway->setPrimaryValues([]);
                 }
             // Delete multiple rows

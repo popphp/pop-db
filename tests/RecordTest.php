@@ -467,6 +467,34 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testAfterDeleteThrowLeavesRecordConsistentlyDeleted()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser6',
+            'password' => 'password1',
+            'email'    => 'hookuser6@test.com'
+        ]);
+        $user->save();
+        $user->throwInAfterDelete = true;
+
+        try {
+            $user->delete();
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            // expected
+        }
+
+        // The DELETE already ran (and committed, absent an active transaction) before
+        // afterDelete() threw - the in-memory record must consistently read as deleted
+        // rather than partially reverting to look like the delete never happened.
+        $this->assertTrue(empty($user->toArray()));
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser6']);
+        $this->assertTrue(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
     public function testBeforeInsertThrowAbortsSaveAndPropagates()
     {
         \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);

@@ -15,6 +15,7 @@ class HookedUsers extends Record
     public bool $throwInBeforeInsert = false;
     public bool $throwInBeforeUpdate = false;
     public bool $throwInBeforeDelete = false;
+    public bool $throwInAfterDelete  = false;
 
     protected function beforeSave(): void
     {
@@ -66,6 +67,9 @@ class HookedUsers extends Record
     protected function afterDelete(): void
     {
         $this->hookLog[] = 'afterDelete:id=' . $this->id;
+        if ($this->throwInAfterDelete) {
+            throw new \Pop\Db\Record\Exception('Aborted in afterDelete');
+        }
     }
 
 }
