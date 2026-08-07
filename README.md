@@ -590,6 +590,69 @@ the database adapter or other objects or info:
 - `Users::table()` - Get the full table name, for example `my_app_users_table`
 - `Users::getTableInfo()` - Get information about the table, like columns, etc.
 
+#### Mass-assignment protection
+
+By default, a table class will accept any array of column values passed to its constructor and set
+every key as a column value, with no restrictions. If that array comes from untrusted input (e.g.
+`new Users($request->all())`), an attacker can set any column just by adding an extra key to the
+request body. To guard against this, a table class can declare `$fillable` or `$guarded`, following
+the same naming/precedence convention as Laravel Eloquent:
+
+```php
+class Users extends Record
+{
+    protected ?string $table   = 'users';
+
+    // Allowlist: only these columns can be mass-assigned
+    protected array   $fillable = ['username', 'email'];
+}
+```
+
+```php
+class Users extends Record
+{
+    protected ?string $table  = 'users';
+
+    // Denylist: everything except these columns can be mass-assigned
+    protected array   $guarded = ['is_admin', 'role'];
+}
+```
+
+- If `$fillable` is non-empty, it takes full precedence - only the listed columns are mass-assignable,
+  and `$guarded` is ignored entirely.
+- Otherwise, if `$guarded` is non-empty, every column *except* the listed ones is mass-assignable.
+- If neither is declared (both stay as the default empty array), mass-assignment is unrestricted -
+  today's existing behavior.
+
+The filtering is enforced by `fill()`, not `setColumns()`. The constructor now routes array-like input
+through `fill()` when a table class is instantiated with column data:
+
+```php
+$user = new Users($request->all()); // filtered through $fillable/$guarded
+$user->save();
+```
+
+`fill()` is also callable directly, which is the recommended way to mass-assign data to an
+already-constructed record:
+
+```php
+$user = new Users();
+$user->fill($request->all());
+$user->save();
+```
+
+You can also check whether an individual column is mass-assignable:
+
+```php
+$user->isFillable('role'); // false, if 'role' is guarded or not in $fillable
+```
+
+**Scope note:** mass-assignment protection only applies to `fill()` and the constructor. It does not
+guard single-property assignment (`$user->role = 'admin'` still works regardless of `$guarded`), nor
+does it apply to `Gateway\Table`'s raw `insert()`/`update()` methods, nor to row hydration from the
+database (`findById()`, `findOne()`, `findAll()`, etc. always populate every real column, since that
+data is trusted and DB-sourced, not user-supplied).
+
 #### Fetch a record
 
 The basic way to use the table class is to fetch individual record objects from the database.

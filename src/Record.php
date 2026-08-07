@@ -94,7 +94,7 @@ class Record extends Record\AbstractRecord
 
         if ($columns !== null) {
             $this->isNew = true;
-            $this->setColumns($columns);
+            $this->fill($columns);
         }
     }
 

@@ -40,6 +40,8 @@ class RecordTest extends TestCase
         $schema->execute();
 
         \Pop\Db\Test\TestAsset\Users::setDb($this->db);
+        \Pop\Db\Test\TestAsset\GuardedUsers::setDb($this->db);
+        \Pop\Db\Test\TestAsset\FillableUsers::setDb($this->db);
     }
 
     public function testConstructor()
@@ -170,6 +172,97 @@ class RecordTest extends TestCase
             $i++;
         }
         $this->assertEquals(0, $i);
+        $this->db->disconnect();
+    }
+
+    public function testIsFillableWithNeitherDeclaredAllowsEverything()
+    {
+        $user = new Users();
+        $this->assertTrue($user->isFillable('username'));
+        $this->assertTrue($user->isFillable('logins'));
+        $this->assertTrue($user->isFillable('anything_at_all'));
+        $this->db->disconnect();
+    }
+
+    public function testIsFillableWithGuardedDeclared()
+    {
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers();
+        $this->assertTrue($user->isFillable('username'));
+        $this->assertTrue($user->isFillable('email'));
+        $this->assertFalse($user->isFillable('logins'));
+        $this->db->disconnect();
+    }
+
+    public function testIsFillableWithFillableDeclared()
+    {
+        $user = new \Pop\Db\Test\TestAsset\FillableUsers();
+        $this->assertTrue($user->isFillable('username'));
+        $this->assertTrue($user->isFillable('email'));
+        $this->assertFalse($user->isFillable('password'));
+        $this->assertFalse($user->isFillable('logins'));
+        $this->db->disconnect();
+    }
+
+    public function testFillWithGuardedDropsGuardedColumn()
+    {
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers();
+        $user->fill([
+            'username' => 'testuser1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertArrayNotHasKey('logins', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testFillWithFillableOnlyKeepsListedColumns()
+    {
+        $user = new \Pop\Db\Test\TestAsset\FillableUsers();
+        $user->fill([
+            'username' => 'testuser1',
+            'password' => 'shouldnotbeset',
+            'email'    => 'testuser1@test.com'
+        ]);
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->assertArrayNotHasKey('password', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testFillWithNeitherDeclaredKeepsEverything()
+    {
+        $user = new Users();
+        $user->fill([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com'
+        ]);
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('password1', $ary['password']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->db->disconnect();
+    }
+
+    public function testGuardedColumnSurvivesRowHydration()
+    {
+        // Insert directly via the underlying Users class (not mass-assignment - this
+        // simulates a column value that legitimately exists in the database already).
+        $user = new Users([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        // Fetch it back through the GuardedUsers class, which guards 'logins'.
+        $found = \Pop\Db\Test\TestAsset\GuardedUsers::findById($user->id);
+
+        $this->assertEquals(42, $found->logins);
         $this->db->disconnect();
     }
 

@@ -50,6 +50,19 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected array $primaryKeys = ['id'];
 
     /**
+     * Fillable columns (mass-assignment allowlist) - if non-empty, only these columns are
+     * settable via fill(); $guarded is ignored when this is non-empty
+     * @var array
+     */
+    protected array $fillable = [];
+
+    /**
+     * Guarded columns (mass-assignment denylist) - ignored if $fillable is non-empty
+     * @var array
+     */
+    protected array $guarded = [];
+
+    /**
      * Row gateway
      * @var ?Gateway\Row
      */
@@ -398,15 +411,66 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     public function setColumns(mixed $columns = null): AbstractRecord
     {
         if ($columns !== null) {
-            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-                $this->rowGateway->setColumns((array)$columns);
-            } else if ($columns instanceof AbstractRecord) {
-                $this->rowGateway->setColumns($columns->toArray());
-            } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
-                $this->rowGateway->setColumns($columns->toArray());
-            } else {
-                throw new Exception('The parameter passed must be an arrayable object.');
-            }
+            $this->rowGateway->setColumns($this->toColumnsArray($columns));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Normalize a columns argument (array, ArrayObject, AbstractRecord, or any ArrayAccess
+     * with a toArray() method) into a plain array
+     *
+     * @param  mixed $columns
+     * @throws Exception
+     * @return array
+     */
+    protected function toColumnsArray(mixed $columns): array
+    {
+        if (is_array($columns) || ($columns instanceof \ArrayObject)) {
+            return (array)$columns;
+        } else if ($columns instanceof AbstractRecord) {
+            return $columns->toArray();
+        } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
+            return $columns->toArray();
+        } else {
+            throw new Exception('The parameter passed must be an arrayable object.');
+        }
+    }
+
+    /**
+     * Determine if a column is mass-assignable via fill()
+     *
+     * @param  string $column
+     * @return bool
+     */
+    public function isFillable(string $column): bool
+    {
+        if (!empty($this->fillable)) {
+            return in_array($column, $this->fillable, true);
+        } else if (!empty($this->guarded)) {
+            return !in_array($column, $this->guarded, true);
+        }
+
+        return true;
+    }
+
+    /**
+     * Mass-assign columns, filtered through $fillable/$guarded via isFillable()
+     *
+     * @param  mixed $columns
+     * @throws Exception
+     * @return AbstractRecord
+     */
+    public function fill(mixed $columns = null): AbstractRecord
+    {
+        if ($columns !== null) {
+            $filtered = array_filter(
+                $this->toColumnsArray($columns),
+                fn($value, $key) => $this->isFillable((string)$key),
+                ARRAY_FILTER_USE_BOTH
+            );
+            $this->setColumns($filtered);
         }
 
         return $this;
