@@ -330,6 +330,57 @@ class PredicateTest extends TestCase
         );
     }
 
+    public function testJsonContainsMysql()
+    {
+        // The JSON-encoded candidate value is passed through the adapter's escape() routine
+        // (mysqli::real_escape_string), which backslash-escapes the double quotes produced by
+        // json_encode(). This is valid MySQL string-literal syntax (backslash escapes are
+        // recognized inside single-quoted strings by default) and was confirmed against a live
+        // MySQL server to execute and match rows correctly.
+        $predicate = new Predicate\JsonContains(['data', '$.roles', 'admin']);
+        $this->assertEquals(
+            '(JSON_CONTAINS(`data`, \'\\"admin\\"\', \'$.roles\'))',
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testJsonContainsPgsql()
+    {
+        $db  = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonContains(['data', '$.roles', 'admin']);
+        $this->assertEquals(
+            '(("data" #> \'{roles}\') @> \'"admin"\'::jsonb)',
+            $predicate->render($db->createSql())
+        );
+        $db->disconnect();
+    }
+
+    public function testJsonContainsSqliteThrows()
+    {
+        touch(__DIR__ . '/../tmp/json_contains.sqlite');
+        $db = Db::sqliteConnect(['database' => __DIR__ . '/../tmp/json_contains.sqlite']);
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonContains(['data', '$.roles', 'admin']);
+        try {
+            $predicate->render($db->createSql());
+        } finally {
+            $db->disconnect();
+            @unlink(__DIR__ . '/../tmp/json_contains.sqlite');
+        }
+    }
+
+    public function testJsonContainsValuesException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonContains(['data', '$.roles']);
+        $predicate->render($this->db->createSql());
+    }
+
     /**
      * An aliased Select renders as "(SELECT ...) AS `alias`", which is only valid as a
      * FROM/JOIN subquery. Used as a predicate value it would silently produce invalid SQL,

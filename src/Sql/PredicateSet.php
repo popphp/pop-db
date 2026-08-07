@@ -576,6 +576,19 @@ class PredicateSet
     }
 
     /**
+     * Predicate for JSON containment (MySQL/PostgreSQL only)
+     *
+     * @param  string $column
+     * @param  string $path
+     * @param  mixed  $value
+     * @return PredicateSet
+     */
+    public function jsonContains(string $column, string $path, mixed $value): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\JsonContains([$column, $path, $value], $this->nextConjunction));
+    }
+
+    /**
      * Add AND predicate
      *
      * @param  Predicate\AbstractPredicate $predicate
