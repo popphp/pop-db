@@ -1374,6 +1374,35 @@ $user = Users::with('posts.comments')->getById(1);
 And would give you a user object with all of the user's `posts` and each of those post objects would have
 their `comments` attached as well.
 
+More than one nested relationship can hang off the same parent relationship. Assume the `Posts` class also
+owns tags, then this call would be valid:
+
+```php
+$user = Users::with(['posts.comments', 'posts.tags'])->getById(1);
+```
+
+The `posts` relationship is only resolved once, and each of those post objects gets both its `comments` and
+its `tags` attached. The nesting isn't limited to one level either — `with('posts.comments.author')` walks as
+deep as the relationships are defined.
+
+**Empty relationships**
+
+When the records are fetched with `getOne()` or `getBy()`, the relationships are resolved in a single batched
+query per relationship. If a relationship has no matching records, it still resolves — to a value that matches
+the shape of the relationship, so the calling code doesn't have to special-case it:
+
+```php
+$user = Users::with(['info', 'orders'])->getOne(['id' => 1]);
+
+var_dump($user->info);          // NULL -- a 1:1 relationship with no match
+echo count($user->orders);      // 0    -- a 1:many relationship is an empty collection
+```
+
+A 1:1 relationship (`hasOne`, `hasOneOf` or `belongsTo`) with no match resolves to `null`, and a 1:many
+relationship (`hasMany`) with no match resolves to an empty collection. Note that both of these previously
+resolved to an empty `array` instead, so any code that checked an unmatched relationship from `getOne()` or
+`getBy()` with `is_array()`, or passed it to `count()`, will need to be updated.
+
 [Top](#pop-db)
 
 Querying

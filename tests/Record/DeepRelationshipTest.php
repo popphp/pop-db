@@ -575,6 +575,40 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFourLevelChainWithToOneLeafResolvesThroughTheEagerPath()
+    {
+        // host -> child (HasOneOf) -> grand1 (HasMany) -> owner (BelongsTo back to the child).
+        // Backs the README's claim that nesting isn't limited to one level, and exercises a
+        // to-one nested child two levels below the top-level relationship.
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        $child = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child->save();
+
+        $g1a = new DlGrand1(['child_id' => $child->id, 'note' => 'g1-a']);
+        $g1a->save();
+        $g1b = new DlGrand1(['child_id' => $child->id, 'note' => 'g1-b']);
+        $g1b->save();
+
+        $host = new DlOneofHost(['name' => 'H1', 'child_id' => $child->id]);
+        $host->save();
+
+        $found = DlOneofHost::with('child.grand1.owner')->getOne(['id' => $host->id]);
+
+        $this->assertInstanceOf(DlChild::class, $found->child);
+        $this->assertEquals(2, $found->child->grand1->count());
+
+        foreach ($found->child->grand1 as $grand) {
+            $this->assertTrue($grand->hasRelationship('owner'));
+            $this->assertInstanceOf(DlChild::class, $grand->owner);
+            $this->assertEquals($child->id, $grand->owner->id);
+            $this->assertEquals('C1', $grand->owner->name);
+        }
+
+        $this->db->disconnect();
+    }
+
     public function testSingleChainThreeLevelsDeepStillWorks()
     {
         $parent = new DlParent(['name' => 'P1']);
