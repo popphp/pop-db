@@ -266,6 +266,151 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testConstructorWithGuardedFiltersGuardedColumn()
+    {
+        // The primary, user-facing use case: untrusted input straight into the constructor.
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers([
+            'username' => 'testuser1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->assertArrayNotHasKey('logins', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testConstructorWithFillableFiltersUnlistedColumns()
+    {
+        $user = new \Pop\Db\Test\TestAsset\FillableUsers([
+            'username' => 'testuser1',
+            'password' => 'shouldnotbeset',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->assertArrayNotHasKey('password', $ary);
+        $this->assertArrayNotHasKey('logins', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testConstructorWithGuardedFiltersAndSavesFilteredRow()
+    {
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+        $user->save();
+
+        // The guarded column never made it into the INSERT, so the column default applies.
+        $found = Users::findById($user->id);
+        $this->assertEquals('testuser1', $found->username);
+        $this->assertEquals(0, $found->logins);
+        $this->db->disconnect();
+    }
+
+    public function testReplicatePreservesGuardedColumn()
+    {
+        $user = new Users([
+            'username' => 'testuser17',
+            'password' => 'password17',
+            'email'    => 'testuser17@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        // Fetch it through the guarded class, then replicate it. The replicated record is
+        // built from the record's own trusted data, so the guarded column must survive.
+        $found   = \Pop\Db\Test\TestAsset\GuardedUsers::findById($user->id);
+        $newUser = $found->copy(['password' => '123456']);
+
+        $this->assertEquals('testuser17', $newUser->username);
+        $this->assertEquals('123456', $newUser->password);
+        $this->assertEquals(42, $newUser->logins);
+
+        // And it was actually persisted with the guarded value, not the column default.
+        $reloaded = Users::findById($newUser->id);
+        $this->assertNotEquals($user->id, $newUser->id);
+        $this->assertEquals(42, $reloaded->logins);
+
+        $users = Users::findBy(['username' => 'testuser17']);
+        $this->assertEquals(2, $users->count());
+        $this->db->disconnect();
+    }
+
+    public function testFindOneOrCreateWithGuardedCreatesExactlyOneRow()
+    {
+        $criteria = [
+            'username' => 'testuser18',
+            'password' => 'password18',
+            'email'    => 'testuser18@test.com',
+            'logins'   => 7
+        ];
+
+        $first  = \Pop\Db\Test\TestAsset\GuardedUsers::findOneOrCreate($criteria);
+        $second = \Pop\Db\Test\TestAsset\GuardedUsers::findOneOrCreate($criteria);
+
+        // The created row must match the criteria it was created from, guarded columns
+        // included - otherwise every subsequent call misses it and creates a duplicate.
+        $users = Users::findBy(['username' => 'testuser18']);
+        $this->assertEquals(1, $users->count());
+        $this->assertEquals(7, $users[0]->logins);
+
+        $this->assertEquals(7, $first->logins);
+        $this->assertEquals($first->id, $second->id);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrCreateWithGuardedCreatesExactlyOneRow()
+    {
+        $criteria = [
+            'username' => 'testuser19',
+            'password' => 'password19',
+            'email'    => 'testuser19@test.com',
+            'logins'   => 9
+        ];
+
+        \Pop\Db\Test\TestAsset\GuardedUsers::findByOrCreate($criteria);
+        \Pop\Db\Test\TestAsset\GuardedUsers::findByOrCreate($criteria);
+
+        $users = Users::findBy(['username' => 'testuser19']);
+        $this->assertEquals(1, $users->count());
+        $this->assertEquals(9, $users[0]->logins);
+        $this->db->disconnect();
+    }
+
+    public function testFillOnFetchedRecordThenSaveUpdatesExistingRow()
+    {
+        // The README-documented fill() pattern: fetch, fill from untrusted input, save.
+        $user = new Users([
+            'username' => 'testuser20',
+            'password' => 'password20',
+            'email'    => 'testuser20@test.com',
+            'logins'   => 5
+        ]);
+        $user->save();
+
+        $found = \Pop\Db\Test\TestAsset\GuardedUsers::findById($user->id);
+        $found->fill([
+            'email'  => 'updated20@test.com',
+            'logins' => 999
+        ]);
+        $found->save();
+
+        $reloaded = Users::findById($user->id);
+        $this->assertEquals('testuser20', $reloaded->username);
+        $this->assertEquals('updated20@test.com', $reloaded->email);
+        $this->assertEquals(5, $reloaded->logins);
+        $this->db->disconnect();
+    }
+
     public function testSetColumnsArrayAccess()
     {
         $data = new MockData([

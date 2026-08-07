@@ -103,6 +103,31 @@ class Record extends Record\AbstractRecord
  */
 
     /**
+     * Create a new record instance from trusted, internally-sourced column data
+     *
+     * Mass-assignment filtering ($fillable/$guarded via fill()) is deliberately bypassed here.
+     * It exists to protect against untrusted external input being passed into the constructor,
+     * not against the component's own internal data flows (replicating an already-fetched
+     * record, or creating a record from the very search criteria that were just queried).
+     * Filtering those would silently drop column values and corrupt the resulting row.
+     *
+     * @param  ?array $columns
+     * @throws Exception|Record\Exception
+     * @return static
+     */
+    protected static function newUnfilteredRecord(?array $columns = null): static
+    {
+        $record = new static();
+
+        if ($columns !== null) {
+            $record->isNew = true;
+            $record->setColumns($columns);
+        }
+
+        return $record;
+    }
+
+    /**
      * Check for a DB adapter
      *
      * @return bool
@@ -342,7 +367,7 @@ class Record extends Record\AbstractRecord
             if ($columns instanceof PredicateSet) {
                 $columns = $columns->extractValues();
             }
-            $newRecord = new static($columns);
+            $newRecord = static::newUnfilteredRecord($columns);
             $newRecord->save();
             $result = $newRecord;
         }
@@ -413,7 +438,7 @@ class Record extends Record\AbstractRecord
             if ($columns instanceof PredicateSet) {
                 $columns = $columns->extractValues();
             }
-            $newRecord = new static($columns);
+            $newRecord = static::newUnfilteredRecord($columns);
             $newRecord->save();
             $result = $newRecord;
             return ($toArray !== false) ? $result->toArray() : $result;
@@ -893,7 +918,7 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        $newRecord = new static($fields);
+        $newRecord = static::newUnfilteredRecord($fields);
         $newRecord->save();
 
         return $newRecord;

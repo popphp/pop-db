@@ -99,15 +99,7 @@ class Encoded extends \Pop\Db\Record
     public function setColumns(mixed $columns = null): Encoded
     {
         if ($columns !== null) {
-            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-                $columns = $this->encode($columns);
-            } else if ($columns instanceof AbstractRecord) {
-                $columns = $this->encode($columns->toArray());
-            } else {
-                throw new Exception('The parameter passed must be either an array, an array object or null.');
-            }
-
-            parent::setColumns($columns);
+            parent::setColumns($this->encode($this->toColumnsArray($columns)));
         }
 
         return $this;

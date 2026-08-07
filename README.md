@@ -632,14 +632,21 @@ $user = new Users($request->all()); // filtered through $fillable/$guarded
 $user->save();
 ```
 
-`fill()` is also callable directly, which is the recommended way to mass-assign data to an
-already-constructed record:
+`fill()` is also callable directly, which is the recommended way to mass-assign untrusted data onto
+an *existing* record that has already been fetched from the database:
 
 ```php
-$user = new Users();
-$user->fill($request->all());
-$user->save();
+$user = Users::findById(1);
+$user->fill($request->all()); // filtered through $fillable/$guarded
+$user->save();                // updates the existing row
 ```
+
+Note that `fill()` *replaces* the record's current column set with the filtered input rather than
+merging into it. On a fetched record that is harmless for the update itself - the primary key value
+is retained separately, only the filled columns end up in the `UPDATE`, and `save()` re-fetches the
+full row afterwards. To create a *new* record from untrusted input, pass the array to the constructor
+(shown above) rather than calling `fill()` on an empty instance - a record built with the no-argument
+constructor is not flagged as new, so `save()` would attempt an update instead of an insert.
 
 You can also check whether an individual column is mass-assignable:
 
