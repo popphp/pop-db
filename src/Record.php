@@ -757,12 +757,12 @@ class Record extends Record\AbstractRecord
      * Has one relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return Record|Record\Relationships\HasOne
      */
-    public function hasOne(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOne
+    public function hasOne(string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOne
     {
         $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
@@ -775,12 +775,12 @@ class Record extends Record\AbstractRecord
      * Has one of relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return Record|Record\Relationships\HasOneOf
      */
-    public function hasOneOf(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOneOf
+    public function hasOneOf(string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOneOf
     {
         $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
@@ -793,12 +793,12 @@ class Record extends Record\AbstractRecord
      * Has many relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return mixed
      */
-    public function hasMany(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): mixed
+    public function hasMany(string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false): mixed
     {
         if (($this->latest) || ($this->oldest)) {
             if ($options !== null) {
@@ -829,12 +829,12 @@ class Record extends Record\AbstractRecord
      * Belongs to relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return Record|Record\Relationships\BelongsTo
      */
-    public function belongsTo(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\BelongsTo
+    public function belongsTo(string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\BelongsTo
     {
         $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {

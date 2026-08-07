@@ -29,6 +29,12 @@ abstract class AbstractRelationship implements RelationshipInterface
 {
 
     /**
+     * Delimiter used to join multiple column values into one composite lookup key
+     * @var string
+     */
+    public const COMPOSITE_KEY_DELIMITER = "\x1F";
+
+    /**
      * Foreign table class
      * @var ?string
      */
@@ -36,9 +42,9 @@ abstract class AbstractRelationship implements RelationshipInterface
 
     /**
      * Foreign key
-     * @var ?string
+     * @var string|array|null
      */
-    protected ?string $foreignKey = null;
+    protected string|array|null $foreignKey = null;
 
     /**
      * Relationship options
@@ -58,10 +64,10 @@ abstract class AbstractRelationship implements RelationshipInterface
      * Instantiate the relationship object
      *
      * @param string $foreignTable
-     * @param string $foreignKey
+     * @param string|array $foreignKey
      * @param ?array $options
      */
-    public function __construct(string $foreignTable, string $foreignKey, ?array $options = null)
+    public function __construct(string $foreignTable, string|array $foreignKey, ?array $options = null)
     {
         $this->foreignTable = $foreignTable;
         $this->foreignKey   = $foreignKey;
@@ -81,9 +87,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get foreign key
      *
-     * @return string|null
+     * @return string|array|null
      */
-    public function getForeignKey(): string|null
+    public function getForeignKey(): string|array|null
     {
         return $this->foreignKey;
     }
@@ -140,6 +146,41 @@ abstract class AbstractRelationship implements RelationshipInterface
     public function getEmptyRelationshipValue(): mixed
     {
         return [];
+    }
+
+    /**
+     * Build a single composite lookup key from an ordered list of column values
+     *
+     * @param  array $values
+     * @return string
+     */
+    protected function buildCompositeKey(array $values): string
+    {
+        return implode(self::COMPOSITE_KEY_DELIMITER, $values);
+    }
+
+    /**
+     * Validate that an array foreign-key column count matches the target
+     * table's own primary-key column count. A plain string $foreignKey is
+     * always treated as cardinality 1.
+     *
+     * @param  string|array $foreignKey
+     * @param  array        $targetPrimaryKeys
+     * @throws Exception
+     * @return void
+     */
+    protected function assertKeyCardinality(string|array $foreignKey, array $targetPrimaryKeys): void
+    {
+        $foreignKeyCount = is_array($foreignKey) ? count($foreignKey) : 1;
+        $targetKeyCount  = count($targetPrimaryKeys);
+
+        if ($foreignKeyCount !== $targetKeyCount) {
+            throw new Exception(
+                'Error: The number of foreign key columns (' . $foreignKeyCount .
+                ') does not match the number of primary key columns (' . $targetKeyCount .
+                ') on the target table.'
+            );
+        }
     }
 
     /**

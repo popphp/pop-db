@@ -36,9 +36,9 @@ interface RelationshipInterface
     /**
      * Get foreign key
      *
-     * @return string|null
+     * @return string|array|null
      */
-    public function getForeignKey(): string|null;
+    public function getForeignKey(): string|array|null;
 
     /**
      * Get options
