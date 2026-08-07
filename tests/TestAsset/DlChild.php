@@ -14,6 +14,11 @@ class DlChild extends Record
         return $this->belongsTo('Pop\Db\Test\TestAsset\DlParent', 'parent_id', $options, $eager);
     }
 
+    public function parentOneOf(?array $options = null, bool $eager = false)
+    {
+        return $this->hasOneOf('Pop\Db\Test\TestAsset\DlParent', 'parent_id', $options, $eager);
+    }
+
     public function grand1(?array $options = null, bool $eager = false)
     {
         return $this->hasMany('Pop\Db\Test\TestAsset\DlGrand1', 'child_id', $options, $eager);

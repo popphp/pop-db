@@ -148,6 +148,12 @@ abstract class AbstractRelationship implements RelationshipInterface
      * onto every leaf record — so multiple differently-named children under this relationship
      * don't overwrite each other.
      *
+     * The column used to query and match a given child relationship is decided per relationship
+     * name, not once for all of them: "to-one by foreign key" children (HasOneOf and BelongsTo)
+     * are keyed by the leaf record's own foreign key column — the column holding the value that
+     * identifies which foreign row to fetch — while every other kind is keyed by the leaf
+     * record's primary key.
+     *
      * @param  array  $leafRecords
      * @param  string $primaryKeyColumn
      * @return void
@@ -158,12 +164,17 @@ abstract class AbstractRelationship implements RelationshipInterface
             return;
         }
 
-        $parentIds = array_values(array_unique(array_map(
-            fn($record) => $record[$primaryKeyColumn], $leafRecords
+        // Distinct relationship names across the queued child paths ('a.b' and 'a.c' are both
+        // the 'a' relationship), so the accumulate loop can stop once it has seen them all.
+        $expectedNames = count(array_unique(array_map(
+            fn($childPath) => (str_contains($childPath, '.')) ?
+                substr($childPath, 0, strpos($childPath, '.')) : $childPath,
+            $this->children
         )));
 
         $accumulated         = [];
         $relationshipsByName = [];
+        $lookupColumns       = [];
 
         foreach ($leafRecords as $record) {
             foreach ($this->children as $childPath) {
@@ -172,18 +183,30 @@ abstract class AbstractRelationship implements RelationshipInterface
             $record->getWithRelationships();
             foreach ($record->getRelationships() as $name => $relationship) {
                 if (!isset($accumulated[$name])) {
-                    $accumulated[$name]         = $relationship->getEagerRelationships($parentIds);
+                    $column = (($relationship instanceof HasOneOf) || ($relationship instanceof BelongsTo)) ?
+                        $relationship->getForeignKey() : $primaryKeyColumn;
+
+                    $lookupColumns[$name] = $column;
+
+                    $ids = array_values(array_unique(array_map(
+                        fn($leafRecord) => $leafRecord[$column], $leafRecords
+                    )));
+
+                    $accumulated[$name]         = $relationship->getEagerRelationships($ids);
                     $relationshipsByName[$name] = $relationship;
                 }
+            }
+            if (count($accumulated) >= $expectedNames) {
+                break;
             }
         }
 
         foreach ($leafRecords as $record) {
-            $primaryValue = $record[$primaryKeyColumn] ?? null;
-            foreach ($accumulated as $name => $resultsByParentId) {
+            foreach ($accumulated as $name => $resultsByKey) {
+                $lookupValue = $record[$lookupColumns[$name]] ?? null;
                 $record->setRelationship(
                     $name,
-                    $resultsByParentId[$primaryValue] ?? $relationshipsByName[$name]->getEmptyRelationshipValue()
+                    $resultsByKey[$lookupValue] ?? $relationshipsByName[$name]->getEmptyRelationshipValue()
                 );
             }
         }

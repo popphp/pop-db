@@ -452,6 +452,129 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    /**
+     * Build three parents and three children whose parent_id values are a deliberate
+     * permutation of the child ids (C1 -> P3, C2 -> P1, C3 -> P2), each fronted by a host
+     * row. Any implementation that resolves a nested "to-one by foreign key" relationship
+     * off the leaf record's own primary key instead of its foreign key column will still
+     * find *a* parent for every child -- just the wrong one -- so the returned names are
+     * what actually discriminate.
+     *
+     * @return array
+     */
+    protected function seedPermutedParents(): array
+    {
+        $parents = [];
+        foreach (['P1', 'P2', 'P3'] as $name) {
+            $parent = new DlParent(['name' => $name]);
+            $parent->save();
+            $parents[$name] = $parent;
+        }
+
+        $expected = ['C1' => 'P3', 'C2' => 'P1', 'C3' => 'P2'];
+        $children = [];
+
+        foreach ($expected as $childName => $parentName) {
+            $child = new DlChild(['parent_id' => $parents[$parentName]->id, 'name' => $childName]);
+            $child->save();
+            $children[$childName] = $child;
+
+            $host = new DlOneofHost(['name' => 'H-' . $childName, 'child_id' => $child->id]);
+            $host->save();
+
+            // The whole point of the permutation: the child's own id never equals its parent_id.
+            $this->assertNotEquals($child->id, $child->parent_id);
+        }
+
+        return $expected;
+    }
+
+    public function testNestedBelongsToChildUsesForeignKeyNotLeafPrimaryKey()
+    {
+        $expected = $this->seedPermutedParents();
+
+        // 'child' is a HasOneOf on DlOneofHost; 'parentRecord' is a BelongsTo nested UNDER it.
+        // AbstractRelationship::hydrateChildRelationships() must key that nested BelongsTo off
+        // each leaf DlChild's parent_id, not off the leaf's own primary key.
+        $hosts = DlOneofHost::with('child.parentRecord')->getBy(null, ['order' => 'id ASC']);
+
+        $this->assertEquals(3, $hosts->count());
+
+        foreach ($hosts as $host) {
+            $child = $host->child;
+            $this->assertInstanceOf(DlChild::class, $child);
+            $this->assertTrue($child->hasRelationship('parentRecord'));
+            $this->assertInstanceOf(
+                DlParent::class, $child->parentRecord, 'child ' . $child->name . ' has no parentRecord'
+            );
+            $this->assertEquals(
+                $expected[$child->name], $child->parentRecord->name,
+                'child ' . $child->name . ' resolved to the wrong parent'
+            );
+            $this->assertEquals($child->parent_id, $child->parentRecord->id);
+        }
+
+        $this->db->disconnect();
+    }
+
+    public function testNestedHasOneOfChildUsesForeignKeyNotLeafPrimaryKey()
+    {
+        $expected = $this->seedPermutedParents();
+
+        // Same shape as above, but the nested child is a HasOneOf ('parentOneOf') rather than
+        // a BelongsTo -- both need the leaf's foreign key column, not the leaf's primary key.
+        $hosts = DlOneofHost::with('child.parentOneOf')->getBy(null, ['order' => 'id ASC']);
+
+        $this->assertEquals(3, $hosts->count());
+
+        foreach ($hosts as $host) {
+            $child = $host->child;
+            $this->assertInstanceOf(DlChild::class, $child);
+            $this->assertTrue($child->hasRelationship('parentOneOf'));
+            $this->assertInstanceOf(
+                DlParent::class, $child->parentOneOf, 'child ' . $child->name . ' has no parentOneOf'
+            );
+            $this->assertEquals(
+                $expected[$child->name], $child->parentOneOf->name,
+                'child ' . $child->name . ' resolved to the wrong parent'
+            );
+            $this->assertEquals($child->parent_id, $child->parentOneOf->id);
+        }
+
+        $this->db->disconnect();
+    }
+
+    public function testNestedMixedToOneAndToManyChildrenEachUseTheirOwnLookupColumn()
+    {
+        $expected = $this->seedPermutedParents();
+
+        // Three differently-typed nested children under the same parent relationship:
+        // 'parentRecord' (BelongsTo -> keyed by parent_id), 'parentOneOf' (HasOneOf -> keyed by
+        // parent_id) and 'grand1' (HasMany -> keyed by the leaf's own primary key). The lookup
+        // column must be decided per relationship name, not once for all of them.
+        foreach (['C1', 'C2', 'C3'] as $childName) {
+            $child = DlChild::findOne(['name' => $childName]);
+            $g = new DlGrand1(['child_id' => $child->id, 'note' => 'g1-' . $childName]);
+            $g->save();
+        }
+
+        $hosts = DlOneofHost::with(['child.parentRecord', 'child.parentOneOf', 'child.grand1'])
+            ->getBy(null, ['order' => 'id ASC']);
+
+        $this->assertEquals(3, $hosts->count());
+
+        foreach ($hosts as $host) {
+            $child = $host->child;
+            $this->assertEquals($expected[$child->name], $child->parentRecord->name);
+            $this->assertEquals($expected[$child->name], $child->parentOneOf->name);
+            $this->assertInstanceOf(\Pop\Db\Record\Collection::class, $child->grand1);
+            $this->assertEquals(1, $child->grand1->count());
+            $this->assertEquals('g1-' . $child->name, $child->grand1[0]->note);
+        }
+
+        $this->db->disconnect();
+    }
+
     public function testSingleChainThreeLevelsDeepStillWorks()
     {
         $parent = new DlParent(['name' => 'P1']);
