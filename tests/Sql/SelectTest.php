@@ -44,6 +44,98 @@ class SelectTest extends TestCase
         $this->assertEquals('SELECT `u`.`username` FROM `users` AS `u`', $sql->render());
     }
 
+    public function testJsonExtractMysql()
+    {
+        $sql = $this->db->createSql();
+        $extract = $sql->jsonExtract('data', '$.name');
+        $this->assertEquals("JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name'))", (string)$extract);
+        $this->db->disconnect();
+    }
+
+    public function testJsonExtractMysqlNestedPath()
+    {
+        $sql = $this->db->createSql();
+        $extract = $sql->jsonExtract('data', '$.address.city');
+        $this->assertEquals("JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.address.city'))", (string)$extract);
+        $this->db->disconnect();
+    }
+
+    public function testJsonExtractPgsqlTopLevelKey()
+    {
+        $db  = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $sql = $db->createSql();
+        $extract = $sql->jsonExtract('data', '$.name');
+        $this->assertEquals('"data"->>\'name\'', (string)$extract);
+        $db->disconnect();
+    }
+
+    public function testJsonExtractPgsqlNestedPath()
+    {
+        $db  = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $sql = $db->createSql();
+        $extract = $sql->jsonExtract('data', '$.address.city');
+        $this->assertEquals('"data"#>>\'{address,city}\'', (string)$extract);
+        $db->disconnect();
+    }
+
+    public function testJsonExtractPgsqlArrayIndexPath()
+    {
+        $db  = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $sql = $db->createSql();
+        $extract = $sql->jsonExtract('data', '$.tags[0]');
+        $this->assertEquals('"data"#>>\'{tags,0}\'', (string)$extract);
+        $db->disconnect();
+    }
+
+    public function testJsonExtractSqlite()
+    {
+        touch(__DIR__ . '/../tmp/json_extract.sqlite');
+        $db  = Db::sqliteConnect(['database' => __DIR__ . '/../tmp/json_extract.sqlite']);
+        $sql = $db->createSql();
+        $extract = $sql->jsonExtract('data', '$.name');
+        $this->assertEquals("json_extract(\"data\", '$.name')", (string)$extract);
+        $db->disconnect();
+        @unlink(__DIR__ . '/../tmp/json_extract.sqlite');
+    }
+
+    public function testJsonExtractAsSelectColumn()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['id', 'extracted_name' => $sql->jsonExtract('data', '$.name')])->from('users');
+        $this->assertEquals(
+            "SELECT `id`, JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) AS `extracted_name` FROM `users`",
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testJsonExtractInOrderBy()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users');
+        $sql->select()->orderBy($sql->jsonExtract('data', '$.name'));
+        $this->assertEquals(
+            "SELECT * FROM `users` ORDER BY JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) ASC",
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
     public function testJoin()
     {
         $sql = $this->db->createSql();

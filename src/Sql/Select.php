@@ -369,7 +369,9 @@ class Select extends AbstractPredicateClause
         $byColumns = null;
         $order     = strtoupper($order);
 
-        if (is_array($by)) {
+        if ($by instanceof JsonExtract) {
+            $byColumns = (string)$by;
+        } else if (is_array($by)) {
             $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
         } else if (str_contains($by, ',')) {
             $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
@@ -430,6 +432,9 @@ class Select extends AbstractPredicateClause
                 if ($col instanceof AbstractSql) {
                     $cols[] = (!is_numeric($as)) ?
                         '(' . $col . ') AS ' . $this->quoteId($as) : '(' .  $col . ')';
+                } else if ($col instanceof JsonExtract) {
+                    $cols[] = (!is_numeric($as)) ?
+                        (string)$col . ' AS ' . $this->quoteId($as) : (string)$col;
                 } else {
                     // If column is a SQL function, don't quote it
                     $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);

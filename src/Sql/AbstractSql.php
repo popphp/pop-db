@@ -178,6 +178,19 @@ abstract class AbstractSql
     }
 
     /**
+     * Create a JSON path extraction expression, usable as a SELECT column value or an
+     * orderBy() argument
+     *
+     * @param  string $column
+     * @param  string $path
+     * @return JsonExtract
+     */
+    public function jsonExtract(string $column, string $path): JsonExtract
+    {
+        return new JsonExtract($this, $column, $path);
+    }
+
+    /**
      * Get the current database adapter object (alias method)
      *
      * @return ?Adapter\AbstractAdapter
