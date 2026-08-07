@@ -411,6 +411,140 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHooksFireInOrderOnInsert()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser1',
+            'password' => 'password1',
+            'email'    => 'hookuser1@test.com'
+        ]);
+        $user->save();
+
+        $this->assertEquals(
+            ['beforeSave', 'beforeInsert', 'afterInsert', 'afterSave'],
+            $user->hookLog
+        );
+        $this->db->disconnect();
+    }
+
+    public function testHooksFireInOrderOnUpdate()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser2',
+            'password' => 'password1',
+            'email'    => 'hookuser2@test.com'
+        ]);
+        $user->save();
+        $user->hookLog = [];
+
+        $user->username = 'hookuser2updated';
+        $user->save();
+
+        $this->assertEquals(
+            ['beforeSave', 'beforeUpdate', 'afterUpdate', 'afterSave'],
+            $user->hookLog
+        );
+        $this->db->disconnect();
+    }
+
+    public function testAfterDeleteCanReadRecordDataBeforeReset()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser3',
+            'password' => 'password1',
+            'email'    => 'hookuser3@test.com'
+        ]);
+        $user->save();
+        $savedId = $user->id;
+        $user->hookLog = [];
+
+        $user->delete();
+
+        $this->assertEquals(['beforeDelete', 'afterDelete:id=' . $savedId], $user->hookLog);
+        $this->db->disconnect();
+    }
+
+    public function testBeforeInsertThrowAbortsSaveAndPropagates()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $this->expectException('Pop\Db\Record\Exception');
+
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser4',
+            'password' => 'password1',
+            'email'    => 'hookuser4@test.com'
+        ]);
+        $user->throwInBeforeInsert = true;
+
+        try {
+            $user->save();
+        } finally {
+            $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser4']);
+            $this->assertTrue(empty($found->toArray()));
+            $this->db->disconnect();
+        }
+    }
+
+    public function testBeforeDeleteThrowAbortsDelete()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser5',
+            'password' => 'password1',
+            'email'    => 'hookuser5@test.com'
+        ]);
+        $user->save();
+        $user->throwInBeforeDelete = true;
+
+        try {
+            $user->delete();
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            // expected
+        }
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser5']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testBulkSaveDoesNotFireHooks()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers();
+        $user->save([
+            ['username' => 'bulkhook1', 'password' => 'p1', 'email' => 'b1@test.com'],
+            ['username' => 'bulkhook2', 'password' => 'p2', 'email' => 'b2@test.com']
+        ]);
+
+        $this->assertEquals([], $user->hookLog);
+        $this->db->disconnect();
+    }
+
+    public function testUndeclaredHooksAreNoOpsByDefault()
+    {
+        $user = new Users([
+            'username' => 'plainuser1',
+            'password' => 'password1',
+            'email'    => 'plainuser1@test.com'
+        ]);
+        $user->save();
+        $userId = $user->id;
+        $user->username = 'plainuser1updated';
+        $user->save();
+
+        $updated = Users::findById($userId);
+        $this->assertEquals('plainuser1updated', $updated->username);
+        $this->assertEquals(1, Users::findAll(['id' => $userId])->count());
+
+        $user->delete();
+        $this->assertTrue(empty($user->toArray()));
+        $this->db->disconnect();
+    }
+
     public function testSetColumnsArrayAccess()
     {
         $data = new MockData([

@@ -756,6 +756,50 @@ $user->decrement('capacity', 5); // Decrement column by 5 and save
 $newUser = $user->copy($replace);
 ```
 
+#### Lifecycle hooks
+
+`Pop\Db\Record` exposes eight protected, empty, overridable hook methods that a table class can
+implement to run code around a single-record `save()`/`delete()`:
+
+- `beforeSave()` / `afterSave()` - wrap the whole `save()` call, for both inserts and updates
+- `beforeInsert()` / `afterInsert()` - fire only when the record is new (an INSERT)
+- `beforeUpdate()` / `afterUpdate()` - fire only when the record already exists (an UPDATE)
+- `beforeDelete()` / `afterDelete()` - wrap the whole `delete()` call
+
+They're no-ops by default, so declaring none of them is zero behavior change. Override one in a
+table class to hook in:
+
+```php
+class Users extends Pop\Db\Record
+{
+    protected function beforeSave(): void
+    {
+        $this->updatedAt = date('Y-m-d H:i:s');
+    }
+
+    protected function afterDelete(): void
+    {
+        Logger::info('User deleted', ['id' => $this->id]);
+    }
+}
+```
+
+On `save()`, the firing order is `beforeSave()` → (`beforeInsert()` or `beforeUpdate()`) →
+the actual INSERT/UPDATE → (`afterInsert()` or `afterUpdate()`) → `afterSave()`. `afterUpdate()`
+fires after the record has been re-fetched from the database, so it sees the row's current
+persisted state. On `delete()`, the order is `beforeDelete()` → the actual DELETE → `afterDelete()`,
+and `afterDelete()` still has access to the deleted record's own column values (e.g. `$this->id`)
+even though the record's in-memory state is cleared immediately afterward.
+
+These hooks only fire on the single-record path - bulk operations (`$user->save($rows)`,
+`$user->delete($columns)`) do not trigger any of them.
+
+A hook can abort the operation by throwing: the exception propagates out of `save()`/`delete()`
+to the caller like any other failure in those methods (triggering a transaction rollback if one is
+active). Note that an `after*` hook throwing cannot retroactively undo the INSERT/UPDATE/DELETE
+statement that already ran if it wasn't inside an active transaction - the throw still propagates
+to the caller either way, but the database change stands.
+
 #### Dirty records
 
 If a record has been modified, the changes are stored and you can get them like this:

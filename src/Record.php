@@ -966,6 +966,78 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Called before a single-record save() (both insert and update)
+     *
+     * @return void
+     */
+    protected function beforeSave(): void
+    {
+    }
+
+    /**
+     * Called after a single-record save() (both insert and update)
+     *
+     * @return void
+     */
+    protected function afterSave(): void
+    {
+    }
+
+    /**
+     * Called before a single-record insert (a new record being saved for the first time)
+     *
+     * @return void
+     */
+    protected function beforeInsert(): void
+    {
+    }
+
+    /**
+     * Called after a single-record insert
+     *
+     * @return void
+     */
+    protected function afterInsert(): void
+    {
+    }
+
+    /**
+     * Called before a single-record update (an existing record being saved again)
+     *
+     * @return void
+     */
+    protected function beforeUpdate(): void
+    {
+    }
+
+    /**
+     * Called after a single-record update
+     *
+     * @return void
+     */
+    protected function afterUpdate(): void
+    {
+    }
+
+    /**
+     * Called before a single-record delete
+     *
+     * @return void
+     */
+    protected function beforeDelete(): void
+    {
+    }
+
+    /**
+     * Called after a single-record delete
+     *
+     * @return void
+     */
+    protected function afterDelete(): void
+    {
+    }
+
+    /**
      * Save or update the record
      *
      * @param  ?array $columns
@@ -978,16 +1050,22 @@ class Record extends Record\AbstractRecord
         try {
             // Save or update the record
             if ($columns === null) {
+                $this->beforeSave();
                 if ($this->isNew) {
+                    $this->beforeInsert();
                     $this->rowGateway->save();
                     $this->isNew = false;
+                    $this->afterInsert();
                 } else {
+                    $this->beforeUpdate();
                     $this->rowGateway->update();
                     $record = $this->getById($this->rowGateway->getPrimaryValues());
                     if (isset($record[0])) {
                         $this->setColumns($record[0]);
                     }
+                    $this->afterUpdate();
                 }
+                $this->afterSave();
                 // Else, save multiple rows
             } else {
                 if (isset($columns[0])) {
@@ -1019,7 +1097,18 @@ class Record extends Record\AbstractRecord
         try {
             // Delete the record
             if ($columns === null) {
+                $this->beforeDelete();
+                // The row gateway clears its own columns/primary values as part of delete(),
+                // so restore them afterward (then re-clear once afterDelete() has had a chance
+                // to run) - this lets afterDelete() still read the just-deleted record's data.
+                $deletedColumns = $this->rowGateway->getColumns();
                 $this->rowGateway->delete();
+                $this->rowGateway->setColumns($deletedColumns);
+                try {
+                    $this->afterDelete();
+                } finally {
+                    $this->rowGateway->setPrimaryValues([]);
+                }
             // Delete multiple rows
             } else {
                 $expressions = null;
