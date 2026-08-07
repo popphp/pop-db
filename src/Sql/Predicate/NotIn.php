@@ -56,15 +56,18 @@ class NotIn extends AbstractPredicate
         if (count($this->values) != 2) {
             throw new Exception('Error: The values array must have 2 values in it.');
         }
-        if (!is_array($this->values[1])) {
-            throw new Exception('Error: The 2nd value must be an array of values.');
-        }
 
         [$column, $values] = $this->values;
 
-        $values = array_map([$sql, 'quote'], $values);
+        if ($values instanceof AbstractSql) {
+            $valuesString = (string)$values;
+        } else if (is_array($values)) {
+            $valuesString = implode(', ', array_map([$sql, 'quote'], $values));
+        } else {
+            throw new Exception('Error: The 2nd value must be an array of values or a Sql\Select instance.');
+        }
 
-        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), implode(', ', $values)], $this->format) . ')';
+        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), $valuesString], $this->format) . ')';
     }
 
 }

@@ -59,7 +59,7 @@ class GreaterThanOrEqualTo extends AbstractPredicate
 
         [$column, $value] = $this->values;
 
-        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), $sql->quote($value)], $this->format) . ')';
+        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), self::renderValue($sql, $value)], $this->format) . ')';
     }
 
 }

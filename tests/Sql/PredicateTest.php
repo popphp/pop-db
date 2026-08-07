@@ -140,6 +140,30 @@ class PredicateTest extends TestCase
         $predicate->render($this->db->createSql());
     }
 
+    public function testEqualToWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicate = new Predicate\EqualTo(['user_id', $subquery]);
+        $this->assertEquals(
+            "(`user_id` = (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testGreaterThanWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('COUNT(*)')->from('orders');
+        $subquery->where->equalTo('status', 'shipped');
+
+        $predicate = new Predicate\GreaterThan(['total_orders', $subquery]);
+        $this->assertEquals(
+            "(`total_orders` > (SELECT COUNT(*) FROM `orders` WHERE (`status` = 'shipped')))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
     public function testIn()
     {
         $predicate = new Predicate\In(['attempts', [1, 10]]);
@@ -160,6 +184,18 @@ class PredicateTest extends TestCase
         $predicate->render($this->db->createSql());
     }
 
+    public function testInWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicate = new Predicate\In(['user_id', $subquery]);
+        $this->assertEquals(
+            "(`user_id` IN (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
     public function testNotIn()
     {
         $predicate = new Predicate\NotIn(['attempts', [1, 10]]);
@@ -178,6 +214,18 @@ class PredicateTest extends TestCase
         $this->expectException('Pop\Db\Sql\Predicate\Exception');
         $predicate = new Predicate\NotIn(['attempts', 10]);
         $predicate->render($this->db->createSql());
+    }
+
+    public function testNotInWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicate = new Predicate\NotIn(['user_id', $subquery]);
+        $this->assertEquals(
+            "(`user_id` NOT IN (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicate->render($this->db->createSql())
+        );
     }
 
     public function testIsNull()

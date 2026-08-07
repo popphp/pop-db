@@ -122,6 +122,19 @@ abstract class AbstractPredicate
     }
 
     /**
+     * Render a single predicate value: a nested Select/Sql instance embeds as a
+     * parenthesized subquery, anything else quotes as a literal/placeholder as before
+     *
+     * @param  AbstractSql $sql
+     * @param  mixed       $value
+     * @return string
+     */
+    protected static function renderValue(AbstractSql $sql, mixed $value): string
+    {
+        return ($value instanceof AbstractSql) ? '(' . $value . ')' : $sql->quote($value);
+    }
+
+    /**
      * Render the predicate string
      *
      * @param  AbstractSql $sql
