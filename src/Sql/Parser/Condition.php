@@ -95,10 +95,13 @@ class Condition
         $legacyColumns = [];
         $newColumns    = [];
         $groups        = [];
+        $existsKeys    = [];
 
         foreach ($columns as $key => $value) {
             if (($key === 'OR') || ($key === 'AND')) {
                 $groups[$key] = $value;
+            } else if (($key === 'EXISTS') || ($key === 'NOT EXISTS')) {
+                $existsKeys[$key] = $value;
             } else if (self::isNewSyntax($value)) {
                 $newColumns[$key] = $value;
             } else if (self::isPlainEquality((string)$key, $value)) {
@@ -131,6 +134,17 @@ class Condition
 
         foreach ($newColumns as $column => $tuple) {
             self::parseTuple($predicateSet, (string)$column, $tuple, $sql, $parameterIndex);
+        }
+
+        foreach ($existsKeys as $key => $select) {
+            if (!($select instanceof AbstractSql)) {
+                throw new Exception("Error: The '" . $key . "' key must contain a Sql\Select instance.");
+            }
+            if ($key === 'EXISTS') {
+                $predicateSet->exists($select);
+            } else {
+                $predicateSet->notExists($select);
+            }
         }
 
         foreach ($groups as $conjunction => $groupList) {
@@ -270,23 +284,28 @@ class Condition
         $method   = $spec['method'];
 
         if (!empty($spec['multi'])) {
-            if (!isset($tuple[0]) || !is_array($tuple[0])) {
-                throw new Exception(
-                    "Error: The '" . $operator . "' operator for column '" . $column . "' requires an array of values."
-                );
-            }
-            if (empty($tuple[0])) {
-                throw new Exception(
-                    "Error: The '" . $operator . "' operator for column '" . $column .
-                    "' requires at least 1 value, 0 given."
-                );
-            }
+            if (isset($tuple[0]) && ($tuple[0] instanceof AbstractSql)) {
+                $predicateSet->{$method}($column, $tuple[0]);
+            } else {
+                if (!isset($tuple[0]) || !is_array($tuple[0])) {
+                    throw new Exception(
+                        "Error: The '" . $operator . "' operator for column '" . $column .
+                        "' requires an array of values or a Sql\Select instance."
+                    );
+                }
+                if (empty($tuple[0])) {
+                    throw new Exception(
+                        "Error: The '" . $operator . "' operator for column '" . $column .
+                        "' requires at least 1 value, 0 given."
+                    );
+                }
 
-            $placeholders = [];
-            foreach ($tuple[0] as $val) {
-                $placeholders[] = self::addParameter($predicateSet, $sql, $column, $val, $parameterIndex);
+                $placeholders = [];
+                foreach ($tuple[0] as $val) {
+                    $placeholders[] = self::addParameter($predicateSet, $sql, $column, $val, $parameterIndex);
+                }
+                $predicateSet->{$method}($column, $placeholders);
             }
-            $predicateSet->{$method}($column, $placeholders);
         } else if ($spec['arity'] === 0) {
             if (count($tuple) !== 0) {
                 throw new Exception(
@@ -301,8 +320,17 @@ class Condition
                     count($tuple) . ' given.'
                 );
             }
-            $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
-            $predicateSet->{$method}($column, $placeholder);
+            if ($tuple[0] instanceof AbstractSql) {
+                if (!in_array($operator, ['=', '!=', '>', '>=', '<', '<='], true)) {
+                    throw new Exception(
+                        "Error: A Sql\Select instance is not a supported value for the '" . $operator . "' operator."
+                    );
+                }
+                $predicateSet->{$method}($column, $tuple[0]);
+            } else {
+                $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
+                $predicateSet->{$method}($column, $placeholder);
+            }
         } else {
             if (count($tuple) !== 2) {
                 throw new Exception(

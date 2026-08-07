@@ -395,6 +395,97 @@ class ConditionTest extends TestCase
         Condition::parse(['role' => ['NOT IN', []]], $sql);
     }
 
+    public function testInWithSubquery()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicateSet = Condition::parse(['user_id' => ['IN', $subquery]], $sql);
+
+        $this->assertEquals(
+            "(`user_id` IN (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicateSet->render()
+        );
+        $this->assertEquals([], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testEqualToWithSubquery()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('MAX(total)')->from('orders');
+
+        $predicateSet = Condition::parse(['total' => ['=', $subquery]], $sql);
+
+        $this->assertEquals(
+            "(`total` = (SELECT MAX(total) FROM `orders`))",
+            $predicateSet->render()
+        );
+        $this->assertEquals([], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testLikeWithSubqueryThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        Condition::parse(['username' => ['LIKE', $subquery]], $sql);
+    }
+
+    public function testExistsKey()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicateSet = Condition::parse(['EXISTS' => $subquery], $sql);
+
+        $this->assertEquals(
+            "(EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))",
+            $predicateSet->render()
+        );
+        $this->db->disconnect();
+    }
+
+    public function testNotExistsKey()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicateSet = Condition::parse(['NOT EXISTS' => $subquery], $sql);
+
+        $this->assertEquals(
+            "(NOT EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))",
+            $predicateSet->render()
+        );
+        $this->db->disconnect();
+    }
+
+    public function testExistsKeyWithNonSelectValueThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['EXISTS' => 'not a select object'], $sql);
+    }
+
+    public function testExistsCombinedWithOtherConditions()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicateSet = Condition::parse(['active' => ['=', 1], 'EXISTS' => $subquery], $sql);
+
+        $this->assertEquals(
+            "((`active` = ?) AND (EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5))))",
+            $predicateSet->render()
+        );
+        $this->db->disconnect();
+    }
+
     public function testBetween()
     {
         $sql          = $this->db->createSql();
