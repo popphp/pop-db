@@ -631,7 +631,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function hasRelationship(string $name): bool
     {
-        return (isset($this->relationships[$name]));
+        return (array_key_exists($name, $this->relationships));
     }
 
     /**
@@ -706,7 +706,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     {
         $result = null;
 
-        if (isset($this->relationships[$name])) {
+        if (array_key_exists($name, $this->relationships)) {
             $result = $this->relationships[$name];
         } else if (isset($this->rowGateway[$name])) {
             $result = $this->rowGateway[$name];
@@ -725,7 +725,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function __isset(string $name): bool
     {
-        if (isset($this->relationships[$name])) {
+        if (array_key_exists($name, $this->relationships)) {
             return true;
         } else if (isset($this->rowGateway[$name])) {
             return true;

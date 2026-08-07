@@ -255,4 +255,62 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasOneEmptyRelationshipResolvesToNullWithoutRedundantQuery()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        // No DlChild rows at all for this parent, so the eager-loaded 'firstChild'
+        // relationship correctly resolves to null (HasOne::getEmptyRelationshipValue()).
+        // Before the fix, AbstractRecord::__get()/hasRelationship()/__isset() used
+        // isset($this->relationships[$name]), which is false for a key set to null,
+        // so __get() fell through to method_exists() and re-invoked $this->firstChild()
+        // fresh (a redundant lazy, non-eager query) instead of returning the already-
+        // resolved null.
+        $found = DlParent::with('firstChild')->getOne(['id' => $parent->id]);
+
+        // The relationship WAS resolved (to null) -- hasRelationship() must report true,
+        // not false, even though the resolved value is null.
+        $this->assertTrue($found->hasRelationship('firstChild'));
+
+        // Direct property access must return the correctly-computed null, not a
+        // freshly-constructed empty DlChild instance from a redundant lazy call.
+        $this->assertNull($found->firstChild);
+
+        // __isset() must also report true: the relationship name was resolved.
+        $this->assertTrue(isset($found->firstChild));
+
+        // getRelationship() must agree.
+        $this->assertNull($found->getRelationship('firstChild'));
+
+        $this->db->disconnect();
+    }
+
+    public function testHasManyEmptyRelationshipStillResolvesCorrectlyAfterArrayKeyExistsFix()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        // No DlChild rows at all, so the eager-loaded 'children' HasMany relationship
+        // correctly resolves to an empty Collection (HasMany::getEmptyRelationshipValue()).
+        // This confirms the isset() -> array_key_exists() fix doesn't break the
+        // already-working HasMany/Collection case.
+        $found = DlParent::with('children')->getOne(['id' => $parent->id]);
+
+        $this->assertTrue($found->hasRelationship('children'));
+
+        $children = $found->children;
+        $this->assertInstanceOf(\Pop\Db\Record\Collection::class, $children);
+        $this->assertEquals(0, $children->count());
+
+        // Confirm it's the same instance stored via setRelationship(), i.e. accessing
+        // the property twice doesn't trigger a redundant re-resolution.
+        $this->assertSame($children, $found->children);
+
+        $this->assertTrue(isset($found->children));
+        $this->assertSame($children, $found->getRelationship('children'));
+
+        $this->db->disconnect();
+    }
+
 }
