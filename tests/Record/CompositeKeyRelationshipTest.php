@@ -313,6 +313,22 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFactoryMethodCardinalityMismatchThrowsThroughWithDispatch()
+    {
+        $note = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $note->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // A relationship declared with only 1 FK column against a 2-column-PK target.
+        $relationship = new \Pop\Db\Record\Relationships\HasOneOf(
+            $note, 'Pop\Db\Test\TestAsset\CkOrg', 'org_id'
+        );
+        $relationship->getEagerRelationships([1]);
+
+        $this->db->disconnect();
+    }
+
     public function testTopLevelWithResolvesCompositeKeyHasMany()
     {
         $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);

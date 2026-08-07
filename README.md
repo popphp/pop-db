@@ -1403,6 +1403,40 @@ relationship (`hasMany`) with no match resolves to an empty collection. Note tha
 resolved to an empty `array` instead, so any code that checked an unmatched relationship from `getOne()` or
 `getBy()` with `is_array()`, or passed it to `count()`, will need to be updated.
 
+**Composite (multi-column) keys**
+
+`$foreignKey` isn't limited to a single column name — it can also be given as an array of column names to
+describe a composite key relationship. The array is paired positionally against the *other* table's own
+declared primary key columns, so order matters: the first foreign key column matches the related table's first
+primary key column, the second matches its second, and so on.
+
+```php
+class Orders extends Pop\Db\Record
+{
+    /**
+     * Mock Schema
+     *    - id
+     *    - user_id (FK to users.id)
+     *    - org_id  (FK to users.org_id)
+     *    - order_date
+     *    - order_total
+     *    - products
+     */
+
+    // Define the parent relationship up to the user that owns this order record,
+    // matched on both `user_id` and `org_id`
+    public function user()
+    {
+        return $this->belongsTo('Users', ['user_id', 'org_id']);
+    }
+
+}
+```
+
+This works the same way for `hasOne()`, `hasOneOf()` and `hasMany()` — pass an array of foreign key columns
+instead of a single string and it is matched positionally against the related table's primary key columns. Both
+lazy-loading and eager-loading via `with()` (including nested `with()` calls) support composite keys.
+
 [Top](#pop-db)
 
 Querying
