@@ -14,4 +14,9 @@ class CkNote extends Record
         return $this->hasOneOf('Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id'], $options, $eager);
     }
 
+    public function org(?array $options = null, bool $eager = false)
+    {
+        return $this->belongsTo('Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id'], $options, $eager);
+    }
+
 }

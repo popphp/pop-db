@@ -70,7 +70,8 @@ class BelongsTo extends AbstractRelationship
     public function getParent(?array $options = null): ?Record
     {
         $table  = $this->foreignTable;
-        $values = $this->child[$this->foreignKey];
+        $values = is_array($this->foreignKey) ?
+            array_map(fn($col) => $this->child[$col], $this->foreignKey) : $this->child[$this->foreignKey];
 
         if (!empty($this->children)) {
             return $table::with($this->children)->getById($values);
@@ -115,10 +116,22 @@ class BelongsTo extends AbstractRelationship
         }
 
         $primaryKeys = (new $table())->getPrimaryKeys();
-        $parentKey   = (count($primaryKeys) == 1) ? reset($primaryKeys) : $this->foreignKey;
+        $this->assertKeyCardinality($this->foreignKey, $primaryKeys);
+        $parentKey = (count($primaryKeys) == 1) ? reset($primaryKeys) : $primaryKeys;
 
-        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select($columns)->from($table::table())->where->in($parentKey, $placeholders);
+        $sql->select($columns)->from($table::table());
+
+        if (is_array($parentKey)) {
+            foreach ($ids as $idTuple) {
+                $group = $sql->select()->where->orNest();
+                foreach ($parentKey as $col) {
+                    $group->equalTo($col, $sql->getPlaceholder());
+                }
+            }
+        } else {
+            $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+            $sql->select()->where->in($parentKey, $placeholders);
+        }
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
@@ -155,8 +168,10 @@ class BelongsTo extends AbstractRelationship
             }
         }
 
+        $params = is_array($parentKey) ? array_merge(...$ids) : $ids;
+
         $db->prepare($sql)
-            ->bindParams($ids)
+            ->bindParams($params)
             ->execute();
 
         $rows        = $db->fetchAll();
@@ -166,7 +181,9 @@ class BelongsTo extends AbstractRelationship
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
-            $results[$row[$parentKey]] = $record;
+            $key = is_array($parentKey) ?
+                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $parentKey)) : $row[$parentKey];
+            $results[$key] = $record;
             $leafRecords[] = $record;
         }
 
