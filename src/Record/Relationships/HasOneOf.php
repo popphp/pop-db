@@ -77,6 +77,16 @@ class HasOneOf extends AbstractRelationship
     }
 
     /**
+     * Get the value to use when no eager-loaded result exists for a given leaf record
+     *
+     * @return mixed
+     */
+    public function getEmptyRelationshipValue(): mixed
+    {
+        return null;
+    }
+
+    /**
      * Get eager relationships
      *
      * @param  array $ids
@@ -148,48 +158,21 @@ class HasOneOf extends AbstractRelationship
            ->bindParams($ids)
            ->execute();
 
-        $rows               = $db->fetchAll();
-        $parentIds          = [];
-        $childRelationships = [];
+        $rows        = $db->fetchAll();
+        $results     = [];
+        $leafRecords = [];
 
         $primaryKey = (new $table())->getPrimaryKeys();
         $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
 
         foreach ($rows as $row) {
-            $parentIds[] = $row[$primaryKey];
             $record = new $table();
             $record->setColumns($row);
             $results[$row[$keys]] = $record;
+            $leafRecords[] = $record;
         }
 
-        if (!empty($this->children) && !empty($parentIds)) {
-            foreach ($results as $record) {
-                $record->getWithRelationships();
-                foreach ($record->getRelationships() as $relationship) {
-                    $childRelationships = $relationship->getEagerRelationships($parentIds);
-                }
-            }
-        }
-
-        if (!empty($childRelationships)) {
-            $children    = $this->children;
-            $subChildren = null;
-            if (str_contains($children, '.')) {
-                $names       = explode('.', $children);
-                $children    = array_shift($names);
-                $subChildren = implode('.', $names);
-            }
-
-            foreach ($results as $record) {
-                if (!empty($subChildren)) {
-                    $record->addWith($subChildren);
-                }
-                $rel = (isset($childRelationships[$record[$primaryKey]])) ?
-                    $childRelationships[$record[$primaryKey]] : [];
-
-                $record->setRelationship($children, $rel);
-            }
-        }
+        $this->hydrateChildRelationships($leafRecords, $primaryKey);
 
         return $results;
     }

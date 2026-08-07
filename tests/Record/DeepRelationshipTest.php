@@ -313,4 +313,59 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasOneOfEagerLoadsTwoDifferentGrandchildren()
+    {
+        $child = new DlChild(['parent_id' => 0, 'name' => 'C1']);
+        $child->save();
+
+        $host = new DlOneofHost(['name' => 'H1', 'child_id' => $child->id]);
+        $host->save();
+
+        $g1 = new DlGrand1(['child_id' => $child->id, 'note' => 'g1-note']);
+        $g1->save();
+        $g2 = new DlGrand2(['child_id' => $child->id, 'note' => 'g2-note']);
+        $g2->save();
+
+        $found = DlOneofHost::with(['child.grand1', 'child.grand2'])->getById($host->id);
+
+        $this->assertInstanceOf(DlChild::class, $found->child);
+        $this->assertTrue($found->child->hasRelationship('grand1'));
+        $this->assertTrue($found->child->hasRelationship('grand2'));
+        $this->assertEquals(1, $found->child->grand1->count());
+        $this->assertEquals(1, $found->child->grand2->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneOfEmptyRelationshipResolvesToNullWithoutRedundantQuery()
+    {
+        $host = new DlOneofHost(['name' => 'H1', 'child_id' => 999999]);
+        $host->save();
+
+        // The child_id points to a non-existent DlChild record, so the eager-loaded 'child'
+        // relationship correctly resolves to null (HasOneOf::getEmptyRelationshipValue()).
+        // Before the fix, AbstractRecord::__get()/hasRelationship()/__isset() used
+        // isset($this->relationships[$name]), which is false for a key set to null,
+        // so __get() fell through to method_exists() and re-invoked $this->child()
+        // fresh (a redundant lazy, non-eager query) instead of returning the already-
+        // resolved null.
+        $found = DlOneofHost::with('child')->getOne(['id' => $host->id]);
+
+        // The relationship WAS resolved (to null) -- hasRelationship() must report true,
+        // not false, even though the resolved value is null.
+        $this->assertTrue($found->hasRelationship('child'));
+
+        // Direct property access must return the correctly-computed null, not a
+        // freshly-constructed DlChild instance from a redundant lazy call.
+        $this->assertNull($found->child);
+
+        // __isset() must also report true: the relationship name was resolved.
+        $this->assertTrue(isset($found->child));
+
+        // getRelationship() must agree.
+        $this->assertNull($found->getRelationship('child'));
+
+        $this->db->disconnect();
+    }
+
 }
