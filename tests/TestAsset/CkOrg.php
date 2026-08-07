@@ -15,4 +15,9 @@ class CkOrg extends Record
         return $this->hasMany('Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id'], $options, $eager);
     }
 
+    public function firstNote(?array $options = null, bool $eager = false)
+    {
+        return $this->hasOne('Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id'], $options, $eager);
+    }
+
 }

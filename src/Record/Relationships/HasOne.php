@@ -69,14 +69,24 @@ class HasOne extends AbstractRelationship
      */
     public function getChild(?array $options = null): Record
     {
-        $table  = $this->foreignTable;
-        $values = array_values($this->parent->getPrimaryValues());
+        $table = $this->foreignTable;
 
-        if (count($values) == 1) {
-            $values = $values[0];
+        if (is_array($this->foreignKey)) {
+            $parentPrimaryKeys = $this->parent->getPrimaryKeys();
+            $this->assertKeyCardinality($this->foreignKey, $parentPrimaryKeys);
+            $columns = [];
+            foreach ($this->foreignKey as $i => $fkColumn) {
+                $columns[$fkColumn] = $this->parent[$parentPrimaryKeys[$i]];
+            }
+        } else {
+            $values = array_values($this->parent->getPrimaryValues());
+
+            if (count($values) == 1) {
+                $values = $values[0];
+            }
+
+            $columns = [$this->foreignKey => $values];
         }
-
-        $columns = [$this->foreignKey => $values];
 
         if (!empty($options) && !empty($options['columns'])) {
             $columns = array_merge($columns, $options['columns']);
@@ -124,8 +134,19 @@ class HasOne extends AbstractRelationship
             }
         }
 
-        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select($columns)->from($table::table())->where->in($this->foreignKey, $placeholders);
+        $sql->select($columns)->from($table::table());
+
+        if (is_array($this->foreignKey)) {
+            foreach ($ids as $idTuple) {
+                $group = $sql->select()->where->orNest();
+                foreach ($this->foreignKey as $fkColumn) {
+                    $group->equalTo($fkColumn, $sql->getPlaceholder());
+                }
+            }
+        } else {
+            $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+            $sql->select()->where->in($this->foreignKey, $placeholders);
+        }
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
@@ -162,8 +183,10 @@ class HasOne extends AbstractRelationship
             }
         }
 
+        $params = is_array($this->foreignKey) ? array_merge(...$ids) : $ids;
+
         $db->prepare($sql)
-            ->bindParams($ids)
+            ->bindParams($params)
             ->execute();
 
         $rows        = $db->fetchAll();
@@ -176,7 +199,10 @@ class HasOne extends AbstractRelationship
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
-            $results[$row[$this->foreignKey]] = $record;
+            $key = is_array($this->foreignKey) ?
+                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $this->foreignKey)) :
+                $row[$this->foreignKey];
+            $results[$key] = $record;
             $leafRecords[] = $record;
         }
 
