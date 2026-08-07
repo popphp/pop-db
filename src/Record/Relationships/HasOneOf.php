@@ -69,10 +69,13 @@ class HasOneOf extends AbstractRelationship
     public function getChild(): Record
     {
         $table = $this->foreignTable;
+        $id    = is_array($this->foreignKey) ?
+            array_map(fn($col) => $this->parent[$col], $this->foreignKey) : $this->parent[$this->foreignKey];
+
         if (!empty($this->children)) {
-            return $table::with($this->children)->getById($this->parent[$this->foreignKey]);
+            return $table::with($this->children)->getById($id);
         } else {
-            return $table::findById($this->parent[$this->foreignKey]);
+            return $table::findById($id);
         }
     }
 
@@ -112,12 +115,22 @@ class HasOneOf extends AbstractRelationship
         }
 
         $keys = (new $table())->getPrimaryKeys();
+        $this->assertKeyCardinality($this->foreignKey, $keys);
 
-        if (count($keys) == 1) {
-            $keys = $keys[0];
+        $sql->select($columns)->from($table::table());
+
+        if (count($keys) > 1) {
+            foreach ($ids as $idTuple) {
+                $group = $sql->select()->where->orNest();
+                foreach ($keys as $col) {
+                    $group->equalTo($col, $sql->getPlaceholder());
+                }
+            }
+        } else {
+            $keys         = reset($keys);
+            $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+            $sql->select()->where->in($keys, $placeholders);
         }
-        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select($columns)->from($table::table())->where->in($keys, $placeholders);
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
@@ -154,25 +167,34 @@ class HasOneOf extends AbstractRelationship
             }
         }
 
+        $params = is_array($keys) ? array_merge(...$ids) : $ids;
+
         $db->prepare($sql)
-           ->bindParams($ids)
+           ->bindParams($params)
            ->execute();
 
         $rows        = $db->fetchAll();
         $results     = [];
         $leafRecords = [];
 
-        $primaryKey = (new $table())->getPrimaryKeys();
-        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
+        $primaryKeys = (new $table())->getPrimaryKeys();
 
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
-            $results[$row[$keys]] = $record;
+            $resultKey = is_array($keys) ?
+                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $keys)) : $row[$keys];
+            $results[$resultKey] = $record;
             $leafRecords[] = $record;
         }
 
-        $this->hydrateChildRelationships($leafRecords, $primaryKey);
+        // hydrateChildRelationships() takes a single string column, so it can only
+        // key leaf records by their own primary key when that key is single-column.
+        // A composite-PK target (e.g. a HasOneOf targeting a table like CkOrg) skips
+        // nested with()-child hydration here rather than crashing; see Task 4 report.
+        if (count($primaryKeys) == 1) {
+            $this->hydrateChildRelationships($leafRecords, reset($primaryKeys));
+        }
 
         return $results;
     }

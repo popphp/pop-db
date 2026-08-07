@@ -194,6 +194,46 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasOneOfLazyCompositeKey()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+
+        $found = $noteA->orgOneOf();
+
+        $this->assertInstanceOf(CkOrg::class, $found);
+        $this->assertEquals('Org A', $found->name);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneOfEagerCompositeKeyDistinguishesTransposedKeys()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+
+        $relationship = new \Pop\Db\Record\Relationships\HasOneOf($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id']);
+        $results      = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
+
+        $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
+        $this->assertEquals('Org A', $results[$key]->name);
+
+        $otherKey = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [2, 1]);
+        $this->assertEquals('Org B', $results[$otherKey]->name);
+
+        $this->db->disconnect();
+    }
+
     public function testFinal()
     {
         $var = 1;

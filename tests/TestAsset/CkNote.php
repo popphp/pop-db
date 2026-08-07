@@ -9,4 +9,9 @@ class CkNote extends Record
 
     protected ?string $table = 'ck_notes';
 
+    public function orgOneOf(?array $options = null, bool $eager = false)
+    {
+        return $this->hasOneOf('Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id'], $options, $eager);
+    }
+
 }
