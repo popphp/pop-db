@@ -115,6 +115,41 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasManyEagerCompositeKeyWithColumnsFilterAndsCorrectly()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB->save();
+
+        $relationship = new \Pop\Db\Record\Relationships\HasMany(
+            $orgA,
+            'Pop\Db\Test\TestAsset\CkNote',
+            ['org_id', 'branch_id'],
+            ['columns' => ['note' => 'Note for A']]
+        );
+        $results = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
+
+        // The columns filter must be ANDed against the composite tuple match
+        // (not OR'd), and params must bind positionally to the correct
+        // columns: only the [1, 2] tuple (whose note matches the filter)
+        // should be present, and its note must be the correct value.
+        $key      = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
+        $otherKey = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [2, 1]);
+
+        $this->assertArrayHasKey($key, $results);
+        $this->assertEquals(1, $results[$key]->count());
+        $this->assertEquals('Note for A', $results[$key][0]->note);
+        $this->assertArrayNotHasKey($otherKey, $results);
+
+        $this->db->disconnect();
+    }
+
     public function testFinal()
     {
         $var = 1;

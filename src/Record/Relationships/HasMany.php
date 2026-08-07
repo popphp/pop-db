@@ -135,14 +135,22 @@ class HasMany extends AbstractRelationship
 
         $sql->select($columns)->from($table::table());
 
-        if (is_array($this->foreignKey)) {
+        $isComposite = is_array($this->foreignKey);
+
+        if ($isComposite) {
+            // Wrap all tuple OR-groups in a single AND-nested group, so that
+            // whatever gets appended to the WHERE clause afterward (e.g. the
+            // options['columns'] filter below) is ANDed against the whole
+            // "matches any of these id tuples" block, rather than becoming a
+            // sibling OR at the top level.
+            $tupleGroup = $sql->select()->where->andNest();
             foreach ($ids as $idTuple) {
-                $group = $sql->select()->where->orNest();
+                $group = $tupleGroup->orNest();
                 foreach ($this->foreignKey as $fkColumn) {
                     $group->equalTo($fkColumn, $sql->getPlaceholder());
                 }
             }
-            $params = array_merge(...$ids);
+            $tupleParams = array_merge(...$ids);
         } else {
             $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
             $sql->select()->where->in($this->foreignKey, $placeholders);
@@ -156,9 +164,20 @@ class HasMany extends AbstractRelationship
                     $sql->select()->where($expression);
                 }
             }
-            if (!empty($additionalColumns['params'])) {
+            if ($isComposite) {
+                // PredicateSet::render() always renders top-level $predicates
+                // (this filter) before top-level $predicateSets (the composite
+                // tuple group), regardless of insertion order, so $params must
+                // follow that same order to stay positionally aligned with the
+                // rendered placeholders.
+                $params = !empty($additionalColumns['params'])
+                    ? array_merge($additionalColumns['params'], $tupleParams)
+                    : $tupleParams;
+            } elseif (!empty($additionalColumns['params'])) {
                 $params = array_merge($params, $additionalColumns['params']);
             }
+        } elseif ($isComposite) {
+            $params = $tupleParams;
         }
 
         if (!empty($this->options)) {
