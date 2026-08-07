@@ -372,11 +372,15 @@ class SelectTest extends TestCase
             "INSERT INTO `sub_users` (`id`, `name`) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol')"
         );
         $this->db->query(
-            "INSERT INTO `sub_orders` (`id`, `user_id`, `total`) VALUES (1, 1, 100), (2, 1, 50), (3, 2, 200)"
+            "INSERT INTO `sub_orders` (`id`, `user_id`, `total`) VALUES (1, 1, 50), (2, 2, 200)"
         );
 
-        // Subquery: users who have at least one order totaling >= 100 (Alice via order #1, Bob via order #3)
-        // Carol has no orders at all, so she must NOT be included in the result.
+        // Subquery: users who have an order totaling >= 100.
+        // Alice's only order (total=50) fails the filter, so she must be excluded ONLY because
+        // the inner WHERE is actually applied - if it were silently dropped, the subquery would
+        // yield {1, 2} instead of {2} and Alice would incorrectly appear in the result.
+        // Bob's only order (total=200) passes the filter, so he must be included.
+        // Carol has no orders at all, so she must NOT be included in the result either way.
         $subquery = $this->db->createSql()->select('user_id')->from('sub_orders');
         $subquery->where->greaterThanOrEqualTo('total', 100);
 
@@ -396,7 +400,8 @@ class SelectTest extends TestCase
         $ids  = array_column($rows, 'id');
         sort($ids);
 
-        $this->assertEquals([1, 2], $ids);
+        $this->assertEquals([2], $ids);
+        $this->assertNotContains(1, $ids);
         $this->assertNotContains(3, $ids);
 
         $this->db->query('DROP TABLE `sub_orders`');
