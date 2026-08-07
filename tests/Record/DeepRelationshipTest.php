@@ -231,4 +231,28 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasOneEagerLoadsTwoDifferentGrandchildren()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        $child = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child->save();
+
+        $g1 = new DlGrand1(['child_id' => $child->id, 'note' => 'g1-note']);
+        $g1->save();
+        $g2 = new DlGrand2(['child_id' => $child->id, 'note' => 'g2-note']);
+        $g2->save();
+
+        $found = DlParent::with(['firstChild.grand1', 'firstChild.grand2'])->getById($parent->id);
+
+        $this->assertInstanceOf(DlChild::class, $found->firstChild);
+        $this->assertTrue($found->firstChild->hasRelationship('grand1'));
+        $this->assertTrue($found->firstChild->hasRelationship('grand2'));
+        $this->assertEquals(1, $found->firstChild->grand1->count());
+        $this->assertEquals(1, $found->firstChild->grand2->count());
+
+        $this->db->disconnect();
+    }
+
 }
