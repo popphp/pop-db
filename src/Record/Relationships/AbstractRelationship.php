@@ -195,11 +195,11 @@ abstract class AbstractRelationship implements RelationshipInterface
      * identifies which foreign row to fetch — while every other kind is keyed by the leaf
      * record's primary key.
      *
-     * @param  array  $leafRecords
-     * @param  string $primaryKeyColumn
+     * @param  array        $leafRecords
+     * @param  string|array $primaryKeyColumn
      * @return void
      */
-    protected function hydrateChildRelationships(array $leafRecords, string $primaryKeyColumn): void
+    protected function hydrateChildRelationships(array $leafRecords, string|array $primaryKeyColumn): void
     {
         if (empty($this->children) || empty($leafRecords)) {
             return;
@@ -221,9 +221,21 @@ abstract class AbstractRelationship implements RelationshipInterface
 
                     $lookupColumns[$name] = $column;
 
-                    $ids = array_values(array_unique(array_map(
-                        fn($leafRecord) => $leafRecord[$column], $leafRecords
-                    )));
+                    if (is_array($column)) {
+                        $tuplesByKey = [];
+                        foreach ($leafRecords as $leafRecord) {
+                            $tuple = array_map(fn($col) => $leafRecord[$col] ?? null, $column);
+                            if (in_array(null, $tuple, true)) {
+                                continue;
+                            }
+                            $tuplesByKey[$this->buildCompositeKey($tuple)] = $tuple;
+                        }
+                        $ids = array_values($tuplesByKey);
+                    } else {
+                        $ids = array_values(array_unique(array_map(
+                            fn($leafRecord) => $leafRecord[$column], $leafRecords
+                        )));
+                    }
 
                     $accumulated[$name]         = $relationship->getEagerRelationships($ids);
                     $relationshipsByName[$name] = $relationship;
@@ -233,7 +245,10 @@ abstract class AbstractRelationship implements RelationshipInterface
 
         foreach ($leafRecords as $record) {
             foreach ($accumulated as $name => $resultsByKey) {
-                $lookupValue = $record[$lookupColumns[$name]] ?? null;
+                $column      = $lookupColumns[$name];
+                $lookupValue = is_array($column) ?
+                    $this->buildCompositeKey(array_map(fn($col) => $record[$col] ?? null, $column)) :
+                    ($record[$column] ?? null);
                 $record->setRelationship(
                     $name,
                     $resultsByKey[$lookupValue] ?? $relationshipsByName[$name]->getEmptyRelationshipValue()

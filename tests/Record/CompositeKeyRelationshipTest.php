@@ -234,6 +234,32 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasOneOfEagerCompositeKeyHydratesNestedChildren()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+
+        // CkOrg's primary key is composite (['org_id', 'branch_id']), so the leaf
+        // records returned by this HasOneOf are themselves keyed by a composite
+        // column when hydrateChildRelationships() resolves their own nested
+        // 'notes' child (a HasMany already composite-aware since Task 2). This
+        // exercises AbstractRelationship::hydrateChildRelationships()'s composite
+        // branch end-to-end, not just its no-crash guard.
+        $relationship = new \Pop\Db\Record\Relationships\HasOneOf($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id']);
+        $relationship->setChildRelationships(['notes']);
+        $results = $relationship->getEagerRelationships([[1, 2]]);
+
+        $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
+        $this->assertTrue($results[$key]->hasRelationship('notes'));
+        $this->assertEquals(1, $results[$key]->notes->count());
+        $this->assertEquals('Note for A', $results[$key]->notes[0]->note);
+
+        $this->db->disconnect();
+    }
+
     public function testFinal()
     {
         $var = 1;

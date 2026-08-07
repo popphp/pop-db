@@ -177,7 +177,8 @@ class HasOneOf extends AbstractRelationship
         $results     = [];
         $leafRecords = [];
 
-        $primaryKeys = (new $table())->getPrimaryKeys();
+        $primaryKey = (new $table())->getPrimaryKeys();
+        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
 
         foreach ($rows as $row) {
             $record = new $table();
@@ -188,13 +189,7 @@ class HasOneOf extends AbstractRelationship
             $leafRecords[] = $record;
         }
 
-        // hydrateChildRelationships() takes a single string column, so it can only
-        // key leaf records by their own primary key when that key is single-column.
-        // A composite-PK target (e.g. a HasOneOf targeting a table like CkOrg) skips
-        // nested with()-child hydration here rather than crashing; see Task 4 report.
-        if (count($primaryKeys) == 1) {
-            $this->hydrateChildRelationships($leafRecords, reset($primaryKeys));
-        }
+        $this->hydrateChildRelationships($leafRecords, $primaryKey);
 
         return $results;
     }
