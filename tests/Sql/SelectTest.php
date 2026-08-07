@@ -356,5 +356,52 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testInSubqueryLiveExecution()
+    {
+        $this->db->query('DROP TABLE IF EXISTS `sub_orders`');
+        $this->db->query('DROP TABLE IF EXISTS `sub_users`');
+
+        $this->db->query(
+            'CREATE TABLE `sub_users` (`id` INT NOT NULL, `name` VARCHAR(255), PRIMARY KEY (`id`))'
+        );
+        $this->db->query(
+            'CREATE TABLE `sub_orders` (`id` INT NOT NULL, `user_id` INT NOT NULL, `total` INT NOT NULL, PRIMARY KEY (`id`))'
+        );
+
+        $this->db->query(
+            "INSERT INTO `sub_users` (`id`, `name`) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol')"
+        );
+        $this->db->query(
+            "INSERT INTO `sub_orders` (`id`, `user_id`, `total`) VALUES (1, 1, 100), (2, 1, 50), (3, 2, 200)"
+        );
+
+        // Subquery: users who have at least one order totaling >= 100 (Alice via order #1, Bob via order #3)
+        // Carol has no orders at all, so she must NOT be included in the result.
+        $subquery = $this->db->createSql()->select('user_id')->from('sub_orders');
+        $subquery->where->greaterThanOrEqualTo('total', 100);
+
+        $sql = $this->db->createSql();
+        $sql->select()->from('sub_users');
+        $sql->select()->where->in('id', $subquery);
+
+        $sqlString = (string)$sql;
+
+        $this->assertEquals(
+            'SELECT * FROM `sub_users` WHERE (`id` IN (SELECT `user_id` FROM `sub_orders` WHERE (`total` >= 100)))',
+            $sqlString
+        );
+
+        $this->db->query($sqlString);
+        $rows = $this->db->fetchAll();
+        $ids  = array_column($rows, 'id');
+        sort($ids);
+
+        $this->assertEquals([1, 2], $ids);
+        $this->assertNotContains(3, $ids);
+
+        $this->db->query('DROP TABLE `sub_orders`');
+        $this->db->query('DROP TABLE `sub_users`');
+        $this->db->disconnect();
+    }
 
 }

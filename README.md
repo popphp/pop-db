@@ -39,6 +39,7 @@ pop-db
     - [Joins](#joins)
     - [Predicates](#predicates)
     - [Nested Predicates](#nested-predicates)
+    - [Subqueries](#subqueries)
     - [Sorting, Order, Limits](#sorting-order-limits)
 * [Schema Builder](#schema-builder)
     - [Create Table](#create-table)
@@ -1901,6 +1902,80 @@ The output below shows the predicates for `logins` and `failed` are nested toget
 -- MySQL
 SELECT * FROM `users` WHERE ((`id` > ?) AND ((`logins` > ?) OR (`failed` <= ?)))
 ```
+
+[Top](#pop-db)
+
+### Subqueries
+
+The `IN`/`NOT IN` predicates and the scalar comparison predicates (`=`, `!=`, `>`, `>=`, `<`, `<=`) can take a
+`Sql\Select` object as their value instead of a plain array or scalar, producing a `col IN (SELECT ...)` or
+`col = (SELECT ...)` style subquery. There is also a dedicated `exists()`/`notExists()` API for standalone
+`EXISTS (SELECT ...)` predicates that aren't tied to a column at all.
+
+```php
+$subquery = $db->createSql()->select('user_id')->from('orders');
+$subquery->where->greaterThanOrEqualTo('total', 100);
+
+$sql->select()
+    ->from('users')
+    ->where->in('id', $subquery);
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (`id` IN (SELECT `user_id` FROM `orders` WHERE (`total` >= 100)))
+```
+
+`notIn()` works the same way, producing `NOT IN (SELECT ...)`. The scalar comparison predicates accept a
+`Select` the same way:
+
+```php
+$subquery = $db->createSql()->select('MAX(total)')->from('orders');
+
+$sql->select()
+    ->from('users')
+    ->where->equalTo('total', $subquery);
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (`total` = (SELECT MAX(total) FROM `orders`))
+```
+
+`exists()` and `notExists()` take a `Select` directly (there's no column argument, since `EXISTS` tests for the
+presence of rows, not a value):
+
+```php
+$subquery = $db->createSql()->select('id')->from('orders');
+$subquery->where->equalTo('user_id', 5);
+
+$sql->select()->from('users')->where->exists($subquery);
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))
+```
+
+The shorthand array syntax supports the same forms: `['col' => ['IN', $select]]`, `['col' => ['NOT IN', $select]]`,
+`['col' => ['=', $select]]`, and a reserved `'EXISTS'`/`'NOT EXISTS'` top-level key whose value is the `Select`:
+
+```php
+Users::findBy(['id' => ['IN', $subquery]]);
+Users::findBy(['EXISTS' => $subquery]);
+```
+
+**Constraints:**
+
+* A subquery's own conditions must be built with literal values, not bound placeholders — e.g.
+  `$subquery->where->equalTo('total', 100)` rather than `'total = :total'`. Literal values are safe because they
+  are escaped through the adapter's `quote()`/`escape()` methods, but they are not part of the outer query's
+  prepared-statement parameter binding, since a subquery is rendered inline as a string before the outer query is
+  prepared.
+* `'EXISTS'` and `'NOT EXISTS'` are reserved top-level shorthand keys, the same way `'OR'` and `'AND'` are. A
+  column literally named `EXISTS` cannot be addressed via the shorthand array syntax.
 
 [Top](#pop-db)
 
