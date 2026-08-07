@@ -90,9 +90,9 @@ class HasMany extends AbstractRelationship
     }
 
     /**
-     * Get the value to use when no eager-loaded results exist for a given leaf record
+     * Get the value to use when no eager-loaded result exists for a given leaf record
      *
-     * @return Record\Collection
+     * @return mixed
      */
     public function getEmptyRelationshipValue(): mixed
     {

@@ -56,4 +56,11 @@ interface RelationshipInterface
      */
     public function getEagerRelationships(array $ids): array;
 
+    /**
+     * Get the value to use when no eager-loaded result exists for a given leaf record
+     *
+     * @return mixed
+     */
+    public function getEmptyRelationshipValue(): mixed;
+
 }

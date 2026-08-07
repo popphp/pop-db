@@ -645,4 +645,34 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    /**
+     * Final cleanup: setUp() re-creates the dl_* tables before every test, so this drops them
+     * once the suite is done rather than leaving them behind in the test database. Follows the
+     * same testFinal() convention as RelationshipTest.
+     */
+    public function testFinal()
+    {
+        $var = 1;
+        $this->assertEquals(1, $var);
+
+        $this->db->connect();
+
+        $schema = $this->db->createSchema();
+        $schema->disableForeignKeyCheck();
+
+        foreach (['dl_grand1', 'dl_grand2', 'dl_oneof_hosts', 'dl_children', 'dl_parents'] as $table) {
+            $schema->dropIfExists($table);
+        }
+
+        $schema->execute();
+
+        $this->assertFalse($this->db->hasTable('dl_parents'));
+        $this->assertFalse($this->db->hasTable('dl_children'));
+        $this->assertFalse($this->db->hasTable('dl_oneof_hosts'));
+        $this->assertFalse($this->db->hasTable('dl_grand1'));
+        $this->assertFalse($this->db->hasTable('dl_grand2'));
+
+        $this->db->disconnect();
+    }
+
 }
