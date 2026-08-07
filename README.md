@@ -774,7 +774,7 @@ class Users extends Pop\Db\Record
 {
     protected function beforeSave(): void
     {
-        $this->updatedAt = date('Y-m-d H:i:s');
+        $this->updated_at = date('Y-m-d H:i:s');
     }
 
     protected function afterDelete(): void
@@ -793,6 +793,9 @@ even though the record's in-memory state is cleared immediately afterward.
 
 These hooks only fire on the single-record path - bulk operations (`$user->save($rows)`,
 `$user->delete($columns)`) do not trigger any of them.
+
+`increment()`, `decrement()`, `replicate()` and `copy()` all internally call `save()`, so a
+`beforeSave()`/`afterSave()` override that itself calls any of those methods will recurse.
 
 A hook can abort the operation by throwing: the exception propagates out of `save()`/`delete()`
 to the caller like any other failure in those methods (triggering a transaction rollback if one is
