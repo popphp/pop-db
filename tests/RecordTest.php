@@ -7,6 +7,7 @@ use Pop\Db\Exception;
 use Pop\Db\Record;
 use Pop\Db\Test\TestAsset\MockData;
 use Pop\Db\Test\TestAsset\Users;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 class RecordTest extends TestCase
@@ -1350,8 +1351,11 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testSaveMultiple()
     {
+        $this->expectUserDeprecationMessageMatches('/shorthand column format used for \[username%\]/');
+
         $user = new Users();
         $user->save([
             [
@@ -1396,8 +1400,11 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testDeleteMultiple()
     {
+        $this->expectUserDeprecationMessageMatches('/shorthand column format used for \[username%\]/');
+
         $user = new Users();
         $user->save([
             [
@@ -1426,8 +1433,11 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testGetTotal()
     {
+        $this->expectUserDeprecationMessageMatches('/shorthand column format used for \[username%\]/');
+
         $user = new Users();
         $user->save([
             [

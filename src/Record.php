@@ -728,7 +728,8 @@ class Record extends Record\AbstractRecord
         string $key, array $values, array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
     ): array
     {
-        $columns = (($columns !== null) && is_array($columns)) ? array_merge([$key => $values], $columns) : [$key => $values];
+        $columns = (($columns !== null) && is_array($columns)) ?
+            array_merge([$key => ['IN', $values]], $columns) : [$key => ['IN', $values]];
         $results = $this->getBy($columns, $options, $toArray);
         $rows    = [];
 
