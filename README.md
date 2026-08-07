@@ -1406,9 +1406,10 @@ resolved to an empty `array` instead, so any code that checked an unmatched rela
 **Composite (multi-column) keys**
 
 `$foreignKey` isn't limited to a single column name — it can also be given as an array of column names to
-describe a composite key relationship. The array is paired positionally against the *other* table's own
-declared primary key columns, so order matters: the first foreign key column matches the related table's first
-primary key column, the second matches its second, and so on.
+describe a composite key relationship, matched positionally against a primary key elsewhere, so order matters.
+For `belongsTo()` (shown below), the array is paired against the *target* table's own declared primary key
+columns: the first foreign key column matches its first primary key column, the second matches its second, and
+so on.
 
 ```php
 class Orders extends Pop\Db\Record
@@ -1434,8 +1435,11 @@ class Orders extends Pop\Db\Record
 ```
 
 This works the same way for `hasOne()`, `hasOneOf()` and `hasMany()` — pass an array of foreign key columns
-instead of a single string and it is matched positionally against the related table's primary key columns. Both
-lazy-loading and eager-loading via `with()` (including nested `with()` calls) support composite keys.
+instead of a single string. Which table's primary key it's paired against depends on the direction of the
+relationship: for `hasOneOf()` and `belongsTo()`, the array is matched positionally against the *target*
+table's own declared primary key columns; for `hasOne()` and `hasMany()`, it's matched positionally against the
+*declaring* record's own primary key columns instead. Both lazy-loading and eager-loading via `with()`
+(including nested `with()` calls) support composite keys.
 
 [Top](#pop-db)
 
