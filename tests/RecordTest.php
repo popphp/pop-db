@@ -552,6 +552,97 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testBulkDeleteDoesNotFireHooks()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'bulkdeletehook1',
+            'password' => 'p1',
+            'email'    => 'bd1@test.com'
+        ]);
+        $user->save();
+        $savedId = $user->id;
+        $user->hookLog = [];
+
+        (new \Pop\Db\Test\TestAsset\HookedUsers())->delete(['id' => $savedId]);
+
+        $this->assertEquals([], $user->hookLog);
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['id' => $savedId]);
+        $this->assertTrue(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testBeforeSaveThrowAbortsInsertAndPropagates()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $this->expectException('Pop\Db\Record\Exception');
+
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser8',
+            'password' => 'password1',
+            'email'    => 'hookuser8@test.com'
+        ]);
+        $user->throwInBeforeSave = true;
+
+        try {
+            $user->save();
+        } finally {
+            $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser8']);
+            $this->assertTrue(empty($found->toArray()));
+            $this->db->disconnect();
+        }
+    }
+
+    public function testBeforeUpdateThrowAbortsUpdateAndPropagates()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser9',
+            'password' => 'password1',
+            'email'    => 'hookuser9@test.com'
+        ]);
+        $user->save();
+        $user->throwInBeforeUpdate = true;
+        $user->username            = 'hookuser9updated';
+
+        try {
+            $user->save();
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            // expected
+        }
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser9']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testAfterInsertThrowLeavesRecordPersisted()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser10',
+            'password' => 'password1',
+            'email'    => 'hookuser10@test.com'
+        ]);
+        $user->throwInAfterInsert = true;
+
+        try {
+            $user->save();
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            // expected
+        }
+
+        // The INSERT already ran (and committed, absent an active transaction) before
+        // afterInsert() threw - the row must be persisted in the database even though
+        // the exception propagated to the caller.
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser10']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
     public function testUndeclaredHooksAreNoOpsByDefault()
     {
         $user = new Users([
