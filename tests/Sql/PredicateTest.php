@@ -305,6 +305,31 @@ class PredicateTest extends TestCase
         $predicate->render($this->db->createSql());
     }
 
+    public function testJsonEqualTo()
+    {
+        $predicate = new Predicate\JsonEqualTo(['data', '$.name', 'admin']);
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) = 'admin')",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testJsonEqualToValuesException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonEqualTo(['data', '$.name']);
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testJsonNotEqualTo()
+    {
+        $predicate = new Predicate\JsonNotEqualTo(['data', '$.name', 'admin']);
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) != 'admin')",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
     /**
      * An aliased Select renders as "(SELECT ...) AS `alias`", which is only valid as a
      * FROM/JOIN subquery. Used as a predicate value it would silently produce invalid SQL,

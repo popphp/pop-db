@@ -550,6 +550,32 @@ class PredicateSet
     }
 
     /**
+     * Predicate for JSON path equal to
+     *
+     * @param  string $column
+     * @param  string $path
+     * @param  mixed  $value
+     * @return PredicateSet
+     */
+    public function jsonEqualTo(string $column, string $path, mixed $value): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\JsonEqualTo([$column, $path, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for JSON path not equal to
+     *
+     * @param  string $column
+     * @param  string $path
+     * @param  mixed  $value
+     * @return PredicateSet
+     */
+    public function jsonNotEqualTo(string $column, string $path, mixed $value): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\JsonNotEqualTo([$column, $path, $value], $this->nextConjunction));
+    }
+
+    /**
      * Add AND predicate
      *
      * @param  Predicate\AbstractPredicate $predicate

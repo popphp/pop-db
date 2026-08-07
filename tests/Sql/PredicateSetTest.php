@@ -382,4 +382,13 @@ class PredicateSetTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Sql\Predicate\NotExists', $predicateSet->getPredicates()[0]);
     }
 
+    public function testJsonEqualTo()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->jsonEqualTo('data', '$.name', 'admin');
+        $this->assertTrue($predicateSet->hasPredicates());
+        $this->assertEquals(1, count($predicateSet->getPredicates()));
+        $this->assertInstanceOf('Pop\Db\Sql\Predicate\JsonEqualTo', $predicateSet->getPredicates()[0]);
+    }
+
 }
