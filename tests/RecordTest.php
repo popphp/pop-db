@@ -485,6 +485,11 @@ class RecordTest extends TestCase
         $this->assertNotContains('subqueryuser_a', $usernames);
 
         $this->db->query('DROP TABLE `record_sub_orders`');
+
+        $userA->delete();
+        $userB->delete();
+        $userC->delete();
+
         $this->db->disconnect();
     }
 
