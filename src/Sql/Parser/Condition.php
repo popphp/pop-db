@@ -48,6 +48,7 @@ class Condition
         'NOT BETWEEN' => ['method' => 'notBetween',           'arity' => 2],
         'IS NULL'     => ['method' => 'isNull',               'arity' => 0],
         'IS NOT NULL' => ['method' => 'isNotNull',            'arity' => 0],
+        'CONTAINS'    => ['method' => 'jsonContains',         'arity' => 1],
     ];
 
     /**
@@ -282,6 +283,42 @@ class Condition
         $operator = strtoupper(array_shift($tuple));
         $spec     = self::OPERATORS[$operator];
         $method   = $spec['method'];
+
+        $jsonPath = null;
+        if (str_contains($column, '->')) {
+            [$column, $jsonPath] = explode('->', $column, 2);
+        }
+
+        if ($jsonPath !== null) {
+            $jsonMethods = ['=' => 'jsonEqualTo', '!=' => 'jsonNotEqualTo', 'CONTAINS' => 'jsonContains'];
+            if (!isset($jsonMethods[$operator])) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator is not supported for JSON path access (column '" .
+                    $column . "->" . $jsonPath . "')."
+                );
+            }
+            if (count($tuple) !== 1) {
+                throw new Exception(
+                    "Error: The '" . $operator . "' operator for column '" . $column . "->" . $jsonPath .
+                    "' requires exactly 1 value, " . count($tuple) . ' given.'
+                );
+            }
+
+            $jsonMethod = $jsonMethods[$operator];
+            if ($operator === 'CONTAINS') {
+                $predicateSet->{$jsonMethod}($column, $jsonPath, $tuple[0]);
+            } else {
+                $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
+                $predicateSet->{$jsonMethod}($column, $jsonPath, $placeholder);
+            }
+            return;
+        }
+
+        if ($operator === 'CONTAINS') {
+            throw new Exception(
+                "Error: The 'CONTAINS' operator requires a JSON path in the column key, e.g. 'column->\$.path'."
+            );
+        }
 
         if (!empty($spec['multi'])) {
             if (isset($tuple[0]) && ($tuple[0] instanceof AbstractSql)) {

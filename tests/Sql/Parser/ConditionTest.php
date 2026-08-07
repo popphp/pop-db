@@ -486,6 +486,70 @@ class ConditionTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testJsonEqualToShorthand()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['data->$.name' => ['=', 'admin']], $sql);
+
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) = ?)",
+            $predicateSet->render()
+        );
+        $this->assertEquals(['1_data' => 'admin'], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testJsonEqualToBareShorthand()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['data->$.name' => 'admin'], $sql);
+
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) = ?)",
+            $predicateSet->render()
+        );
+        $this->db->disconnect();
+    }
+
+    public function testJsonNotEqualToShorthand()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['data->$.name' => ['!=', 'admin']], $sql);
+
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) != ?)",
+            $predicateSet->render()
+        );
+        $this->db->disconnect();
+    }
+
+    public function testJsonContainsShorthand()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['data->$.roles' => ['CONTAINS', 'admin']], $sql);
+
+        $this->assertEquals(
+            "(JSON_CONTAINS(`data`, '\\\"admin\\\"', '$.roles'))",
+            $predicateSet->render()
+        );
+        $this->assertEquals([], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testContainsWithoutJsonPathThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['data' => ['CONTAINS', 'admin']], $sql);
+    }
+
+    public function testJsonPathWithUnsupportedOperatorThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['data->$.name' => ['>', 'admin']], $sql);
+    }
+
     /**
      * Regression: because PHP array keys are unique, two 'EXISTS' keys cannot coexist at the
      * top level of a shorthand array. Nesting them inside an OR/AND group is the documented
