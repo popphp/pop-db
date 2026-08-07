@@ -313,6 +313,59 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testTopLevelWithResolvesCompositeKeyHasMany()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB->save();
+
+        $found = CkOrg::with('notes')->getOne(['org_id' => 1, 'branch_id' => 2]);
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $found->notes);
+        $this->assertEquals(1, $found->notes->count());
+        $this->assertEquals('Note for A', $found->notes[0]->note);
+
+        $this->db->disconnect();
+    }
+
+    public function testTopLevelWithResolvesCompositeKeyBelongsTo()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB->save();
+
+        $found = CkNote::with('org')->getOne(['id' => $noteA->id]);
+
+        $this->assertInstanceOf(CkOrg::class, $found->org);
+        $this->assertEquals('Org A', $found->org->name);
+
+        $this->db->disconnect();
+    }
+
+    public function testNullComponentInCompositeKeyIsSkippedNotCrashed()
+    {
+        $note = new CkNote(['org_id' => 1, 'branch_id' => null, 'note' => 'Orphan note']);
+        $note->save();
+
+        $found = CkNote::with('org')->getOne(['id' => $note->id]);
+
+        $this->assertNull($found->org);
+
+        $this->db->disconnect();
+    }
+
     public function testFinal()
     {
         $var = 1;

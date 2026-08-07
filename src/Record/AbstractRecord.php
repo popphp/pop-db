@@ -566,31 +566,62 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
             if (($relationship instanceof \Pop\Db\Record\Relationships\HasOneOf) ||
                 ($relationship instanceof \Pop\Db\Record\Relationships\BelongsTo)) {
                 $primaryKey = $relationship->getForeignKey();
-                foreach ($rows as $i => $row) {
-                    if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
-                        $withIds[] = $row[$primaryKey];
+                if (is_array($primaryKey)) {
+                    $seen = [];
+                    foreach ($rows as $i => $row) {
+                        $tuple = array_map(fn($col) => $row[$col] ?? null, $primaryKey);
+                        if (in_array(null, $tuple, true)) {
+                            continue;
+                        }
+                        $tupleKey = \Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER;
+                        $tupleKey = implode($tupleKey, $tuple);
+                        if (!isset($seen[$tupleKey])) {
+                            $seen[$tupleKey] = true;
+                            $withIds[] = $tuple;
+                        }
+                    }
+                } else {
+                    foreach ($rows as $i => $row) {
+                        if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
+                            $withIds[] = $row[$primaryKey];
+                        }
                     }
                 }
-                $results = $relationship->getEagerRelationships($withIds);
+                $results = !empty($withIds) ? $relationship->getEagerRelationships($withIds) : [];
             } else {
                 $primaryKey = $this->getPrimaryKeys();
                 if (count($primaryKey) == 1) {
                     $primaryKey = reset($primaryKey);
-                }
-                foreach ($rows as $i => $row) {
-                    $primaryValues = $rows[$i]->getPrimaryValues();
-                    if (count($primaryValues) == 1) {
-                        $withId = reset($primaryValues);
-                        if (!in_array($withId, $withIds)) {
-                            $withIds[] = $withId;
+                    foreach ($rows as $i => $row) {
+                        $primaryValues = $rows[$i]->getPrimaryValues();
+                        if (count($primaryValues) == 1) {
+                            $withId = reset($primaryValues);
+                            if (!in_array($withId, $withIds)) {
+                                $withIds[] = $withId;
+                            }
+                        }
+                    }
+                } else {
+                    foreach ($rows as $i => $row) {
+                        $tuple = array_map(fn($col) => $row[$col] ?? null, $primaryKey);
+                        if (!in_array(null, $tuple, true)) {
+                            $withIds[] = $tuple;
                         }
                     }
                 }
-                $results = $relationship->getEagerRelationships($withIds);
+                $results = !empty($withIds) ? $relationship->getEagerRelationships($withIds) : [];
             }
             foreach ($rows as $i => $row) {
-                if (isset($results[$row[$primaryKey]])) {
-                    $row->setRelationship($name, $results[$row[$primaryKey]]);
+                if (is_array($primaryKey)) {
+                    $lookupValue = implode(
+                        \Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER,
+                        array_map(fn($col) => $row[$col] ?? null, $primaryKey)
+                    );
+                } else {
+                    $lookupValue = $row[$primaryKey] ?? null;
+                }
+                if (isset($results[$lookupValue])) {
+                    $row->setRelationship($name, $results[$lookupValue]);
                 } else {
                     $row->setRelationship($name, $relationship->getEmptyRelationshipValue());
                 }
