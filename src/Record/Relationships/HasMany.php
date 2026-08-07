@@ -69,14 +69,24 @@ class HasMany extends AbstractRelationship
      */
     public function getChildren(?array $options = null): Record\Collection
     {
-        $table  = $this->foreignTable;
-        $values = array_values($this->parent->getPrimaryValues());
+        $table = $this->foreignTable;
 
-        if (count($values) == 1) {
-            $values = $values[0];
+        if (is_array($this->foreignKey)) {
+            $parentPrimaryKeys = $this->parent->getPrimaryKeys();
+            $this->assertKeyCardinality($this->foreignKey, $parentPrimaryKeys);
+            $columns = [];
+            foreach ($this->foreignKey as $i => $fkColumn) {
+                $columns[$fkColumn] = $this->parent[$parentPrimaryKeys[$i]];
+            }
+        } else {
+            $values = array_values($this->parent->getPrimaryValues());
+
+            if (count($values) == 1) {
+                $values = $values[0];
+            }
+
+            $columns = [$this->foreignKey => $values];
         }
-
-        $columns = [$this->foreignKey => $values];
 
         if (!empty($options) && !empty($options['columns'])) {
             $columns = array_merge($columns, $options['columns']);
@@ -123,9 +133,21 @@ class HasMany extends AbstractRelationship
             $columns = $this->options['select'];
         }
 
-        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $params       = $ids;
-        $sql->select($columns)->from($table::table())->where->in($this->foreignKey, $placeholders);
+        $sql->select($columns)->from($table::table());
+
+        if (is_array($this->foreignKey)) {
+            foreach ($ids as $idTuple) {
+                $group = $sql->select()->where->orNest();
+                foreach ($this->foreignKey as $fkColumn) {
+                    $group->equalTo($fkColumn, $sql->getPlaceholder());
+                }
+            }
+            $params = array_merge(...$ids);
+        } else {
+            $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+            $sql->select()->where->in($this->foreignKey, $placeholders);
+            $params = $ids;
+        }
 
         if (!empty($this->options) && isset($this->options['columns'])) {
             $additionalColumns = Parser\Expression::parseShorthand($this->options['columns'], $sql->getPlaceholder());
@@ -186,19 +208,23 @@ class HasMany extends AbstractRelationship
         $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
 
         foreach ($rows as $row) {
+            $key = is_array($this->foreignKey) ?
+                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $this->foreignKey)) :
+                $row[$this->foreignKey];
+
             if ($toArray === false) {
-                if (!isset($results[$row[$this->foreignKey]])) {
-                    $results[$row[$this->foreignKey]] = new Record\Collection();
+                if (!isset($results[$key])) {
+                    $results[$key] = new Record\Collection();
                 }
                 $record = new $table();
                 $record->setColumns($row);
-                $results[$row[$this->foreignKey]]->push($record);
+                $results[$key]->push($record);
                 $leafRecords[] = $record;
             } else {
-                if (!isset($results[$row[$this->foreignKey]])) {
-                    $results[$row[$this->foreignKey]] = [];
+                if (!isset($results[$key])) {
+                    $results[$key] = [];
                 }
-                $results[$row[$this->foreignKey]][] = $row;
+                $results[$key][] = $row;
             }
         }
 

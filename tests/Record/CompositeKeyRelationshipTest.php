@@ -67,6 +67,54 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasManyLazyCompositeKey()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB->save();
+
+        $notesForA = $orgA->notes();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $notesForA);
+        $this->assertEquals(1, $notesForA->count());
+        $this->assertEquals('Note for A', $notesForA[0]->note);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasManyEagerCompositeKeyDistinguishesTransposedKeys()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+        $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
+        $orgB->save();
+
+        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA->save();
+        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB->save();
+
+        $relationship = new \Pop\Db\Record\Relationships\HasMany($orgA, 'Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id']);
+        $results      = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
+
+        $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
+        $this->assertArrayHasKey($key, $results);
+        $this->assertEquals(1, $results[$key]->count());
+        $this->assertEquals('Note for A', $results[$key][0]->note);
+
+        $otherKey = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [2, 1]);
+        $this->assertArrayHasKey($otherKey, $results);
+        $this->assertEquals('Note for B', $results[$otherKey][0]->note);
+
+        $this->db->disconnect();
+    }
+
     public function testFinal()
     {
         $var = 1;
