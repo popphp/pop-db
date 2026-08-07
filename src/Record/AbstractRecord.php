@@ -563,7 +563,8 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     {
         foreach ($this->relationships as $name => $relationship) {
             $withIds = [];
-            if ($relationship instanceof \Pop\Db\Record\Relationships\HasOneOf) {
+            if (($relationship instanceof \Pop\Db\Record\Relationships\HasOneOf) ||
+                ($relationship instanceof \Pop\Db\Record\Relationships\BelongsTo)) {
                 $primaryKey = $relationship->getForeignKey();
                 foreach ($rows as $i => $row) {
                     if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {

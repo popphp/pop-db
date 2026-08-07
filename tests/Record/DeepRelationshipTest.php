@@ -244,7 +244,12 @@ class DeepRelationshipTest extends TestCase
         $g2 = new DlGrand2(['child_id' => $child->id, 'note' => 'g2-note']);
         $g2->save();
 
-        $found = DlParent::with(['firstChild.grand1', 'firstChild.grand2'])->getById($parent->id);
+        // Use getOne() (not getById()) so this actually exercises the eager-load path
+        // (AbstractRecord::processWithRelationships() -> HasOne::getEagerRelationships() ->
+        // hydrateChildRelationships()). getById() resolves its top-level 'with' relationships
+        // via getWithRelationships(false), i.e. HasOne::getChild()'s lazy path, which never
+        // calls HasOne::getEagerRelationships() at all.
+        $found = DlParent::with(['firstChild.grand1', 'firstChild.grand2'])->getOne(['id' => $parent->id]);
 
         $this->assertInstanceOf(DlChild::class, $found->firstChild);
         $this->assertTrue($found->firstChild->hasRelationship('grand1'));
@@ -326,7 +331,12 @@ class DeepRelationshipTest extends TestCase
         $g2 = new DlGrand2(['child_id' => $child->id, 'note' => 'g2-note']);
         $g2->save();
 
-        $found = DlOneofHost::with(['child.grand1', 'child.grand2'])->getById($host->id);
+        // Use getOne() (not getById()) so this actually exercises the eager-load path
+        // (AbstractRecord::processWithRelationships() -> HasOneOf::getEagerRelationships() ->
+        // hydrateChildRelationships()). getById() resolves its top-level 'with' relationships
+        // via getWithRelationships(false), i.e. HasOneOf::getChild()'s lazy path, which never
+        // calls HasOneOf::getEagerRelationships() at all.
+        $found = DlOneofHost::with(['child.grand1', 'child.grand2'])->getOne(['id' => $host->id]);
 
         $this->assertInstanceOf(DlChild::class, $found->child);
         $this->assertTrue($found->child->hasRelationship('grand1'));
@@ -370,6 +380,13 @@ class DeepRelationshipTest extends TestCase
 
     public function testBelongsToEagerLoadsTwoDifferentGrandchildren()
     {
+        // Decoy parent, so the parent ids and child ids deliberately diverge: the real parent
+        // gets id 2 while its children get ids 1 and 2. If the eager-load path keyed the
+        // BelongsTo lookup off the CHILD's own primary key (id 1) rather than its foreign key
+        // (parent_id 2), it would silently resolve to this decoy instead.
+        $decoyParent = new DlParent(['name' => 'DECOY']);
+        $decoyParent->save();
+
         $parent = new DlParent(['name' => 'P1']);
         $parent->save();
 
@@ -379,13 +396,27 @@ class DeepRelationshipTest extends TestCase
         $siblingChild = new DlChild(['parent_id' => $parent->id, 'name' => 'C2']);
         $siblingChild->save();
 
-        $found = DlChild::with(['parentRecord.children', 'parentRecord.firstChild'])->getById($child->id);
+        $this->assertNotEquals($parent->id, $child->id);
+
+        // Use getOne() (not getById()) so this actually exercises the eager-load path
+        // (AbstractRecord::processWithRelationships() -> BelongsTo::getEagerRelationships() ->
+        // hydrateChildRelationships()). getById() resolves its top-level 'with' relationships
+        // via getWithRelationships(false), i.e. BelongsTo::getParent()'s lazy path, which never
+        // calls BelongsTo::getEagerRelationships() at all.
+        $found = DlChild::with(['parentRecord.children', 'parentRecord.firstChild'])->getOne(['id' => $child->id]);
 
         $this->assertInstanceOf(DlParent::class, $found->parentRecord);
+        $this->assertEquals($parent->id, $found->parentRecord->id);
+        $this->assertEquals('P1', $found->parentRecord->name);
         $this->assertTrue($found->parentRecord->hasRelationship('children'));
         $this->assertTrue($found->parentRecord->hasRelationship('firstChild'));
         $this->assertEquals(2, $found->parentRecord->children->count());
         $this->assertInstanceOf(DlChild::class, $found->parentRecord->firstChild);
+        // NOTE: which of the parent's two children 'firstChild' resolves to is deliberately not
+        // asserted -- the eager HasOne path keeps the LAST matching row while the lazy path keeps
+        // the first. That pre-existing inconsistency is out of scope here; all that matters for
+        // this test is that the relationship resolved to a DlChild belonging to the right parent.
+        $this->assertEquals($parent->id, $found->parentRecord->firstChild->parent_id);
 
         $this->db->disconnect();
     }

@@ -174,7 +174,7 @@ class BelongsTo extends AbstractRelationship
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
-            $results[$row[$this->foreignKey]] = $record;
+            $results[$row[$foreignKey]] = $record;
             $leafRecords[] = $record;
         }
 
