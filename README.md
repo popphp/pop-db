@@ -40,6 +40,7 @@ pop-db
     - [Predicates](#predicates)
     - [Nested Predicates](#nested-predicates)
     - [Subqueries](#subqueries)
+    - [JSON Column Querying](#json-column-querying)
     - [Sorting, Order, Limits](#sorting-order-limits)
 * [Schema Builder](#schema-builder)
     - [Create Table](#create-table)
@@ -1985,6 +1986,88 @@ Users::findBy(['EXISTS' => $subquery]);
 to `mixed`. Because PHP enforces parameter contravariance, any downstream subclass of `PredicateSet` (or of
 `Sql\Where`/`Sql\Having`) that overrides one of these methods with the old `string $value` signature will now
 fail with an incompatible-signature error and must be updated to `mixed $value`.
+
+[Top](#pop-db)
+
+### JSON Column Querying
+
+Columns that store JSON documents can be queried by path with `jsonExtract()`, and filtered with the
+`jsonEqualTo()`/`jsonNotEqualTo()`/`jsonContains()` predicates.
+
+`jsonExtract($column, $path)` returns a dialect-specific expression object that can be used as a SELECT column
+(optionally aliased) or passed to `orderBy()`:
+
+```php
+$sql->select(['id', 'extracted_name' => $sql->jsonExtract('data', '$.name')])
+    ->from('users');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT `id`, JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) AS `extracted_name` FROM `users`
+```
+
+```php
+$sql->select()->from('users')
+    ->orderBy($sql->jsonExtract('data', '$.name'));
+```
+
+`jsonEqualTo()`/`jsonNotEqualTo()` compare the value extracted at a path against a scalar:
+
+```php
+$sql->select()
+    ->from('users')
+    ->where->jsonEqualTo('data', '$.role', 'admin');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.role')) = 'admin')
+```
+
+`jsonContains()` tests whether the JSON array/value at a path contains a given scalar candidate. It is only
+supported on MySQL and PostgreSQL — neither SQLite nor SQL Server exposes a native JSON containment
+operator/function, so `jsonContains()` throws an exception on those adapters:
+
+```php
+$sql->select()
+    ->from('users')
+    ->where->jsonContains('data', '$.roles', 'admin');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (JSON_CONTAINS(`data`, '"admin"', '$.roles'))
+-- PostgreSQL
+SELECT * FROM "users" WHERE (("data" #> '{roles}') @> '"admin"'::jsonb)
+```
+
+The shorthand array syntax supports JSON path access via a `'column->$.path'` key, routed to
+`jsonEqualTo()`/`jsonNotEqualTo()`/`jsonContains()` through the `=`/`!=`/`CONTAINS` operators (a bare value with
+no operator tuple is treated as `=`, the same as any other shorthand column):
+
+```php
+Users::findBy(['data->$.role' => 'admin']);                    // jsonEqualTo()
+Users::findBy(['data->$.role' => ['=', 'admin']]);              // jsonEqualTo()
+Users::findBy(['data->$.role' => ['!=', 'admin']]);             // jsonNotEqualTo()
+Users::findBy(['data->$.roles' => ['CONTAINS', 'admin']]);      // jsonContains()
+```
+
+**Constraints:**
+
+* `jsonContains()` (and its `'CONTAINS'` shorthand operator) is only supported on the MySQL and PostgreSQL
+  adapters — it throws an exception on SQLite and SQL Server, since neither has a native JSON containment
+  operator/function to render it with.
+* The `$path` argument uses MySQL-style JSONPath syntax (`'$.name'`, `'$.address.city'`, `'$.tags[0]'`) on every
+  supported dialect *except* PostgreSQL, where `jsonExtract()`/`jsonContains()` parse it internally into
+  PostgreSQL's own path-segment array (`{name}`, `{address,city}`, `{tags,0}`) — callers always write the same
+  `'$.path'` string regardless of which database is connected.
 
 [Top](#pop-db)
 

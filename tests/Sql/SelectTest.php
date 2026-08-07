@@ -501,4 +501,137 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testJsonExtractLiveExecution()
+    {
+        $this->db->query('DROP TABLE IF EXISTS `json_extract_live_test`');
+        $this->db->query(
+            'CREATE TABLE `json_extract_live_test` (`id` INT NOT NULL, `data` JSON, PRIMARY KEY (`id`))'
+        );
+
+        // Row 1 and row 2 carry DIFFERENT values at the same '$.name' path. Filtering to row 2
+        // and asserting on its extracted value specifically means a bug that extracted the wrong
+        // row, or a path that resolved to the wrong key, would produce 'Alice' (or null) here
+        // instead of 'Bob' - a detectably wrong result, not a coincidentally-identical one.
+        $this->db->query(
+            'INSERT INTO `json_extract_live_test` (`id`, `data`) VALUES ' .
+            '(1, \'{"name": "Alice"}\'), (2, \'{"name": "Bob"}\')'
+        );
+
+        $sql = $this->db->createSql();
+        $sql->select(['id', 'extracted_name' => $sql->jsonExtract('data', '$.name')])
+            ->from('json_extract_live_test');
+        $sql->select()->where->equalTo('id', 2);
+
+        $this->db->query((string)$sql);
+        $row = $this->db->fetch();
+
+        $this->assertEquals('Bob', $row['extracted_name']);
+        $this->assertNotEquals('Alice', $row['extracted_name']);
+
+        $this->db->query('DROP TABLE `json_extract_live_test`');
+        $this->db->disconnect();
+    }
+
+    public function testJsonEqualToLiveExecution()
+    {
+        $this->db->query('DROP TABLE IF EXISTS `json_equal_live_test`');
+        $this->db->query(
+            'CREATE TABLE `json_equal_live_test` (`id` INT NOT NULL, `data` JSON, PRIMARY KEY (`id`))'
+        );
+
+        // Rows 1 and 3 have 'role' == 'admin' at the tested path, row 2 has 'role' == 'user'.
+        // If the JSON path comparison were silently ignored (matching every row) or broken
+        // (matching no rows), the id set below would provably differ from {1, 3}.
+        $this->db->query(
+            'INSERT INTO `json_equal_live_test` (`id`, `data`) VALUES ' .
+            '(1, \'{"role": "admin"}\'), (2, \'{"role": "user"}\'), (3, \'{"role": "admin"}\')'
+        );
+
+        $sql = $this->db->createSql();
+        $sql->select()->from('json_equal_live_test');
+        $sql->select()->where->jsonEqualTo('data', '$.role', 'admin');
+
+        $this->db->query((string)$sql);
+        $rows = $this->db->fetchAll();
+        $ids  = array_column($rows, 'id');
+        sort($ids);
+
+        $this->assertEquals([1, 3], $ids);
+        $this->assertNotContains(2, $ids);
+
+        $this->db->query('DROP TABLE `json_equal_live_test`');
+        $this->db->disconnect();
+    }
+
+    public function testJsonContainsLiveExecutionMysql()
+    {
+        $this->db->query('DROP TABLE IF EXISTS `json_contains_live_test`');
+        $this->db->query(
+            'CREATE TABLE `json_contains_live_test` (`id` INT NOT NULL, `data` JSON, PRIMARY KEY (`id`))'
+        );
+
+        // Rows 1 and 3 have 'admin' among the values of their 'roles' array, row 2 does not.
+        // A broken containment check (matching every row or none) would provably diverge from
+        // the {1, 3} result asserted below.
+        $this->db->query(
+            'INSERT INTO `json_contains_live_test` (`id`, `data`) VALUES ' .
+            '(1, \'{"roles": ["admin", "editor"]}\'), (2, \'{"roles": ["editor"]}\'), ' .
+            '(3, \'{"roles": ["admin"]}\')'
+        );
+
+        $sql = $this->db->createSql();
+        $sql->select()->from('json_contains_live_test');
+        $sql->select()->where->jsonContains('data', '$.roles', 'admin');
+
+        $this->db->query((string)$sql);
+        $rows = $this->db->fetchAll();
+        $ids  = array_column($rows, 'id');
+        sort($ids);
+
+        $this->assertEquals([1, 3], $ids);
+        $this->assertNotContains(2, $ids);
+
+        $this->db->query('DROP TABLE `json_contains_live_test`');
+        $this->db->disconnect();
+    }
+
+    public function testJsonContainsLiveExecutionPgsql()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+
+        $db->query('DROP TABLE IF EXISTS "json_contains_live_test_pg"');
+        $db->query(
+            'CREATE TABLE "json_contains_live_test_pg" ("id" INT NOT NULL, "data" JSONB, PRIMARY KEY ("id"))'
+        );
+
+        // Same load-bearing shape as the MySQL containment test above, run against a real
+        // PostgreSQL connection to prove the '#>'/'@>' rendering path (not just the MySQL
+        // JSON_CONTAINS() rendering path) actually filters correctly.
+        $db->query(
+            'INSERT INTO "json_contains_live_test_pg" ("id", "data") VALUES ' .
+            '(1, \'{"roles": ["admin", "editor"]}\'), (2, \'{"roles": ["editor"]}\'), ' .
+            '(3, \'{"roles": ["admin"]}\')'
+        );
+
+        $sql = $db->createSql();
+        $sql->select()->from('json_contains_live_test_pg');
+        $sql->select()->where->jsonContains('data', '$.roles', 'admin');
+
+        $db->query((string)$sql);
+        $rows = $db->fetchAll();
+        $ids  = array_column($rows, 'id');
+        sort($ids);
+
+        $this->assertEquals([1, 3], $ids);
+        $this->assertNotContains(2, $ids);
+
+        $db->query('DROP TABLE "json_contains_live_test_pg"');
+        $db->disconnect();
+    }
+
 }
