@@ -9,3 +9,4 @@ CLAUDE.md
 /docs
 /.env
 phpunit.local.xml
+/.claude/worktrees
