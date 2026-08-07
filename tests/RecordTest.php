@@ -606,12 +606,16 @@ class RecordTest extends TestCase
         $user->throwInBeforeUpdate = true;
         $user->username            = 'hookuser9updated';
 
+        $caught = false;
+
         try {
             $user->save();
-            $this->fail('Expected exception was not thrown.');
-        } catch (\Exception $e) {
-            // expected
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
         }
+
+        $this->assertTrue($caught, 'Expected save() to throw.');
 
         $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser9']);
         $this->assertFalse(empty($found->toArray()));
@@ -628,12 +632,16 @@ class RecordTest extends TestCase
         ]);
         $user->throwInAfterInsert = true;
 
+        $caught = false;
+
         try {
             $user->save();
-            $this->fail('Expected exception was not thrown.');
-        } catch (\Exception $e) {
-            // expected
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
         }
+
+        $this->assertTrue($caught, 'Expected save() to throw.');
 
         // The INSERT already ran (and committed, absent an active transaction) before
         // afterInsert() threw - the row must be persisted in the database even though
