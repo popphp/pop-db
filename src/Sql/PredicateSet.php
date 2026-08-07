@@ -528,6 +528,28 @@ class PredicateSet
     }
 
     /**
+     * Predicate for EXISTS
+     *
+     * @param  AbstractSql $select
+     * @return PredicateSet
+     */
+    public function exists(AbstractSql $select): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\Exists($select, $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for NOT EXISTS
+     *
+     * @param  AbstractSql $select
+     * @return PredicateSet
+     */
+    public function notExists(AbstractSql $select): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\NotExists($select, $this->nextConjunction));
+    }
+
+    /**
      * Add AND predicate
      *
      * @param  Predicate\AbstractPredicate $predicate

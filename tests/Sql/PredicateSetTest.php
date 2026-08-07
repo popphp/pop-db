@@ -362,4 +362,24 @@ class PredicateSetTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testExists()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $subquery     = $this->db->createSql()->select('id')->from('banned_users');
+        $predicateSet->exists($subquery);
+        $this->assertTrue($predicateSet->hasPredicates());
+        $this->assertEquals(1, count($predicateSet->getPredicates()));
+        $this->assertInstanceOf('Pop\Db\Sql\Predicate\Exists', $predicateSet->getPredicates()[0]);
+    }
+
+    public function testNotExists()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $subquery     = $this->db->createSql()->select('id')->from('banned_users');
+        $predicateSet->notExists($subquery);
+        $this->assertTrue($predicateSet->hasPredicates());
+        $this->assertEquals(1, count($predicateSet->getPredicates()));
+        $this->assertInstanceOf('Pop\Db\Sql\Predicate\NotExists', $predicateSet->getPredicates()[0]);
+    }
+
 }

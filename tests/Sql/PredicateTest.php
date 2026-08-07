@@ -267,4 +267,42 @@ class PredicateTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testExists()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicate = new Predicate\Exists($subquery);
+        $this->assertEquals(
+            "(EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testExistsValueException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\Exists('not a select object');
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testNotExists()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicate = new Predicate\NotExists($subquery);
+        $this->assertEquals(
+            "(NOT EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testNotExistsValueException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\NotExists('not a select object');
+        $predicate->render($this->db->createSql());
+    }
+
 }
