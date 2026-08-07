@@ -86,7 +86,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected array $withOptions = [];
 
     /**
-     * With relationship children
+     * With relationship children (each entry is an array of dotted child paths for that relationship)
      * @var array
      */
     protected array $withChildren = [];
@@ -477,15 +477,27 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function addWith(string $name, ?array $options = null): AbstractRecord
     {
-        $children = null;
+        $children = [];
         if (str_contains($name, '.')) {
             $names    = explode('.', $name);
             $name     = array_shift($names);
-            $children = implode('.', $names);
+            $children = [implode('.', $names)];
         }
-        $this->with[]         = $name;
-        $this->withOptions[]  = $options;
-        $this->withChildren[] = $children;
+
+        $existingIndex = array_search($name, $this->with, true);
+
+        if ($existingIndex !== false) {
+            $this->withChildren[$existingIndex] = array_values(array_unique(
+                array_merge($this->withChildren[$existingIndex], $children)
+            ));
+            if ($options !== null) {
+                $this->withOptions[$existingIndex] = $options;
+            }
+        } else {
+            $this->with[]         = $name;
+            $this->withOptions[]  = $options;
+            $this->withChildren[] = $children;
+        }
 
         return $this;
     }
