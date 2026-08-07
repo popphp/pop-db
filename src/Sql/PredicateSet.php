@@ -363,10 +363,10 @@ class PredicateSet
      * Predicate for =
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function equalTo(string $column, string $value): PredicateSet
+    public function equalTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\EqualTo([$column, $value], $this->nextConjunction));
     }
@@ -375,10 +375,10 @@ class PredicateSet
      * Predicate for !=
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function notEqualTo(string $column, string $value): PredicateSet
+    public function notEqualTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -387,10 +387,10 @@ class PredicateSet
      * Predicate for >
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function greaterThan(string $column, string $value): PredicateSet
+    public function greaterThan(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\GreaterThan([$column, $value], $this->nextConjunction));
     }
@@ -399,10 +399,10 @@ class PredicateSet
      * Predicate for >=
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function greaterThanOrEqualTo(string $column, string $value): PredicateSet
+    public function greaterThanOrEqualTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\GreaterThanOrEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -411,10 +411,10 @@ class PredicateSet
      * Predicate for <
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function lessThan(string $column, string $value): PredicateSet
+    public function lessThan(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\LessThan([$column, $value], $this->nextConjunction));
     }
@@ -423,10 +423,10 @@ class PredicateSet
      * Predicate for <=
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function lessThanOrEqualTo(string $column, string $value): PredicateSet
+    public function lessThanOrEqualTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\LessThanOrEqualTo([$column, $value], $this->nextConjunction));
     }
