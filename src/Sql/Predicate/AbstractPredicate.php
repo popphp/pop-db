@@ -13,6 +13,7 @@
  */
 namespace Pop\Db\Sql\Predicate;
 
+use Pop\Db\Sql\AbstractClause;
 use Pop\Db\Sql\AbstractSql;
 
 /**
@@ -122,16 +123,43 @@ abstract class AbstractPredicate
     }
 
     /**
+     * Assert that a nested Sql instance used as a subquery value has no alias set.
+     *
+     * An aliased Select renders itself as "(SELECT ...) AS `alias`", which is only valid
+     * in a FROM/JOIN context. Embedded inside a predicate it would produce silently
+     * invalid SQL, so reject it up front with a clear error.
+     *
+     * @param  AbstractSql $value
+     * @throws Exception
+     * @return void
+     */
+    protected static function assertNoSubqueryAlias(AbstractSql $value): void
+    {
+        if (($value instanceof AbstractClause) && ($value->getAlias() !== null)) {
+            throw new Exception(
+                'Error: A Select instance used as a subquery value cannot have an alias set ' .
+                '(an alias is only valid for FROM/JOIN subqueries).'
+            );
+        }
+    }
+
+    /**
      * Render a single predicate value: a nested Select/Sql instance embeds as a
      * parenthesized subquery, anything else quotes as a literal/placeholder as before
      *
      * @param  AbstractSql $sql
      * @param  mixed       $value
+     * @throws Exception
      * @return string
      */
     protected static function renderValue(AbstractSql $sql, mixed $value): string
     {
-        return ($value instanceof AbstractSql) ? '(' . $value . ')' : $sql->quote($value);
+        if ($value instanceof AbstractSql) {
+            static::assertNoSubqueryAlias($value);
+            return '(' . $value . ')';
+        }
+
+        return $sql->quote($value);
     }
 
     /**

@@ -1976,6 +1976,15 @@ Users::findBy(['EXISTS' => $subquery]);
   prepared.
 * `'EXISTS'` and `'NOT EXISTS'` are reserved top-level shorthand keys, the same way `'OR'` and `'AND'` are. A
   column literally named `EXISTS` cannot be addressed via the shorthand array syntax.
+* A `Select` used as a subquery value cannot have an alias set on it (via `setAlias()`/`asAlias()`). An alias
+  causes a `Select` to render itself as `(SELECT ...) AS alias`, which is only valid for a FROM/JOIN subquery;
+  passing an aliased `Select` to a predicate throws an exception.
+
+**BC note (v7):** to accept a `Select` as a value, `PredicateSet::equalTo()`, `notEqualTo()`, `greaterThan()`,
+`greaterThanOrEqualTo()`, `lessThan()` and `lessThanOrEqualTo()` widened their `$value` parameter from `string`
+to `mixed`. Because PHP enforces parameter contravariance, any downstream subclass of `PredicateSet` (or of
+`Sql\Where`/`Sql\Having`) that overrides one of these methods with the old `string $value` signature will now
+fail with an incompatible-signature error and must be updated to `mixed $value`.
 
 [Top](#pop-db)
 

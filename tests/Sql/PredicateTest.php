@@ -305,4 +305,40 @@ class PredicateTest extends TestCase
         $predicate->render($this->db->createSql());
     }
 
+    /**
+     * An aliased Select renders as "(SELECT ...) AS `alias`", which is only valid as a
+     * FROM/JOIN subquery. Used as a predicate value it would silently produce invalid SQL,
+     * so it must throw instead. In has its own Select-detection branch (it does not route
+     * through renderValue()), so it is covered separately from a comparison predicate.
+     */
+    public function testInWithAliasedSubqueryException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->asAlias('b');
+
+        $predicate = new Predicate\In(['user_id', $subquery]);
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testEqualToWithAliasedSubqueryException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->asAlias('b');
+
+        $predicate = new Predicate\EqualTo(['user_id', $subquery]);
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testExistsWithAliasedSubqueryException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->asAlias('o');
+
+        $predicate = new Predicate\Exists($subquery);
+        $predicate->render($this->db->createSql());
+    }
+
 }

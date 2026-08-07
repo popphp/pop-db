@@ -486,6 +486,33 @@ class ConditionTest extends TestCase
         $this->db->disconnect();
     }
 
+    /**
+     * Regression: because PHP array keys are unique, two 'EXISTS' keys cannot coexist at the
+     * top level of a shorthand array. Nesting them inside an OR/AND group is the documented
+     * workaround, so it needs to keep working.
+     */
+    public function testExistsAndNotExistsNestedInOrGroup()
+    {
+        $sql = $this->db->createSql();
+
+        $subqueryA = $this->db->createSql()->select('id')->from('orders');
+        $subqueryA->where->equalTo('status', 'shipped');
+
+        $subqueryB = $this->db->createSql()->select('id')->from('refunds');
+        $subqueryB->where->equalTo('status', 'pending');
+
+        $predicateSet = Condition::parse(
+            ['OR' => [['EXISTS' => $subqueryA], ['NOT EXISTS' => $subqueryB]]], $sql
+        );
+
+        $this->assertEquals(
+            "((EXISTS (SELECT `id` FROM `orders` WHERE (`status` = 'shipped'))) OR " .
+            "(NOT EXISTS (SELECT `id` FROM `refunds` WHERE (`status` = 'pending'))))",
+            $predicateSet->render()
+        );
+        $this->db->disconnect();
+    }
+
     public function testBetween()
     {
         $sql          = $this->db->createSql();

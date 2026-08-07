@@ -430,6 +430,64 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    /**
+     * End-to-end proof of the README's documented Record-layer subquery usage:
+     * Users::findBy(['col' => ['IN', $subquery]]) executed against a live database.
+     */
+    public function testFindByWithSubqueryLiveExecution()
+    {
+        $this->db->query('DROP TABLE IF EXISTS `record_sub_orders`');
+        $this->db->query(
+            'CREATE TABLE `record_sub_orders` (`id` INT NOT NULL AUTO_INCREMENT, ' .
+            '`user_id` INT NOT NULL, `total` INT NOT NULL, PRIMARY KEY (`id`))'
+        );
+
+        $userA = new Users([
+            'username' => 'subqueryuser_a', 'password' => 'password', 'email' => 'sub_a@test.com'
+        ]);
+        $userA->save();
+
+        $userB = new Users([
+            'username' => 'subqueryuser_b', 'password' => 'password', 'email' => 'sub_b@test.com'
+        ]);
+        $userB->save();
+
+        $userC = new Users([
+            'username' => 'subqueryuser_c', 'password' => 'password', 'email' => 'sub_c@test.com'
+        ]);
+        $userC->save();
+
+        // A has a qualifying order (>= 100); B has one that does NOT qualify; C has none at all.
+        // So if the subquery's inner WHERE were silently dropped, B would wrongly appear.
+        $this->db->query(
+            'INSERT INTO `record_sub_orders` (`user_id`, `total`) VALUES ' .
+            '(' . (int)$userA->id . ', 250), (' . (int)$userB->id . ', 25)'
+        );
+
+        $subquery = $this->db->createSql()->select('user_id')->from('record_sub_orders');
+        $subquery->where->greaterThanOrEqualTo('total', 100);
+
+        $found = Users::findBy(['id' => ['IN', $subquery]]);
+
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('subqueryuser_a', $found[0]->username);
+        $this->assertEquals((int)$userA->id, (int)$found[0]->id);
+
+        // The inverse form must exclude A and include B and C
+        $notInSubquery = $this->db->createSql()->select('user_id')->from('record_sub_orders');
+        $notInSubquery->where->greaterThanOrEqualTo('total', 100);
+
+        $notFound  = Users::findBy(['id' => ['NOT IN', $notInSubquery]]);
+        $usernames = array_column($notFound->toArray(), 'username');
+
+        $this->assertContains('subqueryuser_b', $usernames);
+        $this->assertContains('subqueryuser_c', $usernames);
+        $this->assertNotContains('subqueryuser_a', $usernames);
+
+        $this->db->query('DROP TABLE `record_sub_orders`');
+        $this->db->disconnect();
+    }
+
     public function testFindByLegacySyntaxStillWorks()
     {
         $user = new Users([

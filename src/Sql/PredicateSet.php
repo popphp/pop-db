@@ -589,14 +589,17 @@ class PredicateSet
             $column = array_shift($values);
 
             foreach ($values as $key => $value) {
+                // A nested Sql instance (i.e., a subquery) can never be a parameter placeholder
+                // token. Skip the isParameter() check for it, as those comparisons would coerce
+                // the instance to a string and needlessly render the subquery multiple times.
                 if (is_array($value)) {
                     foreach ($value as $k => $v) {
-                        if ($this->sql->isParameter($v, $column)) {
+                        if ((!($v instanceof AbstractSql)) && $this->sql->isParameter($v, $column)) {
                             $values[$key][$k] = $this->sql->getParameter($v, $column);
                         }
                     }
                 } else {
-                    if ($this->sql->isParameter($value, $column)) {
+                    if ((!($value instanceof AbstractSql)) && $this->sql->isParameter($value, $column)) {
                         $values[$key] = $this->sql->getParameter($value, $column);
                     }
                 }

@@ -56,6 +56,8 @@ class NotExists extends AbstractPredicate
             throw new Exception('Error: The value must be a Sql\Select instance.');
         }
 
+        static::assertNoSubqueryAlias($this->values);
+
         return '(' . str_replace('%1', (string)$this->values, $this->format) . ')';
     }
 

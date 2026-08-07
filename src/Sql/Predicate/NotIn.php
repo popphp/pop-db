@@ -60,6 +60,7 @@ class NotIn extends AbstractPredicate
         [$column, $values] = $this->values;
 
         if ($values instanceof AbstractSql) {
+            static::assertNoSubqueryAlias($values);
             $valuesString = (string)$values;
         } else if (is_array($values)) {
             $valuesString = implode(', ', array_map([$sql, 'quote'], $values));
