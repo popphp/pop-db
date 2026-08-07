@@ -5,6 +5,7 @@ namespace Pop\Db\Test\Record;
 use Pop\Db\Db;
 use Pop\Db\Test\TestAsset\CkOrg;
 use Pop\Db\Test\TestAsset\CkNote;
+use Pop\Db\Test\TestAsset\CkTicket;
 use PHPUnit\Framework\TestCase;
 
 class CompositeKeyRelationshipTest extends TestCase
@@ -23,7 +24,7 @@ class CompositeKeyRelationshipTest extends TestCase
 
         $schema = $this->db->createSchema();
         $schema->disableForeignKeyCheck();
-        foreach (['ck_notes', 'ck_orgs'] as $table) {
+        foreach (['ck_tickets', 'ck_notes', 'ck_orgs'] as $table) {
             $schema->dropIfExists($table);
         }
         $schema->execute();
@@ -41,16 +42,30 @@ class CompositeKeyRelationshipTest extends TestCase
 
         $schema->create('ck_notes')
             ->int('id', 16)->increment()
-            ->int('org_id', 16)
-            ->int('branch_id', 16)
+            ->int('note_org_id', 16)
+            ->int('note_branch_id', 16)
             ->varchar('note', 255)
             ->primary('id');
         $schema->execute();
         $this->db->disconnect();
         $this->db->connect();
 
+        $schema->create('ck_tickets')
+            ->int('ticket_id', 16)
+            ->int('ticket_rev', 16)
+            ->int('ticket_org_id', 16)
+            ->int('ticket_branch_id', 16)
+            ->int('parent_ticket_id', 16)
+            ->int('parent_ticket_rev', 16)
+            ->varchar('subject', 255)
+            ->primary(['ticket_id', 'ticket_rev']);
+        $schema->execute();
+        $this->db->disconnect();
+        $this->db->connect();
+
         CkOrg::setDb($this->db);
         CkNote::setDb($this->db);
+        CkTicket::setDb($this->db);
     }
 
     public function testCompositePrimaryKeyRoundTrip()
@@ -74,9 +89,9 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
         $notesForA = $orgA->notes();
@@ -95,12 +110,12 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
-        $relationship = new \Pop\Db\Record\Relationships\HasMany($orgA, 'Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id']);
+        $relationship = new \Pop\Db\Record\Relationships\HasMany($orgA, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id']);
         $results      = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
 
         $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
@@ -122,15 +137,15 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
         $relationship = new \Pop\Db\Record\Relationships\HasMany(
             $orgA,
             'Pop\Db\Test\TestAsset\CkNote',
-            ['org_id', 'branch_id'],
+            ['note_org_id', 'note_branch_id'],
             ['columns' => ['note' => 'Note for A']]
         );
         $results = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
@@ -157,9 +172,9 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
         $found = $orgA->firstNote();
@@ -177,12 +192,12 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
-        $relationship = new \Pop\Db\Record\Relationships\HasOne($orgA, 'Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id']);
+        $relationship = new \Pop\Db\Record\Relationships\HasOne($orgA, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id']);
         $results      = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
 
         $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
@@ -201,7 +216,7 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
 
         $found = $noteA->orgOneOf();
@@ -219,10 +234,10 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
 
-        $relationship = new \Pop\Db\Record\Relationships\HasOneOf($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id']);
+        $relationship = new \Pop\Db\Record\Relationships\HasOneOf($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['note_org_id', 'note_branch_id']);
         $results      = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
 
         $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
@@ -239,16 +254,18 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
         $orgA->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
 
-        // CkOrg's primary key is composite (['org_id', 'branch_id']), so the leaf
+        // CkOrg's primary key is composite (['org_id', 'branch_id']) — deliberately named
+        // differently from CkNote's foreign key columns ('note_org_id'/'note_branch_id'),
+        // so a mix-up between the two is caught rather than masked. The leaf
         // records returned by this HasOneOf are themselves keyed by a composite
         // column when hydrateChildRelationships() resolves their own nested
         // 'notes' child (a HasMany already composite-aware since Task 2). This
         // exercises AbstractRelationship::hydrateChildRelationships()'s composite
         // branch end-to-end, not just its no-crash guard.
-        $relationship = new \Pop\Db\Record\Relationships\HasOneOf($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id']);
+        $relationship = new \Pop\Db\Record\Relationships\HasOneOf($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['note_org_id', 'note_branch_id']);
         $relationship->setChildRelationships(['notes']);
         $results = $relationship->getEagerRelationships([[1, 2]]);
 
@@ -267,7 +284,7 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
 
         $found = $noteA->org();
@@ -285,10 +302,10 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
 
-        $relationship = new \Pop\Db\Record\Relationships\BelongsTo($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['org_id', 'branch_id']);
+        $relationship = new \Pop\Db\Record\Relationships\BelongsTo($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['note_org_id', 'note_branch_id']);
         $results      = $relationship->getEagerRelationships([[1, 2], [2, 1]]);
 
         $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
@@ -302,12 +319,12 @@ class CompositeKeyRelationshipTest extends TestCase
 
     public function testBelongsToCardinalityMismatchThrows()
     {
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
 
         $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
 
-        $relationship = new \Pop\Db\Record\Relationships\BelongsTo($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['org_id']);
+        $relationship = new \Pop\Db\Record\Relationships\BelongsTo($noteA, 'Pop\Db\Test\TestAsset\CkOrg', ['note_org_id']);
         $relationship->getEagerRelationships([[1]]);
 
         $this->db->disconnect();
@@ -315,7 +332,7 @@ class CompositeKeyRelationshipTest extends TestCase
 
     public function testCardinalityMismatchThrowsThroughWithDispatch()
     {
-        $note = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $note = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $note->save();
 
         $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
@@ -334,9 +351,9 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
         $found = CkOrg::with('notes')->getOne(['org_id' => 1, 'branch_id' => 2]);
@@ -355,9 +372,9 @@ class CompositeKeyRelationshipTest extends TestCase
         $orgB = new CkOrg(['org_id' => 2, 'branch_id' => 1, 'name' => 'Org B']);
         $orgB->save();
 
-        $noteA = new CkNote(['org_id' => 1, 'branch_id' => 2, 'note' => 'Note for A']);
+        $noteA = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
         $noteA->save();
-        $noteB = new CkNote(['org_id' => 2, 'branch_id' => 1, 'note' => 'Note for B']);
+        $noteB = new CkNote(['note_org_id' => 2, 'note_branch_id' => 1, 'note' => 'Note for B']);
         $noteB->save();
 
         $found = CkNote::with('org')->getOne(['id' => $noteA->id]);
@@ -370,12 +387,170 @@ class CompositeKeyRelationshipTest extends TestCase
 
     public function testNullComponentInCompositeKeyIsSkippedNotCrashed()
     {
-        $note = new CkNote(['org_id' => 1, 'branch_id' => null, 'note' => 'Orphan note']);
+        $note = new CkNote(['note_org_id' => 1, 'note_branch_id' => null, 'note' => 'Orphan note']);
         $note->save();
 
         $found = CkNote::with('org')->getOne(['id' => $note->id]);
 
         $this->assertNull($found->org);
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * Seed one org with a single ticket that itself has one child ticket. The child
+     * deliberately belongs to a *different* org, so it is not picked up by the org's
+     * own hasMany/hasOne query and can only appear via the leaf ticket's own composite
+     * primary key ('ticket_id'/'ticket_rev') — never via the relationship's foreign key
+     * columns ('ticket_org_id'/'ticket_branch_id'), which name columns on the org side.
+     */
+    protected function seedTickets(): void
+    {
+        $org = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $org->save();
+
+        $ticket = new CkTicket([
+            'ticket_id' => 7, 'ticket_rev' => 1, 'ticket_org_id' => 1, 'ticket_branch_id' => 2,
+            'parent_ticket_id' => 0, 'parent_ticket_rev' => 0, 'subject' => 'Parent ticket'
+        ]);
+        $ticket->save();
+
+        $childTicket = new CkTicket([
+            'ticket_id' => 8, 'ticket_rev' => 1, 'ticket_org_id' => 9, 'ticket_branch_id' => 9,
+            'parent_ticket_id' => 7, 'parent_ticket_rev' => 1, 'subject' => 'Child ticket'
+        ]);
+        $childTicket->save();
+    }
+
+    public function testHasManyEagerCompositeKeyHydratesNestedChildrenByLeafPrimaryKey()
+    {
+        $this->seedTickets();
+
+        $org          = CkOrg::findById([1, 2]);
+        $relationship = new \Pop\Db\Record\Relationships\HasMany(
+            $org, 'Pop\Db\Test\TestAsset\CkTicket', ['ticket_org_id', 'ticket_branch_id']
+        );
+        $relationship->setChildRelationships(['children']);
+        $results = $relationship->getEagerRelationships([[1, 2]]);
+
+        $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
+        $this->assertEquals(1, $results[$key]->count());
+
+        $leafTicket = $results[$key][0];
+        $this->assertEquals('Parent ticket', $leafTicket->subject);
+        $this->assertEquals(1, $leafTicket->children->count());
+        $this->assertEquals('Child ticket', $leafTicket->children[0]->subject);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneEagerCompositeKeyHydratesNestedChildrenByLeafPrimaryKey()
+    {
+        $this->seedTickets();
+
+        $org          = CkOrg::findById([1, 2]);
+        $relationship = new \Pop\Db\Record\Relationships\HasOne(
+            $org, 'Pop\Db\Test\TestAsset\CkTicket', ['ticket_org_id', 'ticket_branch_id']
+        );
+        $relationship->setChildRelationships(['children']);
+        $results = $relationship->getEagerRelationships([[1, 2]]);
+
+        $key = implode(\Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER, [1, 2]);
+        $this->assertEquals('Parent ticket', $results[$key]->subject);
+        $this->assertEquals(1, $results[$key]->children->count());
+        $this->assertEquals('Child ticket', $results[$key]->children[0]->subject);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasManyEagerCardinalityMismatchThrows()
+    {
+        $org = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $org->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // 1 FK column declared against CkOrg's 2-column composite primary key.
+        $relationship = new \Pop\Db\Record\Relationships\HasMany(
+            $org, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id']
+        );
+        $relationship->getEagerRelationships([[1]]);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasManyEagerTupleCardinalityMismatchThrows()
+    {
+        $org = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $org->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // 2 FK columns, but only 1-component id tuples supplied.
+        $relationship = new \Pop\Db\Record\Relationships\HasMany(
+            $org, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id']
+        );
+        $relationship->getEagerRelationships([[1]]);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneEagerCardinalityMismatchThrows()
+    {
+        $org = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $org->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // 1 FK column declared against CkOrg's 2-column composite primary key.
+        $relationship = new \Pop\Db\Record\Relationships\HasOne(
+            $org, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id']
+        );
+        $relationship->getEagerRelationships([[1]]);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneEagerTupleCardinalityMismatchThrows()
+    {
+        $org = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $org->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // 2 FK columns, but only 1-component id tuples supplied.
+        $relationship = new \Pop\Db\Record\Relationships\HasOne(
+            $org, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id']
+        );
+        $relationship->getEagerRelationships([[1]]);
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneOfLazyCardinalityMismatchThrows()
+    {
+        $note = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
+        $note->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // CkNote::badOrg() declares 1 FK column against CkOrg's 2-column composite PK,
+        // and the lazy (non-eager) call path must surface that just like the eager one.
+        $note->badOrg();
+
+        $this->db->disconnect();
+    }
+
+    public function testBelongsToLazyCardinalityMismatchThrows()
+    {
+        $note = new CkNote(['note_org_id' => 1, 'note_branch_id' => 2, 'note' => 'Note for A']);
+        $note->save();
+
+        $this->expectException(\Pop\Db\Record\Relationships\Exception::class);
+
+        // CkNote::badOrgBelongsTo() declares 1 FK column against CkOrg's 2-column
+        // composite PK, and the lazy (non-eager) call path must surface that too.
+        $note->badOrgBelongsTo();
 
         $this->db->disconnect();
     }
@@ -390,12 +565,13 @@ class CompositeKeyRelationshipTest extends TestCase
         $schema = $this->db->createSchema();
         $schema->disableForeignKeyCheck();
 
-        foreach (['ck_notes', 'ck_orgs'] as $table) {
+        foreach (['ck_tickets', 'ck_notes', 'ck_orgs'] as $table) {
             $schema->dropIfExists($table);
         }
 
         $schema->execute();
 
+        $this->assertFalse($this->db->hasTable('ck_tickets'));
         $this->assertFalse($this->db->hasTable('ck_notes'));
         $this->assertFalse($this->db->hasTable('ck_orgs'));
 

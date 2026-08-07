@@ -69,7 +69,10 @@ class HasOneOf extends AbstractRelationship
     public function getChild(): Record
     {
         $table = $this->foreignTable;
-        $id    = is_array($this->foreignKey) ?
+
+        $this->assertKeyCardinality($this->foreignKey, (new $table())->getPrimaryKeys());
+
+        $id = is_array($this->foreignKey) ?
             array_map(fn($col) => $this->parent[$col], $this->foreignKey) : $this->parent[$this->foreignKey];
 
         if (!empty($this->children)) {
@@ -120,8 +123,13 @@ class HasOneOf extends AbstractRelationship
         $sql->select($columns)->from($table::table());
 
         if (count($keys) > 1) {
+            // Wrap all tuple OR-groups in a single AND-nested group, so that anything
+            // appended to the WHERE clause afterward is ANDed against the whole
+            // "matches any of these id tuples" block rather than becoming a sibling OR
+            // at the top level. Renders identically when there is no sibling predicate.
+            $tupleGroup = $sql->select()->where->andNest();
             foreach ($ids as $idTuple) {
-                $group = $sql->select()->where->orNest();
+                $group = $tupleGroup->orNest();
                 foreach ($keys as $col) {
                     $group->equalTo($col, $sql->getPlaceholder());
                 }
@@ -177,19 +185,20 @@ class HasOneOf extends AbstractRelationship
         $results     = [];
         $leafRecords = [];
 
-        $primaryKey = (new $table())->getPrimaryKeys();
-        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
-
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
             $resultKey = is_array($keys) ?
-                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $keys)) : $row[$keys];
+                self::buildCompositeKey(array_map(fn($col) => $row[$col], $keys)) : $row[$keys];
             $results[$resultKey] = $record;
             $leafRecords[] = $record;
         }
 
-        $this->hydrateChildRelationships($leafRecords, $primaryKey);
+        // $keys already holds the foreign table's own primary key columns (a plain string
+        // when there is only one), which is what nested child relationships look their
+        // leaf records up by — NOT this relationship's foreign key columns, which name
+        // columns on the declaring side.
+        $this->hydrateChildRelationships($leafRecords, $keys);
 
         return $results;
     }

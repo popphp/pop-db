@@ -123,6 +123,14 @@ class HasMany extends AbstractRelationship
             throw new Exception('Error: The foreign table and key values have not been set.');
         }
 
+        // The foreign key columns on the foreign table mirror the declaring (parent)
+        // table's own primary key columns, so their counts must match — the same
+        // invariant the lazy getChildren() path asserts.
+        if (is_array($this->foreignKey)) {
+            $this->assertKeyCardinality($this->foreignKey, $this->parent->getPrimaryKeys());
+            $this->assertTupleCardinality($ids, $this->foreignKey);
+        }
+
         $results = [];
         $table   = $this->foreignTable;
         $db      = $table::db();
@@ -223,12 +231,15 @@ class HasMany extends AbstractRelationship
         $results     = [];
         $leafRecords = [];
 
+        // The leaf records are rows of the foreign table, so their own primary key
+        // columns (NOT this relationship's foreign key columns, which name columns
+        // on the declaring side) are what nested child relationships look them up by.
         $primaryKey = (new $table())->getPrimaryKeys();
-        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
+        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $primaryKey;
 
         foreach ($rows as $row) {
             $key = is_array($this->foreignKey) ?
-                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $this->foreignKey)) :
+                self::buildCompositeKey(array_map(fn($col) => $row[$col], $this->foreignKey)) :
                 $row[$this->foreignKey];
 
             if ($toArray === false) {

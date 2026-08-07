@@ -569,12 +569,11 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
                 if (is_array($primaryKey)) {
                     $seen = [];
                     foreach ($rows as $i => $row) {
-                        $tuple = array_map(fn($col) => $row[$col] ?? null, $primaryKey);
-                        if (in_array(null, $tuple, true)) {
+                        $tuple = Relationships\AbstractRelationship::tupleFor($row, $primaryKey);
+                        if ($tuple === null) {
                             continue;
                         }
-                        $tupleKey = \Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER;
-                        $tupleKey = implode($tupleKey, $tuple);
+                        $tupleKey = Relationships\AbstractRelationship::buildCompositeKey($tuple);
                         if (!isset($seen[$tupleKey])) {
                             $seen[$tupleKey] = true;
                             $withIds[] = $tuple;
@@ -603,8 +602,8 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
                     }
                 } else {
                     foreach ($rows as $i => $row) {
-                        $tuple = array_map(fn($col) => $row[$col] ?? null, $primaryKey);
-                        if (!in_array(null, $tuple, true)) {
+                        $tuple = Relationships\AbstractRelationship::tupleFor($row, $primaryKey);
+                        if ($tuple !== null) {
                             $withIds[] = $tuple;
                         }
                     }
@@ -613,10 +612,9 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
             }
             foreach ($rows as $i => $row) {
                 if (is_array($primaryKey)) {
-                    $lookupValue = implode(
-                        \Pop\Db\Record\Relationships\AbstractRelationship::COMPOSITE_KEY_DELIMITER,
-                        array_map(fn($col) => $row[$col] ?? null, $primaryKey)
-                    );
+                    $tuple       = Relationships\AbstractRelationship::tupleFor($row, $primaryKey);
+                    $lookupValue = ($tuple !== null) ?
+                        Relationships\AbstractRelationship::buildCompositeKey($tuple) : null;
                 } else {
                     $lookupValue = $row[$primaryKey] ?? null;
                 }

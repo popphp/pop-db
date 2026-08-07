@@ -69,7 +69,10 @@ class BelongsTo extends AbstractRelationship
      */
     public function getParent(?array $options = null): ?Record
     {
-        $table  = $this->foreignTable;
+        $table = $this->foreignTable;
+
+        $this->assertKeyCardinality($this->foreignKey, (new $table())->getPrimaryKeys());
+
         $values = is_array($this->foreignKey) ?
             array_map(fn($col) => $this->child[$col], $this->foreignKey) : $this->child[$this->foreignKey];
 
@@ -122,8 +125,13 @@ class BelongsTo extends AbstractRelationship
         $sql->select($columns)->from($table::table());
 
         if (is_array($parentKey)) {
+            // Wrap all tuple OR-groups in a single AND-nested group, so that anything
+            // appended to the WHERE clause afterward is ANDed against the whole
+            // "matches any of these id tuples" block rather than becoming a sibling OR
+            // at the top level. Renders identically when there is no sibling predicate.
+            $tupleGroup = $sql->select()->where->andNest();
             foreach ($ids as $idTuple) {
-                $group = $sql->select()->where->orNest();
+                $group = $tupleGroup->orNest();
                 foreach ($parentKey as $col) {
                     $group->equalTo($col, $sql->getPlaceholder());
                 }
@@ -182,7 +190,7 @@ class BelongsTo extends AbstractRelationship
             $record = new $table();
             $record->setColumns($row);
             $key = is_array($parentKey) ?
-                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $parentKey)) : $row[$parentKey];
+                self::buildCompositeKey(array_map(fn($col) => $row[$col], $parentKey)) : $row[$parentKey];
             $results[$key] = $record;
             $leafRecords[] = $record;
         }

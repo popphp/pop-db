@@ -12,12 +12,22 @@ class CkOrg extends Record
 
     public function notes(?array $options = null, bool $eager = false)
     {
-        return $this->hasMany('Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id'], $options, $eager);
+        return $this->hasMany('Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id'], $options, $eager);
     }
 
     public function firstNote(?array $options = null, bool $eager = false)
     {
-        return $this->hasOne('Pop\Db\Test\TestAsset\CkNote', ['org_id', 'branch_id'], $options, $eager);
+        return $this->hasOne('Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id'], $options, $eager);
+    }
+
+    public function tickets(?array $options = null, bool $eager = false)
+    {
+        return $this->hasMany('Pop\Db\Test\TestAsset\CkTicket', ['ticket_org_id', 'ticket_branch_id'], $options, $eager);
+    }
+
+    public function firstTicket(?array $options = null, bool $eager = false)
+    {
+        return $this->hasOne('Pop\Db\Test\TestAsset\CkTicket', ['ticket_org_id', 'ticket_branch_id'], $options, $eager);
     }
 
 }

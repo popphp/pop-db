@@ -122,6 +122,14 @@ class HasOne extends AbstractRelationship
             throw new Exception('Error: The foreign table and key values have not been set.');
         }
 
+        // The foreign key columns on the foreign table mirror the declaring (parent)
+        // table's own primary key columns, so their counts must match — the same
+        // invariant the lazy getChild() path asserts.
+        if (is_array($this->foreignKey)) {
+            $this->assertKeyCardinality($this->foreignKey, $this->parent->getPrimaryKeys());
+            $this->assertTupleCardinality($ids, $this->foreignKey);
+        }
+
         $results = [];
         $table   = $this->foreignTable;
         $db      = $table::db();
@@ -137,8 +145,13 @@ class HasOne extends AbstractRelationship
         $sql->select($columns)->from($table::table());
 
         if (is_array($this->foreignKey)) {
+            // Wrap all tuple OR-groups in a single AND-nested group, so that anything
+            // appended to the WHERE clause afterward is ANDed against the whole
+            // "matches any of these id tuples" block rather than becoming a sibling OR
+            // at the top level. Renders identically when there is no sibling predicate.
+            $tupleGroup = $sql->select()->where->andNest();
             foreach ($ids as $idTuple) {
-                $group = $sql->select()->where->orNest();
+                $group = $tupleGroup->orNest();
                 foreach ($this->foreignKey as $fkColumn) {
                     $group->equalTo($fkColumn, $sql->getPlaceholder());
                 }
@@ -193,14 +206,17 @@ class HasOne extends AbstractRelationship
         $results     = [];
         $leafRecords = [];
 
+        // The leaf records are rows of the foreign table, so their own primary key
+        // columns (NOT this relationship's foreign key columns, which name columns
+        // on the declaring side) are what nested child relationships look them up by.
         $primaryKey = (new $table())->getPrimaryKeys();
-        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
+        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $primaryKey;
 
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
             $key = is_array($this->foreignKey) ?
-                $this->buildCompositeKey(array_map(fn($col) => $row[$col], $this->foreignKey)) :
+                self::buildCompositeKey(array_map(fn($col) => $row[$col], $this->foreignKey)) :
                 $row[$this->foreignKey];
             $results[$key] = $record;
             $leafRecords[] = $record;

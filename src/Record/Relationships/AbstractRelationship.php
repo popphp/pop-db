@@ -154,9 +154,51 @@ abstract class AbstractRelationship implements RelationshipInterface
      * @param  array $values
      * @return string
      */
-    protected function buildCompositeKey(array $values): string
+    public static function buildCompositeKey(array $values): string
     {
         return implode(self::COMPOSITE_KEY_DELIMITER, $values);
+    }
+
+    /**
+     * Build an ordered tuple of values for the given columns from a record (either a
+     * Record instance or a plain array row). Returns null if any one of the columns is
+     * missing or null, i.e. the record has no usable composite key and should be skipped.
+     *
+     * @param  mixed $record
+     * @param  array $columns
+     * @return array|null
+     */
+    public static function tupleFor(mixed $record, array $columns): ?array
+    {
+        $tuple = array_map(fn($col) => $record[$col] ?? null, $columns);
+        return (in_array(null, $tuple, true)) ? null : $tuple;
+    }
+
+    /**
+     * Validate that the tuples in an eager-load id list have the same number of
+     * components as the array foreign key they will be bound to. A plain string
+     * $foreignKey (cardinality 1) and an empty $ids list are always valid.
+     *
+     * @param  array        $ids
+     * @param  string|array $foreignKey
+     * @throws Exception
+     * @return void
+     */
+    protected function assertTupleCardinality(array $ids, string|array $foreignKey): void
+    {
+        if (!is_array($foreignKey) || empty($ids)) {
+            return;
+        }
+
+        $tuple = reset($ids);
+
+        if (!is_array($tuple) || (count($tuple) !== count($foreignKey))) {
+            throw new Exception(
+                'Error: The number of foreign key columns (' . count($foreignKey) .
+                ') does not match the number of values (' . (is_array($tuple) ? count($tuple) : 1) .
+                ') provided for the relationship lookup.'
+            );
+        }
     }
 
     /**
@@ -224,11 +266,11 @@ abstract class AbstractRelationship implements RelationshipInterface
                     if (is_array($column)) {
                         $tuplesByKey = [];
                         foreach ($leafRecords as $leafRecord) {
-                            $tuple = array_map(fn($col) => $leafRecord[$col] ?? null, $column);
-                            if (in_array(null, $tuple, true)) {
+                            $tuple = self::tupleFor($leafRecord, $column);
+                            if ($tuple === null) {
                                 continue;
                             }
-                            $tuplesByKey[$this->buildCompositeKey($tuple)] = $tuple;
+                            $tuplesByKey[self::buildCompositeKey($tuple)] = $tuple;
                         }
                         $ids = array_values($tuplesByKey);
                     } else {
@@ -237,7 +279,9 @@ abstract class AbstractRelationship implements RelationshipInterface
                         )));
                     }
 
-                    $accumulated[$name]         = $relationship->getEagerRelationships($ids);
+                    // An empty id list must not reach getEagerRelationships(), which would
+                    // render either an invalid or an entirely unfiltered WHERE clause.
+                    $accumulated[$name]         = (!empty($ids)) ? $relationship->getEagerRelationships($ids) : [];
                     $relationshipsByName[$name] = $relationship;
                 }
             }
@@ -245,10 +289,13 @@ abstract class AbstractRelationship implements RelationshipInterface
 
         foreach ($leafRecords as $record) {
             foreach ($accumulated as $name => $resultsByKey) {
-                $column      = $lookupColumns[$name];
-                $lookupValue = is_array($column) ?
-                    $this->buildCompositeKey(array_map(fn($col) => $record[$col] ?? null, $column)) :
-                    ($record[$column] ?? null);
+                $column = $lookupColumns[$name];
+                if (is_array($column)) {
+                    $tuple       = self::tupleFor($record, $column);
+                    $lookupValue = ($tuple !== null) ? self::buildCompositeKey($tuple) : null;
+                } else {
+                    $lookupValue = $record[$column] ?? null;
+                }
                 $record->setRelationship(
                     $name,
                     $resultsByKey[$lookupValue] ?? $relationshipsByName[$name]->getEmptyRelationshipValue()
