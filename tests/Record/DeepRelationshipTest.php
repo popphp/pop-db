@@ -112,4 +112,47 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHasManyEagerLoadsTwoDifferentGrandchildren()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        $child1 = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child1->save();
+        $child2 = new DlChild(['parent_id' => $parent->id, 'name' => 'C2']);
+        $child2->save();
+
+        $g1a = new DlGrand1(['child_id' => $child1->id, 'note' => 'g1-c1']);
+        $g1a->save();
+        $g2a = new DlGrand2(['child_id' => $child1->id, 'note' => 'g2-c1']);
+        $g2a->save();
+        $g2b = new DlGrand2(['child_id' => $child2->id, 'note' => 'g2-c2']);
+        $g2b->save();
+
+        // Use getOne() (not getById()) so this actually exercises the eager-load path
+        // (AbstractRecord::processWithRelationships() -> HasMany::getEagerRelationships() ->
+        // hydrateChildRelationships()) that this task fixes. getById() resolves its top-level
+        // 'with' relationships via HasMany::getChildren() (always non-eager), which never calls
+        // HasMany::getEagerRelationships() at all — see report for details.
+        $found = DlParent::with(['children.grand1', 'children.grand2'])->getOne(['id' => $parent->id]);
+
+        $children = $found->children;
+        $this->assertEquals(2, $children->count());
+
+        foreach ($children as $child) {
+            $this->assertTrue($child->hasRelationship('grand1'), 'child ' . $child->name . ' missing grand1');
+            $this->assertTrue($child->hasRelationship('grand2'), 'child ' . $child->name . ' missing grand2');
+
+            if ($child->name === 'C1') {
+                $this->assertEquals(1, $child->grand1->count());
+                $this->assertEquals(1, $child->grand2->count());
+            } else {
+                $this->assertEquals(0, $child->grand1->count());
+                $this->assertEquals(1, $child->grand2->count());
+            }
+        }
+
+        $this->db->disconnect();
+    }
+
 }

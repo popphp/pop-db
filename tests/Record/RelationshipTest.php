@@ -238,8 +238,8 @@ class RelationshipTest extends TestCase
         $this->assertIsArray($relationship->getEagerRelationships([1]));
         $this->assertEquals('Pop\Db\Test\TestAsset\People', $relationship->getForeignTable());
         $this->assertEmpty($relationship->getOptions());
-        $relationship->setChildRelationships('TestChild');
-        $this->assertEquals('TestChild', $relationship->getChildRelationships());
+        $relationship->setChildRelationships(['TestChild']);
+        $this->assertEquals(['TestChild'], $relationship->getChildRelationships());
         $this->db->disconnect();
     }
 

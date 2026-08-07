@@ -47,10 +47,10 @@ abstract class AbstractRelationship implements RelationshipInterface
     protected ?array $options = null;
 
     /**
-     * Relationship children
-     * @var ?string
+     * Relationship children (list of dotted child paths to eager-load under this relationship)
+     * @var array
      */
-    protected ?string $children = null;
+    protected array $children = [];
 
     /**
      * Constructor
@@ -101,9 +101,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get child relationships
      *
-     * @return string|null
+     * @return array
      */
-    public function getChildRelationships(): string|null
+    public function getChildRelationships(): array
     {
         return $this->children;
     }
@@ -111,10 +111,10 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Set children child relationships
      *
-     * @param  string $children
+     * @param  array $children
      * @return static
      */
-    public function setChildRelationships(string $children): static
+    public function setChildRelationships(array $children): static
     {
         $this->children = $children;
         return $this;
@@ -128,5 +128,62 @@ abstract class AbstractRelationship implements RelationshipInterface
      * @return array
      */
     abstract public function getEagerRelationships(array $ids): array;
+
+    /**
+     * Get the value to use for a leaf record's named child relationship when no eager-loaded
+     * results were found for it (e.g. a "has many" child with zero matching rows should still
+     * see an empty Collection rather than a plain array). Concrete relationship classes whose
+     * populated results aren't plain arrays should override this.
+     *
+     * @return mixed
+     */
+    protected function getEmptyRelationshipValue(): mixed
+    {
+        return [];
+    }
+
+    /**
+     * Hydrate nested child relationships onto a flat list of leaf records, resolving each
+     * named child relationship once (accumulated by name) and distributing every one of them
+     * onto every leaf record — so multiple differently-named children under this relationship
+     * don't overwrite each other.
+     *
+     * @param  array  $leafRecords
+     * @param  string $primaryKeyColumn
+     * @return void
+     */
+    protected function hydrateChildRelationships(array $leafRecords, string $primaryKeyColumn): void
+    {
+        if (empty($this->children) || empty($leafRecords)) {
+            return;
+        }
+
+        $parentIds = array_values(array_unique(array_map(
+            fn($record) => $record[$primaryKeyColumn], $leafRecords
+        )));
+
+        $accumulated = [];
+        $emptyValues = [];
+
+        foreach ($leafRecords as $record) {
+            foreach ($this->children as $childPath) {
+                $record->addWith($childPath);
+            }
+            $record->getWithRelationships();
+            foreach ($record->getRelationships() as $name => $relationship) {
+                if (!isset($accumulated[$name])) {
+                    $accumulated[$name] = $relationship->getEagerRelationships($parentIds);
+                    $emptyValues[$name] = $relationship->getEmptyRelationshipValue();
+                }
+            }
+        }
+
+        foreach ($leafRecords as $record) {
+            $primaryValue = $record[$primaryKeyColumn] ?? null;
+            foreach ($accumulated as $name => $resultsByParentId) {
+                $record->setRelationship($name, $resultsByParentId[$primaryValue] ?? $emptyValues[$name]);
+            }
+        }
+    }
 
 }

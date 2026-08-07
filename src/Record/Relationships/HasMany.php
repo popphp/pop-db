@@ -90,6 +90,16 @@ class HasMany extends AbstractRelationship
     }
 
     /**
+     * Get the value to use when no eager-loaded results exist for a given leaf record
+     *
+     * @return Record\Collection
+     */
+    protected function getEmptyRelationshipValue(): mixed
+    {
+        return new Record\Collection();
+    }
+
+    /**
      * Get eager relationships
      *
      * @param  array $ids
@@ -168,25 +178,22 @@ class HasMany extends AbstractRelationship
             ->bindParams($params)
             ->execute();
 
-        $rows               = $db->fetchAll();
-        $parentIds          = [];
-        $childRelationships = [];
+        $rows        = $db->fetchAll();
+        $results     = [];
+        $leafRecords = [];
 
         $primaryKey = (new $table())->getPrimaryKeys();
         $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
 
         foreach ($rows as $row) {
-            $parentIds[] = $row[$primaryKey];
             if ($toArray === false) {
                 if (!isset($results[$row[$this->foreignKey]])) {
                     $results[$row[$this->foreignKey]] = new Record\Collection();
                 }
                 $record = new $table();
-                if ($this->children !== null) {
-                    $record->addWith($this->children);
-                }
                 $record->setColumns($row);
                 $results[$row[$this->foreignKey]]->push($record);
+                $leafRecords[] = $record;
             } else {
                 if (!isset($results[$row[$this->foreignKey]])) {
                     $results[$row[$this->foreignKey]] = [];
@@ -195,38 +202,7 @@ class HasMany extends AbstractRelationship
             }
         }
 
-        if (!empty($this->children) && !empty($parentIds)) {
-            foreach ($results as $collection) {
-                foreach ($collection as $record) {
-                    $record->getWithRelationships();
-                    foreach ($record->getRelationships() as $relationship) {
-                        $childRelationships = $relationship->getEagerRelationships($parentIds);
-                    }
-                }
-            }
-        }
-
-        if (!empty($childRelationships)) {
-            $children    = $this->children;
-            $subChildren = null;
-            if (str_contains($children, '.')) {
-                $names       = explode('.', $children);
-                $children    = array_shift($names);
-                $subChildren = implode('.', $names);
-            }
-
-            foreach ($results as $collection) {
-                foreach ($collection as $record) {
-                    if (!empty($subChildren)) {
-                        $record->addWith($subChildren);
-                    }
-                    $rel = (isset($childRelationships[$record[$primaryKey]])) ?
-                        $childRelationships[$record[$primaryKey]] : [];
-
-                    $record->setRelationship($children, $rel);
-                }
-            }
-        }
+        $this->hydrateChildRelationships($leafRecords, $primaryKey);
 
         return $results;
     }
