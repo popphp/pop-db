@@ -211,7 +211,7 @@ class Condition
         trigger_error(
             "Deprecated: The shorthand column format used for [" . $columnList . "] is deprecated and will be " .
             "removed in pop-db v8. Use the structured format instead, e.g. ['column' => ['>=', value]]. " .
-            "See docs/POP-DB.md for the new syntax.",
+            "See README.md for the new syntax.",
             E_USER_DEPRECATED
         );
 
