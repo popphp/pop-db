@@ -114,16 +114,11 @@ class BelongsTo extends AbstractRelationship
             }
         }
 
-        $foreignKey  = $this->foreignKey;
         $primaryKeys = (new $table())->getPrimaryKeys();
-        $info        = $table::getTableInfo();
-
-        if (!in_array($foreignKey, $info['columns']) && (count($primaryKeys) == 1)) {
-            $foreignKey = $primaryKeys[0];
-        }
+        $parentKey   = (count($primaryKeys) == 1) ? reset($primaryKeys) : $this->foreignKey;
 
         $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select($columns)->from($table::table())->where->in($foreignKey, $placeholders);
+        $sql->select($columns)->from($table::table())->where->in($parentKey, $placeholders);
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
@@ -168,17 +163,14 @@ class BelongsTo extends AbstractRelationship
         $results     = [];
         $leafRecords = [];
 
-        $primaryKey = (new $table())->getPrimaryKeys();
-        $primaryKey = (count($primaryKey) == 1) ? reset($primaryKey) : $this->foreignKey;
-
         foreach ($rows as $row) {
             $record = new $table();
             $record->setColumns($row);
-            $results[$row[$foreignKey]] = $record;
+            $results[$row[$parentKey]] = $record;
             $leafRecords[] = $record;
         }
 
-        $this->hydrateChildRelationships($leafRecords, $primaryKey);
+        $this->hydrateChildRelationships($leafRecords, $parentKey);
 
         return $results;
     }

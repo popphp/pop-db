@@ -8,6 +8,7 @@ use Pop\Db\Test\TestAsset\DlChild;
 use Pop\Db\Test\TestAsset\DlOneofHost;
 use Pop\Db\Test\TestAsset\DlGrand1;
 use Pop\Db\Test\TestAsset\DlGrand2;
+use Pop\Db\Test\TestAsset\DlCategory;
 use PHPUnit\Framework\TestCase;
 
 class DeepRelationshipTest extends TestCase
@@ -26,7 +27,7 @@ class DeepRelationshipTest extends TestCase
 
         $schema = $this->db->createSchema();
         $schema->disableForeignKeyCheck();
-        foreach (['dl_grand1', 'dl_grand2', 'dl_oneof_hosts', 'dl_children', 'dl_parents'] as $table) {
+        foreach (['dl_grand1', 'dl_grand2', 'dl_oneof_hosts', 'dl_children', 'dl_parents', 'dl_categories'] as $table) {
             $schema->dropIfExists($table);
         }
         $schema->execute();
@@ -77,11 +78,21 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
         $this->db->connect();
 
+        $schema->create('dl_categories')
+            ->int('id', 16)->increment()
+            ->int('parent_id', 16)
+            ->varchar('name', 255)
+            ->primary('id');
+        $schema->execute();
+        $this->db->disconnect();
+        $this->db->connect();
+
         DlParent::setDb($this->db);
         DlChild::setDb($this->db);
         DlOneofHost::setDb($this->db);
         DlGrand1::setDb($this->db);
         DlGrand2::setDb($this->db);
+        DlCategory::setDb($this->db);
     }
 
     public function testFixturesResolveOneLevel()
@@ -452,6 +463,34 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testBelongsToEagerLoadsCorrectParentForSelfReferencingTable()
+    {
+        $parent = new DlCategory(['parent_id' => 0, 'name' => 'Parent']);
+        $parent->save();
+
+        $child = new DlCategory(['parent_id' => $parent->id, 'name' => 'Child']);
+        $child->save();
+
+        // Use getOne() (not getById()) to exercise the eager-load path: getById() resolves
+        // top-level 'with' relationships via the always-lazy getWithRelationships(false), which
+        // never calls BelongsTo::getEagerRelationships() at all.
+        //
+        // Characterization test for a self-referencing table: 'parent_id' is a real column on
+        // DlCategory itself, so parent and child are the same table and the foreign-key column
+        // name collides with a column on the "parent" side. This locks in that
+        // BelongsTo::getEagerRelationships() correctly resolves 'parent' by the parent's own
+        // primary key (WHERE id IN (...)) rather than by the foreign-key column, so $found->parent
+        // ends up as $parent, not $child.
+        $found = DlCategory::with('parent')->getOne(['id' => $child->id]);
+
+        $this->assertInstanceOf(DlCategory::class, $found->parent);
+        $this->assertEquals($parent->id, $found->parent->id);
+        $this->assertEquals('Parent', $found->parent->name);
+        $this->assertNotEquals($child->id, $found->parent->id);
+
+        $this->db->disconnect();
+    }
+
     /**
      * Build three parents and three children whose parent_id values are a deliberate
      * permutation of the child ids (C1 -> P3, C2 -> P1, C3 -> P2), each fronted by a host
@@ -694,7 +733,7 @@ class DeepRelationshipTest extends TestCase
         $schema = $this->db->createSchema();
         $schema->disableForeignKeyCheck();
 
-        foreach (['dl_grand1', 'dl_grand2', 'dl_oneof_hosts', 'dl_children', 'dl_parents'] as $table) {
+        foreach (['dl_grand1', 'dl_grand2', 'dl_oneof_hosts', 'dl_children', 'dl_parents', 'dl_categories'] as $table) {
             $schema->dropIfExists($table);
         }
 
@@ -705,6 +744,7 @@ class DeepRelationshipTest extends TestCase
         $this->assertFalse($this->db->hasTable('dl_oneof_hosts'));
         $this->assertFalse($this->db->hasTable('dl_grand1'));
         $this->assertFalse($this->db->hasTable('dl_grand2'));
+        $this->assertFalse($this->db->hasTable('dl_categories'));
 
         $this->db->disconnect();
     }
