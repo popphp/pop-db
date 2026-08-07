@@ -400,4 +400,78 @@ class PredicateSetTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Sql\Predicate\JsonNotEqualTo', $predicateSet->getPredicates()[0]);
     }
 
+    /**
+     * The containment candidate is a RAW value that gets json_encode()'d verbatim at render
+     * time - it is never a bound-parameter placeholder token. These tests go through
+     * PredicateSet::jsonContains() (NOT direct predicate construction) specifically because
+     * that is the path that runs the predicate's values through addPredicate()'s
+     * isParameter()/getParameter() normalization loop. Values that loosely "look like" a
+     * placeholder to isParameter() - a boolean (any non-empty string == true), the literal
+     * '?', a '$N'-shaped string, or an array containing any of those - used to be silently
+     * rewritten into a dialect placeholder token before ever reaching render(), producing
+     * json_encode('?') instead of json_encode(true) and, on PostgreSQL, desyncing the
+     * parameter numbering of unrelated sibling predicates.
+     */
+    public function testJsonContainsBooleanCandidateIsNotTreatedAsParameter()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->jsonContains('data', '$.roles', true);
+        $this->assertEquals("(JSON_CONTAINS(`data`, 'true', '\$.roles'))", $predicateSet->render());
+    }
+
+    public function testJsonContainsQuestionMarkCandidateIsNotTreatedAsParameter()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->jsonContains('data', '$.roles', '?');
+        $this->assertEquals('(JSON_CONTAINS(`data`, \'\\"?\\"\', \'$.roles\'))', $predicateSet->render());
+    }
+
+    public function testJsonContainsDollarNumberCandidateIsNotTreatedAsParameter()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->jsonContains('data', '$.roles', '$1');
+        $this->assertEquals('(JSON_CONTAINS(`data`, \'\\"$1\\"\', \'$.roles\'))', $predicateSet->render());
+    }
+
+    public function testJsonContainsArrayCandidateIsNotTreatedAsParameter()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->jsonContains('data', '$.roles', [true, '?', 'admin']);
+        $this->assertEquals(
+            '(JSON_CONTAINS(`data`, \'[true,\\"?\\",\\"admin\\"]\', \'$.roles\'))', $predicateSet->render()
+        );
+    }
+
+    public function testJsonContainsNumericCandidate()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->jsonContains('data', '$.ids', 5);
+        $this->assertEquals("(JSON_CONTAINS(`data`, '5', '\$.ids'))", $predicateSet->render());
+    }
+
+    /**
+     * The corrupted-candidate bug also consumed a PostgreSQL parameter number (getParameter()
+     * calls incrementParameterCount()), which shifted the placeholder number of every
+     * subsequent predicate in the same set out of sync with the actually-bound parameter list.
+     * The sibling equalTo() below must therefore still render as $1, not $2.
+     */
+    public function testJsonContainsDoesNotConsumePgsqlParameterNumber()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+
+        $predicateSet = new PredicateSet($db->createSql());
+        $predicateSet->jsonContains('data', '$.roles', true);
+        $predicateSet->equalTo('id', '$1');
+
+        $this->assertEquals(
+            '((("data" #> \'{roles}\') @> \'true\'::jsonb) AND ("id" = $1))', $predicateSet->render()
+        );
+        $db->disconnect();
+    }
+
 }

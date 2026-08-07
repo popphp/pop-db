@@ -1995,7 +1995,8 @@ Columns that store JSON documents can be queried by path with `jsonExtract()`, a
 `jsonEqualTo()`/`jsonNotEqualTo()`/`jsonContains()` predicates.
 
 `jsonExtract($column, $path)` returns a dialect-specific expression object that can be used as a SELECT column
-(optionally aliased) or passed to `orderBy()`:
+(optionally aliased) or passed to `orderBy()`/`groupBy()` (either on its own or as an element of their array
+form):
 
 ```php
 $sql->select(['id', 'extracted_name' => $sql->jsonExtract('data', '$.name')])
@@ -2012,6 +2013,9 @@ SELECT `id`, JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) AS `extracted_name` FR
 ```php
 $sql->select()->from('users')
     ->orderBy($sql->jsonExtract('data', '$.name'));
+
+$sql->select()->from('users')
+    ->groupBy([$sql->jsonExtract('data', '$.name'), 'id']);
 ```
 
 `jsonEqualTo()`/`jsonNotEqualTo()` compare the value extracted at a path against a scalar:
@@ -2068,6 +2072,13 @@ Users::findBy(['data->$.roles' => ['CONTAINS', 'admin']]);      // jsonContains(
   supported dialect *except* PostgreSQL, where `jsonExtract()`/`jsonContains()` parse it internally into
   PostgreSQL's own path-segment array (`{name}`, `{address,city}`, `{tags,0}`) — callers always write the same
   `'$.path'` string regardless of which database is connected.
+* PostgreSQL's JSON extraction always yields `text`, and PostgreSQL will not implicitly compare `text` to a
+  number, so `jsonEqualTo()`/`jsonNotEqualTo()` render their comparison value as a quoted text literal on that
+  adapter (`"data"->>'n' = '5'`). Comparisons are therefore string comparisons on PostgreSQL — `5` and `5.0`
+  at the same path are not equal there.
+* The `jsonContains()` candidate is a raw PHP value that is JSON-encoded into the query verbatim (so `true`
+  becomes `true`, `'admin'` becomes `'"admin"'`); it is never treated as a bound-parameter placeholder, and a
+  value that cannot be encoded as JSON throws an exception.
 
 [Top](#pop-db)
 

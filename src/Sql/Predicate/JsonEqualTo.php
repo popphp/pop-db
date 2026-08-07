@@ -60,7 +60,9 @@ class JsonEqualTo extends AbstractPredicate
 
         $extract = $sql->jsonExtract($column, $path);
 
-        return '(' . str_replace(['%1', '%2'], [(string)$extract, self::renderValue($sql, $value)], $this->format) . ')';
+        return '(' . str_replace(
+            ['%1', '%2'], [(string)$extract, self::renderJsonValue($sql, $column, $value)], $this->format
+        ) . ')';
     }
 
 }

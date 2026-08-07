@@ -136,6 +136,48 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    /**
+     * The array form of orderBy() maps quoteId()/trim() over every element, which would wrap a
+     * JsonExtract's whole rendered expression in identifier quotes (or fail outright). It has to
+     * embed the expression verbatim, exactly as the scalar form already does, while still
+     * quoting the plain column names alongside it.
+     */
+    public function testJsonExtractInOrderByArray()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users');
+        $sql->select()->orderBy([$sql->jsonExtract('data', '$.name'), 'id']);
+        $this->assertEquals(
+            "SELECT * FROM `users` ORDER BY JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')), `id` ASC",
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testJsonExtractInGroupBy()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['total' => 'COUNT(1)'])->from('users');
+        $sql->select()->groupBy($sql->jsonExtract('data', '$.name'));
+        $this->assertEquals(
+            "SELECT COUNT(1) AS `total` FROM `users` GROUP BY JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name'))",
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testJsonExtractInGroupByArray()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['total' => 'COUNT(1)'])->from('users');
+        $sql->select()->groupBy([$sql->jsonExtract('data', '$.name'), 'id']);
+        $this->assertEquals(
+            "SELECT COUNT(1) AS `total` FROM `users` GROUP BY JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')), `id`",
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
     public function testJoin()
     {
         $sql = $this->db->createSql();
@@ -631,6 +673,89 @@ class SelectTest extends TestCase
         $this->assertNotContains(2, $ids);
 
         $db->query('DROP TABLE "json_contains_live_test_pg"');
+        $db->disconnect();
+    }
+
+    /**
+     * PostgreSQL's '->>' extraction yields text and PostgreSQL will not implicitly compare text
+     * to a number, so a numeric comparison value used to abort the whole query at execution time
+     * with "operator does not exist: text = integer". Only a live run proves it now executes -
+     * the rendered string alone cannot show a runtime type error.
+     */
+    public function testJsonEqualToNumericValueLiveExecutionPgsql()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+
+        $db->query('DROP TABLE IF EXISTS "json_equal_num_live_test_pg"');
+        $db->query(
+            'CREATE TABLE "json_equal_num_live_test_pg" ("id" INT NOT NULL, "data" JSONB, PRIMARY KEY ("id"))'
+        );
+
+        // Rows 1 and 3 carry n == 5, row 2 carries n == 7, so a comparison that silently matched
+        // everything (or nothing) would provably diverge from the {1, 3} result asserted below.
+        $db->query(
+            'INSERT INTO "json_equal_num_live_test_pg" ("id", "data") VALUES ' .
+            '(1, \'{"n": 5}\'), (2, \'{"n": 7}\'), (3, \'{"n": 5}\')'
+        );
+
+        $sql = $db->createSql();
+        $sql->select()->from('json_equal_num_live_test_pg');
+        $sql->select()->where->jsonEqualTo('data', '$.n', 5);
+
+        $db->query((string)$sql);
+        $rows = $db->fetchAll();
+        $ids  = array_column($rows, 'id');
+        sort($ids);
+
+        $this->assertEquals([1, 3], $ids);
+        $this->assertNotContains(2, $ids);
+
+        $db->query('DROP TABLE "json_equal_num_live_test_pg"');
+        $db->disconnect();
+    }
+
+    /**
+     * The containment candidate must survive PredicateSet::addPredicate()'s parameter
+     * normalization untouched and actually match rows on a live server - a candidate rewritten
+     * into a placeholder token renders as '"$1"'::jsonb, which matches nothing, ever.
+     */
+    public function testJsonContainsBooleanCandidateLiveExecutionPgsql()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+
+        $db->query('DROP TABLE IF EXISTS "json_contains_bool_live_test_pg"');
+        $db->query(
+            'CREATE TABLE "json_contains_bool_live_test_pg" ("id" INT NOT NULL, "data" JSONB, PRIMARY KEY ("id"))'
+        );
+
+        $db->query(
+            'INSERT INTO "json_contains_bool_live_test_pg" ("id", "data") VALUES ' .
+            '(1, \'{"flags": [true, false]}\'), (2, \'{"flags": [false]}\'), (3, \'{"flags": [true]}\')'
+        );
+
+        $sql = $db->createSql();
+        $sql->select()->from('json_contains_bool_live_test_pg');
+        $sql->select()->where->jsonContains('data', '$.flags', true);
+
+        $db->query((string)$sql);
+        $rows = $db->fetchAll();
+        $ids  = array_column($rows, 'id');
+        sort($ids);
+
+        $this->assertEquals([1, 3], $ids);
+        $this->assertNotContains(2, $ids);
+
+        $db->query('DROP TABLE "json_contains_bool_live_test_pg"');
         $db->disconnect();
     }
 

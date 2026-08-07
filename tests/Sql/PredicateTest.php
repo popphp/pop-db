@@ -330,6 +330,85 @@ class PredicateTest extends TestCase
         );
     }
 
+    /**
+     * PostgreSQL's extraction operators ('->>' / '#>>') always return text, and PostgreSQL has
+     * no implicit text-to-number comparison, so a bare numeric literal on the right-hand side
+     * fails at execution time with "operator does not exist: text = integer". The value must
+     * therefore render as a quoted text literal on PostgreSQL. MySQL/SQLite compare loosely and
+     * keep their existing bare-literal rendering.
+     */
+    public function testJsonEqualToPgsqlNumericValueRendersAsText()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonEqualTo(['data', '$.n', 5]);
+        $this->assertEquals('("data"->>\'n\' = \'5\')', $predicate->render($db->createSql()));
+        $db->disconnect();
+    }
+
+    public function testJsonNotEqualToPgsqlNumericValueRendersAsText()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonNotEqualTo(['data', '$.n', 5]);
+        $this->assertEquals('("data"->>\'n\' != \'5\')', $predicate->render($db->createSql()));
+        $db->disconnect();
+    }
+
+    /**
+     * A '$N' placeholder token is a bound parameter, not a literal, and must never be
+     * force-quoted into a string literal by the text-comparison handling above.
+     */
+    public function testJsonEqualToPgsqlPlaceholderValueIsNotQuoted()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonEqualTo(['data', '$.n', '$1']);
+        $this->assertEquals('("data"->>\'n\' = $1)', $predicate->render($db->createSql()));
+        $db->disconnect();
+    }
+
+    /**
+     * A Select used as the comparison value must still route through renderValue()'s subquery
+     * embedding, never be force-quoted as if it were a scalar.
+     */
+    public function testJsonEqualToPgsqlSubqueryValueStillEmbeds()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $subquery = $db->createSql()->select('name')->from('users');
+        $predicate = new Predicate\JsonEqualTo(['data', '$.name', $subquery]);
+        $this->assertEquals(
+            '("data"->>\'name\' = (SELECT "name" FROM "users"))', $predicate->render($db->createSql())
+        );
+        $db->disconnect();
+    }
+
+    public function testJsonEqualToMysqlNumericValueIsUnchanged()
+    {
+        $predicate = new Predicate\JsonEqualTo(['data', '$.n', 5]);
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '\$.n')) = 5)",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
     public function testJsonContainsMysql()
     {
         // The JSON-encoded candidate value is passed through the adapter's escape() routine
@@ -379,6 +458,31 @@ class PredicateTest extends TestCase
         $this->expectException('Pop\Db\Sql\Predicate\Exception');
         $predicate = new Predicate\JsonContains(['data', '$.roles']);
         $predicate->render($this->db->createSql());
+    }
+
+    /**
+     * json_encode() returns false for values it cannot encode (e.g. an invalid-UTF-8 string).
+     * Passing that false straight into quote()'s ?string parameter would coerce it to an empty
+     * string and emit an empty candidate literal, which the database then rejects with a
+     * confusing JSON syntax error. Fail up front with a message naming the real problem.
+     */
+    public function testJsonContainsUnencodableValueException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonContains(['data', '$.roles', "\xB1\x31"]);
+        $predicate->render($this->db->createSql());
+    }
+
+    /**
+     * The raw candidate value is held on its own property, not in the values array, so that
+     * PredicateSet::addPredicate()'s parameter-normalization loop can never rewrite it.
+     */
+    public function testJsonContainsCandidateIsHeldSeparatelyFromValues()
+    {
+        $predicate = new Predicate\JsonContains(['data', '$.roles', true]);
+        $this->assertEquals(['data', '$.roles'], $predicate->getValues());
+        $this->assertTrue($predicate->hasCandidate());
+        $this->assertTrue($predicate->getCandidate());
     }
 
     /**

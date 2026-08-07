@@ -339,6 +339,21 @@ class Select extends AbstractPredicateClause
     }
 
     /**
+     * Quote a single GROUP BY / ORDER BY column
+     *
+     * A JsonExtract value object already carries its own fully-rendered, dialect-specific
+     * extraction SQL, so it is embedded verbatim - passing it through trim()/quoteId() would
+     * either error or wrap the whole expression in identifier quotes, producing invalid SQL.
+     *
+     * @param  mixed $column
+     * @return string
+     */
+    protected function quoteByColumn(mixed $column): string
+    {
+        return ($column instanceof JsonExtract) ? (string)$column : $this->quoteId(trim($column));
+    }
+
+    /**
      * Set the GROUP BY value
      *
      * @param mixed $by
@@ -346,8 +361,10 @@ class Select extends AbstractPredicateClause
      */
     public function groupBy(mixed $by): Select
     {
-        if (is_array($by)) {
-            $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
+        if ($by instanceof JsonExtract) {
+            $this->groupBy = (string)$by;
+        } else if (is_array($by)) {
+            $this->groupBy = implode(', ', array_map([$this, 'quoteByColumn'], $by));
         } else if (str_contains($by, ',')) {
             $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
@@ -372,7 +389,7 @@ class Select extends AbstractPredicateClause
         if ($by instanceof JsonExtract) {
             $byColumns = (string)$by;
         } else if (is_array($by)) {
-            $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
+            $byColumns = implode(', ', array_map([$this, 'quoteByColumn'], $by));
         } else if (str_contains($by, ',')) {
             $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {

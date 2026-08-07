@@ -163,6 +163,40 @@ abstract class AbstractPredicate
     }
 
     /**
+     * Render a JSON path comparison value
+     *
+     * PostgreSQL's JSON extraction operators ('->>' / '#>>') always return text, and PostgreSQL
+     * has no implicit text-to-number comparison: a bare numeric literal on the right-hand side
+     * fails at execution time with "operator does not exist: text = integer". So on PostgreSQL a
+     * plain scalar value is forced to a quoted text literal, which compares correctly against the
+     * extracted text. Two cases must NOT be force-quoted and are handed to renderValue()
+     * unchanged: a nested Sql instance (which embeds as a parenthesized subquery), and a bound
+     * parameter placeholder token (which the database binds as text anyway).
+     *
+     * @param  AbstractSql $sql
+     * @param  ?string     $column
+     * @param  mixed       $value
+     * @throws Exception
+     * @return string
+     */
+    protected static function renderJsonValue(AbstractSql $sql, ?string $column, mixed $value): string
+    {
+        if (($value instanceof AbstractSql) || !$sql->isPgsql() || $sql->isParameter($value, $column)) {
+            return static::renderValue($sql, $value);
+        }
+
+        $quoted = (string)$sql->quote((string)$value, true);
+
+        // quote()'s forced branch still leaves an all-digit string unquoted, which is exactly the
+        // case that breaks on PostgreSQL, so wrap it. Digits need no escaping.
+        if (!str_starts_with($quoted, "'")) {
+            $quoted = "'" . $quoted . "'";
+        }
+
+        return $quoted;
+    }
+
+    /**
      * Render the predicate string
      *
      * @param  AbstractSql $sql
