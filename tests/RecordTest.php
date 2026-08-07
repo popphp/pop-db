@@ -392,6 +392,60 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindByNewShorthandSyntax()
+    {
+        $user = new Users([
+            'username' => 'newsyntaxuser',
+            'password' => 'password',
+            'email'    => 'newsyntax@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        $found = Users::findBy(['logins' => ['>=', 40]]);
+        $this->assertGreaterThanOrEqual(1, $found->count());
+        $this->assertEquals('newsyntaxuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrGroupSyntax()
+    {
+        $user = new Users([
+            'username' => 'orgroupuser',
+            'password' => 'password',
+            'email'    => 'orgroup@test.com',
+            'logins'   => 0
+        ]);
+        $user->save();
+
+        $found = Users::findBy([
+            'username' => ['=', 'orgroupuser'],
+            'OR' => [
+                ['logins' => ['>=', 999]],
+                ['email' => ['=', 'orgroup@test.com']],
+            ],
+        ]);
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('orgroupuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
+    public function testFindByLegacySyntaxStillWorks()
+    {
+        $user = new Users([
+            'username' => 'legacyuser',
+            'password' => 'password',
+            'email'    => 'legacy@test.com',
+            'logins'   => 7
+        ]);
+        $user->save();
+
+        $found = @Users::findBy(['logins>=' => 7, 'username' => 'legacyuser']);
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('legacyuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
     public function testFindIn()
     {
 
@@ -1043,6 +1097,68 @@ class RecordTest extends TestCase
 
         $users = Users::findWhereNotLike('username', '%baduser');
         $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('users');
+        $schema->execute();
+
+        $this->db->disconnect();
+    }
+
+    public function testFindWhereConditionsDoNotTriggerDeprecation()
+    {
+        $user = new Users([
+            'username' => 'testuser25',
+            'password' => 'password25',
+            'email'    => 'testuser25@test.com',
+            'logins'   => 1
+        ]);
+        $user->save();
+
+        $deprecations = [];
+        set_error_handler(function ($errno, $errstr) use (&$deprecations) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecations[] = $errstr;
+            }
+            return true;
+        });
+
+        try {
+            $results = [
+                'GreaterThan'        => Users::findWhereGreaterThan('logins', 0),
+                'GreaterThanOrEqual' => Users::findWhereGreaterThanOrEqual('logins', 1),
+                'LessThan'           => Users::findWhereLessThan('logins', 2),
+                'LessThanOrEqual'    => Users::findWhereLessThanOrEqual('logins', 1),
+                'Equals'             => Users::findWhereEquals('logins', 1),
+                'NotEquals'          => Users::findWhereNotEquals('logins', -1),
+                'In'                 => Users::findWhereIn('logins', [1]),
+                'NotIn'              => Users::findWhereNotIn('logins', [10000000]),
+                'NotNull'            => Users::findWhereNotNull('logins'),
+                'Between'            => Users::findWhereBetween('logins', '(0, 10)'),
+                'NotBetween'         => Users::findWhereNotBetween('logins', '(1000000, 1000010)'),
+                'Like'               => Users::findWhereLike('username', 'testuser%'),
+                'LikeLeading'        => Users::findWhereLike('username', '%testuser25'),
+                'NotLike'            => Users::findWhereNotLike('username', 'baduser%'),
+                'NotLikeLeading'     => Users::findWhereNotLike('username', '%baduser'),
+            ];
+            $null = Users::findWhereNull('logins');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertEmpty(
+            $deprecations,
+            "findWhereX() must not emit deprecations from pop-db's own internals: " . implode(' | ', $deprecations)
+        );
+
+        foreach ($results as $condition => $collection) {
+            $this->assertGreaterThanOrEqual(1, $collection->count(), $condition . ' returned no rows');
+        }
+        $this->assertEquals(0, $null->count());
+
+        // BETWEEN/NOT BETWEEN also accept an unambiguous 2-element array
+        $this->assertGreaterThanOrEqual(1, Users::findWhereBetween('logins', [0, 10])->count());
+        $this->assertGreaterThanOrEqual(1, Users::findWhereNotBetween('logins', [1000000, 1000010])->count());
 
         $schema = $this->db->createSchema();
         $schema->dropIfExists('users');

@@ -8,3 +8,4 @@ kettle
 CLAUDE.md
 /docs
 /.env
+phpunit.local.xml

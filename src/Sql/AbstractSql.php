@@ -343,8 +343,6 @@ abstract class AbstractSql
             $detectedDbType = self::MYSQL;
         }
 
-        $this->incrementParameterCount();
-
         // If the parameter is given in a different format than what the db expects, translate it
         $realDbType = $this->dbType;
         if ($this->placeholder == ':') {
@@ -359,6 +357,7 @@ abstract class AbstractSql
                     $parameter = '?';
                     break;
                 case self::PGSQL:
+                    $this->incrementParameterCount();
                     $parameter = '$' . $this->parameterCount;
                     break;
                 case self::SQLITE:

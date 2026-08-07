@@ -51,28 +51,28 @@ class Expression
         $operator = null;
         $value    = null;
 
-        if (stripos($expression, ' NULL') !== false) {
+        if (Keyword::indexOf($expression, ' NULL') !== false) {
             $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
-            $operator = (stripos($expression, ' IS NOT NULL') !== false) ? 'IS NOT NULL' : 'IS NULL';
-        } else if (stripos($expression, ' IN ') !== false) {
+            $operator = (Keyword::indexOf($expression, ' IS NOT NULL') !== false) ? 'IS NOT NULL' : 'IS NULL';
+        } else if (Keyword::indexOf($expression, ' IN ') !== false) {
             $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
-            $operator = (stripos($expression, ' NOT IN ') !== false) ? 'NOT IN' : 'IN';
+            $operator = (Keyword::indexOf($expression, ' NOT IN ') !== false) ? 'NOT IN' : 'IN';
             $values   = substr($expression, (strpos($expression, '(') + 1));
             $values   = substr($values, 0, strpos($values, ')'));
             $values   = array_map(function($value) {
                 return \Pop\Db\Sql\Parser\Expression::stripQuotes(trim($value));
             }, explode(',', $values));
             $value    = $values;
-        } else if (stripos($expression, ' BETWEEN ') !== false) {
+        } else if (Keyword::indexOf($expression, ' BETWEEN ') !== false) {
             $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
-            $operator = (stripos($expression, ' NOT BETWEEN ') !== false) ? 'NOT BETWEEN' : 'BETWEEN';
+            $operator = (Keyword::indexOf($expression, ' NOT BETWEEN ') !== false) ? 'NOT BETWEEN' : 'BETWEEN';
             $value1   = substr($expression, (strpos($expression, 'BETWEEN ') + 8));
             $value1   = trim(substr($value1, 0, strpos($value1, ' AND ')));
             $value2   = trim(substr($expression, (stripos($expression, ' AND ') + 5)));
             $value    = '(' . self::stripQuotes($value1) . ' AND ' .  self::stripQuotes($value2) . ')';
-        } else if (stripos($expression, ' LIKE ') !== false) {
+        } else if (Keyword::indexOf($expression, ' LIKE ') !== false) {
             $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
-            $operator = (stripos($expression, ' NOT LIKE ') !== false) ? 'NOT LIKE' : 'LIKE';
+            $operator = (Keyword::indexOf($expression, ' NOT LIKE ') !== false) ? 'NOT LIKE' : 'LIKE';
             $value    = self::stripQuotes(trim(substr($expression, (stripos($expression, ' LIKE ') + 6))));
         } else {
             $column   = substr($expression, 0, strpos($expression, ' '));

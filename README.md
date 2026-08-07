@@ -652,6 +652,10 @@ based on certain conditions:
 - `findWhereNull($column, array $options = null, bool $asArray = false)`
 - `findWhereNotNull($column, array $options = null, bool $asArray = false)`
 
+These build structured shorthand internally, so none of them emit a deprecation notice.
+`findWhereBetween()`/`findWhereNotBetween()` accept either the packed string form
+(`'(1, 5)'`) or an unambiguous 2-element array (`[1, 5]`).
+
 #### Modify a record
 
 Once a record has been fetched, you can then modify it and save it:
@@ -1017,6 +1021,46 @@ to that part of the predicate like this:
 ```sql
 WHERE (id > 1) OR (username LIKE '%test')
 ```
+
+#### Structured Shorthand (Recommended)
+
+As of v7, shorthand conditions can also be expressed with an explicit operator, avoiding any ambiguity between
+column names and operator suffixes:
+
+```php
+$users = Users::findBy([
+    'age'        => ['>=', 18],
+    'status'     => ['!=', 'inactive'],
+    'name'       => ['LIKE', '%smith%'],
+    'created_at' => ['BETWEEN', '2024-01-01', '2024-12-31'],
+    'role'       => ['IN', ['admin', 'editor']],
+    'deleted_at' => ['IS NULL'],
+]);
+```
+
+Plain equality (`'age' => 18`) is unchanged. `OR`/`AND` grouping is supported via reserved keys:
+
+```php
+$users = Users::findBy([
+    'status' => 'active',
+    'OR' => [
+        ['role' => 'admin'],
+        ['age'  => ['>=', 65]],
+    ],
+]);
+// WHERE status = 'active' AND (role = 'admin' OR age >= 65)
+```
+
+An operator given the wrong number of values throws a `Pop\Db\Sql\Parser\Exception` immediately rather than
+silently rendering something unintended — including `IN`/`NOT IN` given an empty array.
+
+The older shorthand shapes shown above still work but are **deprecated** and will be removed in the next major
+version — they trigger an `E_USER_DEPRECATED` notice. That covers the suffixed keys (`'age>=' => 18`,
+`'%username' => 'test'`, `'username-' => null`, …), the array-valued IN form (`'id' => [2, 3]`) and the packed
+BETWEEN form (`'id' => '(1, 5)'`). New code should use the structured format.
+
+Plain equality (`'id' => 1`) and a bare key with a `null` value (`'id' => null`, meaning `id IS NULL`) are **not**
+deprecated — they are first-class structured shorthand and can also be used inside `OR`/`AND` groups.
 
 [Top](#pop-db)
 
