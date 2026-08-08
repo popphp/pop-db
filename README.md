@@ -87,7 +87,7 @@ Install `pop-db` using Composer.
 Or, require it in your composer.json file
 
     "require": {
-        "popphp/pop-db" : "^6.8.0"
+        "popphp/pop-db" : "^7.0.0"
     }
 
 [Top](#pop-db)
