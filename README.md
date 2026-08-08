@@ -658,7 +658,11 @@ $user->isFillable('role'); // false, if 'role' is guarded or not in $fillable
 guard single-property assignment (`$user->role = 'admin'` still works regardless of `$guarded`), nor
 does it apply to `Gateway\Table`'s raw `insert()`/`update()` methods, nor to row hydration from the
 database (`findById()`, `findOne()`, `findAll()`, etc. always populate every real column, since that
-data is trusted and DB-sourced, not user-supplied).
+data is trusted and DB-sourced, not user-supplied). The same applies to `replicate()`/`copy()` and to
+the new-record path of `findOneOrCreate()`/`findByOrCreate()` - all three build the new record from data
+this codebase already fetched or was explicitly given (a copy of an existing row, or the very search
+criteria you just called them with), not from raw external input, so `$fillable`/`$guarded` don't apply there
+either.
 
 #### Fetch a record
 
@@ -685,6 +689,19 @@ $user = Users::findOneOrCreate(['username' => 'testuser']);
 $user = Users::findLatest();
 ```
 
+Anywhere `$columns` is accepted (`findOne()`, `findBy()`, `findOneOrCreate()`, `findByOrCreate()`, etc.), a
+`Sql\PredicateSet` built with `predicate()` works the same as a plain array. This is useful when the search
+criteria need more than simple equality (e.g. a `LIKE`, a range, or an `OR`). When `findOneOrCreate()`/
+`findByOrCreate()` don't find a match, the new record is built from the `PredicateSet`'s own equality
+predicates - so a `PredicateSet` used for find-or-create should stick to `equalTo()` conditions, the same way
+the array form only makes sense with plain `column => value` pairs:
+
+```php
+$criteria = Users::predicate()->equalTo('username', 'testuser')->equalTo('email', 'testuser@test.com');
+
+$user = Users::findOneOrCreate($criteria); // creates ['username' => 'testuser', 'email' => 'testuser@test.com'] if not found
+```
+
 By default, `findLatest()` will use the primary key, like `id`. However, you can pass it another field
 to sort by:
 
@@ -695,15 +712,16 @@ $user = Users::findLatest('last_login');
 
 #### Find API
 
-These are available static methods to find a record or records in the database table:
+These are available static methods to find a record or records in the database table. Every `$columns`
+parameter below accepts either a plain array or a `Sql\PredicateSet` (see above):
 
 - `findById($id, array $options = null, bool $asArray = false)`
-- `findOne(array $columns = null, array $options = null, bool $asArray = false)`
-- `findOneOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
-- `findLatest($by = null, array $columns = null, array $options = null, bool $asArray = false)`
-- `findBy(array $columns = null, array $options = null, bool $asArray = false)`
-- `findByOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
-- `findIn($key, array $values, array $columns = null, array $options = null, bool $asArray = false)`
+- `findOne(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findOneOrCreate(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findLatest($by = null, array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findBy(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findByOrCreate(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findIn($key, array $values, array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
 - `findAll(array $options = null, bool $asArray = false)`
 
 These are available static magic helper methods to find a record or records in the database table,
@@ -1439,11 +1457,23 @@ Array
 ```php
 // The 1:many relationship
 $user   = Users::findById(1);
-$orders = $users->orders();
+$orders = $user->orders();
 
 foreach ($orders as $order) {
     echo 'Order Total: $' . $order->order_total . PHP_EOL;
 }
+```
+
+Chaining `->latest()` or `->oldest()` before a `hasMany()` relationship method collapses the result down to a
+single record - the most (or least) recent one, ordered by a column you choose (defaults to `id`):
+
+```php
+$user = Users::findById(1);
+
+$newestOrder = $user->latest()->orders();       // single Orders record, ordered by id DESC
+$oldestOrder = $user->oldest('order_date')->orders(); // single Orders record, ordered by order_date ASC
+
+echo 'Most recent order total: $' . $newestOrder->order_total;
 ```
 
 ```php
