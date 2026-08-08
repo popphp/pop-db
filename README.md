@@ -1457,7 +1457,7 @@ Array
 ```php
 // The 1:many relationship
 $user   = Users::findById(1);
-$orders = $users->orders();
+$orders = $user->orders();
 
 foreach ($orders as $order) {
     echo 'Order Total: $' . $order->order_total . PHP_EOL;
