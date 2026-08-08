@@ -718,6 +718,50 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testLatestReturnsSingleMostRecentChild()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        $child1 = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child1->save();
+        $child2 = new DlChild(['parent_id' => $parent->id, 'name' => 'C2']);
+        $child2->save();
+        $child3 = new DlChild(['parent_id' => $parent->id, 'name' => 'C3']);
+        $child3->save();
+
+        $found  = DlParent::findById($parent->id);
+        $latest = $found->latest()->children();
+
+        $this->assertInstanceOf(DlChild::class, $latest);
+        $this->assertEquals('C3', $latest->name);
+        $this->assertEquals($child3->id, $latest->id);
+
+        $this->db->disconnect();
+    }
+
+    public function testOldestReturnsSingleEarliestChild()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        $child1 = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child1->save();
+        $child2 = new DlChild(['parent_id' => $parent->id, 'name' => 'C2']);
+        $child2->save();
+        $child3 = new DlChild(['parent_id' => $parent->id, 'name' => 'C3']);
+        $child3->save();
+
+        $found  = DlParent::findById($parent->id);
+        $oldest = $found->oldest()->children();
+
+        $this->assertInstanceOf(DlChild::class, $oldest);
+        $this->assertEquals('C1', $oldest->name);
+        $this->assertEquals($child1->id, $oldest->id);
+
+        $this->db->disconnect();
+    }
+
     /**
      * Final cleanup: setUp() re-creates the dl_* tables before every test, so this drops them
      * once the suite is done rather than leaving them behind in the test database. Follows the

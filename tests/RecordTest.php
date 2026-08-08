@@ -652,6 +652,70 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testSaveRollsBackTransactionOnException()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = \Pop\Db\Test\TestAsset\HookedUsers::start([
+            'username' => 'txrollback1',
+            'password' => 'password1',
+            'email'    => 'txrollback1@test.com'
+        ]);
+        $user->throwInAfterInsert = true;
+
+        $caught = false;
+
+        try {
+            $user->save();
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
+        }
+
+        $this->assertTrue($caught, 'Expected save() to throw.');
+        $this->assertFalse($user->isTransaction());
+
+        // The INSERT ran inside an active transaction, so the thrown afterInsert() hook's
+        // rollbackTransaction() call must have genuinely undone it in the database - unlike
+        // the no-transaction case (testAfterInsertThrowLeavesRecordPersisted), where the
+        // same INSERT stays committed because there was no transaction to roll back.
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'txrollback1']);
+        $this->assertTrue(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testDeleteRollsBackTransactionOnException()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'txrollback2',
+            'password' => 'password2',
+            'email'    => 'txrollback2@test.com'
+        ]);
+        $user->save();
+
+        $user->startTransaction();
+        $user->throwInAfterDelete = true;
+
+        $caught = false;
+
+        try {
+            $user->delete();
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
+        }
+
+        $this->assertTrue($caught, 'Expected delete() to throw.');
+        $this->assertFalse($user->isTransaction());
+
+        // The DELETE ran inside an active transaction, so the thrown afterDelete() hook's
+        // rollbackTransaction() call must have genuinely undone it - the row must still exist,
+        // unlike the no-transaction afterDelete-throw case covered elsewhere in this file.
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'txrollback2']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
     public function testUndeclaredHooksAreNoOpsByDefault()
     {
         $user = new Users([
@@ -835,6 +899,28 @@ class RecordTest extends TestCase
         $this->assertEquals('testuser2', $user->username);
         $this->assertEquals('password2', $user->password);
         $this->assertEquals('testuser2@test.com', $user->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindOneOrCreateWithPredicateSetExtractsValuesForNewRecord()
+    {
+        $predicateSet = Users::predicate()
+            ->equalTo('username', 'predicatecreate1')
+            ->equalTo('password', 'predicatepassword1')
+            ->equalTo('email', 'predicatecreate1@test.com');
+
+        $user = Users::findOne($predicateSet);
+        $this->assertFalse(isset($user->id));
+
+        // findOneOrCreate() with no matching row must fall through the
+        // PredicateSet::extractValues() branch (columns instanceof PredicateSet) to build the
+        // new record from the search criteria, exactly as the plain-array form does.
+        $user = Users::findOneOrCreate($predicateSet);
+
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('predicatecreate1', $user->username);
+        $this->assertEquals('predicatepassword1', $user->password);
+        $this->assertEquals('predicatecreate1@test.com', $user->email);
         $this->db->disconnect();
     }
 
@@ -1078,6 +1164,28 @@ class RecordTest extends TestCase
         $this->assertEquals('testuser6', $user[0]->username);
         $this->assertEquals('password6', $user[0]->password);
         $this->assertEquals('testuser6@test.com', $user[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrCreateWithPredicateSetExtractsValuesForNewRecord()
+    {
+        $predicateSet = Users::predicate()
+            ->equalTo('username', 'predicatecreate2')
+            ->equalTo('password', 'predicatepassword2')
+            ->equalTo('email', 'predicatecreate2@test.com');
+
+        $user = Users::findBy($predicateSet);
+        $this->assertEquals(0, $user->count());
+
+        // findByOrCreate() with no matching rows must fall through the
+        // PredicateSet::extractValues() branch (columns instanceof PredicateSet) to build the
+        // new record from the search criteria, exactly as the plain-array form does.
+        $user = Users::findByOrCreate($predicateSet);
+
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('predicatecreate2', $user->username);
+        $this->assertEquals('predicatepassword2', $user->password);
+        $this->assertEquals('predicatecreate2@test.com', $user->email);
         $this->db->disconnect();
     }
 
