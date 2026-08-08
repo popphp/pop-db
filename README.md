@@ -61,7 +61,7 @@ and functionality to easily interface with databases. Those features include:
 * Database Adapters
   - MySQL
   - PostgreSQL
-  - Sqlite
+  - SQLite
   - PDO
   - SQL Server
 * ORM-style concepts
@@ -429,7 +429,7 @@ The supported options to create a SQLite database adapter and connect with a SQL
 - `key`
 
 ```php
-$db = Db::mysqlConnect([
+$db = Db::sqliteConnect([
     'database' => '/path/to/my_database.sqlite',
 ]);
 ```
@@ -481,7 +481,7 @@ The supported options to create a PDO database adapter and connect with a PDO-su
 
 ```php
 $db = Db::pdoConnect([
-    'type'     => 'mysql'
+    'type'     => 'mysql',
     'database' => 'DATABASE',
     'username' => 'DB_USER',
     'password' => 'DB_PASS'
@@ -830,7 +830,7 @@ $user->username = 'newusername';
 $user->email    = 'newemail@test.com';
 
 if ($user->isDirty()) {
-    print_r($user->getDirty);
+    print_r($user->getDirty());
 }
 ```
 
@@ -870,7 +870,7 @@ The benefit of this class is that it handles the encoding and decoding for you. 
 would configure your class like this below, defining the fields that need to be encoded/decoded:
 
 ```php
-use Pop\Db\Record\Encoded
+use Pop\Db\Record\Encoded;
 
 class Users extends Encoded
 {
@@ -890,7 +890,7 @@ original decoded data.
 Using a password hash field would be an advanced example that would require more configuration:
 
 ```php
-use Pop\Db\Record\Encoded
+use Pop\Db\Record\Encoded;
 
 class Users extends Encoded
 {
@@ -925,7 +925,7 @@ Open SSL library extension. It requires a few more table properties to be config
 The encryption properties can be stored within the class directly:
 
 ```php
-use Pop\Db\Record\Encoded
+use Pop\Db\Record\Encoded;
 
 class Users extends Encoded
 {
@@ -1045,7 +1045,7 @@ The `join` option allows you to define multiple tables to use in a JOIN query.
 $users = Users::findBy(['logins' => 0], [
     'select' => ['id', 'username'],
     'order'  => ['id DESC'],
-    'offset' => 10
+    'offset' => 10,
     'limit'  => 25
 ]);
 ```
@@ -1341,7 +1341,7 @@ being leveraged here from within the `Pop\Db\Record` class are:
 * `hasOne()`
     - 1:1 relationship where a foreign key in the child object is a primary key in the parent object
 * `hasMany()`
-    - 1:1 relationship where a foreign key in many child objects is a primary key in the parent object
+    - 1:many relationship where a foreign key in many child objects is a primary key in the parent object
 * `belongsTo()`
     - 1:1 relationship where a foreign key in the child object is a primary key in the parent object (inverse "hasOne")
 
@@ -1369,7 +1369,7 @@ class Users extends Pop\Db\Record
     // Define the 1:1 relationship of the info record this user owns
     public function info()
     {
-        return $this->hasOne('Info', 'user_id')
+        return $this->hasOne('Info', 'user_id');
     }
 
     // Define the 1:many relationship to all the orders this user owns
@@ -1500,7 +1500,7 @@ relationship methods are called. However, you can call those relationship method
 the primary record using the static `with()` method:
 
 ```php
-$users = Users::with('orders')->getById(1);
+$user = Users::with('orders')->getById(1);
 foreach ($user->orders as $order) {
     echo 'Order Total: $' . $order->order_total . PHP_EOL;
 }
@@ -1509,7 +1509,7 @@ foreach ($user->orders as $order) {
 Multiple relationships can be passed as well:
 
 ```php
-$users = Users::with(['role', 'info', 'orders'])->getById(1);
+$user = Users::with(['role', 'info', 'orders'])->getById(1);
 ```
 
 And nested relationships are supported too. Assume there is a `Posts` class and a `Comments` class.
@@ -1960,7 +1960,7 @@ Here's the available API for joins:
 * `$sql->leftOuterJoin($foreignTable, array $columns);` -  Left outer join
 * `$sql->rightOuterJoin($foreignTable, array $columns);` -  Right outer join
 * `$sql->fullOuterJoin($foreignTable, array $columns);` -  Full outer join
-* `$sql->innerJoin($foreignTable, array $columns);` -  Outer join
+* `$sql->innerJoin($foreignTable, array $columns);` -  Inner join
 * `$sql->leftInnerJoin($foreignTable, array $columns);` -  Left inner join
 * `$sql->rightInnerJoin($foreignTable, array $columns);` -  Right inner join
 * `$sql->fullInnerJoin($foreignTable, array $columns);` -  Full inner join
