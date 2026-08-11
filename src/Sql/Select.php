@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 class Select extends AbstractPredicateClause
 {
@@ -264,17 +264,17 @@ class Select extends AbstractPredicateClause
 
         if ($having !== null) {
             if (is_string($having)) {
-                if ((stripos($having, ' AND ') !== false) || (stripos($having, ' OR ') !== false)) {
-                    $expressions = array_map('trim', preg_split(
-                        '/(AND|OR)/', $having, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
-                    ));
-                    foreach ($expressions as $i => $expression) {
-                        if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
-                            $this->having->and($expression);
-                        } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
-                            $this->having->or($expression);
-                        } else if (($expression != 'AND') && ($expression != 'OR')) {
-                            $this->having->add($expression);
+                $tokens = Parser\Keyword::split($having);
+                if (count($tokens) > 1) {
+                    foreach ($tokens as $i => $token) {
+                        if (($i > 0) && (($tokens[$i - 1] === 'AND') || ($tokens[$i - 1] === 'OR'))) {
+                            if ($tokens[$i - 1] === 'AND') {
+                                $this->having->and($token);
+                            } else {
+                                $this->having->or($token);
+                            }
+                        } else if (($token !== 'AND') && ($token !== 'OR')) {
+                            $this->having->add($token);
                         }
                     }
                 } else {
@@ -339,6 +339,21 @@ class Select extends AbstractPredicateClause
     }
 
     /**
+     * Quote a single GROUP BY / ORDER BY column
+     *
+     * A JsonExtract value object already carries its own fully-rendered, dialect-specific
+     * extraction SQL, so it is embedded verbatim - passing it through trim()/quoteId() would
+     * either error or wrap the whole expression in identifier quotes, producing invalid SQL.
+     *
+     * @param  mixed $column
+     * @return string
+     */
+    protected function quoteByColumn(mixed $column): string
+    {
+        return ($column instanceof JsonExtract) ? (string)$column : $this->quoteId(trim($column));
+    }
+
+    /**
      * Set the GROUP BY value
      *
      * @param mixed $by
@@ -346,8 +361,10 @@ class Select extends AbstractPredicateClause
      */
     public function groupBy(mixed $by): Select
     {
-        if (is_array($by)) {
-            $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
+        if ($by instanceof JsonExtract) {
+            $this->groupBy = (string)$by;
+        } else if (is_array($by)) {
+            $this->groupBy = implode(', ', array_map([$this, 'quoteByColumn'], $by));
         } else if (str_contains($by, ',')) {
             $this->groupBy = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
@@ -369,8 +386,10 @@ class Select extends AbstractPredicateClause
         $byColumns = null;
         $order     = strtoupper($order);
 
-        if (is_array($by)) {
-            $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', $by)));
+        if ($by instanceof JsonExtract) {
+            $byColumns = (string)$by;
+        } else if (is_array($by)) {
+            $byColumns = implode(', ', array_map([$this, 'quoteByColumn'], $by));
         } else if (str_contains($by, ',')) {
             $byColumns = implode(', ', array_map([$this, 'quoteId'], array_map('trim', explode(',' , $by))));
         } else {
@@ -430,6 +449,9 @@ class Select extends AbstractPredicateClause
                 if ($col instanceof AbstractSql) {
                     $cols[] = (!is_numeric($as)) ?
                         '(' . $col . ') AS ' . $this->quoteId($as) : '(' .  $col . ')';
+                } else if ($col instanceof JsonExtract) {
+                    $cols[] = (!is_numeric($as)) ?
+                        (string)$col . ' AS ' . $this->quoteId($as) : (string)$col;
                 } else {
                     // If column is a SQL function, don't quote it
                     $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);

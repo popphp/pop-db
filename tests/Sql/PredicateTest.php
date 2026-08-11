@@ -140,6 +140,30 @@ class PredicateTest extends TestCase
         $predicate->render($this->db->createSql());
     }
 
+    public function testEqualToWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicate = new Predicate\EqualTo(['user_id', $subquery]);
+        $this->assertEquals(
+            "(`user_id` = (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testGreaterThanWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('COUNT(*)')->from('orders');
+        $subquery->where->equalTo('status', 'shipped');
+
+        $predicate = new Predicate\GreaterThan(['total_orders', $subquery]);
+        $this->assertEquals(
+            "(`total_orders` > (SELECT COUNT(*) FROM `orders` WHERE (`status` = 'shipped')))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
     public function testIn()
     {
         $predicate = new Predicate\In(['attempts', [1, 10]]);
@@ -160,6 +184,18 @@ class PredicateTest extends TestCase
         $predicate->render($this->db->createSql());
     }
 
+    public function testInWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicate = new Predicate\In(['user_id', $subquery]);
+        $this->assertEquals(
+            "(`user_id` IN (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
     public function testNotIn()
     {
         $predicate = new Predicate\NotIn(['attempts', [1, 10]]);
@@ -178,6 +214,18 @@ class PredicateTest extends TestCase
         $this->expectException('Pop\Db\Sql\Predicate\Exception');
         $predicate = new Predicate\NotIn(['attempts', 10]);
         $predicate->render($this->db->createSql());
+    }
+
+    public function testNotInWithSubquery()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->where->equalTo('reason', 'fraud');
+
+        $predicate = new Predicate\NotIn(['user_id', $subquery]);
+        $this->assertEquals(
+            "(`user_id` NOT IN (SELECT `id` FROM `banned_users` WHERE (`reason` = 'fraud')))",
+            $predicate->render($this->db->createSql())
+        );
     }
 
     public function testIsNull()
@@ -217,6 +265,260 @@ class PredicateTest extends TestCase
         $predicate = new Predicate\NotLike(['username']);
         $predicate->render($this->db->createSql());
         $this->db->disconnect();
+    }
+
+    public function testExists()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicate = new Predicate\Exists($subquery);
+        $this->assertEquals(
+            "(EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testExistsValueException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\Exists('not a select object');
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testNotExists()
+    {
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->where->equalTo('user_id', 5);
+
+        $predicate = new Predicate\NotExists($subquery);
+        $this->assertEquals(
+            "(NOT EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testNotExistsValueException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\NotExists('not a select object');
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testJsonEqualTo()
+    {
+        $predicate = new Predicate\JsonEqualTo(['data', '$.name', 'admin']);
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) = 'admin')",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testJsonEqualToValuesException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonEqualTo(['data', '$.name']);
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testJsonNotEqualTo()
+    {
+        $predicate = new Predicate\JsonNotEqualTo(['data', '$.name', 'admin']);
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) != 'admin')",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    /**
+     * PostgreSQL's extraction operators ('->>' / '#>>') always return text, and PostgreSQL has
+     * no implicit text-to-number comparison, so a bare numeric literal on the right-hand side
+     * fails at execution time with "operator does not exist: text = integer". The value must
+     * therefore render as a quoted text literal on PostgreSQL. MySQL/SQLite compare loosely and
+     * keep their existing bare-literal rendering.
+     */
+    public function testJsonEqualToPgsqlNumericValueRendersAsText()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonEqualTo(['data', '$.n', 5]);
+        $this->assertEquals('("data"->>\'n\' = \'5\')', $predicate->render($db->createSql()));
+        $db->disconnect();
+    }
+
+    public function testJsonNotEqualToPgsqlNumericValueRendersAsText()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonNotEqualTo(['data', '$.n', 5]);
+        $this->assertEquals('("data"->>\'n\' != \'5\')', $predicate->render($db->createSql()));
+        $db->disconnect();
+    }
+
+    /**
+     * A '$N' placeholder token is a bound parameter, not a literal, and must never be
+     * force-quoted into a string literal by the text-comparison handling above.
+     */
+    public function testJsonEqualToPgsqlPlaceholderValueIsNotQuoted()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonEqualTo(['data', '$.n', '$1']);
+        $this->assertEquals('("data"->>\'n\' = $1)', $predicate->render($db->createSql()));
+        $db->disconnect();
+    }
+
+    /**
+     * A Select used as the comparison value must still route through renderValue()'s subquery
+     * embedding, never be force-quoted as if it were a scalar.
+     */
+    public function testJsonEqualToPgsqlSubqueryValueStillEmbeds()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $subquery = $db->createSql()->select('name')->from('users');
+        $predicate = new Predicate\JsonEqualTo(['data', '$.name', $subquery]);
+        $this->assertEquals(
+            '("data"->>\'name\' = (SELECT "name" FROM "users"))', $predicate->render($db->createSql())
+        );
+        $db->disconnect();
+    }
+
+    public function testJsonEqualToMysqlNumericValueIsUnchanged()
+    {
+        $predicate = new Predicate\JsonEqualTo(['data', '$.n', 5]);
+        $this->assertEquals(
+            "(JSON_UNQUOTE(JSON_EXTRACT(`data`, '\$.n')) = 5)",
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testJsonContainsMysql()
+    {
+        // The JSON-encoded candidate value is passed through the adapter's escape() routine
+        // (mysqli::real_escape_string), which backslash-escapes the double quotes produced by
+        // json_encode(). This is valid MySQL string-literal syntax (backslash escapes are
+        // recognized inside single-quoted strings by default) and was confirmed against a live
+        // MySQL server to execute and match rows correctly.
+        $predicate = new Predicate\JsonContains(['data', '$.roles', 'admin']);
+        $this->assertEquals(
+            '(JSON_CONTAINS(`data`, \'\\"admin\\"\', \'$.roles\'))',
+            $predicate->render($this->db->createSql())
+        );
+    }
+
+    public function testJsonContainsPgsql()
+    {
+        $db  = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicate = new Predicate\JsonContains(['data', '$.roles', 'admin']);
+        $this->assertEquals(
+            '(("data" #> \'{roles}\') @> \'"admin"\'::jsonb)',
+            $predicate->render($db->createSql())
+        );
+        $db->disconnect();
+    }
+
+    public function testJsonContainsSqliteThrows()
+    {
+        touch(__DIR__ . '/../tmp/json_contains.sqlite');
+        $db = Db::sqliteConnect(['database' => __DIR__ . '/../tmp/json_contains.sqlite']);
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonContains(['data', '$.roles', 'admin']);
+        try {
+            $predicate->render($db->createSql());
+        } finally {
+            $db->disconnect();
+            @unlink(__DIR__ . '/../tmp/json_contains.sqlite');
+        }
+    }
+
+    public function testJsonContainsValuesException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonContains(['data', '$.roles']);
+        $predicate->render($this->db->createSql());
+    }
+
+    /**
+     * json_encode() returns false for values it cannot encode (e.g. an invalid-UTF-8 string).
+     * Passing that false straight into quote()'s ?string parameter would coerce it to an empty
+     * string and emit an empty candidate literal, which the database then rejects with a
+     * confusing JSON syntax error. Fail up front with a message naming the real problem.
+     */
+    public function testJsonContainsUnencodableValueException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonContains(['data', '$.roles', "\xB1\x31"]);
+        $predicate->render($this->db->createSql());
+    }
+
+    /**
+     * The raw candidate value is held on its own property, not in the values array, so that
+     * PredicateSet::addPredicate()'s parameter-normalization loop can never rewrite it.
+     */
+    public function testJsonContainsCandidateIsHeldSeparatelyFromValues()
+    {
+        $predicate = new Predicate\JsonContains(['data', '$.roles', true]);
+        $this->assertEquals(['data', '$.roles'], $predicate->getValues());
+        $this->assertTrue($predicate->hasCandidate());
+        $this->assertTrue($predicate->getCandidate());
+    }
+
+    /**
+     * An aliased Select renders as "(SELECT ...) AS `alias`", which is only valid as a
+     * FROM/JOIN subquery. Used as a predicate value it would silently produce invalid SQL,
+     * so it must throw instead. In has its own Select-detection branch (it does not route
+     * through renderValue()), so it is covered separately from a comparison predicate.
+     */
+    public function testInWithAliasedSubqueryException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->asAlias('b');
+
+        $predicate = new Predicate\In(['user_id', $subquery]);
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testEqualToWithAliasedSubqueryException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $subquery = $this->db->createSql()->select('id')->from('banned_users');
+        $subquery->asAlias('b');
+
+        $predicate = new Predicate\EqualTo(['user_id', $subquery]);
+        $predicate->render($this->db->createSql());
+    }
+
+    public function testExistsWithAliasedSubqueryException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $subquery = $this->db->createSql()->select('id')->from('orders');
+        $subquery->asAlias('o');
+
+        $predicate = new Predicate\Exists($subquery);
+        $predicate->render($this->db->createSql());
     }
 
 }

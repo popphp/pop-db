@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Db\Record\Relationships;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 interface RelationshipInterface
 {
@@ -36,9 +36,9 @@ interface RelationshipInterface
     /**
      * Get foreign key
      *
-     * @return string|null
+     * @return string|array|null
      */
-    public function getForeignKey(): string|null;
+    public function getForeignKey(): string|array|null;
 
     /**
      * Get options
@@ -55,5 +55,12 @@ interface RelationshipInterface
      * @return array
      */
     public function getEagerRelationships(array $ids): array;
+
+    /**
+     * Get the value to use when no eager-loaded result exists for a given leaf record
+     *
+     * @return mixed
+     */
+    public function getEmptyRelationshipValue(): mixed;
 
 }

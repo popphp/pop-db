@@ -6,6 +6,7 @@ use Pop\Db\Db;
 use Pop\Db\Sql;
 use Pop\Db\Adapter\Pgsql;
 use PHPUnit\Framework\TestCase;
+use Pop\Db\Test\TestAsset\TestQueryListener;
 
 class PgsqlTest extends TestCase
 {
@@ -50,7 +51,7 @@ class PgsqlTest extends TestCase
             'type'            => PGSQL_CONNECT_FORCE_NEW
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $db->query('DROP TABLE IF EXISTS "users" CASCADE');
 
@@ -128,7 +129,7 @@ class PgsqlTest extends TestCase
             'host'     => $_ENV['PGSQL_HOST']
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $db->beginTransaction();
 

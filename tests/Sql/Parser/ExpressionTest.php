@@ -345,4 +345,27 @@ class ExpressionTest extends TestCase
         $this->assertEquals('username', Expression::stripIdQuotes('`username`'));
     }
 
+    public function testParseIgnoresBetweenKeywordInsideQuotedValue()
+    {
+        $result = Expression::parse("status = 'PENDING BETWEEN REVIEW'");
+        $this->assertEquals('status', $result['column']);
+        $this->assertEquals('=', $result['operator']);
+        $this->assertEquals('PENDING BETWEEN REVIEW', $result['value']);
+    }
+
+    public function testParseIgnoresLikeKeywordInsideQuotedValue()
+    {
+        $result = Expression::parse("status = 'ORDER LIKE THIS'");
+        $this->assertEquals('status', $result['column']);
+        $this->assertEquals('=', $result['operator']);
+        $this->assertEquals('ORDER LIKE THIS', $result['value']);
+    }
+
+    public function testParseStillDetectsRealBetween()
+    {
+        $result = Expression::parse('attempts BETWEEN 5 AND 10');
+        $this->assertEquals('attempts', $result['column']);
+        $this->assertEquals('BETWEEN', $result['operator']);
+    }
+
 }

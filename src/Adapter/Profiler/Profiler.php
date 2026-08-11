@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -13,7 +13,7 @@
  */
 namespace Pop\Db\Adapter\Profiler;
 
-use Pop\Debug\Debugger;
+use Pop\Utils\DebuggerInterface;
 
 /**
  * MySQL database adapter profiler class
@@ -21,9 +21,9 @@ use Pop\Debug\Debugger;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 class Profiler extends AbstractProfiler
 {
@@ -42,17 +42,17 @@ class Profiler extends AbstractProfiler
 
     /**
      * Debugger
-     * @var ?Debugger
+     * @var ?DebuggerInterface
      */
-    protected ?Debugger $debugger = null;
+    protected ?DebuggerInterface $debugger = null;
 
     /**
      * Constructor
      *
      * Instantiate the profiler object
-     * @param ?Debugger $debugger
+     * @param ?DebuggerInterface $debugger
      */
-    public function __construct(?Debugger $debugger = null)
+    public function __construct(?DebuggerInterface $debugger = null)
     {
         parent::__construct();
         if ($debugger !== null) {
@@ -63,10 +63,10 @@ class Profiler extends AbstractProfiler
 
      * Set debugger
      *
-     * @param  Debugger $debugger
+     * @param  DebuggerInterface $debugger
      * @return Profiler
      */
-    public function setDebugger(Debugger $debugger): Profiler
+    public function setDebugger(DebuggerInterface $debugger): Profiler
     {
         $this->debugger = $debugger;
         return $this;
@@ -75,9 +75,9 @@ class Profiler extends AbstractProfiler
     /**
      * Get debugger
      *
-     * @return ?Debugger
+     * @return ?DebuggerInterface
      */
-    public function getDebugger(): ?Debugger
+    public function getDebugger(): ?DebuggerInterface
     {
         return $this->debugger;
     }
@@ -85,9 +85,9 @@ class Profiler extends AbstractProfiler
     /**
      * Get debugger (alias)
      *
-     * @return ?Debugger
+     * @return ?DebuggerInterface
      */
-    public function debugger(): ?Debugger
+    public function debugger(): ?DebuggerInterface
     {
         return $this->debugger;
     }

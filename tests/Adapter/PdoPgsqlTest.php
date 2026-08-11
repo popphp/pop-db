@@ -5,6 +5,7 @@ namespace Pop\Db\Test\Adapter;
 use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
+use Pop\Db\Test\TestAsset\TestQueryListener;
 
 class PdoPgsqlTest extends TestCase
 {
@@ -41,7 +42,7 @@ class PdoPgsqlTest extends TestCase
             'type'     => 'pgsql'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $db->query('DROP TABLE IF EXISTS users CASCADE');
         $db->query('CREATE SEQUENCE user_id_seq START 1001');
@@ -87,7 +88,7 @@ TABLE;
             'type'     => 'pgsql'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $db->beginTransaction();
 

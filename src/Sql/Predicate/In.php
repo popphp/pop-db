@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -21,9 +21,9 @@ use Pop\Db\Sql\AbstractSql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 class In extends AbstractPredicate
 {
@@ -56,15 +56,19 @@ class In extends AbstractPredicate
         if (count($this->values) != 2) {
             throw new Exception('Error: The values array must have 2 values in it.');
         }
-        if (!is_array($this->values[1])) {
-            throw new Exception('Error: The 2nd value must be an array of values.');
-        }
 
         [$column, $values] = $this->values;
 
-        $values = array_map([$sql, 'quote'], $values);
+        if ($values instanceof AbstractSql) {
+            static::assertNoSubqueryAlias($values);
+            $valuesString = (string)$values;
+        } else if (is_array($values)) {
+            $valuesString = implode(', ', array_map([$sql, 'quote'], $values));
+        } else {
+            throw new Exception('Error: The 2nd value must be an array of values or a Sql\Select instance.');
+        }
 
-        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), implode(', ', $values)], $this->format) . ')';
+        return '(' . str_replace(['%1', '%2'], [$sql->quoteId($column), $valuesString], $this->format) . ')';
     }
 
 }

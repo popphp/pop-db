@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -23,9 +23,9 @@ use Pop\Utils\CallableObject;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  * @method     static findWhereEquals($column, $value, array $options = null, bool|array $toArray = false)
  * @method     static findWhereNotEquals($column, $value, array $options = null, bool|array $toArray = false)
  * @method     static findWhereGreaterThan($column, $value, array $options = null, bool|array $toArray = false)
@@ -94,13 +94,38 @@ class Record extends Record\AbstractRecord
 
         if ($columns !== null) {
             $this->isNew = true;
-            $this->setColumns($columns);
+            $this->fill($columns);
         }
     }
 
 /*
  * Static methods
  */
+
+    /**
+     * Create a new record instance from trusted, internally-sourced column data
+     *
+     * Mass-assignment filtering ($fillable/$guarded via fill()) is deliberately bypassed here.
+     * It exists to protect against untrusted external input being passed into the constructor,
+     * not against the component's own internal data flows (replicating an already-fetched
+     * record, or creating a record from the very search criteria that were just queried).
+     * Filtering those would silently drop column values and corrupt the resulting row.
+     *
+     * @param  ?array $columns
+     * @throws Exception|Record\Exception
+     * @return static
+     */
+    protected static function newUnfilteredRecord(?array $columns = null): static
+    {
+        $record = new static();
+
+        if ($columns !== null) {
+            $record->isNew = true;
+            $record->setColumns($columns);
+        }
+
+        return $record;
+    }
 
     /**
      * Check for a DB adapter
@@ -342,7 +367,7 @@ class Record extends Record\AbstractRecord
             if ($columns instanceof PredicateSet) {
                 $columns = $columns->extractValues();
             }
-            $newRecord = new static($columns);
+            $newRecord = static::newUnfilteredRecord($columns);
             $newRecord->save();
             $result = $newRecord;
         }
@@ -413,7 +438,7 @@ class Record extends Record\AbstractRecord
             if ($columns instanceof PredicateSet) {
                 $columns = $columns->extractValues();
             }
-            $newRecord = new static($columns);
+            $newRecord = static::newUnfilteredRecord($columns);
             $newRecord->save();
             $result = $newRecord;
             return ($toArray !== false) ? $result->toArray() : $result;
@@ -703,7 +728,8 @@ class Record extends Record\AbstractRecord
         string $key, array $values, array|PredicateSet|null $columns = null, ?array $options = null, bool|array $toArray = false
     ): array
     {
-        $columns = (($columns !== null) && is_array($columns)) ? array_merge([$key => $values], $columns) : [$key => $values];
+        $columns = (($columns !== null) && is_array($columns)) ?
+            array_merge([$key => ['IN', $values]], $columns) : [$key => ['IN', $values]];
         $results = $this->getBy($columns, $options, $toArray);
         $rows    = [];
 
@@ -740,10 +766,11 @@ class Record extends Record\AbstractRecord
         $params      = null;
 
         if (is_array($columns)) {
-            $db            = Db::getDb($this->getFullTable());
-            $sql           = $db->createSql();
-            ['expressions' => $expressions, 'params' => $params] =
-                Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+            $db           = Db::getDb($this->getFullTable());
+            $sql          = $db->createSql();
+            $predicateSet = Sql\Parser\Condition::parse($columns, $sql);
+            $expressions  = $predicateSet;
+            $params       = ($predicateSet->hasParameters()) ? $predicateSet->getParameters() : null;
         } else if ($columns instanceof PredicateSet) {
             $expressions = $columns;
             $params      = ($columns->hasParameters()) ? $columns->getParameters() : null;
@@ -756,12 +783,14 @@ class Record extends Record\AbstractRecord
      * Has one relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return Record|Record\Relationships\HasOne
      */
-    public function hasOne(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOne
+    public function hasOne(
+        string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false
+    ): Record|Record\Relationships\HasOne
     {
         $relationship = new Record\Relationships\HasOne($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
@@ -774,12 +803,14 @@ class Record extends Record\AbstractRecord
      * Has one of relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return Record|Record\Relationships\HasOneOf
      */
-    public function hasOneOf(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\HasOneOf
+    public function hasOneOf(
+        string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false
+    ): Record|Record\Relationships\HasOneOf
     {
         $relationship = new Record\Relationships\HasOneOf($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
@@ -792,12 +823,14 @@ class Record extends Record\AbstractRecord
      * Has many relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return mixed
      */
-    public function hasMany(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): mixed
+    public function hasMany(
+        string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false
+    ): mixed
     {
         if (($this->latest) || ($this->oldest)) {
             if ($options !== null) {
@@ -828,12 +861,14 @@ class Record extends Record\AbstractRecord
      * Belongs to relationship
      *
      * @param  string $foreignTable
-     * @param  string $foreignKey
+     * @param  string|array $foreignKey
      * @param  ?array $options
      * @param  bool   $eager
      * @return Record|Record\Relationships\BelongsTo
      */
-    public function belongsTo(string $foreignTable, string $foreignKey, ?array $options = null, bool $eager = false): Record|Record\Relationships\BelongsTo
+    public function belongsTo(
+        string $foreignTable, string|array $foreignKey, ?array $options = null, bool $eager = false
+    ): Record|Record\Relationships\BelongsTo
     {
         $relationship = new Record\Relationships\BelongsTo($this, $foreignTable, $foreignKey, $options);
         if (!empty($this->withChildren) && !empty($this->withChildren[$this->currentWithIndex])) {
@@ -892,7 +927,7 @@ class Record extends Record\AbstractRecord
             }
         }
 
-        $newRecord = new static($fields);
+        $newRecord = static::newUnfilteredRecord($fields);
         $newRecord->save();
 
         return $newRecord;
@@ -940,6 +975,78 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Called before a single-record save() (both insert and update)
+     *
+     * @return void
+     */
+    protected function beforeSave(): void
+    {
+    }
+
+    /**
+     * Called after a single-record save() (both insert and update)
+     *
+     * @return void
+     */
+    protected function afterSave(): void
+    {
+    }
+
+    /**
+     * Called before a single-record insert (a new record being saved for the first time)
+     *
+     * @return void
+     */
+    protected function beforeInsert(): void
+    {
+    }
+
+    /**
+     * Called after a single-record insert
+     *
+     * @return void
+     */
+    protected function afterInsert(): void
+    {
+    }
+
+    /**
+     * Called before a single-record update (an existing record being saved again)
+     *
+     * @return void
+     */
+    protected function beforeUpdate(): void
+    {
+    }
+
+    /**
+     * Called after a single-record update
+     *
+     * @return void
+     */
+    protected function afterUpdate(): void
+    {
+    }
+
+    /**
+     * Called before a single-record delete
+     *
+     * @return void
+     */
+    protected function beforeDelete(): void
+    {
+    }
+
+    /**
+     * Called after a single-record delete
+     *
+     * @return void
+     */
+    protected function afterDelete(): void
+    {
+    }
+
+    /**
      * Save or update the record
      *
      * @param  ?array $columns
@@ -952,17 +1059,23 @@ class Record extends Record\AbstractRecord
         try {
             // Save or update the record
             if ($columns === null) {
+                $this->beforeSave();
                 if ($this->isNew) {
+                    $this->beforeInsert();
                     $this->rowGateway->save();
                     $this->isNew = false;
+                    $this->afterInsert();
                 } else {
+                    $this->beforeUpdate();
                     $this->rowGateway->update();
                     $record = $this->getById($this->rowGateway->getPrimaryValues());
                     if (isset($record[0])) {
                         $this->setColumns($record[0]);
                     }
+                    $this->afterUpdate();
                 }
-                // Else, save multiple rows
+                $this->afterSave();
+            // Else, save multiple rows
             } else {
                 if (isset($columns[0])) {
                     $this->tableGateway->insertRows($columns);
@@ -993,7 +1106,23 @@ class Record extends Record\AbstractRecord
         try {
             // Delete the record
             if ($columns === null) {
+                $this->beforeDelete();
+                // The row gateway clears its own columns/primary values as part of delete(),
+                // so restore them afterward (then re-clear once afterDelete() has had a chance
+                // to run) - this lets afterDelete() still read the just-deleted record's data.
+                $deletedColumns = $this->rowGateway->getColumns();
                 $this->rowGateway->delete();
+                $this->rowGateway->setColumns($deletedColumns);
+                try {
+                    $this->afterDelete();
+                } finally {
+                    // Whether afterDelete() throws or returns normally, the DELETE has already
+                    // run - clear the restored state back out so the record consistently reads
+                    // as deleted (matching its actual state in the database) rather than a throw
+                    // leaving columns populated while primaryValues is empty.
+                    $this->rowGateway->setColumns([]);
+                    $this->rowGateway->setPrimaryValues([]);
+                }
             // Delete multiple rows
             } else {
                 $expressions = null;
@@ -1077,54 +1206,57 @@ class Record extends Record\AbstractRecord
                     $toArray   = $arguments[3] ?? false;
                 }
 
+                // These build structured shorthand tuples (see Sql\Parser\Condition) rather than
+                // the deprecated suffixed-key shapes, so that calling one of these documented
+                // methods never fires an E_USER_DEPRECATED notice the caller cannot avoid.
                 switch ($condition) {
                     case 'Equals':
-                    case 'In':
-                    case 'Between':
                     case 'Null':
+                        // A bare key with a scalar value is plain equality; with a null value it
+                        // is IS NULL. Both are first-class structured shorthand already.
                         $columns = [$column => $value];
                         break;
                     case 'NotEquals':
-                        $columns = [$column . '!=' => $value];
+                        $columns = [$column => ['!=', $value]];
                         break;
                     case 'GreaterThan':
-                        $columns = [$column . '>' => $value];
+                        $columns = [$column => ['>', $value]];
                         break;
                     case 'GreaterThanOrEqual':
-                        $columns = [$column . '>=' => $value];
+                        $columns = [$column => ['>=', $value]];
                         break;
                     case 'LessThan':
-                        $columns = [$column . '<' => $value];
+                        $columns = [$column => ['<', $value]];
                         break;
                     case 'LessThanOrEqual':
-                        $columns = [$column . '<=' => $value];
+                        $columns = [$column => ['<=', $value]];
                         break;
                     case 'Like':
-                        if (str_starts_with($value, '%')) {
-                            $column = '%' . $column;
-                            $value  = substr($value, 1);
-                        }
-                        if (str_ends_with($value, '%')) {
-                            $column .= '%';
-                            $value   = substr($value, 0, -1);
-                        }
-                        $columns = [$column => $value];
+                        // The structured LIKE tuple takes the full pattern as-is, so the value's
+                        // leading/trailing '%' no longer has to be moved onto the column key
+                        $columns = [$column => ['LIKE', $value]];
                         break;
                     case 'NotLike':
-                        if (str_starts_with($value, '%')) {
-                            $column = '-%' . $column;
-                            $value  = substr($value, 1);
-                        }
-                        if (str_ends_with($value, '%')) {
-                            $column .= '%-';
-                            $value   = substr($value, 0, -1);
-                        }
-                        $columns = [$column => $value];
+                        $columns = [$column => ['NOT LIKE', $value]];
+                        break;
+                    case 'In':
+                        $columns = [$column => ['IN', $value]];
                         break;
                     case 'NotIn':
+                        $columns = [$column => ['NOT IN', $value]];
+                        break;
+                    case 'Between':
                     case 'NotBetween':
+                        $operator = ($condition == 'NotBetween') ? 'NOT BETWEEN' : 'BETWEEN';
+                        $between  = static::parseBetweenValues($value);
+                        $columns  = ($between !== null) ?
+                            [$column => [$operator, $between[0], $between[1]]] :
+                            // Unrecognized value shape - leave it to the legacy path, which is
+                            // what handled it before
+                            [$column . (($condition == 'NotBetween') ? '-' : '') => $value];
+                        break;
                     case 'NotNull':
-                        $columns = [$column . '-' => $value];
+                        $columns = [$column => ['IS NOT NULL']];
                         break;
                 }
             } else {
@@ -1140,6 +1272,34 @@ class Record extends Record\AbstractRecord
         }
 
         return ($columns !== null) ? static::findBy($columns, $options, $toArray) : null;
+    }
+
+    /**
+     * Normalize a findWhereBetween()/findWhereNotBetween() value into its two boundary values
+     *
+     * The documented calling convention packs both boundaries into a single string,
+     * '(value1, value2)' or '(value1 AND value2)' - the same shape the legacy shorthand parser
+     * accepts. A 2-element array is also accepted, and is the unambiguous form. Returns null if
+     * the value matches neither shape, in which case the caller leaves it to the legacy path.
+     *
+     * @param  mixed $value
+     * @return ?array
+     */
+    protected static function parseBetweenValues(mixed $value): ?array
+    {
+        if (is_array($value)) {
+            return (count($value) == 2) ? array_values($value) : null;
+        }
+
+        if (is_string($value) && str_starts_with($value, '(') && str_ends_with($value, ')')) {
+            $values    = substr($value, 1, -1);
+            $delimiter = (str_contains($values, ',')) ? ',' : 'AND';
+            $values    = array_map('trim', explode($delimiter, $values));
+
+            return (count($values) == 2) ? $values : null;
+        }
+
+        return null;
     }
 
 }

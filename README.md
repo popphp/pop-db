@@ -39,6 +39,8 @@ pop-db
     - [Joins](#joins)
     - [Predicates](#predicates)
     - [Nested Predicates](#nested-predicates)
+    - [Subqueries](#subqueries)
+    - [JSON Column Querying](#json-column-querying)
     - [Sorting, Order, Limits](#sorting-order-limits)
 * [Schema Builder](#schema-builder)
     - [Create Table](#create-table)
@@ -59,7 +61,7 @@ and functionality to easily interface with databases. Those features include:
 * Database Adapters
   - MySQL
   - PostgreSQL
-  - Sqlite
+  - SQLite
   - PDO
   - SQL Server
 * ORM-style concepts
@@ -85,7 +87,7 @@ Install `pop-db` using Composer.
 Or, require it in your composer.json file
 
     "require": {
-        "popphp/pop-db" : "^6.8.0"
+        "popphp/pop-db" : "^7.0.0"
     }
 
 [Top](#pop-db)
@@ -427,7 +429,7 @@ The supported options to create a SQLite database adapter and connect with a SQL
 - `key`
 
 ```php
-$db = Db::mysqlConnect([
+$db = Db::sqliteConnect([
     'database' => '/path/to/my_database.sqlite',
 ]);
 ```
@@ -479,7 +481,7 @@ The supported options to create a PDO database adapter and connect with a PDO-su
 
 ```php
 $db = Db::pdoConnect([
-    'type'     => 'mysql'
+    'type'     => 'mysql',
     'database' => 'DATABASE',
     'username' => 'DB_USER',
     'password' => 'DB_PASS'
@@ -588,6 +590,80 @@ the database adapter or other objects or info:
 - `Users::table()` - Get the full table name, for example `my_app_users_table`
 - `Users::getTableInfo()` - Get information about the table, like columns, etc.
 
+#### Mass-assignment protection
+
+By default, a table class will accept any array of column values passed to its constructor and set
+every key as a column value, with no restrictions. If that array comes from untrusted input (e.g.
+`new Users($request->all())`), an attacker can set any column just by adding an extra key to the
+request body. To guard against this, a table class can declare `$fillable` or `$guarded`, following
+the same naming/precedence convention as Laravel Eloquent:
+
+```php
+class Users extends Record
+{
+    protected ?string $table   = 'users';
+
+    // Allowlist: only these columns can be mass-assigned
+    protected array   $fillable = ['username', 'email'];
+}
+```
+
+```php
+class Users extends Record
+{
+    protected ?string $table  = 'users';
+
+    // Denylist: everything except these columns can be mass-assigned
+    protected array   $guarded = ['is_admin', 'role'];
+}
+```
+
+- If `$fillable` is non-empty, it takes full precedence - only the listed columns are mass-assignable,
+  and `$guarded` is ignored entirely.
+- Otherwise, if `$guarded` is non-empty, every column *except* the listed ones is mass-assignable.
+- If neither is declared (both stay as the default empty array), mass-assignment is unrestricted -
+  today's existing behavior.
+
+The filtering is enforced by `fill()`, not `setColumns()`. The constructor now routes array-like input
+through `fill()` when a table class is instantiated with column data:
+
+```php
+$user = new Users($request->all()); // filtered through $fillable/$guarded
+$user->save();
+```
+
+`fill()` is also callable directly, which is the recommended way to mass-assign untrusted data onto
+an *existing* record that has already been fetched from the database:
+
+```php
+$user = Users::findById(1);
+$user->fill($request->all()); // filtered through $fillable/$guarded
+$user->save();                // updates the existing row
+```
+
+Note that `fill()` *replaces* the record's current column set with the filtered input rather than
+merging into it. On a fetched record that is harmless for the update itself - the primary key value
+is retained separately, only the filled columns end up in the `UPDATE`, and `save()` re-fetches the
+full row afterwards. To create a *new* record from untrusted input, pass the array to the constructor
+(shown above) rather than calling `fill()` on an empty instance - a record built with the no-argument
+constructor is not flagged as new, so `save()` would attempt an update instead of an insert.
+
+You can also check whether an individual column is mass-assignable:
+
+```php
+$user->isFillable('role'); // false, if 'role' is guarded or not in $fillable
+```
+
+**Scope note:** mass-assignment protection only applies to `fill()` and the constructor. It does not
+guard single-property assignment (`$user->role = 'admin'` still works regardless of `$guarded`), nor
+does it apply to `Gateway\Table`'s raw `insert()`/`update()` methods, nor to row hydration from the
+database (`findById()`, `findOne()`, `findAll()`, etc. always populate every real column, since that
+data is trusted and DB-sourced, not user-supplied). The same applies to `replicate()`/`copy()` and to
+the new-record path of `findOneOrCreate()`/`findByOrCreate()` - all three build the new record from data
+this codebase already fetched or was explicitly given (a copy of an existing row, or the very search
+criteria you just called them with), not from raw external input, so `$fillable`/`$guarded` don't apply there
+either.
+
 #### Fetch a record
 
 The basic way to use the table class is to fetch individual record objects from the database.
@@ -613,6 +689,19 @@ $user = Users::findOneOrCreate(['username' => 'testuser']);
 $user = Users::findLatest();
 ```
 
+Anywhere `$columns` is accepted (`findOne()`, `findBy()`, `findOneOrCreate()`, `findByOrCreate()`, etc.), a
+`Sql\PredicateSet` built with `predicate()` works the same as a plain array. This is useful when the search
+criteria need more than simple equality (e.g. a `LIKE`, a range, or an `OR`). When `findOneOrCreate()`/
+`findByOrCreate()` don't find a match, the new record is built from the `PredicateSet`'s own equality
+predicates - so a `PredicateSet` used for find-or-create should stick to `equalTo()` conditions, the same way
+the array form only makes sense with plain `column => value` pairs:
+
+```php
+$criteria = Users::predicate()->equalTo('username', 'testuser')->equalTo('email', 'testuser@test.com');
+
+$user = Users::findOneOrCreate($criteria); // creates ['username' => 'testuser', 'email' => 'testuser@test.com'] if not found
+```
+
 By default, `findLatest()` will use the primary key, like `id`. However, you can pass it another field
 to sort by:
 
@@ -623,15 +712,16 @@ $user = Users::findLatest('last_login');
 
 #### Find API
 
-These are available static methods to find a record or records in the database table:
+These are available static methods to find a record or records in the database table. Every `$columns`
+parameter below accepts either a plain array or a `Sql\PredicateSet` (see above):
 
 - `findById($id, array $options = null, bool $asArray = false)`
-- `findOne(array $columns = null, array $options = null, bool $asArray = false)`
-- `findOneOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
-- `findLatest($by = null, array $columns = null, array $options = null, bool $asArray = false)`
-- `findBy(array $columns = null, array $options = null, bool $asArray = false)`
-- `findByOrCreate(array $columns = null, array $options = null, bool $asArray = false)`
-- `findIn($key, array $values, array $columns = null, array $options = null, bool $asArray = false)`
+- `findOne(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findOneOrCreate(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findLatest($by = null, array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findBy(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findByOrCreate(array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
+- `findIn($key, array $values, array|PredicateSet $columns = null, array $options = null, bool $asArray = false)`
 - `findAll(array $options = null, bool $asArray = false)`
 
 These are available static magic helper methods to find a record or records in the database table,
@@ -651,6 +741,10 @@ based on certain conditions:
 - `findWhereNotBetween($column, $values, array $options = null, bool $asArray = false)`
 - `findWhereNull($column, array $options = null, bool $asArray = false)`
 - `findWhereNotNull($column, array $options = null, bool $asArray = false)`
+
+These build structured shorthand internally, so none of them emit a deprecation notice.
+`findWhereBetween()`/`findWhereNotBetween()` accept either the packed string form
+(`'(1, 5)'`) or an unambiguous 2-element array (`[1, 5]`).
 
 #### Modify a record
 
@@ -680,6 +774,53 @@ $user->decrement('capacity', 5); // Decrement column by 5 and save
 $newUser = $user->copy($replace);
 ```
 
+#### Lifecycle hooks
+
+`Pop\Db\Record` exposes eight protected, empty, overridable hook methods that a table class can
+implement to run code around a single-record `save()`/`delete()`:
+
+- `beforeSave()` / `afterSave()` - wrap the whole `save()` call, for both inserts and updates
+- `beforeInsert()` / `afterInsert()` - fire only when the record is new (an INSERT)
+- `beforeUpdate()` / `afterUpdate()` - fire only when the record already exists (an UPDATE)
+- `beforeDelete()` / `afterDelete()` - wrap the whole `delete()` call
+
+They're no-ops by default, so declaring none of them is zero behavior change. Override one in a
+table class to hook in:
+
+```php
+class Users extends Pop\Db\Record
+{
+    protected function beforeSave(): void
+    {
+        $this->updated_at = date('Y-m-d H:i:s');
+    }
+
+    protected function afterDelete(): void
+    {
+        Logger::info('User deleted', ['id' => $this->id]);
+    }
+}
+```
+
+On `save()`, the firing order is `beforeSave()` → (`beforeInsert()` or `beforeUpdate()`) →
+the actual INSERT/UPDATE → (`afterInsert()` or `afterUpdate()`) → `afterSave()`. `afterUpdate()`
+fires after the record has been re-fetched from the database, so it sees the row's current
+persisted state. On `delete()`, the order is `beforeDelete()` → the actual DELETE → `afterDelete()`,
+and `afterDelete()` still has access to the deleted record's own column values (e.g. `$this->id`)
+even though the record's in-memory state is cleared immediately afterward.
+
+These hooks only fire on the single-record path - bulk operations (`$user->save($rows)`,
+`$user->delete($columns)`) do not trigger any of them.
+
+`increment()`, `decrement()`, `replicate()` and `copy()` all internally call `save()`, so a
+`beforeSave()`/`afterSave()` override that itself calls any of those methods will recurse.
+
+A hook can abort the operation by throwing: the exception propagates out of `save()`/`delete()`
+to the caller like any other failure in those methods (triggering a transaction rollback if one is
+active). Note that an `after*` hook throwing cannot retroactively undo the INSERT/UPDATE/DELETE
+statement that already ran if it wasn't inside an active transaction - the throw still propagates
+to the caller either way, but the database change stands.
+
 #### Dirty records
 
 If a record has been modified, the changes are stored and you can get them like this:
@@ -689,7 +830,7 @@ $user->username = 'newusername';
 $user->email    = 'newemail@test.com';
 
 if ($user->isDirty()) {
-    print_r($user->getDirty);
+    print_r($user->getDirty());
 }
 ```
 
@@ -729,7 +870,7 @@ The benefit of this class is that it handles the encoding and decoding for you. 
 would configure your class like this below, defining the fields that need to be encoded/decoded:
 
 ```php
-use Pop\Db\Record\Encoded
+use Pop\Db\Record\Encoded;
 
 class Users extends Encoded
 {
@@ -749,7 +890,7 @@ original decoded data.
 Using a password hash field would be an advanced example that would require more configuration:
 
 ```php
-use Pop\Db\Record\Encoded
+use Pop\Db\Record\Encoded;
 
 class Users extends Encoded
 {
@@ -784,7 +925,7 @@ Open SSL library extension. It requires a few more table properties to be config
 The encryption properties can be stored within the class directly:
 
 ```php
-use Pop\Db\Record\Encoded
+use Pop\Db\Record\Encoded;
 
 class Users extends Encoded
 {
@@ -904,7 +1045,7 @@ The `join` option allows you to define multiple tables to use in a JOIN query.
 $users = Users::findBy(['logins' => 0], [
     'select' => ['id', 'username'],
     'order'  => ['id DESC'],
-    'offset' => 10
+    'offset' => 10,
     'limit'  => 25
 ]);
 ```
@@ -1017,6 +1158,46 @@ to that part of the predicate like this:
 ```sql
 WHERE (id > 1) OR (username LIKE '%test')
 ```
+
+#### Structured Shorthand (Recommended)
+
+As of v7, shorthand conditions can also be expressed with an explicit operator, avoiding any ambiguity between
+column names and operator suffixes:
+
+```php
+$users = Users::findBy([
+    'age'        => ['>=', 18],
+    'status'     => ['!=', 'inactive'],
+    'name'       => ['LIKE', '%smith%'],
+    'created_at' => ['BETWEEN', '2024-01-01', '2024-12-31'],
+    'role'       => ['IN', ['admin', 'editor']],
+    'deleted_at' => ['IS NULL'],
+]);
+```
+
+Plain equality (`'age' => 18`) is unchanged. `OR`/`AND` grouping is supported via reserved keys:
+
+```php
+$users = Users::findBy([
+    'status' => 'active',
+    'OR' => [
+        ['role' => 'admin'],
+        ['age'  => ['>=', 65]],
+    ],
+]);
+// WHERE status = 'active' AND (role = 'admin' OR age >= 65)
+```
+
+An operator given the wrong number of values throws a `Pop\Db\Sql\Parser\Exception` immediately rather than
+silently rendering something unintended — including `IN`/`NOT IN` given an empty array.
+
+The older shorthand shapes shown above still work but are **deprecated** and will be removed in the next major
+version — they trigger an `E_USER_DEPRECATED` notice. That covers the suffixed keys (`'age>=' => 18`,
+`'%username' => 'test'`, `'username-' => null`, …), the array-valued IN form (`'id' => [2, 3]`) and the packed
+BETWEEN form (`'id' => '(1, 5)'`). New code should use the structured format.
+
+Plain equality (`'id' => 1`) and a bare key with a `null` value (`'id' => null`, meaning `id IS NULL`) are **not**
+deprecated — they are first-class structured shorthand and can also be used inside `OR`/`AND` groups.
 
 [Top](#pop-db)
 
@@ -1160,7 +1341,7 @@ being leveraged here from within the `Pop\Db\Record` class are:
 * `hasOne()`
     - 1:1 relationship where a foreign key in the child object is a primary key in the parent object
 * `hasMany()`
-    - 1:1 relationship where a foreign key in many child objects is a primary key in the parent object
+    - 1:many relationship where a foreign key in many child objects is a primary key in the parent object
 * `belongsTo()`
     - 1:1 relationship where a foreign key in the child object is a primary key in the parent object (inverse "hasOne")
 
@@ -1188,7 +1369,7 @@ class Users extends Pop\Db\Record
     // Define the 1:1 relationship of the info record this user owns
     public function info()
     {
-        return $this->hasOne('Info', 'user_id')
+        return $this->hasOne('Info', 'user_id');
     }
 
     // Define the 1:many relationship to all the orders this user owns
@@ -1276,11 +1457,23 @@ Array
 ```php
 // The 1:many relationship
 $user   = Users::findById(1);
-$orders = $users->orders();
+$orders = $user->orders();
 
 foreach ($orders as $order) {
     echo 'Order Total: $' . $order->order_total . PHP_EOL;
 }
+```
+
+Chaining `->latest()` or `->oldest()` before a `hasMany()` relationship method collapses the result down to a
+single record - the most (or least) recent one, ordered by a column you choose (defaults to `id`):
+
+```php
+$user = Users::findById(1);
+
+$newestOrder = $user->latest()->orders();       // single Orders record, ordered by id DESC
+$oldestOrder = $user->oldest('order_date')->orders(); // single Orders record, ordered by order_date ASC
+
+echo 'Most recent order total: $' . $newestOrder->order_total;
 ```
 
 ```php
@@ -1307,7 +1500,7 @@ relationship methods are called. However, you can call those relationship method
 the primary record using the static `with()` method:
 
 ```php
-$users = Users::with('orders')->getById(1);
+$user = Users::with('orders')->getById(1);
 foreach ($user->orders as $order) {
     echo 'Order Total: $' . $order->order_total . PHP_EOL;
 }
@@ -1316,7 +1509,7 @@ foreach ($user->orders as $order) {
 Multiple relationships can be passed as well:
 
 ```php
-$users = Users::with(['role', 'info', 'orders'])->getById(1);
+$user = Users::with(['role', 'info', 'orders'])->getById(1);
 ```
 
 And nested relationships are supported too. Assume there is a `Posts` class and a `Comments` class.
@@ -1329,6 +1522,73 @@ $user = Users::with('posts.comments')->getById(1);
 
 And would give you a user object with all of the user's `posts` and each of those post objects would have
 their `comments` attached as well.
+
+More than one nested relationship can hang off the same parent relationship. Assume the `Posts` class also
+owns tags, then this call would be valid:
+
+```php
+$user = Users::with(['posts.comments', 'posts.tags'])->getById(1);
+```
+
+The `posts` relationship is only resolved once, and each of those post objects gets both its `comments` and
+its `tags` attached. The nesting isn't limited to one level either — `with('posts.comments.author')` walks as
+deep as the relationships are defined.
+
+**Empty relationships**
+
+When the records are fetched with `getOne()` or `getBy()`, the relationships are resolved in a single batched
+query per relationship. If a relationship has no matching records, it still resolves — to a value that matches
+the shape of the relationship, so the calling code doesn't have to special-case it:
+
+```php
+$user = Users::with(['info', 'orders'])->getOne(['id' => 1]);
+
+var_dump($user->info);          // NULL -- a 1:1 relationship with no match
+echo count($user->orders);      // 0    -- a 1:many relationship is an empty collection
+```
+
+A 1:1 relationship (`hasOne`, `hasOneOf` or `belongsTo`) with no match resolves to `null`, and a 1:many
+relationship (`hasMany`) with no match resolves to an empty collection. Note that both of these previously
+resolved to an empty `array` instead, so any code that checked an unmatched relationship from `getOne()` or
+`getBy()` with `is_array()`, or passed it to `count()`, will need to be updated.
+
+**Composite (multi-column) keys**
+
+`$foreignKey` isn't limited to a single column name — it can also be given as an array of column names to
+describe a composite key relationship, matched positionally against a primary key elsewhere, so order matters.
+For `belongsTo()` (shown below), the array is paired against the *target* table's own declared primary key
+columns: the first foreign key column matches its first primary key column, the second matches its second, and
+so on.
+
+```php
+class Orders extends Pop\Db\Record
+{
+    /**
+     * Mock Schema
+     *    - id
+     *    - user_id (FK to users.id)
+     *    - org_id  (FK to users.org_id)
+     *    - order_date
+     *    - order_total
+     *    - products
+     */
+
+    // Define the parent relationship up to the user that owns this order record,
+    // matched on both `user_id` and `org_id`
+    public function user()
+    {
+        return $this->belongsTo('Users', ['user_id', 'org_id']);
+    }
+
+}
+```
+
+This works the same way for `hasOne()`, `hasOneOf()` and `hasMany()` — pass an array of foreign key columns
+instead of a single string. Which table's primary key it's paired against depends on the direction of the
+relationship: for `hasOneOf()` and `belongsTo()`, the array is matched positionally against the *target*
+table's own declared primary key columns; for `hasOne()` and `hasMany()`, it's matched positionally against the
+*declaring* record's own primary key columns instead. Both lazy-loading and eager-loading via `with()`
+(including nested `with()` calls) support composite keys.
 
 [Top](#pop-db)
 
@@ -1700,7 +1960,7 @@ Here's the available API for joins:
 * `$sql->leftOuterJoin($foreignTable, array $columns);` -  Left outer join
 * `$sql->rightOuterJoin($foreignTable, array $columns);` -  Right outer join
 * `$sql->fullOuterJoin($foreignTable, array $columns);` -  Full outer join
-* `$sql->innerJoin($foreignTable, array $columns);` -  Outer join
+* `$sql->innerJoin($foreignTable, array $columns);` -  Inner join
 * `$sql->leftInnerJoin($foreignTable, array $columns);` -  Left inner join
 * `$sql->rightInnerJoin($foreignTable, array $columns);` -  Right inner join
 * `$sql->fullInnerJoin($foreignTable, array $columns);` -  Full inner join
@@ -1790,6 +2050,182 @@ The output below shows the predicates for `logins` and `failed` are nested toget
 -- MySQL
 SELECT * FROM `users` WHERE ((`id` > ?) AND ((`logins` > ?) OR (`failed` <= ?)))
 ```
+
+[Top](#pop-db)
+
+### Subqueries
+
+The `IN`/`NOT IN` predicates and the scalar comparison predicates (`=`, `!=`, `>`, `>=`, `<`, `<=`) can take a
+`Sql\Select` object as their value instead of a plain array or scalar, producing a `col IN (SELECT ...)` or
+`col = (SELECT ...)` style subquery. There is also a dedicated `exists()`/`notExists()` API for standalone
+`EXISTS (SELECT ...)` predicates that aren't tied to a column at all.
+
+```php
+$subquery = $db->createSql()->select('user_id')->from('orders');
+$subquery->where->greaterThanOrEqualTo('total', 100);
+
+$sql->select()
+    ->from('users')
+    ->where->in('id', $subquery);
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (`id` IN (SELECT `user_id` FROM `orders` WHERE (`total` >= 100)))
+```
+
+`notIn()` works the same way, producing `NOT IN (SELECT ...)`. The scalar comparison predicates accept a
+`Select` the same way:
+
+```php
+$subquery = $db->createSql()->select('MAX(total)')->from('orders');
+
+$sql->select()
+    ->from('users')
+    ->where->equalTo('total', $subquery);
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (`total` = (SELECT MAX(total) FROM `orders`))
+```
+
+`exists()` and `notExists()` take a `Select` directly (there's no column argument, since `EXISTS` tests for the
+presence of rows, not a value):
+
+```php
+$subquery = $db->createSql()->select('id')->from('orders');
+$subquery->where->equalTo('user_id', 5);
+
+$sql->select()->from('users')->where->exists($subquery);
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (EXISTS (SELECT `id` FROM `orders` WHERE (`user_id` = 5)))
+```
+
+The shorthand array syntax supports the same forms: `['col' => ['IN', $select]]`, `['col' => ['NOT IN', $select]]`,
+`['col' => ['=', $select]]`, and a reserved `'EXISTS'`/`'NOT EXISTS'` top-level key whose value is the `Select`:
+
+```php
+Users::findBy(['id' => ['IN', $subquery]]);
+Users::findBy(['EXISTS' => $subquery]);
+```
+
+**Constraints:**
+
+* A subquery's own conditions must be built with literal values, not bound placeholders — e.g.
+  `$subquery->where->equalTo('total', 100)` rather than `'total = :total'`. Literal values are safe because they
+  are escaped through the adapter's `quote()`/`escape()` methods, but they are not part of the outer query's
+  prepared-statement parameter binding, since a subquery is rendered inline as a string before the outer query is
+  prepared.
+* `'EXISTS'` and `'NOT EXISTS'` are reserved top-level shorthand keys, the same way `'OR'` and `'AND'` are. A
+  column literally named `EXISTS` cannot be addressed via the shorthand array syntax.
+* A `Select` used as a subquery value cannot have an alias set on it (via `setAlias()`/`asAlias()`). An alias
+  causes a `Select` to render itself as `(SELECT ...) AS alias`, which is only valid for a FROM/JOIN subquery;
+  passing an aliased `Select` to a predicate throws an exception.
+
+**BC note (v7):** to accept a `Select` as a value, `PredicateSet::equalTo()`, `notEqualTo()`, `greaterThan()`,
+`greaterThanOrEqualTo()`, `lessThan()` and `lessThanOrEqualTo()` widened their `$value` parameter from `string`
+to `mixed`. Because PHP enforces parameter contravariance, any downstream subclass of `PredicateSet` (or of
+`Sql\Where`/`Sql\Having`) that overrides one of these methods with the old `string $value` signature will now
+fail with an incompatible-signature error and must be updated to `mixed $value`.
+
+[Top](#pop-db)
+
+### JSON Column Querying
+
+Columns that store JSON documents can be queried by path with `jsonExtract()`, and filtered with the
+`jsonEqualTo()`/`jsonNotEqualTo()`/`jsonContains()` predicates.
+
+`jsonExtract($column, $path)` returns a dialect-specific expression object that can be used as a SELECT column
+(optionally aliased) or passed to `orderBy()`/`groupBy()` (either on its own or as an element of their array
+form):
+
+```php
+$sql->select(['id', 'extracted_name' => $sql->jsonExtract('data', '$.name')])
+    ->from('users');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT `id`, JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.name')) AS `extracted_name` FROM `users`
+```
+
+```php
+$sql->select()->from('users')
+    ->orderBy($sql->jsonExtract('data', '$.name'));
+
+$sql->select()->from('users')
+    ->groupBy([$sql->jsonExtract('data', '$.name'), 'id']);
+```
+
+`jsonEqualTo()`/`jsonNotEqualTo()` compare the value extracted at a path against a scalar:
+
+```php
+$sql->select()
+    ->from('users')
+    ->where->jsonEqualTo('data', '$.role', 'admin');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.role')) = 'admin')
+```
+
+`jsonContains()` tests whether the JSON array/value at a path contains a given scalar candidate. It is only
+supported on MySQL and PostgreSQL — neither SQLite nor SQL Server exposes a native JSON containment
+operator/function, so `jsonContains()` throws an exception on those adapters:
+
+```php
+$sql->select()
+    ->from('users')
+    ->where->jsonContains('data', '$.roles', 'admin');
+
+echo $sql;
+```
+
+```sql
+-- MySQL
+SELECT * FROM `users` WHERE (JSON_CONTAINS(`data`, '"admin"', '$.roles'))
+-- PostgreSQL
+SELECT * FROM "users" WHERE (("data" #> '{roles}') @> '"admin"'::jsonb)
+```
+
+The shorthand array syntax supports JSON path access via a `'column->$.path'` key, routed to
+`jsonEqualTo()`/`jsonNotEqualTo()`/`jsonContains()` through the `=`/`!=`/`CONTAINS` operators (a bare value with
+no operator tuple is treated as `=`, the same as any other shorthand column):
+
+```php
+Users::findBy(['data->$.role' => 'admin']);                    // jsonEqualTo()
+Users::findBy(['data->$.role' => ['=', 'admin']]);              // jsonEqualTo()
+Users::findBy(['data->$.role' => ['!=', 'admin']]);             // jsonNotEqualTo()
+Users::findBy(['data->$.roles' => ['CONTAINS', 'admin']]);      // jsonContains()
+```
+
+**Constraints:**
+
+* `jsonContains()` (and its `'CONTAINS'` shorthand operator) is only supported on the MySQL and PostgreSQL
+  adapters — it throws an exception on SQLite and SQL Server, since neither has a native JSON containment
+  operator/function to render it with.
+* The `$path` argument uses MySQL-style JSONPath syntax (`'$.name'`, `'$.address.city'`, `'$.tags[0]'`) on every
+  supported dialect *except* PostgreSQL, where `jsonExtract()`/`jsonContains()` parse it internally into
+  PostgreSQL's own path-segment array (`{name}`, `{address,city}`, `{tags,0}`) — callers always write the same
+  `'$.path'` string regardless of which database is connected.
+* PostgreSQL's JSON extraction always yields `text`, and PostgreSQL will not implicitly compare `text` to a
+  number, so `jsonEqualTo()`/`jsonNotEqualTo()` render their comparison value as a quoted text literal on that
+  adapter (`"data"->>'n' = '5'`). Comparisons are therefore string comparisons on PostgreSQL — `5` and `5.0`
+  at the same path are not equal there.
+* The `jsonContains()` candidate is a raw PHP value that is JSON-encoded into the query verbatim (so `true`
+  becomes `true`, `'admin'` becomes `'"admin"'`); it is never treated as a bound-parameter placeholder, and a
+  value that cannot be encoded as JSON throws an exception.
 
 [Top](#pop-db)
 
