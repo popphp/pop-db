@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -21,12 +21,18 @@ use Pop\Db\Record\Collection;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 abstract class AbstractRelationship implements RelationshipInterface
 {
+
+    /**
+     * Delimiter used to join multiple column values into one composite lookup key
+     * @var string
+     */
+    public const COMPOSITE_KEY_DELIMITER = "\x1F";
 
     /**
      * Foreign table class
@@ -36,9 +42,9 @@ abstract class AbstractRelationship implements RelationshipInterface
 
     /**
      * Foreign key
-     * @var ?string
+     * @var string|array|null
      */
-    protected ?string $foreignKey = null;
+    protected string|array|null $foreignKey = null;
 
     /**
      * Relationship options
@@ -47,10 +53,10 @@ abstract class AbstractRelationship implements RelationshipInterface
     protected ?array $options = null;
 
     /**
-     * Relationship children
-     * @var ?string
+     * Relationship children (list of dotted child paths to eager-load under this relationship)
+     * @var array
      */
-    protected ?string $children = null;
+    protected array $children = [];
 
     /**
      * Constructor
@@ -58,10 +64,10 @@ abstract class AbstractRelationship implements RelationshipInterface
      * Instantiate the relationship object
      *
      * @param string $foreignTable
-     * @param string $foreignKey
+     * @param string|array $foreignKey
      * @param ?array $options
      */
-    public function __construct(string $foreignTable, string $foreignKey, ?array $options = null)
+    public function __construct(string $foreignTable, string|array $foreignKey, ?array $options = null)
     {
         $this->foreignTable = $foreignTable;
         $this->foreignKey   = $foreignKey;
@@ -81,9 +87,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get foreign key
      *
-     * @return string|null
+     * @return string|array|null
      */
-    public function getForeignKey(): string|null
+    public function getForeignKey(): string|array|null
     {
         return $this->foreignKey;
     }
@@ -101,9 +107,9 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Get child relationships
      *
-     * @return string|null
+     * @return array
      */
-    public function getChildRelationships(): string|null
+    public function getChildRelationships(): array
     {
         return $this->children;
     }
@@ -111,10 +117,10 @@ abstract class AbstractRelationship implements RelationshipInterface
     /**
      * Set children child relationships
      *
-     * @param  string $children
+     * @param  array $children
      * @return static
      */
-    public function setChildRelationships(string $children): static
+    public function setChildRelationships(array $children): static
     {
         $this->children = $children;
         return $this;
@@ -128,5 +134,174 @@ abstract class AbstractRelationship implements RelationshipInterface
      * @return array
      */
     abstract public function getEagerRelationships(array $ids): array;
+
+    /**
+     * Get the value to use for a leaf record's named child relationship when no eager-loaded
+     * results were found for it (e.g. a "has many" child with zero matching rows should still
+     * see an empty Collection rather than a plain array). Concrete relationship classes whose
+     * populated results aren't plain arrays should override this.
+     *
+     * @return mixed
+     */
+    public function getEmptyRelationshipValue(): mixed
+    {
+        return [];
+    }
+
+    /**
+     * Build a single composite lookup key from an ordered list of column values
+     *
+     * @param  array $values
+     * @return string
+     */
+    public static function buildCompositeKey(array $values): string
+    {
+        return implode(self::COMPOSITE_KEY_DELIMITER, $values);
+    }
+
+    /**
+     * Build an ordered tuple of values for the given columns from a record (either a
+     * Record instance or a plain array row). Returns null if any one of the columns is
+     * missing or null, i.e. the record has no usable composite key and should be skipped.
+     *
+     * @param  mixed $record
+     * @param  array $columns
+     * @return array|null
+     */
+    public static function tupleFor(mixed $record, array $columns): ?array
+    {
+        $tuple = array_map(fn($col) => $record[$col] ?? null, $columns);
+        return (in_array(null, $tuple, true)) ? null : $tuple;
+    }
+
+    /**
+     * Validate that the tuples in an eager-load id list have the same number of
+     * components as the array foreign key they will be bound to. A plain string
+     * $foreignKey (cardinality 1) and an empty $ids list are always valid.
+     *
+     * @param  array        $ids
+     * @param  string|array $foreignKey
+     * @throws Exception
+     * @return void
+     */
+    protected function assertTupleCardinality(array $ids, string|array $foreignKey): void
+    {
+        if (!is_array($foreignKey) || empty($ids)) {
+            return;
+        }
+
+        $tuple = reset($ids);
+
+        if (!is_array($tuple) || (count($tuple) !== count($foreignKey))) {
+            throw new Exception(
+                'Error: The number of foreign key columns (' . count($foreignKey) .
+                ') does not match the number of values (' . (is_array($tuple) ? count($tuple) : 1) .
+                ') provided for the relationship lookup.'
+            );
+        }
+    }
+
+    /**
+     * Validate that an array foreign-key column count matches the target
+     * table's own primary-key column count. A plain string $foreignKey is
+     * always treated as cardinality 1.
+     *
+     * @param  string|array $foreignKey
+     * @param  array        $targetPrimaryKeys
+     * @throws Exception
+     * @return void
+     */
+    protected function assertKeyCardinality(string|array $foreignKey, array $targetPrimaryKeys): void
+    {
+        $foreignKeyCount = is_array($foreignKey) ? count($foreignKey) : 1;
+        $targetKeyCount  = count($targetPrimaryKeys);
+
+        if ($foreignKeyCount !== $targetKeyCount) {
+            throw new Exception(
+                'Error: The number of foreign key columns (' . $foreignKeyCount .
+                ') does not match the number of primary key columns (' . $targetKeyCount .
+                ') on the target table.'
+            );
+        }
+    }
+
+    /**
+     * Hydrate nested child relationships onto a flat list of leaf records, resolving each
+     * named child relationship once (accumulated by name) and distributing every one of them
+     * onto every leaf record — so multiple differently-named children under this relationship
+     * don't overwrite each other.
+     *
+     * The column used to query and match a given child relationship is decided per relationship
+     * name, not once for all of them: "to-one by foreign key" children (HasOneOf and BelongsTo)
+     * are keyed by the leaf record's own foreign key column — the column holding the value that
+     * identifies which foreign row to fetch — while every other kind is keyed by the leaf
+     * record's primary key.
+     *
+     * @param  array        $leafRecords
+     * @param  string|array $primaryKeyColumn
+     * @return void
+     */
+    protected function hydrateChildRelationships(array $leafRecords, string|array $primaryKeyColumn): void
+    {
+        if (empty($this->children) || empty($leafRecords)) {
+            return;
+        }
+
+        $accumulated         = [];
+        $relationshipsByName = [];
+        $lookupColumns       = [];
+
+        foreach ($leafRecords as $record) {
+            foreach ($this->children as $childPath) {
+                $record->addWith($childPath);
+            }
+            $record->getWithRelationships();
+            foreach ($record->getRelationships() as $name => $relationship) {
+                if (!isset($accumulated[$name])) {
+                    $column = (($relationship instanceof HasOneOf) || ($relationship instanceof BelongsTo)) ?
+                        $relationship->getForeignKey() : $primaryKeyColumn;
+
+                    $lookupColumns[$name] = $column;
+
+                    if (is_array($column)) {
+                        $tuplesByKey = [];
+                        foreach ($leafRecords as $leafRecord) {
+                            $tuple = self::tupleFor($leafRecord, $column);
+                            if ($tuple === null) {
+                                continue;
+                            }
+                            $tuplesByKey[self::buildCompositeKey($tuple)] = $tuple;
+                        }
+                        $ids = array_values($tuplesByKey);
+                    } else {
+                        $ids = array_values(array_unique(array_map(
+                            fn($leafRecord) => $leafRecord[$column], $leafRecords
+                        )));
+                    }
+
+                    // An empty id list must not reach getEagerRelationships(), which would
+                    // render either an invalid or an entirely unfiltered WHERE clause.
+                    $accumulated[$name]         = (!empty($ids)) ? $relationship->getEagerRelationships($ids) : [];
+                    $relationshipsByName[$name] = $relationship;
+                }
+            }
+        }
+
+        foreach ($leafRecords as $record) {
+            foreach ($accumulated as $name => $resultsByKey) {
+                $column = $lookupColumns[$name];
+                if (is_array($column)) {
+                    $tuple       = self::tupleFor($record, $column);
+                    $lookupValue = ($tuple !== null) ? self::buildCompositeKey($tuple) : null;
+                } else {
+                    $lookupValue = $record[$column] ?? null;
+                }
+                $record->setRelationship(
+                    $name,
+                    $resultsByKey[$lookupValue] ?? $relationshipsByName[$name]->getEmptyRelationshipValue()
+                );
+            }
+        }
+    }
 
 }

@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -24,9 +24,9 @@ use ArrayIterator;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggregate
 {
@@ -48,6 +48,19 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      * @var array
      */
     protected array $primaryKeys = ['id'];
+
+    /**
+     * Fillable columns (mass-assignment allowlist) - if non-empty, only these columns are
+     * settable via fill(); $guarded is ignored when this is non-empty
+     * @var array
+     */
+    protected array $fillable = [];
+
+    /**
+     * Guarded columns (mass-assignment denylist) - ignored if $fillable is non-empty
+     * @var array
+     */
+    protected array $guarded = [];
 
     /**
      * Row gateway
@@ -86,7 +99,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     protected array $withOptions = [];
 
     /**
-     * With relationship children
+     * With relationship children (each entry is an array of dotted child paths for that relationship)
      * @var array
      */
     protected array $withChildren = [];
@@ -398,15 +411,66 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     public function setColumns(mixed $columns = null): AbstractRecord
     {
         if ($columns !== null) {
-            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-                $this->rowGateway->setColumns((array)$columns);
-            } else if ($columns instanceof AbstractRecord) {
-                $this->rowGateway->setColumns($columns->toArray());
-            } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
-                $this->rowGateway->setColumns($columns->toArray());
-            } else {
-                throw new Exception('The parameter passed must be an arrayable object.');
-            }
+            $this->rowGateway->setColumns($this->toColumnsArray($columns));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Normalize a columns argument (array, ArrayObject, AbstractRecord, or any ArrayAccess
+     * with a toArray() method) into a plain array
+     *
+     * @param  mixed $columns
+     * @throws Exception
+     * @return array
+     */
+    protected function toColumnsArray(mixed $columns): array
+    {
+        if (is_array($columns) || ($columns instanceof \ArrayObject)) {
+            return (array)$columns;
+        } else if ($columns instanceof AbstractRecord) {
+            return $columns->toArray();
+        } else if (($columns instanceof \ArrayAccess) && method_exists($columns, 'toArray')) {
+            return $columns->toArray();
+        } else {
+            throw new Exception('The parameter passed must be an arrayable object.');
+        }
+    }
+
+    /**
+     * Determine if a column is mass-assignable via fill()
+     *
+     * @param  string $column
+     * @return bool
+     */
+    public function isFillable(string $column): bool
+    {
+        if (!empty($this->fillable)) {
+            return in_array($column, $this->fillable, true);
+        } else if (!empty($this->guarded)) {
+            return !in_array($column, $this->guarded, true);
+        }
+
+        return true;
+    }
+
+    /**
+     * Mass-assign columns, filtered through $fillable/$guarded via isFillable()
+     *
+     * @param  mixed $columns
+     * @throws Exception
+     * @return AbstractRecord
+     */
+    public function fill(mixed $columns = null): AbstractRecord
+    {
+        if ($columns !== null) {
+            $filtered = array_filter(
+                $this->toColumnsArray($columns),
+                fn($value, $key) => $this->isFillable((string)$key),
+                ARRAY_FILTER_USE_BOTH
+            );
+            $this->setColumns($filtered);
         }
 
         return $this;
@@ -477,15 +541,27 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function addWith(string $name, ?array $options = null): AbstractRecord
     {
-        $children = null;
+        $children = [];
         if (str_contains($name, '.')) {
             $names    = explode('.', $name);
             $name     = array_shift($names);
-            $children = implode('.', $names);
+            $children = [implode('.', $names)];
         }
-        $this->with[]         = $name;
-        $this->withOptions[]  = $options;
-        $this->withChildren[] = $children;
+
+        $existingIndex = array_search($name, $this->with, true);
+
+        if ($existingIndex !== false) {
+            $this->withChildren[$existingIndex] = array_values(array_unique(
+                array_merge($this->withChildren[$existingIndex], $children)
+            ));
+            if ($options !== null) {
+                $this->withOptions[$existingIndex] = $options;
+            }
+        } else {
+            $this->with[]         = $name;
+            $this->withOptions[]  = $options;
+            $this->withChildren[] = $children;
+        }
 
         return $this;
     }
@@ -551,35 +627,65 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     {
         foreach ($this->relationships as $name => $relationship) {
             $withIds = [];
-            if ($relationship instanceof \Pop\Db\Record\Relationships\HasOneOf) {
+            if (($relationship instanceof \Pop\Db\Record\Relationships\HasOneOf) ||
+                ($relationship instanceof \Pop\Db\Record\Relationships\BelongsTo)) {
                 $primaryKey = $relationship->getForeignKey();
-                foreach ($rows as $i => $row) {
-                    if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
-                        $withIds[] = $row[$primaryKey];
+                if (is_array($primaryKey)) {
+                    $seen = [];
+                    foreach ($rows as $i => $row) {
+                        $tuple = Relationships\AbstractRelationship::tupleFor($row, $primaryKey);
+                        if ($tuple === null) {
+                            continue;
+                        }
+                        $tupleKey = Relationships\AbstractRelationship::buildCompositeKey($tuple);
+                        if (!isset($seen[$tupleKey])) {
+                            $seen[$tupleKey] = true;
+                            $withIds[] = $tuple;
+                        }
+                    }
+                } else {
+                    foreach ($rows as $i => $row) {
+                        if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
+                            $withIds[] = $row[$primaryKey];
+                        }
                     }
                 }
-                $results = $relationship->getEagerRelationships($withIds);
+                $results = !empty($withIds) ? $relationship->getEagerRelationships($withIds) : [];
             } else {
                 $primaryKey = $this->getPrimaryKeys();
                 if (count($primaryKey) == 1) {
                     $primaryKey = reset($primaryKey);
-                }
-                foreach ($rows as $i => $row) {
-                    $primaryValues = $rows[$i]->getPrimaryValues();
-                    if (count($primaryValues) == 1) {
-                        $withId = reset($primaryValues);
-                        if (!in_array($withId, $withIds)) {
-                            $withIds[] = $withId;
+                    foreach ($rows as $i => $row) {
+                        $primaryValues = $rows[$i]->getPrimaryValues();
+                        if (count($primaryValues) == 1) {
+                            $withId = reset($primaryValues);
+                            if (!in_array($withId, $withIds)) {
+                                $withIds[] = $withId;
+                            }
+                        }
+                    }
+                } else {
+                    foreach ($rows as $i => $row) {
+                        $tuple = Relationships\AbstractRelationship::tupleFor($row, $primaryKey);
+                        if ($tuple !== null) {
+                            $withIds[] = $tuple;
                         }
                     }
                 }
-                $results = $relationship->getEagerRelationships($withIds);
+                $results = !empty($withIds) ? $relationship->getEagerRelationships($withIds) : [];
             }
             foreach ($rows as $i => $row) {
-                if (isset($results[$row[$primaryKey]])) {
-                    $row->setRelationship($name, $results[$row[$primaryKey]]);
+                if (is_array($primaryKey)) {
+                    $tuple       = Relationships\AbstractRelationship::tupleFor($row, $primaryKey);
+                    $lookupValue = ($tuple !== null) ?
+                        Relationships\AbstractRelationship::buildCompositeKey($tuple) : null;
                 } else {
-                    $row->setRelationship($name, []);
+                    $lookupValue = $row[$primaryKey] ?? null;
+                }
+                if (isset($results[$lookupValue])) {
+                    $row->setRelationship($name, $results[$lookupValue]);
+                } else {
+                    $row->setRelationship($name, $relationship->getEmptyRelationshipValue());
                 }
             }
         }
@@ -619,7 +725,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function hasRelationship(string $name): bool
     {
-        return (isset($this->relationships[$name]));
+        return (array_key_exists($name, $this->relationships));
     }
 
     /**
@@ -694,7 +800,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
     {
         $result = null;
 
-        if (isset($this->relationships[$name])) {
+        if (array_key_exists($name, $this->relationships)) {
             $result = $this->relationships[$name];
         } else if (isset($this->rowGateway[$name])) {
             $result = $this->rowGateway[$name];
@@ -713,7 +819,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function __isset(string $name): bool
     {
-        if (isset($this->relationships[$name])) {
+        if (array_key_exists($name, $this->relationships)) {
             return true;
         } else if (isset($this->rowGateway[$name])) {
             return true;

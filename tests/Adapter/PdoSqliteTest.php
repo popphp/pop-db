@@ -5,6 +5,7 @@ namespace Pop\Db\Test\Adapter;
 use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
+use Pop\Db\Test\TestAsset\TestQueryListener;
 
 class PdoSqliteTest extends TestCase
 {
@@ -50,7 +51,7 @@ class PdoSqliteTest extends TestCase
             'type'     => 'sqlite'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $schema = $db->createSchema();
         $schema->create('users')
@@ -73,7 +74,7 @@ class PdoSqliteTest extends TestCase
         ]);
 
         $sql      = $db->createSql();
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $sql->insert()->into('users')->values([
             'username' => ':username',
@@ -211,7 +212,7 @@ class PdoSqliteTest extends TestCase
             'type'     => 'sqlite'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $sql = $db->createSql();
 
@@ -233,7 +234,7 @@ class PdoSqliteTest extends TestCase
             'type'     => 'sqlite'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $sql = $db->createSql();
 
@@ -255,7 +256,7 @@ class PdoSqliteTest extends TestCase
                 'type'     => 'sqlite'
             ]);
 
-            $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+            $profiler = $db->listen(TestQueryListener::class);
 
             $sql = $db->createSql();
 

@@ -7,6 +7,7 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Mysql;
 use PHPUnit\Framework\TestCase;
 use Pop\Utils\CallableObject;
+use Pop\Db\Test\TestAsset\TestQueryListener;
 
 class MysqlTest extends TestCase
 {
@@ -52,7 +53,7 @@ class MysqlTest extends TestCase
             'host'     => $_ENV['MYSQL_HOST']
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler', ['name' => 'query-listener'], new Profiler());
+        $profiler = $db->listen(TestQueryListener::class, ['name' => 'query-listener'], new Profiler());
 
         $schema = $db->createSchema();
         $schema->create('users')
@@ -144,7 +145,7 @@ class MysqlTest extends TestCase
         ]);
 
         $sql      = $db->createSql();
-        $profiler = $db->listen(new CallableObject('Pop\Debug\Handler\QueryHandler'));
+        $profiler = $db->listen(new CallableObject(TestQueryListener::class));
 
         $sql->insert()->into('users')->values([
             'username' => '?',

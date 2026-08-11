@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -21,9 +21,9 @@ use Pop\Db\Adapter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 abstract class AbstractSql
 {
@@ -175,6 +175,19 @@ abstract class AbstractSql
     public function isSqlite(): bool
     {
         return ($this->dbType == self::SQLITE);
+    }
+
+    /**
+     * Create a JSON path extraction expression, usable as a SELECT column value or an
+     * orderBy() argument
+     *
+     * @param  string $column
+     * @param  string $path
+     * @return JsonExtract
+     */
+    public function jsonExtract(string $column, string $path): JsonExtract
+    {
+        return new JsonExtract($this, $column, $path);
     }
 
     /**
@@ -343,8 +356,6 @@ abstract class AbstractSql
             $detectedDbType = self::MYSQL;
         }
 
-        $this->incrementParameterCount();
-
         // If the parameter is given in a different format than what the db expects, translate it
         $realDbType = $this->dbType;
         if ($this->placeholder == ':') {
@@ -359,6 +370,7 @@ abstract class AbstractSql
                     $parameter = '?';
                     break;
                 case self::PGSQL:
+                    $this->incrementParameterCount();
                     $parameter = '$' . $this->parameterCount;
                     break;
                 case self::SQLITE:

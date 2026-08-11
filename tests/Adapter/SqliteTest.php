@@ -6,6 +6,7 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Sqlite;
 use PHPUnit\Framework\TestCase;
 use Pop\Utils\CallableObject;
+use Pop\Db\Test\TestAsset\TestQueryListener;
 
 class SqliteTest extends TestCase
 {
@@ -55,7 +56,7 @@ class SqliteTest extends TestCase
             'database' => __DIR__ . '/../tmp/db.sqlite'
         ]);
 
-        $profiler = $db->listen(new CallableObject('Pop\Debug\Handler\QueryHandler'), ['name' => 'query-listener']);
+        $profiler = $db->listen(new CallableObject(TestQueryListener::class), ['name' => 'query-listener']);
         $this->assertInstanceOf('Pop\Utils\CallableObject', $db->getListener());
 
         $schema = $db->createSchema();
@@ -78,7 +79,7 @@ class SqliteTest extends TestCase
         ]);
 
         $sql      = $db->createSql();
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $sql->insert()->into('users')->values([
             'username' => ':username',
@@ -204,7 +205,7 @@ class SqliteTest extends TestCase
             'database' => __DIR__ . '/../tmp/db.sqlite'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $sql = $db->createSql();
 
@@ -224,7 +225,7 @@ class SqliteTest extends TestCase
             'database' => __DIR__ . '/../tmp/db.sqlite'
         ]);
 
-        $profiler = $db->listen('Pop\Debug\Handler\QueryHandler');
+        $profiler = $db->listen(TestQueryListener::class);
 
         $sql = $db->createSql();
 

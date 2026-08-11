@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -21,9 +21,9 @@ use Pop\Db\Sql\Predicate\EqualTo;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 class PredicateSet
 {
@@ -137,7 +137,13 @@ class PredicateSet
      */
     public function getParameters(): array
     {
-        return $this->parameters;
+        $parameters = $this->parameters;
+
+        foreach ($this->predicateSets as $predicateSet) {
+            $parameters = array_merge($parameters, $predicateSet->getParameters());
+        }
+
+        return $parameters;
     }
 
     /**
@@ -158,7 +164,17 @@ class PredicateSet
      */
     public function hasParameters(): bool
     {
-        return !empty($this->parameters);
+        if (!empty($this->parameters)) {
+            return true;
+        }
+
+        foreach ($this->predicateSets as $predicateSet) {
+            if ($predicateSet->hasParameters()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -347,10 +363,10 @@ class PredicateSet
      * Predicate for =
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function equalTo(string $column, string $value): PredicateSet
+    public function equalTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\EqualTo([$column, $value], $this->nextConjunction));
     }
@@ -359,10 +375,10 @@ class PredicateSet
      * Predicate for !=
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function notEqualTo(string $column, string $value): PredicateSet
+    public function notEqualTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -371,10 +387,10 @@ class PredicateSet
      * Predicate for >
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function greaterThan(string $column, string $value): PredicateSet
+    public function greaterThan(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\GreaterThan([$column, $value], $this->nextConjunction));
     }
@@ -383,10 +399,10 @@ class PredicateSet
      * Predicate for >=
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function greaterThanOrEqualTo(string $column, string $value): PredicateSet
+    public function greaterThanOrEqualTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\GreaterThanOrEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -395,10 +411,10 @@ class PredicateSet
      * Predicate for <
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function lessThan(string $column, string $value): PredicateSet
+    public function lessThan(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\LessThan([$column, $value], $this->nextConjunction));
     }
@@ -407,10 +423,10 @@ class PredicateSet
      * Predicate for <=
      *
      * @param  string $column
-     * @param  string $value
+     * @param  mixed  $value
      * @return PredicateSet
      */
-    public function lessThanOrEqualTo(string $column, string $value): PredicateSet
+    public function lessThanOrEqualTo(string $column, mixed $value): PredicateSet
     {
         return $this->addPredicate(new Predicate\LessThanOrEqualTo([$column, $value], $this->nextConjunction));
     }
@@ -512,6 +528,67 @@ class PredicateSet
     }
 
     /**
+     * Predicate for EXISTS
+     *
+     * @param  AbstractSql $select
+     * @return PredicateSet
+     */
+    public function exists(AbstractSql $select): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\Exists($select, $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for NOT EXISTS
+     *
+     * @param  AbstractSql $select
+     * @return PredicateSet
+     */
+    public function notExists(AbstractSql $select): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\NotExists($select, $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for JSON path equal to
+     *
+     * @param  string $column
+     * @param  string $path
+     * @param  mixed  $value
+     * @return PredicateSet
+     */
+    public function jsonEqualTo(string $column, string $path, mixed $value): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\JsonEqualTo([$column, $path, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for JSON path not equal to
+     *
+     * @param  string $column
+     * @param  string $path
+     * @param  mixed  $value
+     * @return PredicateSet
+     */
+    public function jsonNotEqualTo(string $column, string $path, mixed $value): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\JsonNotEqualTo([$column, $path, $value], $this->nextConjunction));
+    }
+
+    /**
+     * Predicate for JSON containment (MySQL/PostgreSQL only)
+     *
+     * @param  string $column
+     * @param  string $path
+     * @param  mixed  $value
+     * @return PredicateSet
+     */
+    public function jsonContains(string $column, string $path, mixed $value): PredicateSet
+    {
+        return $this->addPredicate(new Predicate\JsonContains([$column, $path, $value], $this->nextConjunction));
+    }
+
+    /**
      * Add AND predicate
      *
      * @param  Predicate\AbstractPredicate $predicate
@@ -551,14 +628,17 @@ class PredicateSet
             $column = array_shift($values);
 
             foreach ($values as $key => $value) {
+                // A nested Sql instance (i.e., a subquery) can never be a parameter placeholder
+                // token. Skip the isParameter() check for it, as those comparisons would coerce
+                // the instance to a string and needlessly render the subquery multiple times.
                 if (is_array($value)) {
                     foreach ($value as $k => $v) {
-                        if ($this->sql->isParameter($v, $column)) {
+                        if ((!($v instanceof AbstractSql)) && $this->sql->isParameter($v, $column)) {
                             $values[$key][$k] = $this->sql->getParameter($v, $column);
                         }
                     }
                 } else {
-                    if ($this->sql->isParameter($value, $column)) {
+                    if ((!($value instanceof AbstractSql)) && $this->sql->isParameter($value, $column)) {
                         $values[$key] = $this->sql->getParameter($value, $column);
                     }
                 }
@@ -753,7 +833,7 @@ class PredicateSet
         $predicateString = '';
 
         foreach ($this->predicates as $i => $predicate) {
-            $predicateString .= ($i == 0) ?
+            $predicateString .= ($predicateString === '') ?
                 $predicate->render($this->sql) : ' ' . $predicate->getConjunction() . ' ' . $predicate->render($this->sql);
         }
 
@@ -761,7 +841,8 @@ class PredicateSet
             if (empty($predicateSet->getConjunction())) {
                 throw new Exception('Error: The combination conjunction was not set for this predicate set.');
             }
-            $predicateString .= ' ' . $predicateSet->getConjunction() . ' ' . $predicateSet->render();
+            $predicateString .= ($predicateString === '') ?
+                $predicateSet->render() : ' ' . $predicateSet->getConjunction() . ' ' . $predicateSet->render();
         }
 
         if (((count($this->predicateSets) > 0) && (count($this->predicates) > 0)) ||

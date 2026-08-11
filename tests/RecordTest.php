@@ -7,6 +7,7 @@ use Pop\Db\Exception;
 use Pop\Db\Record;
 use Pop\Db\Test\TestAsset\MockData;
 use Pop\Db\Test\TestAsset\Users;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 class RecordTest extends TestCase
@@ -40,6 +41,8 @@ class RecordTest extends TestCase
         $schema->execute();
 
         \Pop\Db\Test\TestAsset\Users::setDb($this->db);
+        \Pop\Db\Test\TestAsset\GuardedUsers::setDb($this->db);
+        \Pop\Db\Test\TestAsset\FillableUsers::setDb($this->db);
     }
 
     public function testConstructor()
@@ -170,6 +173,567 @@ class RecordTest extends TestCase
             $i++;
         }
         $this->assertEquals(0, $i);
+        $this->db->disconnect();
+    }
+
+    public function testIsFillableWithNeitherDeclaredAllowsEverything()
+    {
+        $user = new Users();
+        $this->assertTrue($user->isFillable('username'));
+        $this->assertTrue($user->isFillable('logins'));
+        $this->assertTrue($user->isFillable('anything_at_all'));
+        $this->db->disconnect();
+    }
+
+    public function testIsFillableWithGuardedDeclared()
+    {
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers();
+        $this->assertTrue($user->isFillable('username'));
+        $this->assertTrue($user->isFillable('email'));
+        $this->assertFalse($user->isFillable('logins'));
+        $this->db->disconnect();
+    }
+
+    public function testIsFillableWithFillableDeclared()
+    {
+        $user = new \Pop\Db\Test\TestAsset\FillableUsers();
+        $this->assertTrue($user->isFillable('username'));
+        $this->assertTrue($user->isFillable('email'));
+        $this->assertFalse($user->isFillable('password'));
+        $this->assertFalse($user->isFillable('logins'));
+        $this->db->disconnect();
+    }
+
+    public function testFillWithGuardedDropsGuardedColumn()
+    {
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers();
+        $user->fill([
+            'username' => 'testuser1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertArrayNotHasKey('logins', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testFillWithFillableOnlyKeepsListedColumns()
+    {
+        $user = new \Pop\Db\Test\TestAsset\FillableUsers();
+        $user->fill([
+            'username' => 'testuser1',
+            'password' => 'shouldnotbeset',
+            'email'    => 'testuser1@test.com'
+        ]);
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->assertArrayNotHasKey('password', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testFillWithNeitherDeclaredKeepsEverything()
+    {
+        $user = new Users();
+        $user->fill([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com'
+        ]);
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('password1', $ary['password']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->db->disconnect();
+    }
+
+    public function testGuardedColumnSurvivesRowHydration()
+    {
+        // Insert directly via the underlying Users class (not mass-assignment - this
+        // simulates a column value that legitimately exists in the database already).
+        $user = new Users([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        // Fetch it back through the GuardedUsers class, which guards 'logins'.
+        $found = \Pop\Db\Test\TestAsset\GuardedUsers::findById($user->id);
+
+        $this->assertEquals(42, $found->logins);
+        $this->db->disconnect();
+    }
+
+    public function testConstructorWithGuardedFiltersGuardedColumn()
+    {
+        // The primary, user-facing use case: untrusted input straight into the constructor.
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers([
+            'username' => 'testuser1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->assertArrayNotHasKey('logins', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testConstructorWithFillableFiltersUnlistedColumns()
+    {
+        $user = new \Pop\Db\Test\TestAsset\FillableUsers([
+            'username' => 'testuser1',
+            'password' => 'shouldnotbeset',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+
+        $ary = $user->toArray();
+        $this->assertEquals('testuser1', $ary['username']);
+        $this->assertEquals('testuser1@test.com', $ary['email']);
+        $this->assertArrayNotHasKey('password', $ary);
+        $this->assertArrayNotHasKey('logins', $ary);
+        $this->db->disconnect();
+    }
+
+    public function testConstructorWithGuardedFiltersAndSavesFilteredRow()
+    {
+        $user = new \Pop\Db\Test\TestAsset\GuardedUsers([
+            'username' => 'testuser1',
+            'password' => 'password1',
+            'email'    => 'testuser1@test.com',
+            'logins'   => 999
+        ]);
+        $user->save();
+
+        // The guarded column never made it into the INSERT, so the column default applies.
+        $found = Users::findById($user->id);
+        $this->assertEquals('testuser1', $found->username);
+        $this->assertEquals(0, $found->logins);
+        $this->db->disconnect();
+    }
+
+    public function testReplicatePreservesGuardedColumn()
+    {
+        $user = new Users([
+            'username' => 'testuser17',
+            'password' => 'password17',
+            'email'    => 'testuser17@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        // Fetch it through the guarded class, then replicate it. The replicated record is
+        // built from the record's own trusted data, so the guarded column must survive.
+        $found   = \Pop\Db\Test\TestAsset\GuardedUsers::findById($user->id);
+        $newUser = $found->copy(['password' => '123456']);
+
+        $this->assertEquals('testuser17', $newUser->username);
+        $this->assertEquals('123456', $newUser->password);
+        $this->assertEquals(42, $newUser->logins);
+
+        // And it was actually persisted with the guarded value, not the column default.
+        $reloaded = Users::findById($newUser->id);
+        $this->assertNotEquals($user->id, $newUser->id);
+        $this->assertEquals(42, $reloaded->logins);
+
+        $users = Users::findBy(['username' => 'testuser17']);
+        $this->assertEquals(2, $users->count());
+        $this->db->disconnect();
+    }
+
+    public function testFindOneOrCreateWithGuardedCreatesExactlyOneRow()
+    {
+        $criteria = [
+            'username' => 'testuser18',
+            'password' => 'password18',
+            'email'    => 'testuser18@test.com',
+            'logins'   => 7
+        ];
+
+        $first  = \Pop\Db\Test\TestAsset\GuardedUsers::findOneOrCreate($criteria);
+        $second = \Pop\Db\Test\TestAsset\GuardedUsers::findOneOrCreate($criteria);
+
+        // The created row must match the criteria it was created from, guarded columns
+        // included - otherwise every subsequent call misses it and creates a duplicate.
+        $users = Users::findBy(['username' => 'testuser18']);
+        $this->assertEquals(1, $users->count());
+        $this->assertEquals(7, $users[0]->logins);
+
+        $this->assertEquals(7, $first->logins);
+        $this->assertEquals($first->id, $second->id);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrCreateWithGuardedCreatesExactlyOneRow()
+    {
+        $criteria = [
+            'username' => 'testuser19',
+            'password' => 'password19',
+            'email'    => 'testuser19@test.com',
+            'logins'   => 9
+        ];
+
+        \Pop\Db\Test\TestAsset\GuardedUsers::findByOrCreate($criteria);
+        \Pop\Db\Test\TestAsset\GuardedUsers::findByOrCreate($criteria);
+
+        $users = Users::findBy(['username' => 'testuser19']);
+        $this->assertEquals(1, $users->count());
+        $this->assertEquals(9, $users[0]->logins);
+        $this->db->disconnect();
+    }
+
+    public function testFillOnFetchedRecordThenSaveUpdatesExistingRow()
+    {
+        // The README-documented fill() pattern: fetch, fill from untrusted input, save.
+        $user = new Users([
+            'username' => 'testuser20',
+            'password' => 'password20',
+            'email'    => 'testuser20@test.com',
+            'logins'   => 5
+        ]);
+        $user->save();
+
+        $found = \Pop\Db\Test\TestAsset\GuardedUsers::findById($user->id);
+        $found->fill([
+            'email'  => 'updated20@test.com',
+            'logins' => 999
+        ]);
+        $found->save();
+
+        $reloaded = Users::findById($user->id);
+        $this->assertEquals('testuser20', $reloaded->username);
+        $this->assertEquals('updated20@test.com', $reloaded->email);
+        $this->assertEquals(5, $reloaded->logins);
+        $this->db->disconnect();
+    }
+
+    public function testHooksFireInOrderOnInsert()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser1',
+            'password' => 'password1',
+            'email'    => 'hookuser1@test.com'
+        ]);
+        $user->save();
+
+        $this->assertEquals(
+            ['beforeSave', 'beforeInsert', 'afterInsert', 'afterSave'],
+            $user->hookLog
+        );
+        $this->db->disconnect();
+    }
+
+    public function testHooksFireInOrderOnUpdate()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser2',
+            'password' => 'password1',
+            'email'    => 'hookuser2@test.com'
+        ]);
+        $user->save();
+        $user->hookLog = [];
+
+        $user->username = 'hookuser2updated';
+        $user->save();
+
+        $this->assertEquals(
+            ['beforeSave', 'beforeUpdate', 'afterUpdate', 'afterSave'],
+            $user->hookLog
+        );
+        $this->db->disconnect();
+    }
+
+    public function testAfterDeleteCanReadRecordDataBeforeReset()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser3',
+            'password' => 'password1',
+            'email'    => 'hookuser3@test.com'
+        ]);
+        $user->save();
+        $savedId = $user->id;
+        $user->hookLog = [];
+
+        $user->delete();
+
+        $this->assertEquals(['beforeDelete', 'afterDelete:id=' . $savedId], $user->hookLog);
+        $this->db->disconnect();
+    }
+
+    public function testAfterDeleteThrowLeavesRecordConsistentlyDeleted()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser6',
+            'password' => 'password1',
+            'email'    => 'hookuser6@test.com'
+        ]);
+        $user->save();
+        $user->throwInAfterDelete = true;
+
+        try {
+            $user->delete();
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            // expected
+        }
+
+        // The DELETE already ran (and committed, absent an active transaction) before
+        // afterDelete() threw - the in-memory record must consistently read as deleted
+        // rather than partially reverting to look like the delete never happened.
+        $this->assertTrue(empty($user->toArray()));
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser6']);
+        $this->assertTrue(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testBeforeInsertThrowAbortsSaveAndPropagates()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $this->expectException('Pop\Db\Record\Exception');
+
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser4',
+            'password' => 'password1',
+            'email'    => 'hookuser4@test.com'
+        ]);
+        $user->throwInBeforeInsert = true;
+
+        try {
+            $user->save();
+        } finally {
+            $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser4']);
+            $this->assertTrue(empty($found->toArray()));
+            $this->db->disconnect();
+        }
+    }
+
+    public function testBeforeDeleteThrowAbortsDelete()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser5',
+            'password' => 'password1',
+            'email'    => 'hookuser5@test.com'
+        ]);
+        $user->save();
+        $user->throwInBeforeDelete = true;
+
+        try {
+            $user->delete();
+            $this->fail('Expected exception was not thrown.');
+        } catch (\Exception $e) {
+            // expected
+        }
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser5']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testBulkSaveDoesNotFireHooks()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers();
+        $user->save([
+            ['username' => 'bulkhook1', 'password' => 'p1', 'email' => 'b1@test.com'],
+            ['username' => 'bulkhook2', 'password' => 'p2', 'email' => 'b2@test.com']
+        ]);
+
+        $this->assertEquals([], $user->hookLog);
+        $this->db->disconnect();
+    }
+
+    public function testBulkDeleteDoesNotFireHooks()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'bulkdeletehook1',
+            'password' => 'p1',
+            'email'    => 'bd1@test.com'
+        ]);
+        $user->save();
+        $savedId = $user->id;
+        $user->hookLog = [];
+
+        (new \Pop\Db\Test\TestAsset\HookedUsers())->delete(['id' => $savedId]);
+
+        $this->assertEquals([], $user->hookLog);
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['id' => $savedId]);
+        $this->assertTrue(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testBeforeSaveThrowAbortsInsertAndPropagates()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $this->expectException('Pop\Db\Record\Exception');
+
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser8',
+            'password' => 'password1',
+            'email'    => 'hookuser8@test.com'
+        ]);
+        $user->throwInBeforeSave = true;
+
+        try {
+            $user->save();
+        } finally {
+            $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser8']);
+            $this->assertTrue(empty($found->toArray()));
+            $this->db->disconnect();
+        }
+    }
+
+    public function testBeforeUpdateThrowAbortsUpdateAndPropagates()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser9',
+            'password' => 'password1',
+            'email'    => 'hookuser9@test.com'
+        ]);
+        $user->save();
+        $user->throwInBeforeUpdate = true;
+        $user->username            = 'hookuser9updated';
+
+        $caught = false;
+
+        try {
+            $user->save();
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
+        }
+
+        $this->assertTrue($caught, 'Expected save() to throw.');
+
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser9']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testAfterInsertThrowLeavesRecordPersisted()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'hookuser10',
+            'password' => 'password1',
+            'email'    => 'hookuser10@test.com'
+        ]);
+        $user->throwInAfterInsert = true;
+
+        $caught = false;
+
+        try {
+            $user->save();
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
+        }
+
+        $this->assertTrue($caught, 'Expected save() to throw.');
+
+        // The INSERT already ran (and committed, absent an active transaction) before
+        // afterInsert() threw - the row must be persisted in the database even though
+        // the exception propagated to the caller.
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'hookuser10']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testSaveRollsBackTransactionOnException()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = \Pop\Db\Test\TestAsset\HookedUsers::start([
+            'username' => 'txrollback1',
+            'password' => 'password1',
+            'email'    => 'txrollback1@test.com'
+        ]);
+        $user->throwInAfterInsert = true;
+
+        $caught = false;
+
+        try {
+            $user->save();
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
+        }
+
+        $this->assertTrue($caught, 'Expected save() to throw.');
+        $this->assertFalse($user->isTransaction());
+
+        // The INSERT ran inside an active transaction, so the thrown afterInsert() hook's
+        // rollbackTransaction() call must have genuinely undone it in the database - unlike
+        // the no-transaction case (testAfterInsertThrowLeavesRecordPersisted), where the
+        // same INSERT stays committed because there was no transaction to roll back.
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'txrollback1']);
+        $this->assertTrue(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testDeleteRollsBackTransactionOnException()
+    {
+        \Pop\Db\Test\TestAsset\HookedUsers::setDb($this->db);
+        $user = new \Pop\Db\Test\TestAsset\HookedUsers([
+            'username' => 'txrollback2',
+            'password' => 'password2',
+            'email'    => 'txrollback2@test.com'
+        ]);
+        $user->save();
+
+        $user->startTransaction();
+        $user->throwInAfterDelete = true;
+
+        $caught = false;
+
+        try {
+            $user->delete();
+        } catch (\Throwable $e) {
+            $caught = true;
+            $this->assertInstanceOf('Pop\Db\Record\Exception', $e);
+        }
+
+        $this->assertTrue($caught, 'Expected delete() to throw.');
+        $this->assertFalse($user->isTransaction());
+
+        // The DELETE ran inside an active transaction, so the thrown afterDelete() hook's
+        // rollbackTransaction() call must have genuinely undone it - the row must still exist,
+        // unlike the no-transaction afterDelete-throw case covered elsewhere in this file.
+        $found = \Pop\Db\Test\TestAsset\HookedUsers::findOne(['username' => 'txrollback2']);
+        $this->assertFalse(empty($found->toArray()));
+        $this->db->disconnect();
+    }
+
+    public function testUndeclaredHooksAreNoOpsByDefault()
+    {
+        $user = new Users([
+            'username' => 'plainuser1',
+            'password' => 'password1',
+            'email'    => 'plainuser1@test.com'
+        ]);
+        $user->save();
+        $userId = $user->id;
+        $user->username = 'plainuser1updated';
+        $user->save();
+
+        $updated = Users::findById($userId);
+        $this->assertEquals('plainuser1updated', $updated->username);
+        $this->assertEquals(1, Users::findAll(['id' => $userId])->count());
+
+        $user->delete();
+        $this->assertTrue(empty($user->toArray()));
         $this->db->disconnect();
     }
 
@@ -338,6 +902,28 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindOneOrCreateWithPredicateSetExtractsValuesForNewRecord()
+    {
+        $predicateSet = Users::predicate()
+            ->equalTo('username', 'predicatecreate1')
+            ->equalTo('password', 'predicatepassword1')
+            ->equalTo('email', 'predicatecreate1@test.com');
+
+        $user = Users::findOne($predicateSet);
+        $this->assertFalse(isset($user->id));
+
+        // findOneOrCreate() with no matching row must fall through the
+        // PredicateSet::extractValues() branch (columns instanceof PredicateSet) to build the
+        // new record from the search criteria, exactly as the plain-array form does.
+        $user = Users::findOneOrCreate($predicateSet);
+
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('predicatecreate1', $user->username);
+        $this->assertEquals('predicatepassword1', $user->password);
+        $this->assertEquals('predicatecreate1@test.com', $user->email);
+        $this->db->disconnect();
+    }
+
     public function testFindLatest()
     {
         $user = new Users([
@@ -389,6 +975,123 @@ class RecordTest extends TestCase
         $this->assertEquals('testuser5', $user[0]->username);
         $this->assertEquals('password5', $user[0]->password);
         $this->assertEquals('testuser5@test.com', $user[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindByNewShorthandSyntax()
+    {
+        $user = new Users([
+            'username' => 'newsyntaxuser',
+            'password' => 'password',
+            'email'    => 'newsyntax@test.com',
+            'logins'   => 42
+        ]);
+        $user->save();
+
+        $found = Users::findBy(['logins' => ['>=', 40]]);
+        $this->assertGreaterThanOrEqual(1, $found->count());
+        $this->assertEquals('newsyntaxuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrGroupSyntax()
+    {
+        $user = new Users([
+            'username' => 'orgroupuser',
+            'password' => 'password',
+            'email'    => 'orgroup@test.com',
+            'logins'   => 0
+        ]);
+        $user->save();
+
+        $found = Users::findBy([
+            'username' => ['=', 'orgroupuser'],
+            'OR' => [
+                ['logins' => ['>=', 999]],
+                ['email' => ['=', 'orgroup@test.com']],
+            ],
+        ]);
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('orgroupuser', $found[0]->username);
+        $this->db->disconnect();
+    }
+
+    /**
+     * End-to-end proof of the README's documented Record-layer subquery usage:
+     * Users::findBy(['col' => ['IN', $subquery]]) executed against a live database.
+     */
+    public function testFindByWithSubqueryLiveExecution()
+    {
+        $this->db->query('DROP TABLE IF EXISTS `record_sub_orders`');
+        $this->db->query(
+            'CREATE TABLE `record_sub_orders` (`id` INT NOT NULL AUTO_INCREMENT, ' .
+            '`user_id` INT NOT NULL, `total` INT NOT NULL, PRIMARY KEY (`id`))'
+        );
+
+        $userA = new Users([
+            'username' => 'subqueryuser_a', 'password' => 'password', 'email' => 'sub_a@test.com'
+        ]);
+        $userA->save();
+
+        $userB = new Users([
+            'username' => 'subqueryuser_b', 'password' => 'password', 'email' => 'sub_b@test.com'
+        ]);
+        $userB->save();
+
+        $userC = new Users([
+            'username' => 'subqueryuser_c', 'password' => 'password', 'email' => 'sub_c@test.com'
+        ]);
+        $userC->save();
+
+        // A has a qualifying order (>= 100); B has one that does NOT qualify; C has none at all.
+        // So if the subquery's inner WHERE were silently dropped, B would wrongly appear.
+        $this->db->query(
+            'INSERT INTO `record_sub_orders` (`user_id`, `total`) VALUES ' .
+            '(' . (int)$userA->id . ', 250), (' . (int)$userB->id . ', 25)'
+        );
+
+        $subquery = $this->db->createSql()->select('user_id')->from('record_sub_orders');
+        $subquery->where->greaterThanOrEqualTo('total', 100);
+
+        $found = Users::findBy(['id' => ['IN', $subquery]]);
+
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('subqueryuser_a', $found[0]->username);
+        $this->assertEquals((int)$userA->id, (int)$found[0]->id);
+
+        // The inverse form must exclude A and include B and C
+        $notInSubquery = $this->db->createSql()->select('user_id')->from('record_sub_orders');
+        $notInSubquery->where->greaterThanOrEqualTo('total', 100);
+
+        $notFound  = Users::findBy(['id' => ['NOT IN', $notInSubquery]]);
+        $usernames = array_column($notFound->toArray(), 'username');
+
+        $this->assertContains('subqueryuser_b', $usernames);
+        $this->assertContains('subqueryuser_c', $usernames);
+        $this->assertNotContains('subqueryuser_a', $usernames);
+
+        $this->db->query('DROP TABLE `record_sub_orders`');
+
+        $userA->delete();
+        $userB->delete();
+        $userC->delete();
+
+        $this->db->disconnect();
+    }
+
+    public function testFindByLegacySyntaxStillWorks()
+    {
+        $user = new Users([
+            'username' => 'legacyuser',
+            'password' => 'password',
+            'email'    => 'legacy@test.com',
+            'logins'   => 7
+        ]);
+        $user->save();
+
+        $found = @Users::findBy(['logins>=' => 7, 'username' => 'legacyuser']);
+        $this->assertEquals(1, $found->count());
+        $this->assertEquals('legacyuser', $found[0]->username);
         $this->db->disconnect();
     }
 
@@ -461,6 +1164,28 @@ class RecordTest extends TestCase
         $this->assertEquals('testuser6', $user[0]->username);
         $this->assertEquals('password6', $user[0]->password);
         $this->assertEquals('testuser6@test.com', $user[0]->email);
+        $this->db->disconnect();
+    }
+
+    public function testFindByOrCreateWithPredicateSetExtractsValuesForNewRecord()
+    {
+        $predicateSet = Users::predicate()
+            ->equalTo('username', 'predicatecreate2')
+            ->equalTo('password', 'predicatepassword2')
+            ->equalTo('email', 'predicatecreate2@test.com');
+
+        $user = Users::findBy($predicateSet);
+        $this->assertEquals(0, $user->count());
+
+        // findByOrCreate() with no matching rows must fall through the
+        // PredicateSet::extractValues() branch (columns instanceof PredicateSet) to build the
+        // new record from the search criteria, exactly as the plain-array form does.
+        $user = Users::findByOrCreate($predicateSet);
+
+        $this->assertTrue(isset($user->id));
+        $this->assertEquals('predicatecreate2', $user->username);
+        $this->assertEquals('predicatepassword2', $user->password);
+        $this->assertEquals('predicatecreate2@test.com', $user->email);
         $this->db->disconnect();
     }
 
@@ -734,8 +1459,11 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testSaveMultiple()
     {
+        $this->expectUserDeprecationMessageMatches('/shorthand column format used for \[username%\]/');
+
         $user = new Users();
         $user->save([
             [
@@ -780,8 +1508,11 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testDeleteMultiple()
     {
+        $this->expectUserDeprecationMessageMatches('/shorthand column format used for \[username%\]/');
+
         $user = new Users();
         $user->save([
             [
@@ -810,8 +1541,11 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testGetTotal()
     {
+        $this->expectUserDeprecationMessageMatches('/shorthand column format used for \[username%\]/');
+
         $user = new Users();
         $user->save([
             [
@@ -1043,6 +1777,68 @@ class RecordTest extends TestCase
 
         $users = Users::findWhereNotLike('username', '%baduser');
         $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('users');
+        $schema->execute();
+
+        $this->db->disconnect();
+    }
+
+    public function testFindWhereConditionsDoNotTriggerDeprecation()
+    {
+        $user = new Users([
+            'username' => 'testuser25',
+            'password' => 'password25',
+            'email'    => 'testuser25@test.com',
+            'logins'   => 1
+        ]);
+        $user->save();
+
+        $deprecations = [];
+        set_error_handler(function ($errno, $errstr) use (&$deprecations) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecations[] = $errstr;
+            }
+            return true;
+        });
+
+        try {
+            $results = [
+                'GreaterThan'        => Users::findWhereGreaterThan('logins', 0),
+                'GreaterThanOrEqual' => Users::findWhereGreaterThanOrEqual('logins', 1),
+                'LessThan'           => Users::findWhereLessThan('logins', 2),
+                'LessThanOrEqual'    => Users::findWhereLessThanOrEqual('logins', 1),
+                'Equals'             => Users::findWhereEquals('logins', 1),
+                'NotEquals'          => Users::findWhereNotEquals('logins', -1),
+                'In'                 => Users::findWhereIn('logins', [1]),
+                'NotIn'              => Users::findWhereNotIn('logins', [10000000]),
+                'NotNull'            => Users::findWhereNotNull('logins'),
+                'Between'            => Users::findWhereBetween('logins', '(0, 10)'),
+                'NotBetween'         => Users::findWhereNotBetween('logins', '(1000000, 1000010)'),
+                'Like'               => Users::findWhereLike('username', 'testuser%'),
+                'LikeLeading'        => Users::findWhereLike('username', '%testuser25'),
+                'NotLike'            => Users::findWhereNotLike('username', 'baduser%'),
+                'NotLikeLeading'     => Users::findWhereNotLike('username', '%baduser'),
+            ];
+            $null = Users::findWhereNull('logins');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertEmpty(
+            $deprecations,
+            "findWhereX() must not emit deprecations from pop-db's own internals: " . implode(' | ', $deprecations)
+        );
+
+        foreach ($results as $condition => $collection) {
+            $this->assertGreaterThanOrEqual(1, $collection->count(), $condition . ' returned no rows');
+        }
+        $this->assertEquals(0, $null->count());
+
+        // BETWEEN/NOT BETWEEN also accept an unambiguous 2-element array
+        $this->assertGreaterThanOrEqual(1, Users::findWhereBetween('logins', [0, 10])->count());
+        $this->assertGreaterThanOrEqual(1, Users::findWhereNotBetween('logins', [1000000, 1000010])->count());
 
         $schema = $this->db->createSchema();
         $schema->dropIfExists('users');

@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -19,9 +19,9 @@ namespace Pop\Db\Sql;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  * @property   $where mixed
  */
 abstract class AbstractPredicateClause extends AbstractClause
@@ -50,17 +50,17 @@ abstract class AbstractPredicateClause extends AbstractClause
 
             if ($where !== null) {
                 if (is_string($where)) {
-                    if ((stripos($where, ' AND ') !== false) || (stripos($where, ' OR ') !== false)) {
-                        $expressions = array_map('trim', preg_split(
-                            '/(AND|OR)/', $where, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY
-                        ));
-                        foreach ($expressions as $i => $expression) {
-                            if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'AND')) {
-                                $this->where->and($expression);
-                            } else if (isset($expressions[$i - 1]) && (strtoupper($expressions[$i - 1]) == 'OR')) {
-                                $this->where->or($expression);
-                            } else if (($expression != 'AND') && ($expression != 'OR')) {
-                                $this->where->add($expression);
+                    $tokens = Parser\Keyword::split($where);
+                    if (count($tokens) > 1) {
+                        foreach ($tokens as $i => $token) {
+                            if (($i > 0) && (($tokens[$i - 1] === 'AND') || ($tokens[$i - 1] === 'OR'))) {
+                                if ($tokens[$i - 1] === 'AND') {
+                                    $this->where->and($token);
+                                } else {
+                                    $this->where->or($token);
+                                }
+                            } else if (($token !== 'AND') && ($token !== 'OR')) {
+                                $this->where->add($token);
                             }
                         }
                     } else {

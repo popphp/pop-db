@@ -4,7 +4,7 @@
  *
  * @link       https://github.com/popphp/popphp-framework
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  */
 
@@ -22,9 +22,9 @@ use Pop\Crypt\Encryption\Encrypter;
  * @category   Pop
  * @package    Pop\Db
  * @author     Nick Sagona, III <dev@noladev.com>
- * @copyright  Copyright (c) 2009-2026 NOLA Interactive, LLC.
+ * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
- * @version    6.8.0
+ * @version    7.0.0
  */
 class Encoded extends \Pop\Db\Record
 {
@@ -99,15 +99,7 @@ class Encoded extends \Pop\Db\Record
     public function setColumns(mixed $columns = null): Encoded
     {
         if ($columns !== null) {
-            if (is_array($columns) || ($columns instanceof \ArrayObject)) {
-                $columns = $this->encode($columns);
-            } else if ($columns instanceof AbstractRecord) {
-                $columns = $this->encode($columns->toArray());
-            } else {
-                throw new Exception('The parameter passed must be either an array, an array object or null.');
-            }
-
-            parent::setColumns($columns);
+            parent::setColumns($this->encode($this->toColumnsArray($columns)));
         }
 
         return $this;

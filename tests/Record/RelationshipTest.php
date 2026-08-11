@@ -238,8 +238,73 @@ class RelationshipTest extends TestCase
         $this->assertIsArray($relationship->getEagerRelationships([1]));
         $this->assertEquals('Pop\Db\Test\TestAsset\People', $relationship->getForeignTable());
         $this->assertEmpty($relationship->getOptions());
-        $relationship->setChildRelationships('TestChild');
-        $this->assertEquals('TestChild', $relationship->getChildRelationships());
+        $relationship->setChildRelationships(['TestChild']);
+        $this->assertEquals(['TestChild'], $relationship->getChildRelationships());
+        $this->db->disconnect();
+    }
+
+    public function testAddWithMergesSameNameChildren()
+    {
+        $this->db->connect();
+        $user = new People();
+        $user->addWith('peopleContacts.a');
+        $user->addWith('peopleContacts.b');
+
+        $reflection = new \ReflectionClass($user);
+
+        $withProperty = $reflection->getProperty('with');
+        $withProperty->setAccessible(true);
+        $this->assertEquals(['peopleContacts'], $withProperty->getValue($user));
+
+        $childrenProperty = $reflection->getProperty('withChildren');
+        $childrenProperty->setAccessible(true);
+        $this->assertEquals([['a', 'b']], $childrenProperty->getValue($user));
+        $this->db->disconnect();
+    }
+
+    public function testAddWithDeduplicatesIdenticalChildren()
+    {
+        $this->db->connect();
+        $user = new People();
+        $user->addWith('peopleContacts.a');
+        $user->addWith('peopleContacts.a');
+
+        $reflection = new \ReflectionClass($user);
+        $childrenProperty = $reflection->getProperty('withChildren');
+        $childrenProperty->setAccessible(true);
+        $this->assertEquals([['a']], $childrenProperty->getValue($user));
+        $this->db->disconnect();
+    }
+
+    public function testAddWithKeepsDifferentNamesSeparate()
+    {
+        $this->db->connect();
+        $user = new People();
+        $user->addWith('peopleContacts');
+        $user->addWith('peopleInfo');
+
+        $reflection = new \ReflectionClass($user);
+        $withProperty = $reflection->getProperty('with');
+        $withProperty->setAccessible(true);
+        $this->assertEquals(['peopleContacts', 'peopleInfo'], $withProperty->getValue($user));
+        $this->db->disconnect();
+    }
+
+    public function testAddWithBareNameThenDottedNameMerges()
+    {
+        $this->db->connect();
+        $user = new People();
+        $user->addWith('peopleContacts');
+        $user->addWith('peopleContacts.logs');
+
+        $reflection = new \ReflectionClass($user);
+        $withProperty = $reflection->getProperty('with');
+        $withProperty->setAccessible(true);
+        $this->assertEquals(['peopleContacts'], $withProperty->getValue($user));
+
+        $childrenProperty = $reflection->getProperty('withChildren');
+        $childrenProperty->setAccessible(true);
+        $this->assertEquals([['logs']], $childrenProperty->getValue($user));
         $this->db->disconnect();
     }
 
