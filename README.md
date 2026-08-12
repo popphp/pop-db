@@ -22,6 +22,7 @@ pop-db
     - [Active Record](#active-record)
     - [Encoded Record](#encoded-record)
     - [Table Gateway](#table-gateway)
+    - [Data Model](#data-model)
     - [Options](#options)
     - [Shorthand Syntax](#shorthand-syntax)
     - [Execute Queries](#execute-queries)
@@ -997,6 +998,130 @@ $count = Users::getTotal();
 // Get count of all users who have never logged in.
 $count = Users::getTotal(['logins' => 0]);
 ```
+
+[Top](#pop-db)
+
+### Data Model
+
+Going one level further, the abstract class `Pop\Db\Model\AbstractDataModel` is also available, which provides
+a tightly integrated API for some common interactions with a database and its records. The basic requirements
+are that there is a model class that extends the abstract data model and a subsequent related table class
+(see the [Table Class](#table-class) section above for more info.) In the example below, the classes
+`MyApp\Model\User` and `MyApp\Table\Users` are created, and by that naming convention, they are linked together.
+
+```php
+<?php
+
+namespace MyApp\Table;
+
+use Pop\Db\Record;
+
+class Users extends Record
+{
+
+}
+```
+
+```php
+<?php
+
+namespace MyApp\Model;
+
+use Pop\Db\Model\AbstractDataModel;
+
+class User extends AbstractDataModel
+{
+
+}
+```
+
+The available API in the data model object is:
+
+Each method that reads or writes a record takes a `$toArray` parameter (`bool|array`, default `false`). Leave it
+`false` to get back `Record`/`Collection` objects, pass `true` to get plain arrays instead, or pass an array of
+column names to get plain arrays limited to just those columns.
+
+**Static Methods**
+
+- `fetchAll(?string $sort = null, mixed $limit = null, mixed $page = null, bool|array $toArray = false): array|Collection`
+- `fetch(mixed $id, bool $toArray = false): array|Record`
+- `createNew(array $data, bool $toArray = false): array|Record`
+- `filterBy(mixed $filters = null, mixed $select = null): static`
+
+**Instance Methods**
+
+- `getAll(?string $sort = null, mixed $limit = null, mixed $page = null, bool|array $toArray = false): array|Collection`
+- `getById(mixed $id, bool $toArray = false): array|Record`
+- `getOne(array $columns, bool $toArray = false): array|Record`
+- `create(array $data, bool $toArray = false): array|Record`
+- `copy(mixed $id, array $replace = [], bool $toArray = false): array|Record`
+- `update(mixed $id, array $data, bool $toArray = false): array|Record`
+- `replace(mixed $id, array $data, bool $toArray = false): array|Record`
+- `delete(mixed $id): int`
+- `remove(array $ids): int`
+- `count(): int`
+- `describe(bool $native = false, bool $full = false, bool $withAlias = false): array`
+- `hasRequirements(): bool`
+- `validate(array $data): bool|array`
+- `filter(mixed $filters = null, mixed $select = null, ?array $options = null): AbstractDataModel`
+- `select(mixed $select = null, ?array $options = null): AbstractDataModel`
+
+`getOne()` fetches a single record by an arbitrary column/value array (rather than by primary key), and `copy()`
+duplicates an existing record by ID, optionally overriding some columns via `$replace`.
+
+**Create new**
+
+```php
+use MyApp\Model\User;
+
+$user = User::createNew($userData);
+```
+
+If the model class has a `$requirements` property set (an array of required column names), `create()` and
+`replace()` will validate `$data` against it before writing to the database. When a requirement is missing, an
+array in the shape `['errors' => ['column' => "The column 'column' is required."]]` is returned instead of a
+`Record`/array.
+
+**Update**
+
+```php
+use MyApp\Model\User;
+
+$userModel = new User();
+$user = $userModel->update(1, $userData);
+```
+
+The `update()` method acts like a `PATCH` call and `replace()` acts like a `PUT` call and will replace and reset all model data.
+
+**Delete**
+
+```php
+use MyApp\Model\User;
+
+$userModel = new User();
+$userModel->delete(1);
+$userModel->remove([2, 3, 4]);
+```
+
+**Fetch**
+
+```php
+use MyApp\Model\User;
+
+$users = User::fetchAll();
+$user  = User::fetch(1);
+```
+
+**Filter and sort**
+
+```php
+use MyApp\Model\User;
+
+$users = User::filterBy('username LIKE myuser%')->getAll('-id', '10', 2);
+```
+
+The above call filters the search by the filter string and sorts by `ID DESC` (`-id`). Also, it sets the limit to `10`
+and starts the page offset on the second page.
 
 [Top](#pop-db)
 

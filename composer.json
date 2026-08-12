@@ -27,7 +27,7 @@
     "require": {
         "php": ">=8.4.0",
         "popphp/pop-crypt": "^4.0.0-beta.1",
-        "popphp/pop-utils": "^3.0.0-beta.1"
+        "popphp/pop-utils": "^3.0.0-beta.2"
     },
     "require-dev": {
         "phpunit/phpunit": "^12.5.0"
