@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -198,59 +199,53 @@ class Db
         $lines      = explode("\n", $sql);
         $statements = [];
 
-        if (count($lines) > 0) {
-            // Remove any comments, parse prefix if available
-            $insideComment = false;
-            foreach ($lines as $i => $line) {
-                if (empty($line)) {
+        // Remove any comments, parse prefix if available
+        $insideComment = false;
+        foreach ($lines as $i => $line) {
+            if (empty($line)) {
+                unset($lines[$i]);
+            } else {
+                if (isset($options['prefix'])) {
+                    $lines[$i] = str_replace('[{prefix}]', $options['prefix'], trim($line));
+                }
+                if ($insideComment) {
+                    if (str_ends_with($line, '*/')) {
+                        $insideComment = false;
+                    }
                     unset($lines[$i]);
                 } else {
-                    if (isset($options['prefix'])) {
-                        $lines[$i] = str_replace('[{prefix}]', $options['prefix'], trim($line));
-                    }
-                    if ($insideComment) {
-                        if (str_ends_with($line, '*/')) {
-                            $insideComment = false;
+                    if ((str_starts_with($line, '-')) || (str_starts_with($line, '#'))) {
+                        unset($lines[$i]);
+                    } else if (str_starts_with($line, '/*')) {
+                        $line = trim($line);
+                        if ((!str_ends_with($line, '*/')) && (!str_ends_with($line, '*/;'))) {
+                            $insideComment = true;
                         }
                         unset($lines[$i]);
-                    } else {
-                        if ((str_starts_with($line, '-')) || (str_starts_with($line, '#'))) {
-                            unset($lines[$i]);
-                        } else if (str_starts_with($line, '/*')) {
-                            $line = trim($line);
-                            if ((!str_ends_with($line, '*/')) && (!str_ends_with($line, '*/;'))) {
-                                $insideComment = true;
-                            }
-                            unset($lines[$i]);
-                        } else if (strrpos($line, '--') !== false) {
-                            $lines[$i] = substr($line, 0, strrpos($line, '--'));
-                        } else if (strrpos($line, '/*') !== false) {
-                            $lines[$i] = substr($line, 0, strrpos($line, '/*'));
-                        }
+                    } else if (strrpos($line, '--') !== false) {
+                        $lines[$i] = substr($line, 0, strrpos($line, '--'));
+                    } else if (strrpos($line, '/*') !== false) {
+                        $lines[$i] = substr($line, 0, strrpos($line, '/*'));
                     }
                 }
             }
+        }
 
-            $lines            = array_values(array_filter($lines));
-            $currentStatement = null;
+        $lines            = array_values(array_filter($lines));
+        $currentStatement = null;
 
-            // Assemble statements based on ; delimiter
-            foreach ($lines as $i => $line) {
-                $currentStatement .= ($currentStatement !== null) ? ' ' . $line : $line;
-                if (str_ends_with($line, ';')) {
-                    $statements[]     = $currentStatement;
-                    $currentStatement = null;
-                }
+        // Assemble statements based on ; delimiter
+        foreach ($lines as $i => $line) {
+            $currentStatement .= ($currentStatement !== null) ? ' ' . $line : $line;
+            if (str_ends_with($line, ';')) {
+                $statements[]     = $currentStatement;
+                $currentStatement = null;
             }
+        }
 
-            if (!empty($statements)) {
-                foreach ($statements as $statement) {
-                    if (!empty($statement)) {
-                        $db->query($statement);
-                        $affectedRows += $db->getNumberOfAffectedRows();
-                    }
-                }
-            }
+        foreach ($statements as $statement) {
+            $db->query($statement);
+            $affectedRows += $db->getNumberOfAffectedRows();
         }
 
         return $affectedRows;

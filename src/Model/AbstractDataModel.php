@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -497,9 +498,9 @@ abstract class AbstractDataModel extends AbstractModel implements DataModelInter
      * @param  mixed  $filters
      * @param  mixed  $select
      * @param  ?array $options
-     * @return AbstractDataModel
+     * @return static
      */
-    public function filter(mixed $filters = null, mixed $select = null, ?array $options = null): AbstractDataModel
+    public function filter(mixed $filters = null, mixed $select = null, ?array $options = null): static
     {
         if (!empty($filters)) {
             $this->filters = (!is_array($filters)) ? [$filters] : $filters;

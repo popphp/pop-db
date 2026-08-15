@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -322,7 +323,7 @@ class Condition
 
         if (!empty($spec['multi'])) {
             if (isset($tuple[0]) && ($tuple[0] instanceof AbstractSql)) {
-                $predicateSet->{$method}($column, $tuple[0]);
+                self::callMulti($predicateSet, $method, $column, $tuple[0]);
             } else {
                 if (!isset($tuple[0]) || !is_array($tuple[0])) {
                     throw new Exception(
@@ -341,7 +342,7 @@ class Condition
                 foreach ($tuple[0] as $val) {
                     $placeholders[] = self::addParameter($predicateSet, $sql, $column, $val, $parameterIndex);
                 }
-                $predicateSet->{$method}($column, $placeholders);
+                self::callMulti($predicateSet, $method, $column, $placeholders);
             }
         } else if ($spec['arity'] === 0) {
             if (count($tuple) !== 0) {
@@ -349,7 +350,7 @@ class Condition
                     "Error: The '" . $operator . "' operator for column '" . $column . "' does not accept any values."
                 );
             }
-            $predicateSet->{$method}($column);
+            self::callArity0($predicateSet, $method, $column);
         } else if ($spec['arity'] === 1) {
             if (count($tuple) !== 1) {
                 throw new Exception(
@@ -363,10 +364,10 @@ class Condition
                         "Error: A Sql\Select instance is not a supported value for the '" . $operator . "' operator."
                     );
                 }
-                $predicateSet->{$method}($column, $tuple[0]);
+                self::callArity1Mixed($predicateSet, $method, $column, $tuple[0]);
             } else {
                 $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
-                $predicateSet->{$method}($column, $placeholder);
+                self::callArity1($predicateSet, $method, $column, $placeholder);
             }
         } else {
             if (count($tuple) !== 2) {
@@ -377,8 +378,110 @@ class Condition
             }
             $placeholder1 = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
             $placeholder2 = self::addParameter($predicateSet, $sql, $column, $tuple[1], $parameterIndex);
-            $predicateSet->{$method}($column, $placeholder1, $placeholder2);
+            self::callArity2($predicateSet, $method, $column, $placeholder1, $placeholder2);
         }
+    }
+
+    /**
+     * Dispatch a 2-value ('in'/'notIn') PredicateSet call
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $method
+     * @param  string       $column
+     * @param  mixed        $values
+     * @return void
+     */
+    protected static function callMulti(PredicateSet $predicateSet, string $method, string $column, mixed $values): void
+    {
+        match ($method) {
+            'in'    => $predicateSet->in($column, $values),
+            'notIn' => $predicateSet->notIn($column, $values),
+            default => throw new Exception("Error: Unsupported multi-value method '" . $method . "'."),
+        };
+    }
+
+    /**
+     * Dispatch a no-value ('isNull'/'isNotNull') PredicateSet call
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $method
+     * @param  string       $column
+     * @return void
+     */
+    protected static function callArity0(PredicateSet $predicateSet, string $method, string $column): void
+    {
+        match ($method) {
+            'isNull'    => $predicateSet->isNull($column),
+            'isNotNull' => $predicateSet->isNotNull($column),
+            default     => throw new Exception("Error: Unsupported no-value method '" . $method . "'."),
+        };
+    }
+
+    /**
+     * Dispatch a single-value PredicateSet call whose value is a bound placeholder string
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $method
+     * @param  string       $column
+     * @param  string       $value
+     * @return void
+     */
+    protected static function callArity1(PredicateSet $predicateSet, string $method, string $column, string $value): void
+    {
+        match ($method) {
+            'equalTo'              => $predicateSet->equalTo($column, $value),
+            'notEqualTo'           => $predicateSet->notEqualTo($column, $value),
+            'greaterThan'          => $predicateSet->greaterThan($column, $value),
+            'greaterThanOrEqualTo' => $predicateSet->greaterThanOrEqualTo($column, $value),
+            'lessThan'             => $predicateSet->lessThan($column, $value),
+            'lessThanOrEqualTo'    => $predicateSet->lessThanOrEqualTo($column, $value),
+            'like'                 => $predicateSet->like($column, $value),
+            'notLike'              => $predicateSet->notLike($column, $value),
+            default                => throw new Exception("Error: Unsupported single-value method '" . $method . "'."),
+        };
+    }
+
+    /**
+     * Dispatch a single-value PredicateSet call whose value is a nested Sql\Select instance
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $method
+     * @param  string       $column
+     * @param  AbstractSql  $value
+     * @return void
+     */
+    protected static function callArity1Mixed(PredicateSet $predicateSet, string $method, string $column, AbstractSql $value): void
+    {
+        match ($method) {
+            'equalTo'              => $predicateSet->equalTo($column, $value),
+            'notEqualTo'           => $predicateSet->notEqualTo($column, $value),
+            'greaterThan'          => $predicateSet->greaterThan($column, $value),
+            'greaterThanOrEqualTo' => $predicateSet->greaterThanOrEqualTo($column, $value),
+            'lessThan'             => $predicateSet->lessThan($column, $value),
+            'lessThanOrEqualTo'    => $predicateSet->lessThanOrEqualTo($column, $value),
+            default                => throw new Exception("Error: Unsupported single-value method '" . $method . "'."),
+        };
+    }
+
+    /**
+     * Dispatch a two-value ('between'/'notBetween') PredicateSet call
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $method
+     * @param  string       $column
+     * @param  string       $value1
+     * @param  string       $value2
+     * @return void
+     */
+    protected static function callArity2(
+        PredicateSet $predicateSet, string $method, string $column, string $value1, string $value2
+    ): void
+    {
+        match ($method) {
+            'between'    => $predicateSet->between($column, $value1, $value2),
+            'notBetween' => $predicateSet->notBetween($column, $value1, $value2),
+            default      => throw new Exception("Error: Unsupported two-value method '" . $method . "'."),
+        };
     }
 
     /**

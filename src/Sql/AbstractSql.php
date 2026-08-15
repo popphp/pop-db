@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -401,8 +402,7 @@ abstract class AbstractSql
             }
             $quotedId = implode('.', $identifierAry);
         } else if (($identifier != '*') &&
-            ((preg_match('/^\$\d*\d$/', $identifier) == 0) && !is_int($identifier) &&
-                !is_float($identifier) && (preg_match('/^\d*$/', $identifier) == 0))) {
+            ((preg_match('/^\$\d*\d$/', $identifier) == 0) && (preg_match('/^\d*$/', $identifier) == 0))) {
             $quotedId = $this->openQuote . $identifier . $this->closeQuote;
         } else {
             $quotedId = $identifier;
@@ -414,16 +414,17 @@ abstract class AbstractSql
     /**
      * Quote the value (if it is not a numeric value)
      *
-     * @param  ?string $value
-     * @param  bool    $force
+     * @param  mixed $value
+     * @param  bool  $force
      * @return float|int|string
      */
-    public function quote(?string $value = null, bool $force = false): float|int|string
+    public function quote(mixed $value = null, bool $force = false): float|int|string
     {
+        $value = ($value !== null) ? (string)$value : null;
+
         if ($force) {
             if (($value == '') ||
-                ((preg_match('/^\$\d*\d$/', $value) == 0) &&
-                    !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
+                ((preg_match('/^\$\d*\d$/', $value) == 0) && (preg_match('/^\d*$/', $value) == 0))) {
                 $value = "'" . $this->db->escape($value) . "'";
             }
         } else {
@@ -432,7 +433,7 @@ abstract class AbstractSql
                     (!empty($this->openQuote) && !empty($this->closeQuote) &&
                         !(str_starts_with($value, $this->openQuote) && str_ends_with($value, $this->closeQuote))) &&
                     (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
-                    !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
+                    (preg_match('/^\d*$/', $value) == 0))) {
                 $value = "'" . $this->db->escape($value) . "'";
             }
         }
@@ -449,7 +450,9 @@ abstract class AbstractSql
     protected function init(string $adapter): void
     {
         if (stripos($adapter, 'pdo') !== false) {
-            $adapter           = $this->db->getType();
+            if ($this->db instanceof Adapter\Pdo) {
+                $adapter = $this->db->getType() ?? $adapter;
+            }
             $this->placeholder = ':';
         }
 
@@ -512,11 +515,15 @@ abstract class AbstractSql
     /**
      * Check if value contains a standard SQL supported function
      *
-     * @param  string $value
+     * @param  mixed $value
      * @return bool
      */
-    public static function isSupportedFunction(string $value): bool
+    public static function isSupportedFunction(mixed $value): bool
     {
+        if (!is_string($value)) {
+            return false;
+        }
+
         if (str_contains($value, '(')) {
             $value = trim(substr($value, 0, strpos($value, '(')));
         }
@@ -527,5 +534,12 @@ abstract class AbstractSql
             in_array($value, static::$stringFunctions) ||
             in_array($value, static::$dateTimeFunctions));
     }
+
+    /**
+     * Render the SQL statement as a string
+     *
+     * @return string
+     */
+    abstract public function __toString(): string;
 
 }

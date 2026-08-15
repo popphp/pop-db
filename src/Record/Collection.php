@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -79,7 +80,7 @@ class Collection extends Utils\Collection
                         });
                     } else {
                         // return associative array of arrays sorted by non-unique column
-                        $items = array_reduce($items, function($accumulator, $item) use ($options, $items) {
+                        $items = array_reduce($items, function($accumulator, $item) use ($options) {
                             $accumulator[$item[$options['key']]][] = $item;
                             return $accumulator;
                         });

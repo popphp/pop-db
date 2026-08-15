@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -188,25 +189,19 @@ class Encoded extends \Pop\Db\Record
     public function decodeValue(string $key, string $value): mixed
     {
         if (in_array($key, $this->jsonFields)) {
-            if ($value !== null) {
-                $jsonValue = @json_decode($value, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $value = $jsonValue;
-                }
+            $jsonValue = @json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $value = $jsonValue;
             }
         } else if (in_array($key, $this->phpFields)) {
-            if ($value !== null) {
-                $phpValue = @unserialize($value);
-                if ($phpValue !== false) {
-                    $value = $phpValue;
-                }
+            $phpValue = @unserialize($value);
+            if ($phpValue !== false) {
+                $value = $phpValue;
             }
         } else if (in_array($key, $this->base64Fields)) {
-            if ($value !== null) {
-                $base64Value = @base64_decode($value, true);
-                if ($base64Value !== false) {
-                    $value = $base64Value;
-                }
+            $base64Value = @base64_decode($value, true);
+            if ($base64Value !== false) {
+                $value = $base64Value;
             }
         } else if (in_array($key, $this->encryptedFields)) {
             // Attempt to load encryption properties from $_ENV
@@ -224,14 +219,12 @@ class Encoded extends \Pop\Db\Record
                 $encrypter->setPreviousKeys($this->previousKeys, false);
             }
 
-            if ($value !== null) {
-                $base64Value = @base64_decode($value, true);
-                if ($base64Value !== false) {
-                    // Test if payload is valid
-                    $payload = json_decode(base64_decode($value), true);
-                    if (is_array($payload) && isset($payload['iv']) && isset($payload['value'])) {
-                        $value = $encrypter->decrypt($value);
-                    }
+            $base64Value = @base64_decode($value, true);
+            if ($base64Value !== false) {
+                // Test if payload is valid
+                $payload = json_decode(base64_decode($value), true);
+                if (is_array($payload) && isset($payload['iv']) && isset($payload['value'])) {
+                    $value = $encrypter->decrypt($value);
                 }
             }
         }

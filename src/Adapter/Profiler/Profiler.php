@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -24,15 +25,17 @@ use Pop\Utils\DebuggerInterface;
  * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  * @version    7.0.0
+ *
+ * @property-read ?Step $current Current step
  */
 class Profiler extends AbstractProfiler
 {
 
     /**
-     * Profiler current index
+     * Profiler current step index
      * @var int
      */
-    protected int $current = 0;
+    protected int $currentIndex = 0;
 
     /**
      * Profiler steps
@@ -114,7 +117,7 @@ class Profiler extends AbstractProfiler
             $step = new Step();
         }
         $this->steps[] = $step;
-        $this->current = count($this->steps) - 1;
+        $this->currentIndex = count($this->steps) - 1;
 
         return $this;
     }
@@ -136,7 +139,7 @@ class Profiler extends AbstractProfiler
      */
     public function getCurrentStep(): ?Step
     {
-        return $this->steps[$this->current] ?? null;
+        return $this->steps[$this->currentIndex] ?? null;
     }
 
     /**
@@ -150,16 +153,12 @@ class Profiler extends AbstractProfiler
         switch ($name) {
             case 'start':
                 return $this->start;
-                break;
             case 'finish':
                 return $this->finish;
-                break;
             case 'current':
                 return $this->getCurrentStep();
-                break;
             case 'elapsed':
                 return $this->getElapsed();
-                break;
             default:
                 return null;
         }

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -352,7 +353,7 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
         $i = 1;
         foreach ($this->columns as $column => $value) {
             if (!in_array($column, $this->primaryKeys) &&
-                ((empty($columnNames)) || (!empty($columnNames) && in_array($column, $columnNames)))) {
+                (empty($columnNames) || in_array($column, $columnNames))) {
                 $placeholder = $sql->getPlaceholder();
 
                 if ($placeholder == ':') {

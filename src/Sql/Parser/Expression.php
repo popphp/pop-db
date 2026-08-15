@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -506,7 +507,7 @@ class Expression
     {
         if (($value == '') ||
             (($value != '?') && (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
-                !is_int($value) && !is_float($value) && (preg_match('/^\d*$/', $value) == 0))) {
+                (preg_match('/^\d*$/', $value) == 0))) {
             $value = "'" . $value . "'";
         }
         return $value;

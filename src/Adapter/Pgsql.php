@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -381,7 +382,7 @@ class Pgsql extends AbstractAdapter
     {
         $insertQuery = pg_query($this->connection, "SELECT lastval();");
         $insertRow   = pg_fetch_row($insertQuery);
-        return $insertRow[0];
+        return (int)$insertRow[0];
     }
 
     /**

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -79,11 +80,11 @@ class Step extends AbstractProfiler
     /**
      * Add param
      *
-     * @param  string $name
-     * @param  mixed  $value
+     * @param  int|string $name
+     * @param  mixed      $value
      * @return Step
      */
-    public function addParam(string $name, mixed $value): Step
+    public function addParam(int|string $name, mixed $value): Step
     {
         $this->params[$name] = $value;
         return $this;
@@ -171,22 +172,16 @@ class Step extends AbstractProfiler
         switch ($name) {
             case 'query':
                 return $this->query;
-                break;
             case 'params':
                 return $this->params;
-                break;
             case 'errors':
                 return $this->errors;
-                break;
             case 'start':
                 return $this->start;
-                break;
             case 'finish':
                 return $this->finish;
-                break;
             case 'elapsed':
                 return $this->getElapsed();
-                break;
             default:
                 return null;
         }

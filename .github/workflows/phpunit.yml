@@ -16,7 +16,6 @@ jobs:
     strategy:
       matrix:
         php-versions: [ '8.4', '8.5' ]
-        phpunit-versions: ['12.5.0']
 
     services:
       mysql:
@@ -47,7 +46,6 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-versions }}
-        tools: phpunit:${{ matrix.phpunit-versions }}
         extensions: mysqli, pgsql, sqlite3, pdo
 
     - name: Cache Composer packages
@@ -68,3 +66,6 @@ jobs:
 
     - name: Run test suite
       run: composer run-script test
+
+    - name: Run analyse suite
+      run: composer run-script analyse

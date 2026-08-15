@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -22,7 +23,8 @@ namespace Pop\Db\Sql;
  * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  * @version    7.0.0
- * @property   $where mixed
+ *
+ * @property-read ?PredicateSet $where WHERE predicate object (lazily created by subclasses)
  */
 abstract class AbstractPredicateClause extends AbstractClause
 {
@@ -31,7 +33,7 @@ abstract class AbstractPredicateClause extends AbstractClause
      * WHERE predicate object
      * @var ?PredicateSet
      */
-    protected ?PredicateSet $where = null;
+    protected ?PredicateSet $wherePredicate = null;
 
     /**
      * Access the WHERE clause
@@ -42,10 +44,10 @@ abstract class AbstractPredicateClause extends AbstractClause
     public function where(mixed $where = null): AbstractPredicateClause
     {
         if ($where instanceof PredicateSet) {
-            $this->where = $where;
+            $this->wherePredicate = $where;
         } else {
-            if ($this->where === null) {
-                $this->where = new Where($this);
+            if ($this->wherePredicate === null) {
+                $this->wherePredicate = new Where($this);
             }
 
             if ($where !== null) {
@@ -55,19 +57,19 @@ abstract class AbstractPredicateClause extends AbstractClause
                         foreach ($tokens as $i => $token) {
                             if (($i > 0) && (($tokens[$i - 1] === 'AND') || ($tokens[$i - 1] === 'OR'))) {
                                 if ($tokens[$i - 1] === 'AND') {
-                                    $this->where->and($token);
+                                    $this->wherePredicate->and($token);
                                 } else {
-                                    $this->where->or($token);
+                                    $this->wherePredicate->or($token);
                                 }
                             } else if (($token !== 'AND') && ($token !== 'OR')) {
-                                $this->where->add($token);
+                                $this->wherePredicate->add($token);
                             }
                         }
                     } else {
-                        $this->where->add($where);
+                        $this->wherePredicate->add($where);
                     }
                 } else if (is_array($where)) {
-                    $this->where->addExpressions($where);
+                    $this->wherePredicate->addExpressions($where);
                 }
             }
         }
@@ -83,16 +85,16 @@ abstract class AbstractPredicateClause extends AbstractClause
      */
     public function andWhere(mixed $where = null): AbstractPredicateClause
     {
-        if ($this->where === null) {
-            $this->where = new Where($this);
+        if ($this->wherePredicate === null) {
+            $this->wherePredicate = new Where($this);
         }
 
         if ($where !== null) {
             if (is_string($where)) {
-                $this->where->and($where);
+                $this->wherePredicate->and($where);
             } else if (is_array($where)) {
                 foreach ($where as $w) {
-                    $this->where->and($w);
+                    $this->wherePredicate->and($w);
                 }
             }
         }
@@ -108,16 +110,16 @@ abstract class AbstractPredicateClause extends AbstractClause
      */
     public function orWhere(mixed $where = null): AbstractPredicateClause
     {
-        if ($this->where === null) {
-            $this->where = new Where($this);
+        if ($this->wherePredicate === null) {
+            $this->wherePredicate = new Where($this);
         }
 
         if ($where !== null) {
             if (is_string($where)) {
-                $this->where->or($where);
+                $this->wherePredicate->or($where);
             } else if (is_array($where)) {
                 foreach ($where as $w) {
-                    $this->where->or($w);
+                    $this->wherePredicate->or($w);
                 }
             }
         }
