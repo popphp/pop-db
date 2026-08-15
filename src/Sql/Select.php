@@ -442,66 +442,10 @@ class Select extends AbstractPredicateClause
      */
     public function render(): string
     {
-        // Start building the SELECT statement
-        $sql = 'SELECT ' . (($this->distinct) ? 'DISTINCT ' : null);
-
-        if (count($this->values) > 0) {
-            $cols = [];
-            foreach ($this->values as $as => $col) {
-                // If column is a nested SQL query
-                if ($col instanceof AbstractSql) {
-                    $cols[] = (!is_numeric($as)) ?
-                        '(' . $col . ') AS ' . $this->quoteId($as) : '(' .  $col . ')';
-                } else if ($col instanceof JsonExtract) {
-                    $cols[] = (!is_numeric($as)) ?
-                        (string)$col . ' AS ' . $this->quoteId($as) : (string)$col;
-                } else {
-                    // If column is a SQL function, don't quote it
-                    $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);
-                    $cols[] = (!is_numeric($as)) ?
-                        $c . ' AS ' . $this->quoteId($as) : $c;
-                }
-            }
-            $sql .= implode(', ', $cols) . ' ';
-        } else {
-            $sql .= '* ';
-        }
-
-        $sql .= 'FROM ';
-
-        // Account for LIMIT and OFFSET clauses if the database is SQLSRV
-        if (($this->isSqlsrv()) && (($this->limit !== null) || ($this->offset !== null))) {
-            if ($this->orderBy === null) {
-                throw new Exception(
-                    'Error: You must set an order by clause to execute a limit clause on the MS SQL Server database.'
-                );
-            }
-            $sql .= $this->buildSqlSrvLimitAndOffset();
-        // Else, if there is a nested SELECT statement.
-        } else if (($this->table instanceof \Pop\Db\Sql) && ($this->table->hasSelect())) {
-            $sql .= (string)$this->table->select();
-        // Else, if there is a nested SELECT statement.
-        } else if ($this->table instanceof \Pop\Db\Sql\Select) {
-            $sql .= (string)$this->table;
-        // Else, if there is an aliased table
-        } else if (is_array($this->table)) {
-            if (count($this->table) !== 1) {
-                throw new Exception('Error: Only one table can be used in FROM clause.');
-            }
-            $alias = array_key_first($this->table);
-            $table = $this->table[$alias];
-            $sql  .= $this->quoteId($table) . ' AS ' . $this->quoteId($alias);
-        // Else, just select from the table
-        } else {
-            $sql .= $this->quoteId($this->table);
-        }
-
-        // Build any JOIN clauses
-        if (count($this->joins) > 0) {
-            foreach ($this->joins as $join) {
-                $sql .= ' ' . $join;
-            }
-        }
+        $sql  = 'SELECT ' . (($this->distinct) ? 'DISTINCT ' : null);
+        $sql .= $this->buildColumnsClause();
+        $sql .= 'FROM ' . $this->buildFromClause();
+        $sql .= $this->buildJoinsClause();
 
         // Build WHERE clause
         if ($this->wherePredicate !== null) {
@@ -523,27 +467,127 @@ class Select extends AbstractPredicateClause
             $sql .= ' ORDER BY ' . $this->orderBy;
         }
 
-        // Build LIMIT clause for all other database types.
-        if (!$this->isSqlsrv()) {
-            if ($this->limit !== null) {
-                if ((is_string($this->limit)) && (str_contains($this->limit, ',')) && ($this->isPgsql())) {
-                    [$offset, $limit] = explode(',', $this->limit);
-                    $this->offset     = (int)trim($offset);
-                    $this->limit      = (int)trim($limit);
-                }
-                $sql .= ' LIMIT ' . $this->limit;
-            }
-        }
-
-        // Build OFFSET clause for all other database types.
-        if (!$this->isSqlsrv()) {
-            if ($this->offset !== null) {
-                $sql .= ' OFFSET ' . $this->offset;
-            }
-        }
+        $sql .= $this->buildLimitOffsetClause();
 
         if ($this->alias !== null) {
             $sql = '(' . $sql . ') AS ' . $this->quoteId($this->alias);
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Build the column list portion of the SELECT statement
+     *
+     * @return string
+     */
+    protected function buildColumnsClause(): string
+    {
+        if (count($this->values) === 0) {
+            return '* ';
+        }
+
+        $cols = [];
+        foreach ($this->values as $as => $col) {
+            // If column is a nested SQL query
+            if ($col instanceof AbstractSql) {
+                $cols[] = (!is_numeric($as)) ?
+                    '(' . $col . ') AS ' . $this->quoteId($as) : '(' .  $col . ')';
+            } else if ($col instanceof JsonExtract) {
+                $cols[] = (!is_numeric($as)) ?
+                    (string)$col . ' AS ' . $this->quoteId($as) : (string)$col;
+            } else {
+                // If column is a SQL function, don't quote it
+                $c = self::isSupportedFunction($col) ? $col :  $this->quoteId($col);
+                $cols[] = (!is_numeric($as)) ?
+                    $c . ' AS ' . $this->quoteId($as) : $c;
+            }
+        }
+
+        return implode(', ', $cols) . ' ';
+    }
+
+    /**
+     * Build the FROM clause target (table, aliased table, or nested SELECT)
+     *
+     * @throws Exception
+     * @return string
+     */
+    protected function buildFromClause(): string
+    {
+        // Account for LIMIT and OFFSET clauses if the database is SQLSRV
+        if (($this->isSqlsrv()) && (($this->limit !== null) || ($this->offset !== null))) {
+            if ($this->orderBy === null) {
+                throw new Exception(
+                    'Error: You must set an order by clause to execute a limit clause on the MS SQL Server database.'
+                );
+            }
+            return $this->buildSqlSrvLimitAndOffset();
+        }
+
+        // Nested SELECT statement
+        if (($this->table instanceof \Pop\Db\Sql) && ($this->table->hasSelect())) {
+            return (string)$this->table->select();
+        }
+
+        // Nested SELECT statement
+        if ($this->table instanceof \Pop\Db\Sql\Select) {
+            return (string)$this->table;
+        }
+
+        // Aliased table
+        if (is_array($this->table)) {
+            if (count($this->table) !== 1) {
+                throw new Exception('Error: Only one table can be used in FROM clause.');
+            }
+            $alias = array_key_first($this->table);
+            $table = $this->table[$alias];
+            return $this->quoteId($table) . ' AS ' . $this->quoteId($alias);
+        }
+
+        return $this->quoteId($this->table);
+    }
+
+    /**
+     * Build any JOIN clauses
+     *
+     * @return string
+     */
+    protected function buildJoinsClause(): string
+    {
+        $sql = '';
+
+        foreach ($this->joins as $join) {
+            $sql .= ' ' . $join;
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Build the LIMIT/OFFSET clause for non-SQLSRV databases
+     *
+     * @return string
+     */
+    protected function buildLimitOffsetClause(): string
+    {
+        if ($this->isSqlsrv()) {
+            return '';
+        }
+
+        $sql = '';
+
+        if ($this->limit !== null) {
+            if ((is_string($this->limit)) && (str_contains($this->limit, ',')) && ($this->isPgsql())) {
+                [$offset, $limit] = explode(',', $this->limit);
+                $this->offset     = (int)trim($offset);
+                $this->limit      = (int)trim($limit);
+            }
+            $sql .= ' LIMIT ' . $this->limit;
+        }
+
+        if ($this->offset !== null) {
+            $sql .= ' OFFSET ' . $this->offset;
         }
 
         return $sql;

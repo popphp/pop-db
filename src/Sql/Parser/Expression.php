@@ -327,111 +327,32 @@ class Expression
 
             // IS NULL/IS NOT NULL
             if ($value === null) {
-                $newExpression = $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
-                if ($placeholder == ':') {
-                    $expressions[$parsedColumn] = $newExpression;
-                } else {
-                    $expressions[] = $newExpression;
-                }
+                $expressions = self::applyExpression(
+                    $expressions, $parsedColumn, $placeholder, self::buildNullExpression($parsedColumn, $operator)
+                );
             // IN/NOT IN
             } else if (is_array($value)) {
-                $p = [];
-                if ($placeholder == ':') {
-                    $pHolders = [];
-                    foreach ($value as $j => $val) {
-                        $ph         = $pHolder . ($j + 1);
-                        $pHolders[] = $ph;
-                        $p[]        = $val;
-                    }
-                } else if ($placeholder == '$') {
-                    $pHolders = [];
-                    foreach ($value as $val) {
-                        $pHolders[] = $placeholder . $i++;
-                        $p[]        = $val;
-                    }
-                } else {
-                    $pHolders = array_fill(0, count($value), $pHolder);
-                    $p        = $value;
-                    $i++;
-                }
-                if ($placeholder !== null) {
-                    $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
-                        implode(', ', $pHolders) . ')';
-                    if ($placeholder == ':') {
-                        $expressions[$parsedColumn] = $newExpression;
-                    } else {
-                        $expressions[] = $newExpression;
-                    }
-                } else {
-                    $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
-                        implode(', ', array_map('Pop\Db\Sql\Parser\Expression::quote', $value)) . ')';
-                }
-                if ($placeholder == ':') {
-                    $params[$parsedColumn] = $p;
-                } else {
-                    $params[$j] = $p;
-                }
+                [$newExpression, $paramValue] = self::buildInExpression(
+                    $parsedColumn, $operator, $value, $placeholder, $pHolder, $i
+                );
+                $expressions = self::applyExpression($expressions, $parsedColumn, $placeholder, $newExpression);
+                $params      = self::applyParam($params, $parsedColumn, $placeholder, $j, $paramValue);
             // BETWEEN/NOT BETWEEN
             } else if (is_string($value) && str_starts_with($value, '(') && str_ends_with($value, ')')) {
-                $values            = substr($value, (strpos($value, '(') + 1));
-                $values            = substr($values, 0, strpos($values, ')'));
-                $delimiter         = (str_contains($values, ',')) ? ',' : 'AND';
-                [$value1, $value2] = array_map('trim', explode($delimiter, $values));
-
-                $p = [$value1, $value2];
-
-                if ($placeholder == ':') {
-                    $pHolder2 = $pHolder . 2;
-                    $pHolder .= 1;
-                } else if ($placeholder == '$') {
-                    $pHolder2 = $placeholder . ++$i;
-                } else {
-                    $pHolder2 = $pHolder;
-                }
-
-                if ($placeholder !== null) {
-                    $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
-                        'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
-                    if ($placeholder == ':') {
-                        $expressions[$parsedColumn] = $newExpression;
-                    } else {
-                        $expressions[] = $newExpression;
-                    }
-                } else {
-                    $expressions[] = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
-                        'BETWEEN ' . self::quote($value1) . ' AND ' . self::quote($value2);
-                }
-                if ($placeholder == ':') {
-                    $params[$parsedColumn] = $p;
-                } else {
-                    $params[$j] = $p;
-                }
-                $i++;
+                [$newExpression, $paramValue] = self::buildBetweenExpression(
+                    $parsedColumn, $operator, $value, $placeholder, $pHolder, $i
+                );
+                $expressions = self::applyExpression($expressions, $parsedColumn, $placeholder, $newExpression);
+                $params      = self::applyParam($params, $parsedColumn, $placeholder, $j, $paramValue);
             // LIKE/NOT LIKE or Standard Operators
-            } else  {
-                if ((str_starts_with($column, '%')) || (str_starts_with($column, '-%'))) {
-                    $value  = '%' . $value;
-                }
-                if ((str_ends_with($column, '%')) || (str_ends_with($column, '%-'))) {
-                    $value .= '%';
-                }
-                if ($placeholder !== null) {
-                    $newExpression = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
-                    if ($placeholder == ':') {
-                        $expressions[$parsedColumn] = $newExpression;
-                    } else {
-                        $expressions[] = $newExpression;
-                    }
-                } else {
-                    $expressions[] = $parsedColumn . ' ' . $operator . ' ' . self::quote($value);
-                }
-                if ($placeholder == ':') {
-                    $params[$parsedColumn] = $value;
-                } else {
-                    $params[$j] = $value;
-                }
-                $i++;
+            } else {
+                [$newExpression, $paramValue] = self::buildComparisonExpression(
+                    $column, $parsedColumn, $operator, $value, $placeholder, $pHolder, $i
+                );
+                $expressions = self::applyExpression($expressions, $parsedColumn, $placeholder, $newExpression);
+                $params      = self::applyParam($params, $parsedColumn, $placeholder, $j, $paramValue);
             }
+
             $j++;
         }
 
@@ -460,6 +381,185 @@ class Expression
         } else {
             return ['expressions' => $expressions, 'params' => $params];
         }
+    }
+
+    /**
+     * Add a rendered expression fragment to the expressions array, keyed by column name when
+     * using named (':') placeholders, or appended positionally otherwise
+     *
+     * @param  array   $expressions
+     * @param  string  $parsedColumn
+     * @param  ?string $placeholder
+     * @param  string  $newExpression
+     * @return array
+     */
+    private static function applyExpression(array $expressions, string $parsedColumn, ?string $placeholder, string $newExpression): array
+    {
+        if ($placeholder == ':') {
+            $expressions[$parsedColumn] = $newExpression;
+        } else {
+            $expressions[] = $newExpression;
+        }
+
+        return $expressions;
+    }
+
+    /**
+     * Add a bound parameter value to the params array, keyed by column name when using named
+     * (':') placeholders, or by the running column index otherwise
+     *
+     * @param  array   $params
+     * @param  string  $parsedColumn
+     * @param  ?string $placeholder
+     * @param  int     $j
+     * @param  mixed   $paramValue
+     * @return array
+     */
+    private static function applyParam(array $params, string $parsedColumn, ?string $placeholder, int $j, mixed $paramValue): array
+    {
+        if ($placeholder == ':') {
+            $params[$parsedColumn] = $paramValue;
+        } else {
+            $params[$j] = $paramValue;
+        }
+
+        return $params;
+    }
+
+    /**
+     * Build an IS NULL/IS NOT NULL expression fragment
+     *
+     * @param  string $parsedColumn
+     * @param  string $operator
+     * @return string
+     */
+    private static function buildNullExpression(string $parsedColumn, string $operator): string
+    {
+        return $parsedColumn . ' IS ' . (($operator == 'NOT') ? 'NOT ' : '') . 'NULL';
+    }
+
+    /**
+     * Build an IN/NOT IN expression fragment and its bound parameter value(s)
+     *
+     * @param  string  $parsedColumn
+     * @param  string  $operator
+     * @param  array   $value
+     * @param  ?string $placeholder
+     * @param  ?string $pHolder
+     * @param  int     $i
+     * @return array [string $newExpression, array $paramValue]
+     */
+    private static function buildInExpression(
+        string $parsedColumn, string $operator, array $value, ?string $placeholder, ?string $pHolder, int &$i
+    ): array
+    {
+        $p = [];
+
+        if ($placeholder == ':') {
+            $pHolders = [];
+            foreach ($value as $k => $val) {
+                $pHolders[] = $pHolder . ($k + 1);
+                $p[]        = $val;
+            }
+        } else if ($placeholder == '$') {
+            $pHolders = [];
+            foreach ($value as $val) {
+                $pHolders[] = $placeholder . $i++;
+                $p[]        = $val;
+            }
+        } else {
+            $pHolders = array_fill(0, count($value), $pHolder);
+            $p        = $value;
+            $i++;
+        }
+
+        if ($placeholder !== null) {
+            $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
+                implode(', ', $pHolders) . ')';
+        } else {
+            $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') . 'IN (' .
+                implode(', ', array_map('Pop\Db\Sql\Parser\Expression::quote', $value)) . ')';
+        }
+
+        return [$newExpression, $p];
+    }
+
+    /**
+     * Build a BETWEEN/NOT BETWEEN expression fragment and its two bound boundary values
+     *
+     * @param  string  $parsedColumn
+     * @param  string  $operator
+     * @param  string  $value
+     * @param  ?string $placeholder
+     * @param  ?string $pHolder
+     * @param  int     $i
+     * @return array [string $newExpression, array $paramValue]
+     */
+    private static function buildBetweenExpression(
+        string $parsedColumn, string $operator, string $value, ?string $placeholder, ?string $pHolder, int &$i
+    ): array
+    {
+        $values            = substr($value, (strpos($value, '(') + 1));
+        $values            = substr($values, 0, strpos($values, ')'));
+        $delimiter         = (str_contains($values, ',')) ? ',' : 'AND';
+        [$value1, $value2] = array_map('trim', explode($delimiter, $values));
+
+        $p = [$value1, $value2];
+
+        if ($placeholder == ':') {
+            $pHolder2 = $pHolder . 2;
+            $pHolder .= 1;
+        } else if ($placeholder == '$') {
+            $pHolder2 = $placeholder . ++$i;
+        } else {
+            $pHolder2 = $pHolder;
+        }
+
+        if ($placeholder !== null) {
+            $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
+                'BETWEEN ' . $pHolder . ' AND ' . $pHolder2;
+        } else {
+            $newExpression = $parsedColumn . (($operator == 'NOT') ? ' NOT ' : ' ') .
+                'BETWEEN ' . self::quote($value1) . ' AND ' . self::quote($value2);
+        }
+
+        $i++;
+
+        return [$newExpression, $p];
+    }
+
+    /**
+     * Build a LIKE/NOT LIKE or standard comparison-operator expression fragment and its bound value
+     *
+     * @param  string  $column
+     * @param  string  $parsedColumn
+     * @param  string  $operator
+     * @param  mixed   $value
+     * @param  ?string $placeholder
+     * @param  ?string $pHolder
+     * @param  int     $i
+     * @return array [string $newExpression, mixed $paramValue]
+     */
+    private static function buildComparisonExpression(
+        string $column, string $parsedColumn, string $operator, mixed $value, ?string $placeholder, ?string $pHolder, int &$i
+    ): array
+    {
+        if ((str_starts_with($column, '%')) || (str_starts_with($column, '-%'))) {
+            $value = '%' . $value;
+        }
+        if ((str_ends_with($column, '%')) || (str_ends_with($column, '%-'))) {
+            $value .= '%';
+        }
+
+        if ($placeholder !== null) {
+            $newExpression = $parsedColumn . ' ' . $operator . ' ' . $pHolder;
+        } else {
+            $newExpression = $parsedColumn . ' ' . $operator . ' ' . self::quote($value);
+        }
+
+        $i++;
+
+        return [$newExpression, $value];
     }
 
     /**
