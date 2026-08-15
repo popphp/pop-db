@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -505,7 +506,6 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     public function clearProfiler(): AbstractAdapter
     {
-        unset($this->profiler);
         $this->profiler = null;
         return $this;
     }
@@ -577,11 +577,6 @@ abstract class AbstractAdapter implements AdapterInterface
      */
     public function disconnect(): void
     {
-        unset($this->connection);
-        unset($this->statement);
-        unset($this->result);
-        unset($this->error);
-
         $this->connection = null;
         $this->result     = null;
         $this->statement  = null;

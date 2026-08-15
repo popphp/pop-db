@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -259,7 +260,7 @@ interface AdapterInterface
     /**
      * Add query listener to the adapter
      *
-     * @param  mixed $listenerclear
+     * @param  mixed $listener
      * @return mixed
      */
     public function listen(mixed $listener): mixed;

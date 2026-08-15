@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -61,16 +62,12 @@ class Column extends AbstractFormatter
         switch ($dbType) {
             case Sql::MYSQL:
                 return self::getValidMysqlDataType($type);
-                break;
             case Sql::PGSQL:
                 return self::getValidPgsqlDataType($type);
-                break;
             case Sql::SQLITE:
                 return self::getValidSqliteDataType($type);
-                break;
             case Sql::SQLSRV:
                 return self::getValidSqlsrvDataType($type);
-                break;
             default:
                 return $type;
         }
@@ -127,7 +124,6 @@ class Column extends AbstractFormatter
                 break;
             case 'TINYINT':
                 $type = 'SMALLINT';
-                break;
                 break;
             case 'DOUBLE':
                 $type = 'DOUBLE PRECISION';
@@ -259,16 +255,12 @@ class Column extends AbstractFormatter
         switch ($dbType) {
             case Sql::MYSQL:
                 return self::formatMysqlColumn($name, $dataType, $column);
-                break;
             case Sql::PGSQL:
                 return self::formatPgsqlColumn($name, $dataType, $column, $table);
-                break;
             case Sql::SQLITE:
                 return self::formatSqliteColumn($name, $dataType, $column);
-                break;
             case Sql::SQLSRV:
                 return self::formatSqlsrvColumn($name, $dataType, $column);
-                break;
             default:
                 throw new Exception("Error: The database type '" . $dbType . "' is not supported.");
         }

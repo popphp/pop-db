@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -89,9 +90,12 @@ class Mysql extends AbstractAdapter
         if (!isset($options['port'])) {
             $options['port'] = ini_get('mysqli.default_port');
         }
+        $options['port'] = !empty($options['port']) ? (int)$options['port'] : null;
+
         if (!isset($options['socket'])) {
             $options['socket'] = ini_get('mysqli.default_socket');
         }
+        $options['socket'] = !empty($options['socket']) ? (string)$options['socket'] : null;
 
         $this->options = $options;
 

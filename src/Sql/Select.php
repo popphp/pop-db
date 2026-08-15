@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -22,6 +23,8 @@ namespace Pop\Db\Sql;
  * @copyright  Copyright (c) 2009-2027 NOLA Interactive, LLC.
  * @license    https://www.popphp.org/license     New BSD License
  * @version    7.0.0
+ *
+ * @property-read ?PredicateSet $having HAVING predicate object (lazily created)
  */
 class Select extends AbstractPredicateClause
 {
@@ -501,8 +504,8 @@ class Select extends AbstractPredicateClause
         }
 
         // Build WHERE clause
-        if ($this->where !== null) {
-            $sql .= ' WHERE ' . $this->where;
+        if ($this->wherePredicate !== null) {
+            $sql .= ' WHERE ' . $this->wherePredicate;
         }
 
         // Build HAVING clause
@@ -523,7 +526,7 @@ class Select extends AbstractPredicateClause
         // Build LIMIT clause for all other database types.
         if (!$this->isSqlsrv()) {
             if ($this->limit !== null) {
-                if ((str_contains($this->limit, ',')) && ($this->isPgsql())) {
+                if ((is_string($this->limit)) && (str_contains($this->limit, ',')) && ($this->isPgsql())) {
                     [$offset, $limit] = explode(',', $this->limit);
                     $this->offset     = (int)trim($offset);
                     $this->limit      = (int)trim($limit);
@@ -568,17 +571,15 @@ class Select extends AbstractPredicateClause
     {
         switch (strtolower($name)) {
             case 'where':
-                if ($this->where === null) {
-                    $this->where = new Where($this);
+                if ($this->wherePredicate === null) {
+                    $this->wherePredicate = new Where($this);
                 }
-                return $this->where;
-                break;
+                return $this->wherePredicate;
             case 'having':
                 if ($this->having === null) {
                     $this->having = new Having($this);
                 }
                 return $this->having;
-                break;
             default:
                 throw new Exception("The property '" . $name ."' is not a valid property for this select object.");
         }
@@ -618,19 +619,19 @@ class Select extends AbstractPredicateClause
      */
     protected function buildSqlSrvLimitAndOffset(): string
     {
-        $sql    = null;
+        $sql    = '';
         $result = $this->getLimitAndOffset();
         if ($result['offset'] !== null) {
-            if ($this->where === null) {
-                $this->where = new Where($this);
+            if ($this->wherePredicate === null) {
+                $this->wherePredicate = new Where($this);
             }
 
             $sql .= '(SELECT *, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') AS RowNumber FROM ' .
                 $this->quoteId($this->table) . ') AS OrderedTable';
             if ($result['limit'] > 0) {
-                $this->where->between('OrderedTable.RowNumber', $result['offset'], $result['limit']);
+                $this->wherePredicate->between('OrderedTable.RowNumber', $result['offset'], $result['limit']);
             } else {
-                $this->where->greaterThanOrEqualTo('OrderedTable.RowNumber', $result['offset']);
+                $this->wherePredicate->greaterThanOrEqualTo('OrderedTable.RowNumber', $result['offset']);
             }
         } else {
             $sql  = str_replace('SELECT', 'SELECT TOP ' . $result['limit'], $sql);

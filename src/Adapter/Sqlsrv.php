@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -111,7 +112,7 @@ class Sqlsrv extends AbstractAdapter
             $this->info = array_merge($this->info, $this->options['info']);
         }
 
-        if (!isset($info['ReturnDatesAsStrings'])) {
+        if (!isset($this->info['ReturnDatesAsStrings'])) {
             $this->info['ReturnDatesAsStrings'] = true;
         }
 

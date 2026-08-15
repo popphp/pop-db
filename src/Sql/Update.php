@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -76,8 +77,8 @@ class Update extends AbstractPredicateClause
         $sql .= implode(', ', $set);
 
         // Build any WHERE clauses
-        if ($this->where !== null) {
-            $sql .= ' WHERE ' . $this->where;
+        if ($this->wherePredicate !== null) {
+            $sql .= ' WHERE ' . $this->wherePredicate;
         }
 
         return $sql;
@@ -104,11 +105,10 @@ class Update extends AbstractPredicateClause
     {
         switch (strtolower($name)) {
             case 'where':
-                if ($this->where === null) {
-                    $this->where = new Where($this);
+                if ($this->wherePredicate === null) {
+                    $this->wherePredicate = new Where($this);
                 }
-                return $this->where;
-                break;
+                return $this->wherePredicate;
             default:
                 throw new Exception('Not a valid property for this object.');
         }

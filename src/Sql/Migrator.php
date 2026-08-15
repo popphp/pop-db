@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -37,9 +38,9 @@ class Migrator extends Migration\AbstractMigrator
 
     /**
      * Current migration position
-     * @var ?string
+     * @var ?int
      */
-    protected ?string $current = null;
+    protected ?int $current = null;
 
     /**
      * Migrations
@@ -105,11 +106,10 @@ class Migrator extends Migration\AbstractMigrator
         ksort($this->migrations, SORT_NUMERIC);
 
         $stepsToRun = [];
-        $current    = null;
         $batch      = $this->getNextBatch();
 
         foreach ($this->migrations as $timestamp => $migration) {
-            if (strtotime($timestamp) > strtotime((int)$this->current)) {
+            if (strtotime((string)$timestamp) > strtotime((string)($this->current ?? 0))) {
                 $stepsToRun[] = $timestamp;
             }
         }
@@ -126,10 +126,8 @@ class Migrator extends Migration\AbstractMigrator
                 $migration = new $class($this->db);
                 $migration->up();
 
-                $current = $stepsToRun[$i];
-                if ($current !== null) {
-                    $this->storeCurrent($current, $this->migrations[$stepsToRun[$i]]['filename'], $batch);
-                }
+                $current = (int)$stepsToRun[$i];
+                $this->storeCurrent($current, $this->migrations[$stepsToRun[$i]]['filename'], $batch);
             }
         }
 
@@ -163,7 +161,7 @@ class Migrator extends Migration\AbstractMigrator
             $stepsToRun = $this->getByBatch($steps);
         } else {
             foreach ($this->migrations as $timestamp => $migration) {
-                if (strtotime($timestamp) <= strtotime((int)$this->current)) {
+                if (strtotime((string)$timestamp) <= strtotime((string)($this->current ?? 0))) {
                     $stepsToRun[] = $timestamp;
                 }
             }
@@ -257,11 +255,11 @@ class Migrator extends Migration\AbstractMigrator
     }
 
     /**
-     * Get the migration path
+     * Get the current migration position
      *
-     * @return ?string
+     * @return ?int
      */
-    public function getCurrent(): ?string
+    public function getCurrent(): ?int
     {
         return $this->current;
     }
@@ -477,12 +475,10 @@ class Migrator extends Migration\AbstractMigrator
     protected function deleteCurrent(int $current, ?int $previous = null): void
     {
         if (($this->isTable()) && ($this->hasTable())) {
-            if (($this->isTable()) && ($this->hasTable())) {
-                $class     = $this->getTable();
-                $migration = $class::findOne(['migration_id' => $current]);
-                if (isset($migration->id)) {
-                    $migration->delete();
-                }
+            $class     = $this->getTable();
+            $migration = $class::findOne(['migration_id' => $current]);
+            if (isset($migration->id)) {
+                $migration->delete();
             }
         } else if ($this->isFile()) {
             if ($previous !== null) {
@@ -503,13 +499,11 @@ class Migrator extends Migration\AbstractMigrator
     protected function clearCurrent(): void
     {
         if (($this->isTable()) && ($this->hasTable())) {
-            if (($this->isTable()) && ($this->hasTable())) {
-                $class = $this->getTable();
-                $count = $class::total();
-                if ($count > 0) {
-                    $migrations = new $class();
-                    $migrations->delete();
-                }
+            $class = $this->getTable();
+            $count = $class::total();
+            if ($count > 0) {
+                $migrations = new $class();
+                $migrations->delete();
             }
         } else if ($this->isFile()) {
             if (file_exists($this->path . DIRECTORY_SEPARATOR . '.current')) {

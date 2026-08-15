@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -62,7 +63,7 @@ class Record extends Record\AbstractRecord
         $class   = get_class($this);
 
         foreach ($args as $arg) {
-            if (is_array($arg) || ($arg instanceof \ArrayAccess) || ($arg instanceof \ArrayObject)) {
+            if (is_array($arg) || ($arg instanceof \ArrayAccess)) {
                 $columns = $arg;
             } else if ($arg instanceof Adapter\AbstractAdapter) {
                 $db = $arg;
@@ -771,7 +772,7 @@ class Record extends Record\AbstractRecord
             $predicateSet = Sql\Parser\Condition::parse($columns, $sql);
             $expressions  = $predicateSet;
             $params       = ($predicateSet->hasParameters()) ? $predicateSet->getParameters() : null;
-        } else if ($columns instanceof PredicateSet) {
+        } else {
             $expressions = $columns;
             $params      = ($columns->hasParameters()) ? $columns->getParameters() : null;
         }
@@ -1068,10 +1069,7 @@ class Record extends Record\AbstractRecord
                 } else {
                     $this->beforeUpdate();
                     $this->rowGateway->update();
-                    $record = $this->getById($this->rowGateway->getPrimaryValues());
-                    if (isset($record[0])) {
-                        $this->setColumns($record[0]);
-                    }
+                    $this->getById($this->rowGateway->getPrimaryValues());
                     $this->afterUpdate();
                 }
                 $this->afterSave();
@@ -1125,15 +1123,10 @@ class Record extends Record\AbstractRecord
                 }
             // Delete multiple rows
             } else {
-                $expressions = null;
-                $params      = [];
-
-                if ($columns !== null) {
-                    $db            = Db::getDb($this->getFullTable());
-                    $sql           = $db->createSql();
-                    ['expressions' => $expressions, 'params' => $params] =
-                        Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
-                }
+                $db  = Db::getDb($this->getFullTable());
+                $sql = $db->createSql();
+                ['expressions' => $expressions, 'params' => $params] =
+                    Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
 
                 $this->tableGateway->delete($expressions, $params);
             }

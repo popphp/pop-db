@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 use Pop\Db\Adapter\AbstractAdapter;
 use Pop\Db\Sql\Seeder\AbstractSeeder;

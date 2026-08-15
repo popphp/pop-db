@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Pop PHP Framework (https://www.popphp.org/)
  *
@@ -256,9 +257,9 @@ class Pdo extends AbstractAdapter
      * The method of obtaining the value of the request attribute PDO.
      *
      * @param  int $attribute A request attribute
-     * @return string
+     * @return mixed
      */
-    public function getAttribute(int $attribute): string
+    public function getAttribute(int $attribute): mixed
     {
         return $this->connection->getAttribute($attribute);
     }
@@ -330,7 +331,7 @@ class Pdo extends AbstractAdapter
             $this->profiler->current->setQuery($sql);
         }
 
-        if (($attribs !== null) && is_array($attribs)) {
+        if ($attribs !== null) {
             $this->statement = $this->connection->prepare($sql, $attribs);
         } else {
             $this->statement = $this->connection->prepare($sql);
@@ -533,7 +534,7 @@ class Pdo extends AbstractAdapter
             $id = $this->connection->lastInsertId();
         }
 
-        return $id;
+        return (int)$id;
     }
 
     /**
@@ -600,7 +601,7 @@ class Pdo extends AbstractAdapter
             if (stripos($this->dsn, 'pgsql') !== false) {
                 $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
             } else if (stripos($this->dsn, 'sqlsrv') !== false) {
-                $sql = "SELECT name FROM " . $this->database . ".sysobjects WHERE xtype = 'U'";
+                $sql = "SELECT name FROM " . $this->options['database'] . ".sysobjects WHERE xtype = 'U'";
             } else {
                 $sql = 'SHOW TABLES';
             }
