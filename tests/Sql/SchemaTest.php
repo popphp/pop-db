@@ -183,4 +183,59 @@ class SchemaTest extends TestCase
         unlink(__DIR__ . '/../tmp/db.sqlite');
     }
 
+    public function testTruncateSqlite()
+    {
+        touch(__DIR__ . '/../tmp/db.sqlite');
+        chmod(__DIR__ . '/../tmp/db.sqlite', 0777);
+
+        $db = Db::sqliteConnect([
+            'database' => __DIR__ . '/../tmp/db.sqlite'
+        ]);
+
+        $schema = $db->createSchema();
+        $truncate = $schema->truncate('users');
+        $this->assertStringNotContainsString('TRUNCATE', (string)$truncate);
+        $this->assertStringContainsString('DELETE FROM "users"', (string)$truncate);
+
+        unlink(__DIR__ . '/../tmp/db.sqlite');
+    }
+
+    public function testTruncateExecuteSqlite()
+    {
+        touch(__DIR__ . '/../tmp/db.sqlite');
+        chmod(__DIR__ . '/../tmp/db.sqlite', 0777);
+
+        $db = Db::sqliteConnect([
+            'database' => __DIR__ . '/../tmp/db.sqlite'
+        ]);
+
+        $schema = $db->createSchema();
+        $schema->disableForeignKeyCheck()
+            ->createIfNotExists('users')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->primary('id');
+        $schema->execute();
+
+        $db->insert('INSERT INTO "users" ("id", "username") VALUES (1, \'test\')');
+        $db->query('SELECT COUNT(1) AS count FROM "users"');
+        $this->assertEquals(1, $db->fetch()['count']);
+
+        $schema = $db->createSchema();
+        $schema->truncate('users');
+        $schema->execute();
+
+        $db->query('SELECT COUNT(1) AS count FROM "users"');
+        $this->assertEquals(0, $db->fetch()['count']);
+        $this->assertTrue($db->hasTable('users'));
+
+        $schema = $db->createSchema();
+        $schema->drop('users');
+        $schema->execute();
+
+        $this->assertFalse($db->hasTable('users'));
+
+        unlink(__DIR__ . '/../tmp/db.sqlite');
+    }
+
 }
