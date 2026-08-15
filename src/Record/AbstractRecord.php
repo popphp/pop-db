@@ -645,8 +645,10 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
                         }
                     }
                 } else {
+                    $seen = [];
                     foreach ($rows as $i => $row) {
-                        if (isset($row[$primaryKey]) && !in_array($row[$primaryKey], $withIds)) {
+                        if (isset($row[$primaryKey]) && !isset($seen[$row[$primaryKey]])) {
+                            $seen[$row[$primaryKey]] = true;
                             $withIds[] = $row[$primaryKey];
                         }
                     }
@@ -656,11 +658,13 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
                 $primaryKey = $this->getPrimaryKeys();
                 if (count($primaryKey) == 1) {
                     $primaryKey = reset($primaryKey);
+                    $seen       = [];
                     foreach ($rows as $i => $row) {
                         $primaryValues = $rows[$i]->getPrimaryValues();
                         if (count($primaryValues) == 1) {
                             $withId = reset($primaryValues);
-                            if (!in_array($withId, $withIds)) {
+                            if (!isset($seen[$withId])) {
+                                $seen[$withId] = true;
                                 $withIds[] = $withId;
                             }
                         }

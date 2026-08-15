@@ -14,7 +14,9 @@ declare(strict_types=1);
  */
 namespace Pop\Db\Record\Relationships;
 
+use Pop\Db\Adapter\AbstractAdapter;
 use Pop\Db\Record;
+use Pop\Db\Sql;
 use Pop\Db\Sql\Parser;
 
 /**
@@ -132,7 +134,6 @@ class HasMany extends AbstractRelationship
             $this->assertTupleCardinality($ids, $this->foreignKey);
         }
 
-        $results = [];
         $table   = $this->foreignTable;
         $db      = $table::db();
         $sql     = $db->createSql();
@@ -144,6 +145,26 @@ class HasMany extends AbstractRelationship
 
         $sql->select($columns)->from($table::table());
 
+        [$isComposite, $params, $tupleParams] = $this->applyIdFilter($sql, $ids);
+        $params = $this->applyAdditionalColumnsFilter($sql, $isComposite, $params, $tupleParams);
+        $this->applyQueryOptions($sql, $db);
+
+        $db->prepare($sql)
+            ->bindParams($params)
+            ->execute();
+
+        return $this->hydrateRows($db->fetchAll(), $table, $toArray);
+    }
+
+    /**
+     * Apply the WHERE-IN (or composite tuple-group) id filter and compute its bound parameters
+     *
+     * @param  Sql   $sql
+     * @param  array $ids
+     * @return array [bool $isComposite, ?array $params, ?array $tupleParams]
+     */
+    private function applyIdFilter(Sql $sql, array $ids): array
+    {
         $isComposite = is_array($this->foreignKey);
 
         if ($isComposite) {
@@ -159,13 +180,27 @@ class HasMany extends AbstractRelationship
                     $group->equalTo($fkColumn, $sql->getPlaceholder());
                 }
             }
-            $tupleParams = array_merge(...$ids);
-        } else {
-            $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-            $sql->select()->where->in($this->foreignKey, $placeholders);
-            $params = $ids;
+            return [true, null, array_merge(...$ids)];
         }
 
+        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
+        $sql->select()->where->in($this->foreignKey, $placeholders);
+
+        return [false, $ids, null];
+    }
+
+    /**
+     * Apply the options['columns'] additional WHERE filter (if any) and resolve the final
+     * bound parameter list, keeping the composite tuple params positioned after it
+     *
+     * @param  Sql    $sql
+     * @param  bool   $isComposite
+     * @param  ?array $params
+     * @param  ?array $tupleParams
+     * @return ?array
+     */
+    private function applyAdditionalColumnsFilter(Sql $sql, bool $isComposite, ?array $params, ?array $tupleParams): ?array
+    {
         if (!empty($this->options) && isset($this->options['columns'])) {
             $additionalColumns = Parser\Expression::parseShorthand($this->options['columns'], $sql->getPlaceholder());
             if (!empty($additionalColumns['expressions'])) {
@@ -179,56 +214,76 @@ class HasMany extends AbstractRelationship
                 // tuple group), regardless of insertion order, so $params must
                 // follow that same order to stay positionally aligned with the
                 // rendered placeholders.
-                $params = !empty($additionalColumns['params'])
+                return !empty($additionalColumns['params'])
                     ? array_merge($additionalColumns['params'], $tupleParams)
                     : $tupleParams;
-            } elseif (!empty($additionalColumns['params'])) {
-                $params = array_merge($params, $additionalColumns['params']);
             }
-        } elseif ($isComposite) {
-            $params = $tupleParams;
+            return !empty($additionalColumns['params']) ? array_merge($params, $additionalColumns['params']) : $params;
         }
 
-        if (!empty($this->options)) {
-            if (isset($this->options['limit'])) {
-                $sql->select()->limit((int)$this->options['limit']);
-            }
+        return $isComposite ? $tupleParams : $params;
+    }
 
-            if (isset($this->options['offset'])) {
-                $sql->select()->offset((int)$this->options['offset']);
-            }
-            if (isset($this->options['join'])) {
-                $joins = (is_array($this->options['join']) && isset($this->options['join']['table'])) ?
-                    [$this->options['join']] : $this->options['join'];
+    /**
+     * Apply the limit, offset, join, and order options (if any)
+     *
+     * @param  Sql             $sql
+     * @param  AbstractAdapter $db
+     * @return void
+     */
+    private function applyQueryOptions(Sql $sql, AbstractAdapter $db): void
+    {
+        if (empty($this->options)) {
+            return;
+        }
 
-                foreach ($joins as $join) {
-                    if (isset($join['type']) && method_exists($sql->select(), $join['type'])) {
-                        $joinMethod = $join['type'];
-                        $sql->select()->{$joinMethod}($join['table'], $join['columns']);
-                    } else {
-                        $sql->select()->leftJoin($join['table'], $join['columns']);
-                    }
-                }
-            }
-            if (isset($this->options['order'])) {
-                if (!is_array($this->options['order'])) {
-                    $orders = (str_contains($this->options['order'], ',')) ?
-                        explode(',', $this->options['order']) : [$this->options['order']];
+        if (isset($this->options['limit'])) {
+            $sql->select()->limit((int)$this->options['limit']);
+        }
+
+        if (isset($this->options['offset'])) {
+            $sql->select()->offset((int)$this->options['offset']);
+        }
+
+        if (isset($this->options['join'])) {
+            $joins = (is_array($this->options['join']) && isset($this->options['join']['table'])) ?
+                [$this->options['join']] : $this->options['join'];
+
+            foreach ($joins as $join) {
+                if (isset($join['type']) && method_exists($sql->select(), $join['type'])) {
+                    $joinMethod = $join['type'];
+                    $sql->select()->{$joinMethod}($join['table'], $join['columns']);
                 } else {
-                    $orders = $this->options['order'];
-                }
-                foreach ($orders as $order) {
-                    $ord = Parser\Order::parse(trim($order));
-                    $sql->select()->orderBy($ord['by'], $db->escape($ord['order']));
+                    $sql->select()->leftJoin($join['table'], $join['columns']);
                 }
             }
         }
 
-        $db->prepare($sql)
-            ->bindParams($params)
-            ->execute();
+        if (isset($this->options['order'])) {
+            if (!is_array($this->options['order'])) {
+                $orders = (str_contains($this->options['order'], ',')) ?
+                    explode(',', $this->options['order']) : [$this->options['order']];
+            } else {
+                $orders = $this->options['order'];
+            }
+            foreach ($orders as $order) {
+                $ord = Parser\Order::parse(trim($order));
+                $sql->select()->orderBy($ord['by'], $db->escape($ord['order']));
+            }
+        }
+    }
 
-        $rows        = $db->fetchAll();
+    /**
+     * Hydrate the fetched rows into a per-parent-key map of Collections (or raw arrays), and
+     * eager-load any nested child relationships on the resulting leaf records
+     *
+     * @param  array      $rows
+     * @param  string     $table
+     * @param  bool|array $toArray
+     * @return array
+     */
+    private function hydrateRows(array $rows, string $table, bool|array $toArray): array
+    {
         $results     = [];
         $leafRecords = [];
 

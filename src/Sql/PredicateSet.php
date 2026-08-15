@@ -223,27 +223,10 @@ class PredicateSet
     {
         ['column' => $column, 'operator' => $operator, 'value' => $value] = Parser\Expression::parse($expression);
 
-        if (is_array($value)) {
-            foreach ($value as $k => $v) {
-                if ($this->sql->isParameter($v, $column)) {
-                    $value[$k] = $this->sql->getParameter($v, $column);
-                }
-            }
-        } else {
-            if ($this->sql->isParameter($value, $column)) {
-                $value = $this->sql->getParameter($value, $column);
-            }
-        }
+        $value = $this->resolveExpressionValue($column, $value);
 
         if ($placeholder !== false) {
-            $this->addParameter($column, $value);
-            if ($this->sql->isSqlite()) {
-                $value = ':' . $column;
-            } else if ($this->sql->isPgsql()) {
-                $value = '$' . (int)$placeholder;
-            } else {
-                $value = $this->sql->getPlaceholder();
-            }
+            $value = $this->bindPlaceholder($column, $value, $placeholder);
         }
 
         switch ($operator) {
@@ -272,21 +255,11 @@ class PredicateSet
                 $this->notLike($column, $value);
                 break;
             case 'BETWEEN':
-                if (is_string($value) && str_contains($value, ' AND ')) {
-                    $betweenValues = explode(' AND ', $value);
-                    if (count($betweenValues) == 2) {
-                        $value = [str_replace('(', '', $betweenValues[0]), str_replace(')', '', $betweenValues[1])];
-                    }
-                }
+                $value = self::splitBetweenValue($value);
                 $this->between($column, $value[0], $value[1]);
                 break;
             case 'NOT BETWEEN':
-                if (is_string($value) && str_contains($value, ' AND ')) {
-                    $betweenValues = explode(' AND ', $value);
-                    if (count($betweenValues) == 2) {
-                        $value = [str_replace('(', '', $betweenValues[0]), str_replace(')', '', $betweenValues[1])];
-                    }
-                }
+                $value = self::splitBetweenValue($value);
                 $this->notBetween($column, $value[0], $value[1]);
                 break;
             case 'IN':
@@ -311,6 +284,69 @@ class PredicateSet
         }
 
         return $this;
+    }
+
+    /**
+     * Resolve a parsed expression value against any bound parameters it references
+     *
+     * @param  string $column
+     * @param  mixed  $value
+     * @return mixed
+     */
+    protected function resolveExpressionValue(string $column, mixed $value): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $k => $v) {
+                if ($this->sql->isParameter($v, $column)) {
+                    $value[$k] = $this->sql->getParameter($v, $column);
+                }
+            }
+        } else {
+            if ($this->sql->isParameter($value, $column)) {
+                $value = $this->sql->getParameter($value, $column);
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * Bind the resolved value as a parameter and return the placeholder token to render in its place
+     *
+     * @param  string $column
+     * @param  mixed  $value
+     * @param  mixed  $placeholder
+     * @return mixed
+     */
+    protected function bindPlaceholder(string $column, mixed $value, mixed $placeholder): mixed
+    {
+        $this->addParameter($column, $value);
+
+        if ($this->sql->isSqlite()) {
+            return ':' . $column;
+        } else if ($this->sql->isPgsql()) {
+            return '$' . (int)$placeholder;
+        } else {
+            return $this->sql->getPlaceholder();
+        }
+    }
+
+    /**
+     * Split a BETWEEN/NOT BETWEEN value of the form 'value1 AND value2' into its two boundary values
+     *
+     * @param  mixed $value
+     * @return mixed
+     */
+    protected static function splitBetweenValue(mixed $value): mixed
+    {
+        if (is_string($value) && str_contains($value, ' AND ')) {
+            $betweenValues = explode(' AND ', $value);
+            if (count($betweenValues) == 2) {
+                return [str_replace('(', '', $betweenValues[0]), str_replace(')', '', $betweenValues[1])];
+            }
+        }
+
+        return $value;
     }
 
     /**

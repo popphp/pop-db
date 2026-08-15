@@ -1187,71 +1187,13 @@ class Record extends Record\AbstractRecord
         if (str_starts_with($name, 'findWhere')) {
             if (in_array(substr($name, 9), $conditions)) {
                 $condition = substr($name, 9);
-                $column    = $arguments[0];
 
-                if (str_contains($condition, 'Null')) {
-                    $value     = null;
-                    $options   = $arguments[1] ?? null;
-                    $toArray   = $arguments[2] ?? false;
-                } else {
-                    $value     = $arguments[1];
-                    $options   = $arguments[2] ?? null;
-                    $toArray   = $arguments[3] ?? false;
-                }
+                [$column, $value, $options, $toArray] = static::parseFindWhereArguments($condition, $arguments);
 
                 // These build structured shorthand tuples (see Sql\Parser\Condition) rather than
                 // the deprecated suffixed-key shapes, so that calling one of these documented
                 // methods never fires an E_USER_DEPRECATED notice the caller cannot avoid.
-                switch ($condition) {
-                    case 'Equals':
-                    case 'Null':
-                        // A bare key with a scalar value is plain equality; with a null value it
-                        // is IS NULL. Both are first-class structured shorthand already.
-                        $columns = [$column => $value];
-                        break;
-                    case 'NotEquals':
-                        $columns = [$column => ['!=', $value]];
-                        break;
-                    case 'GreaterThan':
-                        $columns = [$column => ['>', $value]];
-                        break;
-                    case 'GreaterThanOrEqual':
-                        $columns = [$column => ['>=', $value]];
-                        break;
-                    case 'LessThan':
-                        $columns = [$column => ['<', $value]];
-                        break;
-                    case 'LessThanOrEqual':
-                        $columns = [$column => ['<=', $value]];
-                        break;
-                    case 'Like':
-                        // The structured LIKE tuple takes the full pattern as-is, so the value's
-                        // leading/trailing '%' no longer has to be moved onto the column key
-                        $columns = [$column => ['LIKE', $value]];
-                        break;
-                    case 'NotLike':
-                        $columns = [$column => ['NOT LIKE', $value]];
-                        break;
-                    case 'In':
-                        $columns = [$column => ['IN', $value]];
-                        break;
-                    case 'NotIn':
-                        $columns = [$column => ['NOT IN', $value]];
-                        break;
-                    case 'Between':
-                    case 'NotBetween':
-                        $operator = ($condition == 'NotBetween') ? 'NOT BETWEEN' : 'BETWEEN';
-                        $between  = static::parseBetweenValues($value);
-                        $columns  = ($between !== null) ?
-                            [$column => [$operator, $between[0], $between[1]]] :
-                            // Unrecognized value shape - leave it to the legacy path, which is
-                            // what handled it before
-                            [$column . (($condition == 'NotBetween') ? '-' : '') => $value];
-                        break;
-                    case 'NotNull':
-                        $columns = [$column => ['IS NOT NULL']];
-                        break;
-                }
+                $columns = static::buildWhereConditionColumns($condition, $column, $value);
             } else {
                 $column  = Sql\Parser\Table::parse(substr($name, 9));
                 $value   = $arguments[0] ?? null;
@@ -1265,6 +1207,78 @@ class Record extends Record\AbstractRecord
         }
 
         return ($columns !== null) ? static::findBy($columns, $options, $toArray) : null;
+    }
+
+    /**
+     * Parse the (column, value, options, toArray) arguments for a findWhere*() call
+     *
+     * The 'Null'/'NotNull' conditions take no value argument, so $options and $toArray
+     * shift down by one argument position relative to every other condition.
+     *
+     * @param  string $condition
+     * @param  array  $arguments
+     * @return array
+     */
+    protected static function parseFindWhereArguments(string $condition, array $arguments): array
+    {
+        $column = $arguments[0];
+
+        if (str_contains($condition, 'Null')) {
+            return [$column, null, $arguments[1] ?? null, $arguments[2] ?? false];
+        }
+
+        return [$column, $arguments[1], $arguments[2] ?? null, $arguments[3] ?? false];
+    }
+
+    /**
+     * Build the structured shorthand columns tuple for a findWhere*() condition
+     *
+     * @param  string $condition
+     * @param  string $column
+     * @param  mixed  $value
+     * @return ?array
+     */
+    protected static function buildWhereConditionColumns(string $condition, string $column, mixed $value): ?array
+    {
+        return match ($condition) {
+            // A bare key with a scalar value is plain equality; with a null value it
+            // is IS NULL. Both are first-class structured shorthand already.
+            'Equals', 'Null'     => [$column => $value],
+            'NotEquals'          => [$column => ['!=', $value]],
+            'GreaterThan'        => [$column => ['>', $value]],
+            'GreaterThanOrEqual' => [$column => ['>=', $value]],
+            'LessThan'           => [$column => ['<', $value]],
+            'LessThanOrEqual'    => [$column => ['<=', $value]],
+            // The structured LIKE tuple takes the full pattern as-is, so the value's
+            // leading/trailing '%' no longer has to be moved onto the column key
+            'Like'               => [$column => ['LIKE', $value]],
+            'NotLike'            => [$column => ['NOT LIKE', $value]],
+            'In'                 => [$column => ['IN', $value]],
+            'NotIn'              => [$column => ['NOT IN', $value]],
+            'Between', 'NotBetween' => static::buildBetweenConditionColumns($condition, $column, $value),
+            'NotNull'            => [$column => ['IS NOT NULL']],
+            default              => null,
+        };
+    }
+
+    /**
+     * Build the structured shorthand columns tuple for a findWhereBetween()/findWhereNotBetween() condition
+     *
+     * @param  string $condition
+     * @param  string $column
+     * @param  mixed  $value
+     * @return array
+     */
+    protected static function buildBetweenConditionColumns(string $condition, string $column, mixed $value): array
+    {
+        $operator = ($condition == 'NotBetween') ? 'NOT BETWEEN' : 'BETWEEN';
+        $between  = static::parseBetweenValues($value);
+
+        return ($between !== null) ?
+            [$column => [$operator, $between[0], $between[1]]] :
+            // Unrecognized value shape - leave it to the legacy path, which is
+            // what handled it before
+            [$column . (($condition == 'NotBetween') ? '-' : '') => $value];
     }
 
     /**

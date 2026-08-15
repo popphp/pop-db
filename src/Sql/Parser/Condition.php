@@ -291,27 +291,7 @@ class Condition
         }
 
         if ($jsonPath !== null) {
-            $jsonMethods = ['=' => 'jsonEqualTo', '!=' => 'jsonNotEqualTo', 'CONTAINS' => 'jsonContains'];
-            if (!isset($jsonMethods[$operator])) {
-                throw new Exception(
-                    "Error: The '" . $operator . "' operator is not supported for JSON path access (column '" .
-                    $column . "->" . $jsonPath . "')."
-                );
-            }
-            if (count($tuple) !== 1) {
-                throw new Exception(
-                    "Error: The '" . $operator . "' operator for column '" . $column . "->" . $jsonPath .
-                    "' requires exactly 1 value, " . count($tuple) . ' given.'
-                );
-            }
-
-            $jsonMethod = $jsonMethods[$operator];
-            if ($operator === 'CONTAINS') {
-                $predicateSet->{$jsonMethod}($column, $jsonPath, $tuple[0]);
-            } else {
-                $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
-                $predicateSet->{$jsonMethod}($column, $jsonPath, $placeholder);
-            }
+            self::parseJsonPathTuple($predicateSet, $column, $jsonPath, $operator, $tuple, $sql, $parameterIndex);
             return;
         }
 
@@ -322,28 +302,7 @@ class Condition
         }
 
         if (!empty($spec['multi'])) {
-            if (isset($tuple[0]) && ($tuple[0] instanceof AbstractSql)) {
-                self::callMulti($predicateSet, $method, $column, $tuple[0]);
-            } else {
-                if (!isset($tuple[0]) || !is_array($tuple[0])) {
-                    throw new Exception(
-                        "Error: The '" . $operator . "' operator for column '" . $column .
-                        "' requires an array of values or a Sql\Select instance."
-                    );
-                }
-                if (empty($tuple[0])) {
-                    throw new Exception(
-                        "Error: The '" . $operator . "' operator for column '" . $column .
-                        "' requires at least 1 value, 0 given."
-                    );
-                }
-
-                $placeholders = [];
-                foreach ($tuple[0] as $val) {
-                    $placeholders[] = self::addParameter($predicateSet, $sql, $column, $val, $parameterIndex);
-                }
-                self::callMulti($predicateSet, $method, $column, $placeholders);
-            }
+            self::parseMultiTuple($predicateSet, $method, $column, $operator, $tuple, $sql, $parameterIndex);
         } else if ($spec['arity'] === 0) {
             if (count($tuple) !== 0) {
                 throw new Exception(
@@ -380,6 +339,90 @@ class Condition
             $placeholder2 = self::addParameter($predicateSet, $sql, $column, $tuple[1], $parameterIndex);
             self::callArity2($predicateSet, $method, $column, $placeholder1, $placeholder2);
         }
+    }
+
+    /**
+     * Parse a single new-syntax operator tuple whose column key used JSON path access ('column->path')
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $column
+     * @param  string       $jsonPath
+     * @param  string       $operator
+     * @param  array        $tuple
+     * @param  AbstractSql  $sql
+     * @param  int          $parameterIndex
+     * @throws Exception
+     * @return void
+     */
+    protected static function parseJsonPathTuple(
+        PredicateSet $predicateSet, string $column, string $jsonPath, string $operator, array $tuple,
+        AbstractSql $sql, int &$parameterIndex
+    ): void
+    {
+        $jsonMethods = ['=' => 'jsonEqualTo', '!=' => 'jsonNotEqualTo', 'CONTAINS' => 'jsonContains'];
+        if (!isset($jsonMethods[$operator])) {
+            throw new Exception(
+                "Error: The '" . $operator . "' operator is not supported for JSON path access (column '" .
+                $column . "->" . $jsonPath . "')."
+            );
+        }
+        if (count($tuple) !== 1) {
+            throw new Exception(
+                "Error: The '" . $operator . "' operator for column '" . $column . "->" . $jsonPath .
+                "' requires exactly 1 value, " . count($tuple) . ' given.'
+            );
+        }
+
+        $jsonMethod = $jsonMethods[$operator];
+        if ($operator === 'CONTAINS') {
+            $predicateSet->{$jsonMethod}($column, $jsonPath, $tuple[0]);
+        } else {
+            $placeholder = self::addParameter($predicateSet, $sql, $column, $tuple[0], $parameterIndex);
+            $predicateSet->{$jsonMethod}($column, $jsonPath, $placeholder);
+        }
+    }
+
+    /**
+     * Parse a single new-syntax operator tuple for a multi-value ('in'/'notIn') operator
+     *
+     * @param  PredicateSet $predicateSet
+     * @param  string       $method
+     * @param  string       $column
+     * @param  string       $operator
+     * @param  array        $tuple
+     * @param  AbstractSql  $sql
+     * @param  int          $parameterIndex
+     * @throws Exception
+     * @return void
+     */
+    protected static function parseMultiTuple(
+        PredicateSet $predicateSet, string $method, string $column, string $operator, array $tuple,
+        AbstractSql $sql, int &$parameterIndex
+    ): void
+    {
+        if (isset($tuple[0]) && ($tuple[0] instanceof AbstractSql)) {
+            self::callMulti($predicateSet, $method, $column, $tuple[0]);
+            return;
+        }
+
+        if (!isset($tuple[0]) || !is_array($tuple[0])) {
+            throw new Exception(
+                "Error: The '" . $operator . "' operator for column '" . $column .
+                "' requires an array of values or a Sql\Select instance."
+            );
+        }
+        if (empty($tuple[0])) {
+            throw new Exception(
+                "Error: The '" . $operator . "' operator for column '" . $column .
+                "' requires at least 1 value, 0 given."
+            );
+        }
+
+        $placeholders = [];
+        foreach ($tuple[0] as $val) {
+            $placeholders[] = self::addParameter($predicateSet, $sql, $column, $val, $parameterIndex);
+        }
+        self::callMulti($predicateSet, $method, $column, $placeholders);
     }
 
     /**
