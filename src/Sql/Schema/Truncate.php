@@ -47,10 +47,17 @@ class Truncate extends AbstractTable
     /**
      * Render the table schema
      *
+     * SQLite has no TRUNCATE TABLE statement, so DELETE FROM is used instead to achieve
+     * the same effect of removing all rows from the table.
+     *
      * @return string
      */
     public function render(): string
     {
+        if ($this->isSqlite()) {
+            return 'DELETE FROM ' . $this->quoteId($this->table) . ';' . PHP_EOL;
+        }
+
         return 'TRUNCATE TABLE ' . $this->quoteId($this->table) .
             ((($this->isPgsql()) && ($this->cascade)) ? ' CASCADE' : null) . ';' . PHP_EOL;
     }
