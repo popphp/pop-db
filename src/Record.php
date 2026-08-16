@@ -1123,12 +1123,9 @@ class Record extends Record\AbstractRecord
                 }
             // Delete multiple rows
             } else {
-                $db  = Db::getDb($this->getFullTable());
-                $sql = $db->createSql();
-                ['expressions' => $expressions, 'params' => $params] =
-                    Sql\Parser\Expression::parseShorthand($columns, $sql->getPlaceholder());
+                ['expressions' => $expressions, 'params' => $params] = $this->parseColumns($columns);
 
-                $this->tableGateway->delete($expressions, $params);
+                $this->tableGateway->delete($expressions, $params ?? []);
             }
 
             $this->setRows();
