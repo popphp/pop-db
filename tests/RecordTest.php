@@ -1541,6 +1541,35 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testDeleteMultipleNewShorthandSyntax()
+    {
+        $user = new Users();
+        $user->save([
+            [
+                'username' => 'testuser25',
+                'password' => 'password25',
+                'email'    => 'testuser25@test.com',
+                'logins'   => 5
+            ],
+            [
+                'username' => 'testuser26',
+                'password' => 'password26',
+                'email'    => 'testuser26@test.com',
+                'logins'   => 50
+            ]
+        ]);
+
+        $newUser = new Users();
+        $newUser->delete(['logins' => ['>=', 40]]);
+
+        $this->assertEquals(1, Users::findBy(['username' => 'testuser25'])->count());
+        $this->assertEquals(0, Users::findBy(['username' => 'testuser26'])->count());
+
+        Users::findBy(['username' => 'testuser25'])[0]->delete();
+
+        $this->db->disconnect();
+    }
+
     #[IgnoreDeprecations('shorthand column format used for \[username%\]')]
     public function testGetTotal()
     {
