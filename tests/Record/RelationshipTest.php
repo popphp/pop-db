@@ -253,11 +253,9 @@ class RelationshipTest extends TestCase
         $reflection = new \ReflectionClass($user);
 
         $withProperty = $reflection->getProperty('with');
-        $withProperty->setAccessible(true);
         $this->assertEquals(['peopleContacts'], $withProperty->getValue($user));
 
         $childrenProperty = $reflection->getProperty('withChildren');
-        $childrenProperty->setAccessible(true);
         $this->assertEquals([['a', 'b']], $childrenProperty->getValue($user));
         $this->db->disconnect();
     }
@@ -271,7 +269,6 @@ class RelationshipTest extends TestCase
 
         $reflection = new \ReflectionClass($user);
         $childrenProperty = $reflection->getProperty('withChildren');
-        $childrenProperty->setAccessible(true);
         $this->assertEquals([['a']], $childrenProperty->getValue($user));
         $this->db->disconnect();
     }
@@ -285,7 +282,6 @@ class RelationshipTest extends TestCase
 
         $reflection = new \ReflectionClass($user);
         $withProperty = $reflection->getProperty('with');
-        $withProperty->setAccessible(true);
         $this->assertEquals(['peopleContacts', 'peopleInfo'], $withProperty->getValue($user));
         $this->db->disconnect();
     }
@@ -299,11 +295,9 @@ class RelationshipTest extends TestCase
 
         $reflection = new \ReflectionClass($user);
         $withProperty = $reflection->getProperty('with');
-        $withProperty->setAccessible(true);
         $this->assertEquals(['peopleContacts'], $withProperty->getValue($user));
 
         $childrenProperty = $reflection->getProperty('withChildren');
-        $childrenProperty->setAccessible(true);
         $this->assertEquals([['logs']], $childrenProperty->getValue($user));
         $this->db->disconnect();
     }

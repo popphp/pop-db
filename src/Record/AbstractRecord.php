@@ -687,7 +687,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
                 } else {
                     $lookupValue = $row[$primaryKey] ?? null;
                 }
-                if (isset($results[$lookupValue])) {
+                if ($lookupValue !== null && isset($results[$lookupValue])) {
                     $row->setRelationship($name, $results[$lookupValue]);
                 } else {
                     $row->setRelationship($name, $relationship->getEmptyRelationshipValue());
