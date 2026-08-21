@@ -892,6 +892,19 @@ class Record extends Record\AbstractRecord
     }
 
     /**
+     * Reset/clear the record column and save
+     *
+     * @param  string $column
+     * @param  mixed  $value
+     * @return void
+     */
+    public function reset(string $column, mixed $value = null): void
+    {
+        $this->{$column} = $value;
+        $this->save();
+    }
+
+    /**
      * Decrement the record column and save
      *
      * @param  string $column
