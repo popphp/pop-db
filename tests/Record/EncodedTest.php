@@ -5,6 +5,7 @@ namespace Pop\Db\Test;
 use Pop\Db\Db;
 use Pop\Db\Test\TestAsset\UsersEncoded;
 use Pop\Db\Test\TestAsset\UsersEncoded2;
+use Pop\Db\Test\TestAsset\UsersEncodedWeakHash;
 use PHPUnit\Framework\TestCase;
 
 class EncodedTest extends TestCase
@@ -146,6 +147,42 @@ class EncodedTest extends TestCase
         $this->assertEquals('another long binary string', $file);
         $this->assertEquals('987-65-4321', $ssn);
         $this->assertTrue($user->verify('password', '123456'));
+
+        $this->db->disconnect();
+    }
+
+    public function testNeedsRehashAndRehash()
+    {
+        UsersEncodedWeakHash::setDb($this->db);
+
+        // Seed a row whose password was hashed with a deliberately weak/outdated cost
+        $weakUser = new UsersEncodedWeakHash([
+            'username' => 'weakhash',
+            'password' => 'insecurepw',
+        ]);
+        $weakUser->save();
+
+        $oldHash = $weakUser->getRawValue('password');
+
+        // Verify through the normally-configured class (stronger cost)
+        $user = UsersEncoded::findById($weakUser->id);
+
+        $this->assertFalse($user->verify('password', 'wrong-password'));
+        $this->assertFalse($user->needsRehash());
+
+        $this->assertTrue($user->verify('password', 'insecurepw'));
+        $this->assertTrue($user->needsRehash());
+
+        $user->rehash('password', 'insecurepw');
+        $this->assertFalse($user->needsRehash());
+        $this->assertNotEquals($oldHash, $user->getRawValue('password'));
+
+        $reloaded = UsersEncoded::findById($user->id);
+        $this->assertTrue($reloaded->verify('password', 'insecurepw'));
+
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('users_encoded');
+        $schema->execute();
 
         $this->db->disconnect();
     }

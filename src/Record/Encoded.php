@@ -91,6 +91,12 @@ class Encoded extends \Pop\Db\Record
     protected array $previousKeys = [];
 
     /**
+     * Whether the last verified hash needs to be rehashed
+     * @var bool
+     */
+    protected bool $needsRehash = false;
+
+    /**
      * Set all the table column values at once
      *
      * @param  mixed  $columns
@@ -235,6 +241,9 @@ class Encoded extends \Pop\Db\Record
     /**
      * Verify value against hash
      *
+     * Also records whether the stored hash needs to be rehashed (outdated algorithm/cost),
+     * queryable via needsRehash() and actionable via rehash()
+     *
      * @param  string $key
      * @param  string $value
      * @return bool
@@ -242,7 +251,36 @@ class Encoded extends \Pop\Db\Record
     public function verify(string $key, string $value): bool
     {
         $hasher = Hasher::create($this->hashAlgorithm, $this->hashOptions);
-        return $hasher->verify($value, $this->{$key});
+        $hash   = $this->{$key};
+        $result = $hasher->verify($value, $hash);
+
+        $this->needsRehash = ($result && $hasher->requiresRehash($hash));
+
+        return $result;
+    }
+
+    /**
+     * Determine if the last verified hash needs to be rehashed
+     *
+     * @return bool
+     */
+    public function needsRehash(): bool
+    {
+        return $this->needsRehash;
+    }
+
+    /**
+     * Rehash and save the given field with a freshly-hashed value
+     *
+     * @param  string $key
+     * @param  string $value
+     * @return void
+     */
+    public function rehash(string $key, #[\SensitiveParameter] string $value): void
+    {
+        $this->{$key} = $value;
+        $this->save();
+        $this->needsRehash = false;
     }
 
     /**

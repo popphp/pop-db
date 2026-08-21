@@ -21,6 +21,7 @@ pop-db
 * [ORM](#orm)
     - [Active Record](#active-record)
     - [Encoded Record](#encoded-record)
+    - [Auth Record](#auth-record)
     - [Table Gateway](#table-gateway)
     - [Data Model](#data-model)
     - [Options](#options)
@@ -767,6 +768,8 @@ Other methods are available to modify an existing record:
 ```php
 $user->increment('attempts'); // Increment column by one and save
 $user->decrement('capacity', 5); // Decrement column by 5 and save
+$user->reset('attempts'); // Reset column to null and save
+$user->reset('attempts', 0); // Reset column to a given value (e.g. 0 or '') and save
 ```
 
 ```php
@@ -813,7 +816,7 @@ even though the record's in-memory state is cleared immediately afterward.
 These hooks only fire on the single-record path - bulk operations (`$user->save($rows)`,
 `$user->delete($columns)`) do not trigger any of them.
 
-`increment()`, `decrement()`, `replicate()` and `copy()` all internally call `save()`, so a
+`increment()`, `decrement()`, `reset()`, `replicate()` and `copy()` all internally call `save()`, so a
 `beforeSave()`/`afterSave()` override that itself calls any of those methods will recurse.
 
 A hook can abort the operation by throwing: the exception propagates out of `save()`/`delete()`
@@ -913,6 +916,20 @@ if ($user->verify('password', $attemptedPassword)) {
 }
 ```
 
+If `$hashOptions` is later tightened (e.g. bumping bcrypt's `cost`), `verify()` also records
+whether the stored hash was made with the old, weaker settings. Check `needsRehash()` right
+after a successful `verify()`, and use `rehash()` - with the plaintext value you just verified -
+to transparently upgrade it in place:
+
+```php
+if ($user->verify('password', $attemptedPassword)) {
+    if ($user->needsRehash()) {
+        $user->rehash('password', $attemptedPassword); // re-hashes with current $hashOptions and saves
+    }
+    // proceed as authenticated
+}
+```
+
 #### 2-Way Encryption
 
 An even more advanced example would be using an 2-way encrypted field, which uses the
@@ -942,6 +959,114 @@ Or, they can be autoloaded from the application's `.env` file as the following v
 - `APP_CIPHER_METHOD` - a string of the cipher to be used, e.g. `aes-256-cbc`
 - `APP_KEY` - a base-64 encoded string of the current active key
 - `APP_PREVIOUS_KEYS` - a comma-separated list of base-64 encoded strings of the previous keys
+
+[Top](#pop-db)
+
+### Auth Record
+
+The `Pop\Db\Record\Auth` class extends `Pop\Db\Record\Encoded` and provides a ready-made
+username/password authentication flow on top of a user table, including failed-attempt
+lockout and optional MFA (multi-factor authentication) code issuance/verification.
+
+```php
+use Pop\Db\Record\Auth;
+
+class Users extends Auth
+{
+    // No $hashFields needed - Auth::__construct() always adds $passwordField to it for you
+}
+```
+
+The underlying table needs, at minimum, the fields referenced by `$usernameField` (default
+`username`) and `$passwordField` (default `password`), plus `$attemptsField` (default `attempts`,
+should default to `0`). If you plan to use MFA, it also needs the two nullable fields configured
+in `$mfaConfig` (default `mfa_code`/`mfa_timestamp`).
+
+#### Authenticating
+
+```php
+$user = new Users();
+
+// $mfa = false: authenticate outright, no MFA step
+if ($user->authenticate($username, $attemptedPassword, false)) {
+    // Logged in
+} else {
+    echo $user->getAuthFailureMessage();
+}
+```
+
+```php
+// $mfa = true (the default): on success, a fresh MFA code + expiration are generated,
+// saved to the user record, and the record itself is returned so the app can send the
+// code however it likes (email, SMS, etc.)
+$result = $user->authenticate($username, $attemptedPassword);
+
+if ($result !== false) {
+    // $result is the user record - send $result->mfa_code to the user
+} else {
+    echo $user->getAuthFailureMessage();
+}
+```
+
+On a failed attempt (bad password, or a valid password submitted after the attempts limit has
+been exceeded), `$attemptsField` is incremented and saved automatically. `getAuthFailure()`
+returns the specific reason as a string constant, and `getAuthFailureMessage()` returns a
+human-readable message for it:
+
+- `Auth::USER_DOES_NOT_EXIST`
+- `Auth::INVALID_CREDENTIALS`
+- `Auth::ATTEMPTS_EXCEEDED`
+- `Auth::INVALID_MFA_CODE`
+- `Auth::MFA_CODE_EXPIRED`
+
+Once `$attemptsField` reaches `$attemptsLimit` (default `3`), the account is locked out for
+good - even a correct password will keep failing with `ATTEMPTS_EXCEEDED`. This is deliberate:
+there's no automatic, time-based unlock, so unlocking is left to an application admin explicitly
+calling `resetAttempts()`.
+
+If a successful login's stored password hash was made under older `$hashOptions` (e.g. a bcrypt
+`cost` that's since been raised), it's transparently rehashed and saved on the way in - see
+[1-Way Hashing](#1-way-hashing) for the `needsRehash()`/`rehash()` mechanics this relies on.
+
+#### MFA verification
+
+Once the app has delivered the MFA code, fetch the user record and verify the code the user
+submits back:
+
+```php
+$user = Users::findOne(['username' => $username]);
+
+if ($user->authenticateMfa($attemptedCode)) {
+    // MFA passed - the stored code is cleared, so it cannot be reused
+} else {
+    echo $user->getAuthFailureMessage(); // INVALID_MFA_CODE, MFA_CODE_EXPIRED, etc.
+}
+```
+
+Wrong or expired MFA guesses increment and are gated by the same `$attemptsField`/`$attemptsLimit`
+as login attempts, so a locked-out account is also locked out of guessing MFA codes.
+
+#### Configuration
+
+All of the following are plain property overrides on your table class:
+
+```php
+class Users extends Auth
+{
+    protected string $usernameField = 'username';
+    protected string $passwordField = 'password';
+    protected string $attemptsField = 'attempts';
+    protected int    $attemptsLimit = 3;
+
+    protected array $mfaConfig = [
+        'length'              => 6,               // Code length
+        'expires'             => 300,              // Seconds
+        'alphanumeric'        => false,            // Numeric by default, can be alphanumeric
+        'mfa_code_field'      => 'mfa_code',       // varchar database column, nullable
+        'mfa_timestamp_field' => 'mfa_timestamp',  // integer database column, nullable
+    ];
+}
+```
 
 [Top](#pop-db)
 
