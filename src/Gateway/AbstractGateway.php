@@ -32,6 +32,13 @@ abstract class AbstractGateway implements GatewayInterface
 {
 
     /**
+     * Recognized $options keys. This is the union of the keys consumed by the table gateway,
+     * the row gateway and the relationship classes - a key outside of it is a typo.
+     * @var array
+     */
+    public const OPTIONS = ['select', 'limit', 'offset', 'order', 'group', 'join', 'columns'];
+
+    /**
      * Table
      * @var ?string
      */
@@ -57,6 +64,35 @@ abstract class AbstractGateway implements GatewayInterface
     public function getTable(): string
     {
         return $this->table;
+    }
+
+    /**
+     * Check the keys of an $options array, firing a notice naming any that isn't recognized
+     *
+     * An unrecognized key is silently ignored by the query builders, so a misspelled or
+     * wrong-cased one ('limitt', 'Limit', 'orderBy') would otherwise return unfiltered results
+     * with no signal at all. This is deliberately a notice and not an exception, so that
+     * applications passing extra keys today keep working.
+     *
+     * @param  ?array $options
+     * @return void
+     */
+    protected function checkOptions(?array $options = null): void
+    {
+        if (empty($options)) {
+            return;
+        }
+
+        $unrecognized = array_diff(array_map('strval', array_keys($options)), self::OPTIONS);
+
+        if (!empty($unrecognized)) {
+            trigger_error(
+                "Notice: The option key(s) [" . implode(', ', $unrecognized) . "] are not recognized and were " .
+                "ignored. Option keys are case-sensitive; the recognized keys are: " .
+                implode(', ', self::OPTIONS) . ".",
+                E_USER_NOTICE
+            );
+        }
     }
 
     /**

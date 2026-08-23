@@ -1262,6 +1262,11 @@ that allows you to really tailor the query. These are the supported options:
 - `group`
 - `join`
 
+The keys are case-sensitive. Any key outside of that list (plus `columns`, which the
+relationship methods accept) is ignored by the query builder and triggers an
+`E_USER_NOTICE` naming it, so a typo such as `limitt`, `Limit` or `orderBy` doesn't
+silently return unfiltered results.
+
 ##### Select Columns
 
 Pass an array of the fields you want to select with the query with the `select` key.

@@ -163,6 +163,57 @@ class TableSqliteTest extends TestCase
         $this->assertEquals(['ccc', 'bbb', 'aaa'], array_column($rows, 'username'));
     }
 
+    public function testSelectWithUnrecognisedOptionKeyTriggersNotice()
+    {
+        $table = new Gateway\Table('sq_users');
+        $table->insertRows([
+            [
+                'username' => 'ccc',
+                'password' => 'password7',
+                'email'    => 'ccc@test.com'
+            ],
+            [
+                'username' => 'aaa',
+                'password' => 'password8',
+                'email'    => 'aaa@test.com'
+            ],
+            [
+                'username' => 'bbb',
+                'password' => 'password9',
+                'email'    => 'bbb@test.com'
+            ]
+        ]);
+
+        $notices = [];
+        set_error_handler(function ($errno, $errstr) use (&$notices) {
+            if ($errno === E_USER_NOTICE) {
+                $notices[] = $errstr;
+            }
+            return true;
+        });
+
+        try {
+            // A misspelled key is still ignored - it just no longer happens silently
+            $rows = $table->select(null, null, null, ['limitt' => 2]);
+            $this->assertCount(3, $rows);
+
+            // The lookup is case-sensitive, so a wrong-cased key is unrecognised too
+            $table->select(null, null, null, ['Limit' => 2]);
+            $table->select(null, null, null, ['orderBy' => 'username DESC']);
+
+            // ...and a recognised key must stay silent
+            $rows = $table->select(null, null, null, ['limit' => 2]);
+            $this->assertCount(2, $rows);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertCount(3, $notices);
+        $this->assertStringContainsString('limitt', $notices[0]);
+        $this->assertStringContainsString('Limit', $notices[1]);
+        $this->assertStringContainsString('orderBy', $notices[2]);
+    }
+
     public function testGetTableInfo()
     {
         $table = new Gateway\Table('sq_users');

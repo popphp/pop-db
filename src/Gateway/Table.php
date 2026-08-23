@@ -100,6 +100,8 @@ class Table extends AbstractGateway implements \Countable, \IteratorAggregate
     {
         $this->rows = [];
 
+        $this->checkOptions($options);
+
         $db  = Db::getDb($this->table);
         $sql = $db->createSql();
 
