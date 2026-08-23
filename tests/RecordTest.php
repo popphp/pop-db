@@ -1788,7 +1788,7 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
-    public function testRollbackWithinNestedTransactionReturnsDefaultException()
+    public function testRollbackWithinNestedTransactionLeavesTheNestedLevel()
     {
         Users::start([
             'username' => 'testuser268',
@@ -1800,17 +1800,94 @@ class RecordTest extends TestCase
         $this->db->beginTransaction();
         $this->assertEquals(2, $this->db->getTransactionDepth());
 
+        // A nested rollback() rolls back to the savepoint and leaves that nesting level,
+        // rather than returning an exception and stranding the connection at depth 2.
         $result = Users::rollback();
-        $this->assertInstanceOf(Exception::class, $result);
-        $this->assertEquals(
-            'Error: A rollback has been executed from within a nested transaction.', $result->getMessage()
-        );
-        // A nested rollback() call doesn't actually touch the transaction depth
-        $this->assertEquals(2, $this->db->getTransactionDepth());
+        $this->assertNull($result);
+        $this->assertEquals(1, $this->db->getTransactionDepth());
+        $this->assertTrue($this->db->isTransaction());
 
-        $this->db->rollback();
-        $this->db->rollback();
+        Users::rollback();
+        $this->assertEquals(0, $this->db->getTransactionDepth());
         $this->assertFalse($this->db->isTransaction());
+
+        $this->db->disconnect();
+    }
+
+    public function testNestedGlobalTransactionRollbackDoesNotStrandTheConnection()
+    {
+        try {
+            Users::transaction(function () {
+                (new Users([
+                    'username' => 'testuser269',
+                    'password' => 'password269',
+                    'email'    => 'testuser269@test.com',
+                ]))->save();
+
+                Users::transaction(function () {
+                    (new Users([
+                        'username' => 'testuser270',
+                        'password' => 'password270',
+                        'email'    => 'testuser270@test.com',
+                    ]))->save();
+                    throw new \RuntimeException('inner blew up');
+                });
+            });
+            $this->fail('The exception thrown from the inner transaction should have propagated.');
+        } catch (\RuntimeException $e) {
+            $this->assertEquals('inner blew up', $e->getMessage());
+        }
+
+        // The connection must not be left inside an open transaction
+        $this->assertFalse($this->db->isTransaction());
+        $this->assertEquals(0, $this->db->getTransactionDepth());
+
+        // Neither the inner nor the outer work may be committed
+        $this->assertEquals(0, Users::findWhereUsername('testuser270')->count());
+        $this->assertEquals(0, Users::findWhereUsername('testuser269')->count());
+
+        // ...and a later, unrelated transaction on the same connection still commits
+        Users::transaction(function () {
+            (new Users([
+                'username' => 'testuser271',
+                'password' => 'password271',
+                'email'    => 'testuser271@test.com',
+            ]))->save();
+        });
+
+        $this->assertFalse($this->db->isTransaction());
+        $this->assertEquals(1, Users::findWhereUsername('testuser271')->count());
+
+        $this->db->disconnect();
+    }
+
+    public function testNestedGlobalTransactionRollbackKeepsOuterWorkWhenInnerFailureIsHandled()
+    {
+        Users::transaction(function () {
+            (new Users([
+                'username' => 'testuser272',
+                'password' => 'password272',
+                'email'    => 'testuser272@test.com',
+            ]))->save();
+
+            try {
+                Users::transaction(function () {
+                    (new Users([
+                        'username' => 'testuser273',
+                        'password' => 'password273',
+                        'email'    => 'testuser273@test.com',
+                    ]))->save();
+                    throw new \RuntimeException('inner blew up');
+                });
+            } catch (\RuntimeException $e) {
+                // handled - the outer transaction carries on
+            }
+        });
+
+        $this->assertFalse($this->db->isTransaction());
+        $this->assertEquals(0, $this->db->getTransactionDepth());
+        $this->assertEquals(1, Users::findWhereUsername('testuser272')->count());
+        $this->assertEquals(0, Users::findWhereUsername('testuser273')->count());
 
         $this->db->disconnect();
     }
