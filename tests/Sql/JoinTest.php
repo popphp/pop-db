@@ -60,4 +60,40 @@ class JoinTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testColumnsArrayWithNullElementRendersNull()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->leftJoin('user_info', ['user_info.user_id' => ['users.id', null]]);
+        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON ((`user_info`.`user_id` = `users`.`id`) AND (`user_info`.`user_id` = NULL))', $sql->render());
+        $this->db->disconnect();
+    }
+
+    public function testNullColumnRendersIsNull()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->leftJoin('user_info', ['user_info.user_id' => null]);
+        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON ((`user_info`.`user_id` IS NULL))', $sql->render());
+        $this->db->disconnect();
+    }
+
+    public function testShorthandNotNullColumnRendersIsNotNull()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')->leftJoin('user_info', ['user_info.user_id-' => null]);
+        $this->assertEquals('SELECT * FROM `users` LEFT JOIN `user_info` ON ((`user_info`.`user_id` IS NOT NULL))', $sql->render());
+        $this->db->disconnect();
+    }
+
+    public function testSubSelectStringColumnRendersIn()
+    {
+        $sql = $this->db->createSql();
+        $sql->select()->from('users')
+            ->leftJoin('user_info', ['user_info.user_id' => '(SELECT id FROM active_users)']);
+        $this->assertEquals(
+            'SELECT * FROM `users` LEFT JOIN `user_info` ON ((`user_info`.`user_id` IN (SELECT id FROM active_users)))',
+            $sql->render()
+        );
+        $this->db->disconnect();
+    }
+
 }

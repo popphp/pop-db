@@ -188,6 +188,34 @@ class EncodedTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testDecodeValueThrowsWhenEncryptionPropertiesNotSet()
+    {
+        $this->expectException('Pop\Db\Record\Exception');
+        $user = new UsersEncoded2();
+        $user->decodeValue('ssn', 'some-encrypted-looking-value');
+    }
+
+    public function testEncryptionPropertiesLoadedFromEnvWithPreviousKeys()
+    {
+        $_ENV['APP_CIPHER_METHOD'] = 'aes-256-cbc';
+        $_ENV['APP_KEY']           = 'vBTcBMBrauIpjy2oXhXOFxshW4//tXXnagOr2a+AqKI=';
+        $_ENV['APP_PREVIOUS_KEYS'] = '3ODbtHLqzlnAiB0yZR7E0w6wdnIiB35Mj6An+SHwIwg=';
+
+        try {
+            // UsersEncoded2 has no cipherMethod/key of its own, so both encodeValue()
+            // and decodeValue() must fall back to loadEncryptionProperties() to pull
+            // the cipher, key, and previous keys from $_ENV
+            $user      = new UsersEncoded2(['ssn' => '123-45-6789']);
+            $encrypted = $user->getRawValue('ssn');
+            $this->assertNotEquals('123-45-6789', $encrypted);
+
+            $decoded = $user->decodeValue('ssn', $encrypted);
+            $this->assertEquals('123-45-6789', $decoded);
+        } finally {
+            unset($_ENV['APP_CIPHER_METHOD'], $_ENV['APP_KEY'], $_ENV['APP_PREVIOUS_KEYS']);
+        }
+    }
+
     public function testDecode()
     {
         $encoded = [

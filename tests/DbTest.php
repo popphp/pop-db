@@ -14,6 +14,27 @@ class DbTest extends TestCase
         $db = Db::connect('mysql', [], 'Bad\Namespace\\');
     }
 
+    public function testGetDbThrowsWhenNoAdapterIsFound()
+    {
+        // Db's registry is a shared static across the whole suite, so other tests may have
+        // already populated a 'default' entry - temporarily clear it to exercise this branch
+        $dbProperty           = new \ReflectionProperty(Db::class, 'db');
+        $classToTableProperty = new \ReflectionProperty(Db::class, 'classToTable');
+        $originalDb           = $dbProperty->getValue();
+        $originalClassToTable = $classToTableProperty->getValue();
+
+        $dbProperty->setValue(null, ['default' => null]);
+        $classToTableProperty->setValue(null, []);
+
+        try {
+            $this->expectException('Pop\Db\Exception');
+            Db::getDb('Pop\Db\Test\TestAsset\Users');
+        } finally {
+            $dbProperty->setValue(null, $originalDb);
+            $classToTableProperty->setValue(null, $originalClassToTable);
+        }
+    }
+
     public function testCheck()
     {
         $check = Db::check('mysql', [
@@ -57,6 +78,16 @@ class DbTest extends TestCase
             'host'     => $_ENV['MYSQL_HOST']              ,
             'prefix'   => 'pop_'
         ], 'Bad\NameSpace\\');
+    }
+
+    public function testExecuteSqlThrowsWhenSqliteDatabaseFileCannotBeCreated()
+    {
+        $this->expectException('Pop\Db\Exception');
+        $this->expectExceptionMessage('Error: Could not create the database file.');
+        // The touch()/chmod() calls against this path are expected to fail (that's the
+        // point of the test) and PHP raises warnings for that - suppressed here since
+        // Db::executeSql() already turns the failure into the clean exception above
+        @Db::executeSql('SELECT 1', 'sqlite', ['database' => '/nonexistent-directory/db.sqlite']);
     }
 
     public function testExecuteSqlFileException()

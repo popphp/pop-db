@@ -209,6 +209,34 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testAssertTupleCardinalityIsANoopForEmptyIds()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+
+        // An empty $ids list has nothing to validate the cardinality of - the internal
+        // callers (e.g. hydrateChildRelationships()) already guard against calling
+        // getEagerRelationships() at all when $ids is empty, so this is exercised
+        // directly against the protected method rather than through that public path
+        $relationship = new \Pop\Db\Record\Relationships\HasOne($orgA, 'Pop\Db\Test\TestAsset\CkNote', ['note_org_id', 'note_branch_id']);
+        $method        = new \ReflectionMethod($relationship, 'assertTupleCardinality');
+        $method->invoke($relationship, [], ['note_org_id', 'note_branch_id']);
+
+        $this->addToAssertionCount(1);
+        $this->db->disconnect();
+    }
+
+    public function testAbstractRelationshipDefaultEmptyValueIsEmptyArray()
+    {
+        $relationship = new class('ForeignTable', 'foreign_id') extends \Pop\Db\Record\Relationships\AbstractRelationship {
+            public function getEagerRelationships(array $ids): array
+            {
+                return [];
+            }
+        };
+        $this->assertEquals([], $relationship->getEmptyRelationshipValue());
+    }
+
     public function testHasOneOfLazyCompositeKey()
     {
         $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);

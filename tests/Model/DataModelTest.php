@@ -6,7 +6,10 @@ use Pop\Db\Db;
 use Pop\Db\Record;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
+use Pop\Db\Test\TestAsset\Model\Ghost;
 use Pop\Db\Test\TestAsset\Model\User;
+use Pop\Db\Test\TestAsset\Model\UserWithDefaultSelect;
+use Pop\Db\Test\TestAsset\Model\UserWithJoin;
 use Pop\Db\Test\TestAsset\Table\Users;
 
 class DataModelTest extends TestCase
@@ -44,6 +47,15 @@ class DataModelTest extends TestCase
                 ->varchar('username', 255)
                 ->varchar('email', 255)
                 ->primary('id');
+
+            $db->query($schema);
+        }
+
+        if (!$db->hasTable('data_model_user_meta')) {
+            $schema = $db->createSchema();
+            $schema->create('data_model_user_meta')
+                ->int('user_id')
+                ->varchar('note', 255);
 
             $db->query($schema);
         }
@@ -153,6 +165,145 @@ class DataModelTest extends TestCase
         $this->assertEquals('testuser1', $user['username']);
         $this->assertEquals('testuser1@test.com', $user['email']);
         $this->assertEquals(1, $user['id']);
+
+        Record::db()->disconnect();
+    }
+
+    public function testCountUnsetsOffsetAndLimitCarriedOverFromGetAll()
+    {
+        $userModel = new User();
+        $userModel->getAll(null, 5, 1);
+        $count = $userModel->count();
+
+        $this->assertEquals(1, $count);
+
+        Record::db()->disconnect();
+    }
+
+    public function testCountWithForeignTablesJoin()
+    {
+        $userModel = new UserWithJoin();
+        $count     = $userModel->count();
+
+        $this->assertEquals(1, $count);
+
+        Record::db()->disconnect();
+    }
+
+    public function testDescribeNative()
+    {
+        $userModel = new User();
+        $columns   = $userModel->describe(true);
+
+        $this->assertEquals(['data_model_users.id', 'data_model_users.username', 'data_model_users.email'], $columns);
+
+        Record::db()->disconnect();
+    }
+
+    public function testDescribeNativeFull()
+    {
+        $userModel = new User();
+        $info      = $userModel->describe(true, true);
+
+        $this->assertEquals('data_model_users', $info['tableName']);
+        $this->assertArrayHasKey('columns', $info);
+
+        Record::db()->disconnect();
+    }
+
+    public function testDescribeWithSelectColumns()
+    {
+        $userModel = new User();
+        $userModel->select(['username']);
+        $columns = $userModel->describe();
+
+        $this->assertEquals(['username'], $columns);
+
+        Record::db()->disconnect();
+    }
+
+    public function testGetTableClassThrowsWhenNoMatchingTableClassExists()
+    {
+        $this->expectException('Pop\Db\Model\Exception');
+        (new Ghost())->getTableClass();
+    }
+
+    public function testSelectRepeatedColumnKeepsItsOriginalKeyAndMergesOptions()
+    {
+        $userModel = new UserWithDefaultSelect();
+        // 'username' is already in the preset $selectColumns, so this exercises the
+        // branch that re-keys it by its existing position instead of appending it,
+        // and passing non-empty $options exercises the options-merge branch
+        $userModel->select(['username'], ['limit' => 5]);
+
+        $this->assertEquals(['username'], array_values($userModel->describe()));
+    }
+
+    public function testSelectWithNoColumnsRevertsToOriginalSelectColumns()
+    {
+        $userModel = new UserWithDefaultSelect();
+        $userModel->select(['username']);
+        // Calling select() with nothing reverts back to what selectColumns was
+        // before the first select() call - the preset ['id', 'username']
+        $userModel->select();
+
+        $this->assertEquals(['id', 'username'], $userModel->describe());
+    }
+
+    public function testGetByIdWithFilters()
+    {
+        $userModel = new User();
+        $userModel->filter('username = testuser1');
+        $user = $userModel->getById(1);
+
+        $this->assertEquals('testuser1', $user['username']);
+        $this->assertEquals(1, $user['id']);
+
+        Record::db()->disconnect();
+    }
+
+    public function testGetOneWithFilters()
+    {
+        $userModel = new User();
+        $userModel->filter('username = testuser1');
+        $user = $userModel->getOne(['id' => 1]);
+
+        $this->assertEquals('testuser1', $user['username']);
+        $this->assertEquals(1, $user['id']);
+
+        Record::db()->disconnect();
+    }
+
+    public function testGetAllWithForeignTablesJoin()
+    {
+        Record::db()->query(
+            "INSERT INTO data_model_user_meta (user_id, note) VALUES (1, 'first user note')"
+        );
+
+        $userModel = new UserWithJoin();
+        $users     = $userModel->getAll();
+
+        $this->assertEquals('testuser1', $users[0]['username']);
+
+        Record::db()->disconnect();
+    }
+
+    public function testGetByIdWithForeignTablesJoin()
+    {
+        $userModel = new UserWithJoin();
+        $user      = $userModel->getById(1);
+
+        $this->assertEquals('testuser1', $user['username']);
+
+        Record::db()->disconnect();
+    }
+
+    public function testGetOneWithForeignTablesJoin()
+    {
+        $userModel = new UserWithJoin();
+        $user      = $userModel->getOne(['id' => 1]);
+
+        $this->assertEquals('testuser1', $user['username']);
 
         Record::db()->disconnect();
     }

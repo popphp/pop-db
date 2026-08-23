@@ -332,11 +332,42 @@ class ConditionTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testOrGroupEntryMustBeArray()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['OR' => ['not-an-array', ['role' => 'editor']]], $sql);
+    }
+
+    public function testOrGroupSkipsEmptyEntries()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = Condition::parse(['OR' => [[], ['role' => 'editor']]], $sql);
+
+        $this->assertEquals('(`role` = ?)', $predicateSet->render());
+        $this->assertEquals(['1_role' => 'editor'], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
     public function testWrongArityThrows()
     {
         $this->expectException('Pop\Db\Sql\Parser\Exception');
         $sql = $this->db->createSql();
         Condition::parse(['logins' => ['>=', 18, 21]], $sql);
+    }
+
+    public function testArity0OperatorWithExtraValueThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['role' => ['IS NULL', 'unexpected']], $sql);
+    }
+
+    public function testJsonPathTupleWrongArityThrows()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $sql = $this->db->createSql();
+        Condition::parse(['data->$.name' => ['=', 'admin', 'extra']], $sql);
     }
 
     public function testArrayShapedLegacyValueNowHandledAsInClause()
@@ -423,6 +454,64 @@ class ConditionTest extends TestCase
             $predicateSet->render()
         );
         $this->assertEquals([], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testComparisonOperatorsWithSubquery()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('MAX(total)')->from('orders');
+
+        $this->assertEquals(
+            "(`total` != (SELECT MAX(total) FROM `orders`))",
+            Condition::parse(['total' => ['!=', $subquery]], $sql)->render()
+        );
+        $this->assertEquals(
+            "(`total` > (SELECT MAX(total) FROM `orders`))",
+            Condition::parse(['total' => ['>', $subquery]], $sql)->render()
+        );
+        $this->assertEquals(
+            "(`total` >= (SELECT MAX(total) FROM `orders`))",
+            Condition::parse(['total' => ['>=', $subquery]], $sql)->render()
+        );
+        $this->assertEquals(
+            "(`total` < (SELECT MAX(total) FROM `orders`))",
+            Condition::parse(['total' => ['<', $subquery]], $sql)->render()
+        );
+        $this->assertEquals(
+            "(`total` <= (SELECT MAX(total) FROM `orders`))",
+            Condition::parse(['total' => ['<=', $subquery]], $sql)->render()
+        );
+        $this->db->disconnect();
+    }
+
+    /**
+     * The dispatcher methods' match() 'default' arms are structurally unreachable through
+     * Condition::parse() - $method always comes from the class's own OPERATORS map - so they're
+     * exercised directly via reflection to confirm the defensive throw actually fires.
+     */
+    public function testDispatcherMethodsThrowOnUnsupportedMethodName()
+    {
+        $sql          = $this->db->createSql();
+        $predicateSet = new \Pop\Db\Sql\PredicateSet($sql);
+
+        foreach (['callMulti', 'callArity0', 'callArity1', 'callArity1Mixed', 'callArity2'] as $dispatcher) {
+            $method = new \ReflectionMethod(Condition::class, $dispatcher);
+            $args   = match ($dispatcher) {
+                'callMulti'       => [$predicateSet, 'bogus', 'col', ['a']],
+                'callArity0'      => [$predicateSet, 'bogus', 'col'],
+                'callArity1'      => [$predicateSet, 'bogus', 'col', 'val'],
+                'callArity1Mixed' => [$predicateSet, 'bogus', 'col', $sql],
+                'callArity2'      => [$predicateSet, 'bogus', 'col', 'val1', 'val2'],
+            };
+
+            try {
+                $method->invoke(null, ...$args);
+                $this->fail("$dispatcher did not throw for an unsupported method name");
+            } catch (\Pop\Db\Sql\Parser\Exception $e) {
+                $this->assertStringContainsString('Unsupported', $e->getMessage());
+            }
+        }
         $this->db->disconnect();
     }
 

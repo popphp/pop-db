@@ -2,11 +2,29 @@
 
 namespace Pop\Db\Test\Sql\Parser;
 
+use Pop\Db\Db;
 use Pop\Db\Sql\Parser\Expression;
 use PHPUnit\Framework\TestCase;
 
 class ExpressionTest extends TestCase
 {
+
+    protected $db = null;
+
+    public function setUp(): void
+    {
+        $this->db = Db::mysqlConnect([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+    }
+
+    public function tearDown(): void
+    {
+        $this->db->disconnect();
+    }
 
     public function testParse()
     {
@@ -366,6 +384,102 @@ class ExpressionTest extends TestCase
         $result = Expression::parse('attempts BETWEEN 5 AND 10');
         $this->assertEquals('attempts', $result['column']);
         $this->assertEquals('BETWEEN', $result['operator']);
+    }
+
+    public function testPrepareExpressionEquals()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression("username = 'admin'", $sql);
+        $this->assertEquals('`username` = ?', $result['clause']);
+        $this->assertEquals(['username' => 'admin'], $result['params']);
+    }
+
+    public function testPrepareExpressionEqualsWithoutParams()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression("username = 'admin'", $sql, false);
+        $this->assertEquals("`username` = 'admin'", $result['clause']);
+        $this->assertEquals([], $result['params']);
+    }
+
+    public function testPrepareExpressionBetween()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression('logins BETWEEN 50 AND 100', $sql);
+        $this->assertEquals('`logins` BETWEEN ? AND ?', $result['clause']);
+        $this->assertEquals(['logins' => ['50', '100']], $result['params']);
+    }
+
+    public function testPrepareExpressionBetweenWithoutParams()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression('logins BETWEEN 50 AND 100', $sql, false);
+        // quote() leaves purely-numeric values unquoted
+        $this->assertEquals('`logins` BETWEEN 50 AND 100', $result['clause']);
+        $this->assertEquals([], $result['params']);
+    }
+
+    public function testPrepareExpressionIn()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression('id IN (1, 2, 3)', $sql);
+        $this->assertEquals('`id` IN (?, ?, ?)', $result['clause']);
+        $this->assertEquals(['id' => ['1', '2', '3']], $result['params']);
+    }
+
+    public function testPrepareExpressionInWithoutParams()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression('id IN (1, 2, 3)', $sql, false);
+        // quote() leaves purely-numeric values unquoted
+        $this->assertEquals('`id` IN (1, 2, 3)', $result['clause']);
+        $this->assertEquals([], $result['params']);
+    }
+
+    public function testPrepareExpressionIsNullHasNoValue()
+    {
+        $sql    = $this->db->createSql();
+        $result = Expression::prepareExpression('role IS NULL', $sql);
+        $this->assertEquals('`role` IS NULL', $result['clause']);
+        $this->assertEquals([], $result['params']);
+    }
+
+    public function testPrepareExpressionsFlattenedWithQuestionMarkPlaceholder()
+    {
+        $sql     = $this->db->createSql();
+        $results = Expression::prepareExpressions(["username = 'admin'", 'id IN (1, 2, 3)'], $sql);
+
+        $this->assertEquals(['`username` = ?', '`id` IN (?, ?, ?)'], $results['clauses']);
+        // Each expression's whole params entry is appended as one element - a
+        // multi-value entry (like IN's) stays nested rather than being unpacked
+        $this->assertEquals(['admin', ['1', '2', '3']], $results['params']);
+    }
+
+    public function testPrepareExpressionsFlattenedWithNamedPlaceholder()
+    {
+        touch(__DIR__ . '/../../tmp/prepare_expressions.sqlite');
+        $sqlite = Db::sqliteConnect(['database' => __DIR__ . '/../../tmp/prepare_expressions.sqlite']);
+        $sql    = $sqlite->createSql();
+
+        // getPlaceholder() returns the bare ':' character for sqlite (not a unique
+        // named token), so the flattened params are keyed by column+count instead
+        $results = Expression::prepareExpressions(["username = 'admin'", 'id IN (1, 2, 3)'], $sql);
+
+        $this->assertEquals(['"username" = :', '"id" IN (:, :, :)'], $results['clauses']);
+        $this->assertEquals(['username1' => 'admin', 'id1' => ['1', '2', '3']], $results['params']);
+
+        $sqlite->disconnect();
+        @unlink(__DIR__ . '/../../tmp/prepare_expressions.sqlite');
+    }
+
+    public function testPrepareExpressionsNotFlattened()
+    {
+        $sql     = $this->db->createSql();
+        $results = Expression::prepareExpressions(["username = 'admin'", 'id IN (1, 2, 3)'], $sql, true, false);
+
+        $this->assertEquals(2, count($results));
+        $this->assertEquals('`username` = ?', $results[0]['clause']);
+        $this->assertEquals('`id` IN (?, ?, ?)', $results[1]['clause']);
     }
 
 }

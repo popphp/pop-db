@@ -645,7 +645,7 @@ class Select extends AbstractPredicateClause
         if ($this->offset !== null) {
             $result['offset'] = (int)$this->offset + 1;
             $result['limit']  = ($this->limit !== null) ? (int)$this->limit + (int)$this->offset : 0;
-        } else if (str_contains($this->limit, ',')) {
+        } else if (is_string($this->limit) && str_contains($this->limit, ',')) {
             $ary  = explode(',', $this->limit);
             $result['offset'] = (int)trim($ary[0]) + 1;
             $result['limit']  = (int)trim($ary[1]) + (int)trim($ary[0]);

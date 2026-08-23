@@ -237,6 +237,68 @@ class PredicateSetTest extends TestCase
         $this->assertInstanceOf('Pop\Db\Sql\Predicate\NotIn', $predicateSet->getPredicates()[0]);
     }
 
+    public function testAddInWithPlaceholderBindsSingleArrayParameter()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->add('attempts IN (5, 10)', true);
+        $this->assertEquals('(`attempts` IN (?, ?))', $predicateSet->render());
+        $this->assertEquals(['attempts' => ['5', '10']], $predicateSet->getParameters());
+    }
+
+    public function testAddNotInWithPlaceholderBindsSingleArrayParameter()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->add('attempts NOT IN (5, 10)', true);
+        $this->assertEquals('(`attempts` NOT IN (?, ?))', $predicateSet->render());
+        $this->assertEquals(['attempts' => ['5', '10']], $predicateSet->getParameters());
+    }
+
+    public function testAddWithPlaceholderOnPgsqlBindsNumberedToken()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $predicateSet = new PredicateSet($db->createSql());
+        $predicateSet->add("username = 'admin'", 1);
+        $this->assertEquals('("username" = $1)', $predicateSet->render());
+        $this->assertEquals(['username' => 'admin'], $predicateSet->getParameters());
+        $db->disconnect();
+    }
+
+    public function testAddWithPlaceholderOnSqliteBindsNamedToken()
+    {
+        touch(__DIR__ . '/../tmp/predicate_set_add.sqlite');
+        $db  = Db::sqliteConnect(['database' => __DIR__ . '/../tmp/predicate_set_add.sqlite']);
+        $predicateSet = new PredicateSet($db->createSql());
+        $predicateSet->add("username = 'admin'", true);
+        $this->assertEquals('("username" = :username)', $predicateSet->render());
+        $this->assertEquals(['username' => 'admin'], $predicateSet->getParameters());
+        $db->disconnect();
+        @unlink(__DIR__ . '/../tmp/predicate_set_add.sqlite');
+    }
+
+    public function testExtractValuesUsesParameterOverrideKeyedByPredicateIndex()
+    {
+        // extractValues()'s parameter lookup is keyed by the predicate's array index,
+        // not by column name - addParameter() must be called with that literal index
+        // for the override branch to apply (add()'s own placeholder binding keys its
+        // parameters by column name, so it never reaches this branch in practice)
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->equalTo('username', 'admin');
+        $predicateSet->addParameter(0, 'admin-override');
+        $this->assertEquals(['username' => 'admin-override'], $predicateSet->extractValues());
+    }
+
+    public function testSplitBetweenValueReturnsValueUnchangedWhenNotAndShaped()
+    {
+        $method = new \ReflectionMethod(PredicateSet::class, 'splitBetweenValue');
+        $this->assertEquals('no-and-here', $method->invoke(null, 'no-and-here'));
+        $this->assertEquals(5, $method->invoke(null, 5));
+    }
+
     public function testAddNull()
     {
         $predicateSet = new PredicateSet($this->db->createSql());

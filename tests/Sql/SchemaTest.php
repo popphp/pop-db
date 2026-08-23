@@ -66,6 +66,18 @@ class SchemaTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testRenderIncludesRenameAndTruncateStatements()
+    {
+        $schema = $this->db->createSchema();
+        $schema->rename('users')->to('users_table');
+        $schema->truncate('logs');
+        $rendered = (string)$schema;
+
+        $this->assertStringContainsString('RENAME TABLE `users` TO `users_table`', $rendered);
+        $this->assertStringContainsString('TRUNCATE TABLE `logs`', $rendered);
+        $this->db->disconnect();
+    }
+
     public function testForeignKeyCheck()
     {
         $schema = $this->db->createSchema();

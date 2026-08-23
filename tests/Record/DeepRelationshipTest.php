@@ -740,6 +740,30 @@ class DeepRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testLatestWithExplicitOptionsMergesOrderAndLimit()
+    {
+        $parent = new DlParent(['name' => 'P1']);
+        $parent->save();
+
+        $child1 = new DlChild(['parent_id' => $parent->id, 'name' => 'C1']);
+        $child1->save();
+        $child2 = new DlChild(['parent_id' => $parent->id, 'name' => 'C2']);
+        $child2->save();
+        $child3 = new DlChild(['parent_id' => $parent->id, 'name' => 'C3']);
+        $child3->save();
+
+        $found  = DlParent::findById($parent->id);
+        // Passing a non-null $options array exercises the branch that augments the
+        // caller-provided array with 'order'/'limit' rather than building a fresh one
+        $latest = $found->latest()->children([]);
+
+        $this->assertInstanceOf(DlChild::class, $latest);
+        $this->assertEquals('C3', $latest->name);
+        $this->assertEquals($child3->id, $latest->id);
+
+        $this->db->disconnect();
+    }
+
     public function testOldestReturnsSingleEarliestChild()
     {
         $parent = new DlParent(['name' => 'P1']);

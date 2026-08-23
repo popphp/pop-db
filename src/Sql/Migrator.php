@@ -468,11 +468,11 @@ class Migrator extends Migration\AbstractMigrator
     /**
      * Delete migration
      *
-     * @param  int  $current
-     * @param  ?int $previous
+     * @param  int|string  $current
+     * @param  int|string|null $previous
      * @return void
      */
-    protected function deleteCurrent(int $current, ?int $previous = null): void
+    protected function deleteCurrent(int|string $current, int|string|null $previous = null): void
     {
         if (($this->isTable()) && ($this->hasTable())) {
             $class     = $this->getTable();
