@@ -246,15 +246,20 @@ class Encoded extends \Pop\Db\Record
      *
      * @param  string $key
      * @param  string $value
+     * @param  bool   $autoRehash
      * @return bool
      */
-    public function verify(string $key, string $value): bool
+    public function verify(string $key, string $value, bool $autoRehash = true): bool
     {
         $hasher = Hasher::create($this->hashAlgorithm, $this->hashOptions);
         $hash   = $this->{$key};
         $result = $hasher->verify($value, $hash);
 
         $this->needsRehash = ($result && $hasher->requiresRehash($hash));
+
+        if (($autoRehash) && ($this->needsRehash)) {
+            $this->rehash($key, $value);
+        }
 
         return $result;
     }

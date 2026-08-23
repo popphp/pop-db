@@ -170,7 +170,8 @@ class EncodedTest extends TestCase
         $this->assertFalse($user->verify('password', 'wrong-password'));
         $this->assertFalse($user->needsRehash());
 
-        $this->assertTrue($user->verify('password', 'insecurepw'));
+        // Pass autoRehash: false to observe the flag before rehashing manually
+        $this->assertTrue($user->verify('password', 'insecurepw', false));
         $this->assertTrue($user->needsRehash());
 
         $user->rehash('password', 'insecurepw');

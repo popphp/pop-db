@@ -197,11 +197,9 @@ class Auth extends Encoded
             $this->increment($this->attemptsField);
             return false;
         } else {
-            // Upon success, reset attempts field and rehash the password if needed
+            // Upon success, reset attempts field (the password hash, if outdated, was
+            // already transparently rehashed by verify() above)
             $this->resetAttempts();
-            if ($this->needsRehash()) {
-                $this->rehash($this->passwordField, $attemptedPassword);
-            }
             $this->authFailure = null;
 
             // If not MFA, return true
