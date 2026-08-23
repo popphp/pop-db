@@ -57,6 +57,27 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testConstructorThrowsWhenNoDbConnectionIsSet()
+    {
+        // Db's registry is a shared static across the whole suite, so other tests may have
+        // already populated a 'default' entry - temporarily clear it to exercise this branch
+        $dbProperty            = new \ReflectionProperty(Db::class, 'db');
+        $classToTableProperty  = new \ReflectionProperty(Db::class, 'classToTable');
+        $originalDb            = $dbProperty->getValue();
+        $originalClassToTable  = $classToTableProperty->getValue();
+
+        $dbProperty->setValue(null, ['default' => null]);
+        $classToTableProperty->setValue(null, []);
+
+        try {
+            $this->expectException(Exception::class);
+            new \Pop\Db\Test\TestAsset\UnboundRecord();
+        } finally {
+            $dbProperty->setValue(null, $originalDb);
+            $classToTableProperty->setValue(null, $originalClassToTable);
+        }
+    }
+
     public function testConstructorTable()
     {
         $user = new Users('users');
@@ -111,6 +132,12 @@ class RecordTest extends TestCase
     public function testTable()
     {
         $this->assertEquals('users', Users::table());
+        $this->db->disconnect();
+    }
+
+    public function testTableWithQuotes()
+    {
+        $this->assertEquals('`users`', Users::table(true));
         $this->db->disconnect();
     }
 
@@ -1206,6 +1233,27 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindAllToArrayKeyedByPrimaryKey()
+    {
+        $user = new Users([
+            'username' => 'testuser7b',
+            'password' => 'password7b',
+            'email'    => 'testuser7b@test.com'
+        ]);
+        $user->save();
+
+        $users = Users::findAll(['id' => $user->id])->toArray('id');
+        $this->assertArrayHasKey($user->id, $users);
+        $this->assertEquals('testuser7b', $users[$user->id]['username']);
+        $this->db->disconnect();
+    }
+
+    public function testEmptyCollectionToArrayWithKeyOptionReturnsEmptyArray()
+    {
+        $collection = new Record\Collection([]);
+        $this->assertEquals([], $collection->toArray(['key' => 'id']));
+    }
+
     public function testQuery1()
     {
         $sql = Users::sql();
@@ -1729,6 +1777,44 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testStartOnBaseRecordClass()
+    {
+        Record::setDb($this->db);
+        $result = Record::start();
+        $this->assertNull($result);
+        $this->assertTrue($this->db->isTransaction());
+        Record::commit();
+        $this->assertFalse($this->db->isTransaction());
+        $this->db->disconnect();
+    }
+
+    public function testRollbackWithinNestedTransactionReturnsDefaultException()
+    {
+        Users::start([
+            'username' => 'testuser268',
+            'password' => 'password268',
+            'email'    => 'testuser268@test.com',
+        ]);
+        $this->assertEquals(1, $this->db->getTransactionDepth());
+
+        $this->db->beginTransaction();
+        $this->assertEquals(2, $this->db->getTransactionDepth());
+
+        $result = Users::rollback();
+        $this->assertInstanceOf(Exception::class, $result);
+        $this->assertEquals(
+            'Error: A rollback has been executed from within a nested transaction.', $result->getMessage()
+        );
+        // A nested rollback() call doesn't actually touch the transaction depth
+        $this->assertEquals(2, $this->db->getTransactionDepth());
+
+        $this->db->rollback();
+        $this->db->rollback();
+        $this->assertFalse($this->db->isTransaction());
+
+        $this->db->disconnect();
+    }
+
     public function testFindWhere()
     {
         $user = new Users([
@@ -1794,6 +1880,10 @@ class RecordTest extends TestCase
 
         $users = Users::findWhereNotBetween('logins', '(1000000, 1000010)');
         $this->assertGreaterThanOrEqual(1, $users->count());
+
+        $method = new \ReflectionMethod(Users::class, 'parseBetweenValues');
+        $this->assertNull($method->invoke(null, 'not-wrapped-in-parens'));
+        $this->assertNull($method->invoke(null, [1, 2, 3]));
 
         $users = Users::findWhereLike('username', 'testuser%');
         $this->assertGreaterThanOrEqual(1, $users->count());

@@ -204,6 +204,20 @@ class TableMysqlTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testSelectWithGroupOption()
+    {
+        $table = new Gateway\Table('users');
+        $table->insert([
+            'username' => 'testuser9',
+            'password' => 'password9',
+            'email'    => 'testuser9@test.com'
+        ]);
+
+        $table->select(['username'], null, [], ['group' => 'username']);
+        $this->assertTrue($table->hasRows());
+        $this->db->disconnect();
+    }
+
     public function testGetTableInfo()
     {
         $table = new Gateway\Table('users');

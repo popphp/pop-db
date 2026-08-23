@@ -44,6 +44,23 @@ class SelectTest extends TestCase
         $this->assertEquals('SELECT `u`.`username` FROM `users` AS `u`', $sql->render());
     }
 
+    public function testFromWithMultipleAliasedTablesThrowsException()
+    {
+        $this->expectException(\Pop\Db\Sql\Exception::class);
+        $sql = $this->db->createSql();
+        $sql->select()->from(['a' => 'table1', 'b' => 'table2'])->render();
+    }
+
+    public function testSelectSubqueryColumnWithAlias()
+    {
+        $sql      = $this->db->createSql();
+        $subquery = $this->db->createSql()->select('MAX(total)')->from('orders');
+
+        $sql->select(['max_total' => $subquery])->from('orders');
+        $this->assertEquals('SELECT (SELECT MAX(total) FROM `orders`) AS `max_total` FROM `orders`', $sql->render());
+        $this->db->disconnect();
+    }
+
     public function testJsonExtractMysql()
     {
         $sql = $this->db->createSql();
@@ -111,6 +128,95 @@ class SelectTest extends TestCase
         $this->assertEquals("json_extract(\"data\", '$.name')", (string)$extract);
         $db->disconnect();
         @unlink(__DIR__ . '/../tmp/json_extract.sqlite');
+    }
+
+    public function testJsonExtractSqlsrv()
+    {
+        // No options are passed, so the adapter never attempts a real connection
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $extract = $sql->jsonExtract('data', '$.name');
+        $this->assertEquals("JSON_VALUE([data], '$.name')", (string)$extract);
+    }
+
+    /**
+     * The legacy 'offset,limit' comma-string $limit shape can no longer be set through the
+     * public limit(int $limit) setter, so it's forced via reflection to exercise this branch.
+     */
+    public function testPgsqlLegacyCommaLimitStringIsSplitIntoLimitAndOffset()
+    {
+        $db     = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+        $sql    = $db->createSql();
+        $select = $sql->select()->from('users');
+        (new \ReflectionProperty($select, 'limit'))->setValue($select, '5,10');
+
+        $this->assertEquals('SELECT * FROM "users" LIMIT 10 OFFSET 5', $select->render());
+        $db->disconnect();
+    }
+
+    public function testSqlsrvLegacyCommaLimitStringIsSplitIntoLimitAndOffset()
+    {
+        $sql    = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $select = $sql->select()->from('users')->orderBy('id');
+        (new \ReflectionProperty($select, 'limit'))->setValue($select, '5,10');
+
+        $result = $select->render();
+        $this->assertStringContainsString('BETWEEN 6 AND 15', $result);
+    }
+
+    public function testSqlsrvLimitWithoutOrderByThrowsException()
+    {
+        $this->expectException(\Pop\Db\Sql\Exception::class);
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $sql->select()->from('users')->limit(5)->render();
+    }
+
+    public function testSqlsrvOffsetWithLimitUsesRowNumberBetween()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $result = $sql->select()->from('users')->orderBy('id')->limit(10)->offset(5)->render();
+
+        $this->assertStringContainsString('ROW_NUMBER() OVER (ORDER BY [id] ASC) AS RowNumber', $result);
+        $this->assertStringContainsString('BETWEEN', $result);
+    }
+
+    public function testSqlsrvOffsetWithoutLimitUsesRowNumberGreaterThanOrEqualTo()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $result = $sql->select()->from('users')->orderBy('id')->offset(5)->render();
+
+        $this->assertStringContainsString('ROW_NUMBER() OVER (ORDER BY [id] ASC) AS RowNumber', $result);
+        $this->assertStringContainsString('>=', $result);
+    }
+
+    /**
+     * KNOWN BUG (not fixed here - needs a design decision, flagged separately): the
+     * no-offset branch of Select::buildSqlSrvLimitAndOffset() does
+     * str_replace('SELECT', 'SELECT TOP N', $sql) against $sql while it is still ''
+     * (nothing has been built into it yet), so the replacement never matches and the
+     * LIMIT is silently dropped - this renders a plain unbounded FROM clause instead
+     * of a TOP-limited one. This test documents the CURRENT (broken) output rather
+     * than asserting the intended behavior.
+     */
+    public function testSqlsrvLimitWithoutOffsetSilentlyDropsTheLimit()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $result = $sql->select()->from('users')->orderBy('id')->limit(10)->render();
+
+        $this->assertEquals('SELECT * FROM [users] ORDER BY [id] ASC', $result);
+    }
+
+    public function testJsonExtractUnsupportedDbTypeThrowsException()
+    {
+        $this->expectException(\Pop\Db\Sql\Exception::class);
+        $sql = $this->db->createSql();
+        (new \ReflectionProperty($sql, 'dbType'))->setValue($sql, 'UNSUPPORTED');
+        $sql->jsonExtract('data', '$.name');
+        $this->db->disconnect();
     }
 
     public function testJsonExtractAsSelectColumn()

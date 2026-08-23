@@ -38,6 +38,11 @@ class KeywordTest extends TestCase
         $this->assertFalse(Keyword::indexOf('status between 1 and 2', 'BETWEEN', 0, false));
     }
 
+    public function testIndexOfReturnsFalseForEmptyNeedle()
+    {
+        $this->assertFalse(Keyword::indexOf('status = 1', ''));
+    }
+
     public function testSplitOnAndOr()
     {
         $this->assertEquals(

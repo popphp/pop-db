@@ -202,6 +202,39 @@ class DataTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testForceUpdateSerialize()
+    {
+        $rows = [
+            [
+                'id'       => 1,
+                'username' => 'testuser1',
+                'password' => 'password1',
+                'email'    => 'testuser1@test.com'
+            ],
+            [
+                'id'       => 2,
+                'username' => 'testuser2',
+                'password' => '',
+                'email'    => 'testuser2@test.com'
+            ],
+        ];
+        $data = new Data($this->db, 'pop_data_table');
+        $data->setForceUpdate(true, 'id');
+        $this->assertTrue($data->isForceUpdate());
+
+        // 'username' is omitted from the SET clause; the empty (non-trailing) password
+        // value becomes NULL - nullEmpty's string replacement only matches an empty
+        // value that isn't the last column in the SET list
+        $data->serialize($rows, 'username', true);
+
+        $this->assertStringContainsString('UPDATE `pop_data_table` SET', $data->getSql());
+        $this->assertStringContainsString('WHERE `id` = 1;', $data->getSql());
+        $this->assertStringContainsString('WHERE `id` = 2;', $data->getSql());
+        $this->assertStringNotContainsString('`username`', $data->getSql());
+        $this->assertStringContainsString('`password` = NULL', $data->getSql());
+        $this->db->disconnect();
+    }
+
     public function testMysqlConflicts()
     {
         $rows = [

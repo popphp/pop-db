@@ -61,6 +61,15 @@ class AlterMysqlTest extends TestCase
         $this->assertStringContainsString('ALTER TABLE `users` ADD CONSTRAINT `fk_info_id` FOREIGN KEY (`info_id`) REFERENCES `user_info` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;', $alter->render());
     }
 
+    public function testAddColumnAfter()
+    {
+        $schema = $this->db->createSchema();
+        $alter  = $schema->alter('users');
+        $alter->varchar('phone', 20);
+        $alter->after('email');
+        $this->assertStringContainsString('ALTER TABLE `users` ADD `phone` VARCHAR(20) AFTER `email`;', $alter->render());
+    }
+
     public function testDropColumn()
     {
         $schema = $this->db->createSchema();

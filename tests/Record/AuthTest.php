@@ -5,6 +5,7 @@ namespace Pop\Db\Test\Record;
 use Pop\Db\Db;
 use Pop\Db\Record\Auth;
 use Pop\Db\Test\TestAsset\UsersAuth;
+use Pop\Db\Test\TestAsset\UsersAuthAlphaMfa;
 use Pop\Db\Test\TestAsset\UsersAuthWeakHash;
 use PHPUnit\Framework\TestCase;
 
@@ -126,6 +127,16 @@ class AuthTest extends TestCase
         $this->assertNotEmpty($result->getRawValue('mfa_code'));
         $this->assertMatchesRegularExpression('/^\d{6}$/', $result->getRawValue('mfa_code'));
         $this->assertGreaterThan(time(), $result->getRawValue('mfa_timestamp'));
+    }
+
+    public function testAuthenticateSuccessWithAlphanumericMfaIssuesAlphaCode()
+    {
+        UsersAuthAlphaMfa::setDb($this->db);
+        $user   = new UsersAuthAlphaMfa();
+        $result = $user->authenticate('admin', 'admin', true);
+
+        $this->assertInstanceOf(UsersAuthAlphaMfa::class, $result);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $result->getRawValue('mfa_code'));
     }
 
     public function testAuthenticateMfaSuccess()

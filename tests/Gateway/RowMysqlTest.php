@@ -152,6 +152,45 @@ class RowMysqlTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindWithOffsetAndJoinOptions()
+    {
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('user_meta');
+        $schema->execute();
+        $schema->create('user_meta')->int('user_id', 16)->varchar('note', 255);
+        $schema->execute();
+
+        $row = new Gateway\Row('users', ['id']);
+        $row->save(['username' => 'testuser1', 'password' => '123456']);
+        $row2 = new Gateway\Row('users', ['id']);
+        $row2->save(['username' => 'testuser2', 'password' => '123456']);
+
+        $this->db->query("INSERT INTO user_meta (user_id, note) VALUES (2, 'second user note')");
+
+        // 'offset' skips the first matching row (there's only ever one per primary key
+        // match here, so this exercises the branch without changing the result)
+        $found = new Gateway\Row('users', ['id']);
+        $found->find(2, [], ['offset' => 0]);
+        $this->assertEquals('testuser2', $found->username);
+
+        $joined = new Gateway\Row('users', ['id']);
+        $joined->find(2, [], [
+            'select' => ['users.*', 'user_meta.note'],
+            'join'   => ['type' => 'leftJoin', 'table' => 'user_meta', 'columns' => ['users.id' => 'user_meta.user_id']]
+        ]);
+        $this->assertEquals('testuser2', $joined->username);
+        $this->assertEquals('second user note', $joined->note);
+
+        $joinedDefaultType = new Gateway\Row('users', ['id']);
+        $joinedDefaultType->find(2, [], [
+            'select' => ['users.*', 'user_meta.note'],
+            'join'   => ['table' => 'user_meta', 'columns' => ['users.id' => 'user_meta.user_id']]
+        ]);
+        $this->assertEquals('second user note', $joinedDefaultType->note);
+
+        $this->db->disconnect();
+    }
+
     public function testUpdate()
     {
         $row = new Gateway\Row('users', ['id']);

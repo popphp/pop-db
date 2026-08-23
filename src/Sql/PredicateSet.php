@@ -496,11 +496,11 @@ class PredicateSet
      * Predicate for BETWEEN
      *
      * @param  string $column
-     * @param  string $value1
-     * @param  string $value2
+     * @param  mixed  $value1
+     * @param  mixed  $value2
      * @return PredicateSet
      */
-    public function between(string $column, string $value1, string $value2): PredicateSet
+    public function between(string $column, mixed $value1, mixed $value2): PredicateSet
     {
         return $this->addPredicate(new Predicate\Between([$column, $value1, $value2], $this->nextConjunction));
     }
@@ -509,11 +509,11 @@ class PredicateSet
      * Predicate for NOT BETWEEN
      *
      * @param  string $column
-     * @param  string $value1
-     * @param  string $value2
+     * @param  mixed  $value1
+     * @param  mixed  $value2
      * @return PredicateSet
      */
-    public function notBetween(string $column, string $value1, string $value2): PredicateSet
+    public function notBetween(string $column, mixed $value1, mixed $value2): PredicateSet
     {
         return $this->addPredicate(new Predicate\NotBetween([$column, $value1, $value2], $this->nextConjunction));
     }

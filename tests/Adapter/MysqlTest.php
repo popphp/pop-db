@@ -135,6 +135,34 @@ class MysqlTest extends TestCase
         $db->disconnect();
     }
 
+    public function testListenWithScalarParamsAndClassNameListener()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $listener = $db->listen(TestQueryListener::class, 'query-listener');
+        $this->assertEquals('query-listener', $listener->getName());
+        $db->disconnect();
+    }
+
+    public function testListenWithScalarParamsAndCallableObjectListener()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $listener = $db->listen(new CallableObject(TestQueryListener::class), 'query-listener');
+        $this->assertEquals('query-listener', $listener->getName());
+        $db->disconnect();
+    }
+
     public function testBindParams()
     {
         $db = new Mysql([

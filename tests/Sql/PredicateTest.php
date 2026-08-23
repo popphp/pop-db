@@ -330,6 +330,13 @@ class PredicateTest extends TestCase
         );
     }
 
+    public function testJsonNotEqualToValuesException()
+    {
+        $this->expectException('Pop\Db\Sql\Predicate\Exception');
+        $predicate = new Predicate\JsonNotEqualTo(['data', '$.name']);
+        $predicate->render($this->db->createSql());
+    }
+
     /**
      * PostgreSQL's extraction operators ('->>' / '#>>') always return text, and PostgreSQL has
      * no implicit text-to-number comparison, so a bare numeric literal on the right-hand side

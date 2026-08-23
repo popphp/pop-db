@@ -54,4 +54,29 @@ class MigratorTableTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testRollbackByBatch()
+    {
+        $migrator = new Migrator($this->db, __DIR__ . '/../tmp/migrations2');
+        $migrator->runAll();
+        $this->assertTrue($this->db->hasTable('test_users'));
+
+        $migrator->rollback('batch-1');
+        $this->assertFalse($this->db->hasTable('test_users'));
+        $this->db->disconnect();
+    }
+
+    public function testGetNextBatchIncrementsAfterAPreviousBatch()
+    {
+        $migrator = new Migrator($this->db, __DIR__ . '/../tmp/migrations2');
+        $migrator->runAll();
+
+        // A batch-1 tracking row is still present (nothing was rolled back), so the
+        // next batch number must be 2
+        $migrator2 = new Migrator($this->db, __DIR__ . '/../tmp/migrations2');
+        $this->assertEquals(2, $migrator2->getNextBatch());
+
+        $migrator->rollbackAll();
+        $this->db->disconnect();
+    }
+
 }

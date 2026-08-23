@@ -130,6 +130,20 @@ class SqlTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testGetParameterTranslatesToSqliteNamedPlaceholder()
+    {
+        touch(__DIR__ . '/tmp/get_parameter.sqlite');
+        $sqlite = Db::sqliteConnect(['database' => __DIR__ . '/tmp/get_parameter.sqlite']);
+        $sql    = $sqlite->createSql();
+
+        // A '?' token is MYSQL-shaped, but this Sql object is SQLITE-dialect, so
+        // getParameter() must translate it into the dialect-correct ':column' token
+        $this->assertEquals(':username', $sql->getParameter('?', 'username'));
+
+        $sqlite->disconnect();
+        @unlink(__DIR__ . '/tmp/get_parameter.sqlite');
+    }
+
     public function testParameterCount()
     {
         $sql = $this->db->createSql();

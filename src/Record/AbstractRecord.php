@@ -575,7 +575,7 @@ abstract class AbstractRecord implements \ArrayAccess, \Countable, \IteratorAggr
      */
     public function hasWith(string $name): bool
     {
-        return (isset($this->with[$name]));
+        return in_array($name, $this->with, true);
     }
 
     /**
