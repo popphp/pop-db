@@ -30,6 +30,10 @@ class Order
     /**
      * Get the order by values
      *
+     * A string carrying no direction falls back to ASC, which is SQL's own default for a bare
+     * column. A leading '-' is the shorthand for descending, the same convention that
+     * Model\AbstractDataModel::getOrderBy() applies to its sort parameter.
+     *
      * @param  string $orderBy
      * @return array
      */
@@ -47,9 +51,12 @@ class Order
         } else if (stripos($orderBy, 'RAND()') !== false) {
             $order = 'RAND()';
             $by    = trim(str_replace('RAND()', '', $orderBy));
+        } else if (str_starts_with(trim($orderBy), '-')) {
+            $order = 'DESC';
+            $by    = trim(substr(trim($orderBy), 1));
         } else {
-            $order = null;
-            $by    = $orderBy;
+            $order = 'ASC';
+            $by    = trim($orderBy);
         }
 
         if (str_contains($by, ',')) {

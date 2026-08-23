@@ -29,11 +29,34 @@ class OrderTest extends TestCase
         $this->assertEquals('RAND()', $parsed['order']);
     }
 
-    public function testParseNone()
+    public function testParseNoneDefaultsToAsc()
     {
         $parsed = Order::parse('id');
         $this->assertEquals('id', $parsed['by']);
-        $this->assertNull($parsed['order']);
+        $this->assertEquals('ASC', $parsed['order']);
+    }
+
+    public function testParseDescendingPrefix()
+    {
+        $parsed = Order::parse('-id');
+        $this->assertEquals('id', $parsed['by']);
+        $this->assertEquals('DESC', $parsed['order']);
+    }
+
+    public function testParseDescendingPrefixWithSpace()
+    {
+        $parsed = Order::parse(' - id ');
+        $this->assertEquals('id', $parsed['by']);
+        $this->assertEquals('DESC', $parsed['order']);
+    }
+
+    public function testParseWithCommaAndNoDirectionDefaultsToAsc()
+    {
+        $parsed = Order::parse('id, count');
+        $this->assertTrue(is_array($parsed['by']));
+        $this->assertEquals('id', $parsed['by'][0]);
+        $this->assertEquals('count', $parsed['by'][1]);
+        $this->assertEquals('ASC', $parsed['order']);
     }
 
     public function testParseWithComma()

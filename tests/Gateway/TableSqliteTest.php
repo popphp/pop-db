@@ -105,6 +105,64 @@ class TableSqliteTest extends TestCase
         $this->assertEquals('testuser123456@test.com', $rows[0]['email']);
     }
 
+    public function testSelectWithOrderAndNoDirection()
+    {
+        $table = new Gateway\Table('sq_users');
+        $table->insertRows([
+            [
+                'username' => 'ccc',
+                'password' => 'password7',
+                'email'    => 'ccc@test.com'
+            ],
+            [
+                'username' => 'aaa',
+                'password' => 'password8',
+                'email'    => 'aaa@test.com'
+            ],
+            [
+                'username' => 'bbb',
+                'password' => 'password9',
+                'email'    => 'bbb@test.com'
+            ]
+        ]);
+
+        // A bare column with no direction must default to ASC, not fall through as
+        // a null direction into the adapter's escape() (a TypeError on SQLite)
+        $rows = $table->select(null, null, null, ['order' => 'username']);
+        $this->assertEquals(['aaa', 'bbb', 'ccc'], array_column($rows, 'username'));
+
+        $rows = $table->select(null, null, null, ['order' => 'username ASC']);
+        $this->assertEquals(['aaa', 'bbb', 'ccc'], array_column($rows, 'username'));
+
+        $rows = $table->select(null, null, null, ['order' => 'username DESC']);
+        $this->assertEquals(['ccc', 'bbb', 'aaa'], array_column($rows, 'username'));
+    }
+
+    public function testSelectWithDescendingOrderPrefix()
+    {
+        $table = new Gateway\Table('sq_users');
+        $table->insertRows([
+            [
+                'username' => 'ccc',
+                'password' => 'password7',
+                'email'    => 'ccc@test.com'
+            ],
+            [
+                'username' => 'aaa',
+                'password' => 'password8',
+                'email'    => 'aaa@test.com'
+            ],
+            [
+                'username' => 'bbb',
+                'password' => 'password9',
+                'email'    => 'bbb@test.com'
+            ]
+        ]);
+
+        $rows = $table->select(null, null, null, ['order' => '-username']);
+        $this->assertEquals(['ccc', 'bbb', 'aaa'], array_column($rows, 'username'));
+    }
+
     public function testGetTableInfo()
     {
         $table = new Gateway\Table('sq_users');
