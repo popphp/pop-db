@@ -209,6 +209,8 @@ class Row extends AbstractGateway implements \ArrayAccess, \Countable, \Iterator
             throw new Exception('Error: The primary key(s) have not been set.');
         }
 
+        $this->checkOptions($options);
+
         $db  = Db::getDb($this->table);
         $sql = $db->createSql();
 

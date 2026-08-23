@@ -144,4 +144,42 @@ class RowSqliteTest extends TestCase
         unlink(__DIR__ . '/../tmp/db.sqlite');
     }
 
+    public function testFindWithUnrecognisedOptionKeyTriggersNotice()
+    {
+        $row = new Gateway\Row('sq_users', ['id']);
+        $row->save([
+            'username' => 'testuser99',
+            'password' => '123456'
+        ]);
+
+        $notices = [];
+        set_error_handler(function ($errno, $errstr) use (&$notices) {
+            if ($errno === E_USER_NOTICE) {
+                $notices[] = $errstr;
+            }
+            return true;
+        });
+
+        try {
+            $newRow = new Gateway\Row('sq_users', ['id']);
+            $newRow->find(1, [], ['selectt' => ['sq_users.username']]);
+            $this->assertEquals('testuser99', $newRow->username);
+
+            // A recognised key must stay silent
+            $otherRow = new Gateway\Row('sq_users', ['id']);
+            $otherRow->find(1, [], ['select' => ['sq_users.username']]);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertCount(1, $notices);
+        $this->assertStringContainsString('selectt', $notices[0]);
+
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('sq_users');
+        $schema->execute();
+
+        $this->db->disconnect();
+    }
+
 }

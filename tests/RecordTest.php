@@ -757,7 +757,7 @@ class RecordTest extends TestCase
 
         $updated = Users::findById($userId);
         $this->assertEquals('plainuser1updated', $updated->username);
-        $this->assertEquals(1, Users::findAll(['id' => $userId])->count());
+        $this->assertEquals(1, Users::findBy(['id' => $userId])->count());
 
         $user->delete();
         $this->assertTrue(empty($user->toArray()));
@@ -1233,6 +1233,48 @@ class RecordTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testFindAllWithUnrecognisedOptionKeyTriggersNotice()
+    {
+        foreach (['testuser7c', 'testuser7d', 'testuser7e'] as $username) {
+            (new Users([
+                'username' => $username,
+                'password' => 'password7',
+                'email'    => $username . '@test.com'
+            ]))->save();
+        }
+
+        $notices = [];
+        set_error_handler(function ($errno, $errstr) use (&$notices) {
+            if ($errno === E_USER_NOTICE) {
+                $notices[] = $errstr;
+            }
+            return true;
+        });
+
+        try {
+            // A misspelled key is still ignored - it just no longer happens silently
+            $users = Users::findAll(['limitt' => 2]);
+            $this->assertEquals(3, $users->count());
+
+            // The lookup is case-sensitive, so a wrong-cased key is unrecognised too
+            Users::findAll(['Limit' => 2]);
+            Users::findAll(['orderBy' => 'logins DESC']);
+
+            // ...and a recognised key must stay silent
+            $users = Users::findAll(['limit' => 2]);
+            $this->assertEquals(2, $users->count());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertCount(3, $notices);
+        $this->assertStringContainsString('limitt', $notices[0]);
+        $this->assertStringContainsString('Limit', $notices[1]);
+        $this->assertStringContainsString('orderBy', $notices[2]);
+
+        $this->db->disconnect();
+    }
+
     public function testFindAllToArrayKeyedByPrimaryKey()
     {
         $user = new Users([
@@ -1242,7 +1284,7 @@ class RecordTest extends TestCase
         ]);
         $user->save();
 
-        $users = Users::findAll(['id' => $user->id])->toArray('id');
+        $users = Users::findBy(['id' => $user->id])->toArray('id');
         $this->assertArrayHasKey($user->id, $users);
         $this->assertEquals('testuser7b', $users[$user->id]['username']);
         $this->db->disconnect();
