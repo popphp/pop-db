@@ -24,6 +24,19 @@ class PdoSqliteTest extends TestCase
         ]);
     }
 
+    public function testSetOptionsMissingDatabaseFileMessage()
+    {
+        $file = __DIR__ . '/../tmp/bad.sqlite';
+
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $this->expectExceptionMessage("Error: The database file '" . $file . "' does not exist.");
+
+        $db = new Pdo([
+            'database' => $file,
+            'type'     => 'sqlite'
+        ]);
+    }
+
     public function testPdoConnect()
     {
         $db = Db::pdoConnect([

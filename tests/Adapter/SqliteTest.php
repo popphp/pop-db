@@ -41,6 +41,30 @@ class SqliteTest extends TestCase
         $db->connect();
     }
 
+    public function testSetOptionsMissingDatabaseFileMessage()
+    {
+        $file = __DIR__ . '/../tmp/bad.sqlite';
+
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $this->expectExceptionMessage("Error: The database file '" . $file . "' does not exist.");
+
+        $db = new Sqlite(['database' => $file]);
+    }
+
+    public function testConnectMissingDatabaseFileMessage()
+    {
+        $file = __DIR__ . '/../tmp/gone.sqlite';
+        touch($file);
+
+        $db = new Sqlite(['database' => $file]);
+        unlink($file);
+
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $this->expectExceptionMessage("Error: The database file '" . $file . "' does not exist.");
+
+        $db->connect();
+    }
+
     public function testSqliteConnect()
     {
         $db = Db::sqliteConnect([

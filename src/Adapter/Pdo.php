@@ -117,7 +117,7 @@ class Pdo extends AbstractAdapter
 
         if ($this->type == 'sqlite') {
             if (!$this->dbFileExists()) {
-                $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
+                $this->throwError("Error: The database file '" . $this->options['database'] . "' does not exist.");
             }
             $this->dsn = $this->type . ':' . $this->options['database'];
         } else {
