@@ -276,6 +276,10 @@ class Record extends Record\AbstractRecord
     /**
      * Rollback transaction with the DB adapter
      *
+     * The adapter's transaction manager already handles nesting: at depth 1 this performs a real
+     * ROLLBACK, at any greater depth it rolls back to (and releases) that level's savepoint. Either
+     * way the level is left, so the connection is never stranded inside an open transaction.
+     *
      * @param  \Exception|null $exception
      * @throws Exception
      * @return \Exception|null
@@ -285,14 +289,7 @@ class Record extends Record\AbstractRecord
         $class = get_called_class();
 
         if (Db::hasDb($class)) {
-            if (Db::db($class)->getTransactionDepth() == 1) {
-                Db::db($class)->rollback();
-            } else {
-                if ($exception == null) {
-                    $exception = new Exception('Error: A rollback has been executed from within a nested transaction.');
-                }
-                return $exception;
-            }
+            Db::db($class)->rollback();
         }
 
         return null;
