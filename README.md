@@ -2,7 +2,7 @@ pop-db
 ======
 
 [![Build Status](https://github.com/popphp/pop-db/workflows/phpunit/badge.svg)](https://github.com/popphp/pop-db/actions)
-[![Coverage Status](http://cc.popphp.org/coverage.php?comp=pop-db)](http://cc.popphp.org/pop-db/)
+[![Coverage Status](https://cc.popphp.org/coverage.php?comp=pop-db)](https://cc.popphp.org/pop-db/)
 
 [![Join the chat at https://discord.gg/TZjgT74U7E](https://media.popphp.org/img/discord.svg)](https://discord.gg/TZjgT74U7E)
 
