@@ -78,7 +78,7 @@ class Sqlite extends AbstractAdapter
         } else if (!$this->hasOptions()) {
             $this->throwError('Error: The database file was not passed.');
         } else if (!$this->dbFileExists()) {
-            $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
+            $this->throwError($this->getDbFileError());
         }
 
         $this->connection = new \SQLite3($this->options['database'], $this->flags, (string)$this->key);
@@ -99,7 +99,7 @@ class Sqlite extends AbstractAdapter
         if (!$this->hasOptions()) {
             $this->throwError('Error: The database file was not passed.');
         } else if (!$this->dbFileExists()) {
-            $this->throwError("Error: The database file '" . $this->options['database'] . "'does not exists.");
+            $this->throwError($this->getDbFileError());
         }
 
         $this->flags = (isset($this->options['flags'])) ? $this->options['flags'] : SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE;
@@ -116,6 +116,16 @@ class Sqlite extends AbstractAdapter
     public function hasOptions(): bool
     {
         return (isset($this->options['database']));
+    }
+
+    /**
+     * Get the error message for a database file that does not exist
+     *
+     * @return string
+     */
+    protected function getDbFileError(): string
+    {
+        return "Error: The database file '" . ($this->options['database'] ?? '') . "' does not exist.";
     }
 
     /**
