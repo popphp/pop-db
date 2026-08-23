@@ -1279,7 +1279,10 @@ The value by which to `limit` the results
 
 ##### Order
 
-The field or fields by which to `order` the results
+The field or fields by which to `order` the results. A direction may be appended
+(`'id ASC'`, `'id DESC'`, `'id RAND()'`); a bare field with no direction defaults to
+`ASC`. A leading `-` is shorthand for descending, so `'-id'` is equivalent to `'id DESC'`
+— the same convention `Pop\Db\Model\AbstractDataModel` uses for its sort parameter.
 
 ##### Group
 
