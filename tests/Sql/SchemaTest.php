@@ -250,4 +250,121 @@ class SchemaTest extends TestCase
         unlink(__DIR__ . '/../tmp/db.sqlite');
     }
 
+
+    public function testRenderIsIdempotent()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('pop_schema_render')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->primary('id');
+
+        $expected = (string)$schema;
+
+        // Rendering must not consume the schema - a schema is commonly rendered once for
+        // logging/inspection and then again to be executed
+        $this->assertStringContainsString('CREATE TABLE `pop_schema_render`', $expected);
+        $this->assertEquals($expected, (string)$schema);
+        $this->assertEquals($expected, $schema->render());
+
+        // Every clause type survives a render
+        $schema->reset();
+        $schema->drop('pop_drop_me');
+        $schema->alter('pop_alter_me')->addColumn('email', 'varchar', 255);
+        $schema->rename('pop_rename_me')->to('pop_renamed');
+        $schema->truncate('pop_truncate_me');
+
+        $all = (string)$schema;
+        $this->assertEquals($all, (string)$schema);
+        $this->assertStringContainsString('DROP TABLE `pop_drop_me`', $all);
+        $this->assertStringContainsString('ALTER TABLE `pop_alter_me`', $all);
+        $this->assertStringContainsString('RENAME TABLE `pop_rename_me`', $all);
+        $this->assertStringContainsString('TRUNCATE TABLE `pop_truncate_me`', $all);
+
+        // reset() still clears it explicitly
+        $this->assertEmpty($schema->reset()->render());
+
+        $this->db->disconnect();
+    }
+
+    public function testRenderedSchemaIsStillExecutableAfterBeingRenderedOnce()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('pop_schema_render')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->primary('id');
+
+        // First render simulates logging/inspecting the schema
+        $logged = (string)$schema;
+
+        // Second render is the one that gets executed
+        $this->db->query((string)$schema);
+        $this->assertTrue($this->db->hasTable('pop_schema_render'));
+        $this->assertEquals($logged, (string)$schema);
+
+        $drop = $this->db->createSchema();
+        $drop->drop('pop_schema_render');
+        $drop->execute();
+        $this->assertFalse($this->db->hasTable('pop_schema_render'));
+
+        $this->db->disconnect();
+    }
+
+    public function testRenderIsIdempotentPgsql()
+    {
+        $db = Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+
+        $schema = $db->createSchema();
+        $schema->create('pop_schema_render')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->primary('id');
+
+        $logged = (string)$schema;
+        $this->assertStringContainsString('CREATE TABLE "pop_schema_render"', $logged);
+        $this->assertEquals($logged, (string)$schema);
+
+        $db->query((string)$schema);
+        $this->assertTrue($db->hasTable('pop_schema_render'));
+
+        $drop = $db->createSchema();
+        $drop->drop('pop_schema_render');
+        $drop->execute();
+        $this->assertFalse($db->hasTable('pop_schema_render'));
+
+        $db->disconnect();
+    }
+
+    public function testRenderIsIdempotentSqlite()
+    {
+        touch(__DIR__ . '/../tmp/schema_render.sqlite');
+        chmod(__DIR__ . '/../tmp/schema_render.sqlite', 0777);
+
+        $db = Db::sqliteConnect([
+            'database' => __DIR__ . '/../tmp/schema_render.sqlite'
+        ]);
+
+        $schema = $db->createSchema();
+        $schema->create('pop_schema_render')
+            ->int('id', 16)
+            ->varchar('username', 255)
+            ->primary('id');
+
+        $logged = (string)$schema;
+        $this->assertStringContainsString('CREATE TABLE "pop_schema_render"', $logged);
+        $this->assertEquals($logged, (string)$schema);
+
+        $db->query((string)$schema);
+        $this->assertTrue($db->hasTable('pop_schema_render'));
+
+        $db->disconnect();
+        @unlink(__DIR__ . '/../tmp/schema_render.sqlite');
+    }
+
 }

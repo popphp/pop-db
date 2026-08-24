@@ -166,6 +166,11 @@ class Schema extends AbstractSql
     /**
      * Render the schema
      *
+     * Rendering is side effect free: the table objects that produced the string are left in
+     * place, so the same schema can be rendered again (logged and then executed, inspected
+     * while debugging, echoed by a caller it was returned to). Use reset() to explicitly
+     * clear the object before building an unrelated schema with it.
+     *
      * @return string
      */
     public function render(): string
@@ -212,8 +217,6 @@ class Schema extends AbstractSql
                 $sql .= 'PRAGMA foreign_keys=on;' . PHP_EOL . PHP_EOL;
             }
         }
-
-        $this->reset();
 
         return $sql;
     }

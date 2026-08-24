@@ -77,12 +77,15 @@ class Seeder
             $schema = $db->createSchema();
             $tables = $db->getTables();
 
+            // The tables are dropped one statement at a time, so the schema object has to be
+            // cleared between them - rendering it does not clear it.
             if (($db instanceof \Pop\Db\Adapter\Mysql) ||
                 (($db instanceof \Pop\Db\Adapter\Pdo) && ($db->getType() == 'mysql'))) {
                 $db->query('SET foreign_key_checks = 0');
                 foreach ($tables as $table) {
                     $schema->drop($table);
                     $db->query($schema);
+                    $schema->reset();
                 }
                 $db->query('SET foreign_key_checks = 1');
             } else if (($db instanceof \Pop\Db\Adapter\Pgsql) ||
@@ -90,11 +93,13 @@ class Seeder
                 foreach ($tables as $table) {
                     $schema->drop($table)->cascade();
                     $db->query($schema);
+                    $schema->reset();
                 }
             } else {
                 foreach ($tables as $table) {
                     $schema->drop($table);
                     $db->query($schema);
+                    $schema->reset();
                 }
             }
         }

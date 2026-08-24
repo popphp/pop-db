@@ -67,10 +67,12 @@ class SeederTest extends TestCase
         ]);
         $schema = $db->createSchema();
         $schema->create('leftover_table')->int('id', 16);
+        $schema->create('leftover_table2')->int('id', 16);
         $schema->execute();
 
         $seedFiles = Seeder::run($db, __DIR__ . '/../tmp/seeds_pgsql');
         $this->assertFalse(in_array('leftover_table', $db->getTables()));
+        $this->assertFalse(in_array('leftover_table2', $db->getTables()));
         $this->assertTrue(in_array('users', $db->getTables()));
 
         $db->query('DROP TABLE "users"');
@@ -83,10 +85,12 @@ class SeederTest extends TestCase
         $db     = Db::sqliteConnect(['database' => __DIR__ . '/../tmp/seeder.sqlite']);
         $schema = $db->createSchema();
         $schema->create('leftover_table')->int('id', 16);
+        $schema->create('leftover_table2')->int('id', 16);
         $schema->execute();
 
         $seedFiles = Seeder::run($db, __DIR__ . '/../tmp/seeds_sqlite');
         $this->assertFalse(in_array('leftover_table', $db->getTables()));
+        $this->assertFalse(in_array('leftover_table2', $db->getTables()));
         $this->assertTrue(in_array('users', $db->getTables()));
 
         $db->disconnect();
@@ -107,6 +111,32 @@ class SeederTest extends TestCase
     {
         $this->expectException('Pop\Db\Sql\Exception');
         $seedFiles = Seeder::run($this->db, __DIR__ . '/bad-path');
+        $this->db->disconnect();
+    }
+
+
+    public function testRunClearsEveryExistingTableOneStatementAtATime()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('leftover_table')->int('id', 16);
+        $schema->create('leftover_table2')->int('id', 16);
+        $schema->create('leftover_table3')->int('id', 16);
+        $schema->execute();
+
+        // Each table is dropped with its own statement, so the clear loop must not accumulate
+        // the previous DROPs into the statement it sends
+        // seeds2 is a plain .sql seed file, so it can be re-run in a process that has already
+        // run the class-based seeders without redeclaring their classes
+        $seedFiles = Seeder::run($this->db, __DIR__ . '/../tmp/seeds2');
+
+        $tables = $this->db->getTables();
+        $this->assertFalse(in_array('leftover_table', $tables));
+        $this->assertFalse(in_array('leftover_table2', $tables));
+        $this->assertFalse(in_array('leftover_table3', $tables));
+        $this->assertTrue(in_array('users', $tables));
+        $this->assertNotEmpty($seedFiles);
+
+        $this->db->query('DROP TABLE `users`');
         $this->db->disconnect();
     }
 
