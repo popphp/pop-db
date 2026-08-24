@@ -124,7 +124,7 @@ class Seeder
                     $class = substr($fileContents, (strpos($fileContents, 'class ') + 6));
                     $class = $namespace . substr($class, 0, strpos($class, ' extends'));
 
-                    include $path . DIRECTORY_SEPARATOR . $seed;
+                    include_once $path . DIRECTORY_SEPARATOR . $seed;
                     $dbSeed = new $class();
                     if ($dbSeed instanceof Seeder\SeederInterface) {
                         $dbSeed->run($db);

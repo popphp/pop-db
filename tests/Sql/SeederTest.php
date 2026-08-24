@@ -107,6 +107,21 @@ class SeederTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testRunTwiceInSameProcessDoesNotRedeclareClass()
+    {
+        // A class-based seed file must be includable more than once in the same PHP process -
+        // e.g. re-running the same seed directory - without fataling on "Cannot redeclare class"
+        Seeder::run($this->db, __DIR__ . '/../tmp/seeds3');
+        $this->db->query('DROP TABLE `namespaced_users`');
+
+        $seedFiles = Seeder::run($this->db, __DIR__ . '/../tmp/seeds3');
+        $this->assertTrue(in_array('namespaced_users', $this->db->getTables()));
+        $this->assertNotEmpty($seedFiles);
+
+        $this->db->query('DROP TABLE `namespaced_users`');
+        $this->db->disconnect();
+    }
+
     public function testRunException()
     {
         $this->expectException('Pop\Db\Sql\Exception');
