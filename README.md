@@ -1619,25 +1619,35 @@ class Users extends Pop\Db\Record
      */
 
     // Define the 1:1 relationship of the user's role
-    public function role()
+    public function role(?array $options = null, bool $eager = false)
     {
-        return $this->hasOneOf('Roles', 'role_id');
+        return $this->hasOneOf('Roles', 'role_id', $options, $eager);
     }
 
     // Define the 1:1 relationship of the info record this user owns
-    public function info()
+    public function info(?array $options = null, bool $eager = false)
     {
-        return $this->hasOne('Info', 'user_id');
+        return $this->hasOne('Info', 'user_id', $options, $eager);
     }
 
     // Define the 1:many relationship to all the orders this user owns
-    public function orders()
+    public function orders(?array $options = null, bool $eager = false)
     {
-        return $this->hasMany('Orders', 'user_id');
+        return $this->hasMany('Orders', 'user_id', $options, $eager);
     }
 
 }
 ```
+
+**Relationship method signature**
+
+A relationship method must declare the two parameters shown above - `?array $options = null` and
+`bool $eager = false` - and pass them straight through to the underlying `hasOneOf()`/`hasOne()`/
+`hasMany()`/`belongsTo()` call. They are what `with()` uses to hand the method its per-relationship
+options and to ask it for the relationship object rather than the already-loaded data. A relationship
+method that omits them still lazy-loads correctly, but eager-loading it through `with()` fails at
+runtime with `Call to undefined method ...::getEagerRelationships()`, because the method returns the
+loaded record/collection instead of the relationship object `with()` needs.
 
 ```php
 class Roles extends Pop\Db\Record
@@ -1660,9 +1670,9 @@ class Info extends Pop\Db\Record
      *    - phone
      */
     // Define the parent relationship up to the user that owns this info record
-    public function user()
+    public function user(?array $options = null, bool $eager = false)
     {
-        return $this->belongsTo('Users', 'user_id');
+        return $this->belongsTo('Users', 'user_id', $options, $eager);
     }
 
 }
@@ -1681,9 +1691,9 @@ class Orders extends Pop\Db\Record
      */
 
     // Define the parent relationship up to the user that owns this order record
-    public function user()
+    public function user(?array $options = null, bool $eager = false)
     {
-        return $this->belongsTo('Users', 'user_id');
+        return $this->belongsTo('Users', 'user_id', $options, $eager);
     }
 
 }
@@ -1833,9 +1843,9 @@ class Orders extends Pop\Db\Record
 
     // Define the parent relationship up to the user that owns this order record,
     // matched on both `user_id` and `org_id`
-    public function user()
+    public function user(?array $options = null, bool $eager = false)
     {
-        return $this->belongsTo('Users', ['user_id', 'org_id']);
+        return $this->belongsTo('Users', ['user_id', 'org_id'], $options, $eager);
     }
 
 }
