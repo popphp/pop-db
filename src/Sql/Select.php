@@ -442,14 +442,23 @@ class Select extends AbstractPredicateClause
      */
     public function render(): string
     {
-        $sql  = 'SELECT ' . (($this->distinct) ? 'DISTINCT ' : null);
+        $sql  = 'SELECT ' . (($this->distinct) ? 'DISTINCT ' : null) . $this->buildSqlSrvTopClause();
         $sql .= $this->buildColumnsClause();
         $sql .= 'FROM ' . $this->buildFromClause();
         $sql .= $this->buildJoinsClause();
 
-        // Build WHERE clause
-        if ($this->wherePredicate !== null) {
-            $sql .= ' WHERE ' . $this->wherePredicate;
+        // Build WHERE clause. The SQLSRV row number predicate is derived fresh on each render
+        // and combined here rather than pushed into $wherePredicate, so that rendering twice
+        // does not accumulate it and so that it always ANDs with the whole user predicate.
+        $wherePredicates = array_values(array_filter([
+            ($this->wherePredicate !== null) ? (string)$this->wherePredicate : '',
+            (string)$this->buildSqlSrvRowNumberPredicate()
+        ], function($predicate) {
+            return ($predicate !== '');
+        }));
+
+        if (!empty($wherePredicates)) {
+            $sql .= ' WHERE ' . implode(' AND ', $wherePredicates);
         }
 
         // Build GROUP BY clause (must precede HAVING)
@@ -657,32 +666,75 @@ class Select extends AbstractPredicateClause
     }
 
     /**
-     * Method to build SQL Server limit and offset sub-clause
+     * Method to build the SQL Server limit and offset FROM clause target
+     *
+     * With an offset, the table is wrapped in a derived table carrying a ROW_NUMBER() column
+     * that buildSqlSrvRowNumberPredicate() then filters on. Without one, the row cap is a
+     * TOP clause on the SELECT itself (see buildSqlSrvTopClause()), so the table is used
+     * as is. This method is side effect free.
      *
      * @return string
      */
     protected function buildSqlSrvLimitAndOffset(): string
     {
-        $sql    = '';
         $result = $this->getLimitAndOffset();
-        if ($result['offset'] !== null) {
-            if ($this->wherePredicate === null) {
-                $this->wherePredicate = new Where($this);
-            }
 
-            $sql .= '(SELECT *, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') AS RowNumber FROM ' .
+        if ($result['offset'] !== null) {
+            return '(SELECT *, ROW_NUMBER() OVER (ORDER BY ' . $this->orderBy . ') AS RowNumber FROM ' .
                 $this->quoteId($this->table) . ') AS OrderedTable';
-            if ($result['limit'] > 0) {
-                $this->wherePredicate->between('OrderedTable.RowNumber', $result['offset'], $result['limit']);
-            } else {
-                $this->wherePredicate->greaterThanOrEqualTo('OrderedTable.RowNumber', $result['offset']);
-            }
-        } else {
-            $sql  = str_replace('SELECT', 'SELECT TOP ' . $result['limit'], $sql);
-            $sql .= $this->quoteId($this->table);
         }
 
-        return $sql;
+        return $this->quoteId($this->table);
+    }
+
+    /**
+     * Method to build the SQL Server TOP clause, for a limit that carries no offset
+     *
+     * @return string
+     */
+    protected function buildSqlSrvTopClause(): string
+    {
+        if ((!$this->isSqlsrv()) || (($this->limit === null) && ($this->offset === null))) {
+            return '';
+        }
+
+        $result = $this->getLimitAndOffset();
+
+        // An offset is handled by the ROW_NUMBER() derived table instead
+        return ($result['offset'] === null) ? 'TOP ' . $result['limit'] . ' ' : '';
+    }
+
+    /**
+     * Method to build the SQL Server predicate that filters the ROW_NUMBER() derived table
+     *
+     * Returned as its own predicate set so that it is combined with the user's WHERE clause
+     * by a top level AND. Adding it to the user's predicate set would inherit the conjunction
+     * of the predicate before it, turning a WHERE of 'a OR b' into 'a OR b OR rownumber',
+     * which drops the limit entirely.
+     *
+     * @return ?string
+     */
+    protected function buildSqlSrvRowNumberPredicate(): ?string
+    {
+        if ((!$this->isSqlsrv()) || (($this->limit === null) && ($this->offset === null))) {
+            return null;
+        }
+
+        $result = $this->getLimitAndOffset();
+
+        if ($result['offset'] === null) {
+            return null;
+        }
+
+        $rowNumber = new Where($this);
+
+        if ($result['limit'] > 0) {
+            $rowNumber->between('OrderedTable.RowNumber', $result['offset'], $result['limit']);
+        } else {
+            $rowNumber->greaterThanOrEqualTo('OrderedTable.RowNumber', $result['offset']);
+        }
+
+        return (string)$rowNumber;
     }
 
 }
