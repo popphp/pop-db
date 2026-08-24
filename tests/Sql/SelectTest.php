@@ -575,6 +575,43 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testHavingWithAggregateFunction()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'c' => 'COUNT(*)'])->from('users')
+            ->groupBy('username')->having('COUNT(*) > 1');
+        $this->assertEquals(
+            'SELECT `username`, COUNT(*) AS `c` FROM `users` GROUP BY `username` HAVING (COUNT(*) > 1)',
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testHavingWithAggregateFunctionExecutes()
+    {
+        $this->db->query('DROP TABLE IF EXISTS pop_having_aggregate');
+        $this->db->query(
+            'CREATE TABLE pop_having_aggregate (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(255))'
+        );
+        $this->db->query("INSERT INTO pop_having_aggregate (username) VALUES ('admin')");
+        $this->db->query("INSERT INTO pop_having_aggregate (username) VALUES ('admin')");
+        $this->db->query("INSERT INTO pop_having_aggregate (username) VALUES ('guest')");
+
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'c' => 'COUNT(*)'])->from('pop_having_aggregate')
+            ->groupBy('username')->having('COUNT(*) > 1');
+
+        $this->db->query((string)$sql);
+        $rows = $this->db->fetchAll();
+
+        $this->assertEquals(1, count($rows));
+        $this->assertEquals('admin', $rows[0]['username']);
+        $this->assertEquals(2, $rows[0]['c']);
+
+        $this->db->query('DROP TABLE IF EXISTS pop_having_aggregate');
+        $this->db->disconnect();
+    }
+
     public function testOrderBy()
     {
         $sql = $this->db->createSql();
