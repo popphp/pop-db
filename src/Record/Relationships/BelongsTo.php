@@ -125,22 +125,9 @@ class BelongsTo extends AbstractRelationship
 
         $sql->select($columns)->from($table::table());
 
-        if (is_array($parentKey)) {
-            // Wrap all tuple OR-groups in a single AND-nested group, so that anything
-            // appended to the WHERE clause afterward is ANDed against the whole
-            // "matches any of these id tuples" block rather than becoming a sibling OR
-            // at the top level. Renders identically when there is no sibling predicate.
-            $tupleGroup = $sql->select()->where->andNest();
-            foreach ($ids as $idTuple) {
-                $group = $tupleGroup->orNest();
-                foreach ($parentKey as $col) {
-                    $group->equalTo($col, $sql->getPlaceholder());
-                }
-            }
-        } else {
-            $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-            $sql->select()->where->in($parentKey, $placeholders);
-        }
+        $params = [];
+
+        $this->applyEagerIdFilter($sql, $parentKey, $ids, $params);
 
         if (!empty($this->options)) {
             if (isset($this->options['limit'])) {
@@ -176,8 +163,6 @@ class BelongsTo extends AbstractRelationship
                 }
             }
         }
-
-        $params = is_array($parentKey) ? array_merge(...$ids) : $ids;
 
         $db->prepare($sql)
             ->bindParams($params)

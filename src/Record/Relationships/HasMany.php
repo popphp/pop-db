@@ -145,8 +145,15 @@ class HasMany extends AbstractRelationship
 
         $sql->select($columns)->from($table::table());
 
-        [$isComposite, $params, $tupleParams] = $this->applyIdFilter($sql, $ids);
-        $params = $this->applyAdditionalColumnsFilter($sql, $isComposite, $params, $tupleParams);
+        $params = [];
+
+        // The options['columns'] filter is applied BEFORE the id filter so that the parameters
+        // are generated (and therefore numbered/named/ordered) in the same order the WHERE
+        // clause renders them: PredicateSet::render() always renders its top-level predicates
+        // (this filter) before its nested predicate sets (the composite tuple group), and for a
+        // single-column key both are top-level predicates rendered in insertion order.
+        $this->applyAdditionalColumnsFilter($sql, $params);
+        $this->applyEagerIdFilter($sql, $this->foreignKey, $ids, $params);
         $this->applyQueryOptions($sql, $db);
 
         $db->prepare($sql)
@@ -157,71 +164,38 @@ class HasMany extends AbstractRelationship
     }
 
     /**
-     * Apply the WHERE-IN (or composite tuple-group) id filter and compute its bound parameters
+     * Apply the options['columns'] additional WHERE filter (if any) and collect its bound values
+     *
+     * The parsed expressions carry their own dialect-correct placeholder tokens, so the SQL
+     * object's parameter counter is advanced by one per bound value to keep any placeholder
+     * generated afterward for the same statement in step with them.
      *
      * @param  Sql   $sql
-     * @param  array $ids
-     * @return array [bool $isComposite, ?array $params, ?array $tupleParams]
+     * @param  array $params
+     * @return void
      */
-    private function applyIdFilter(Sql $sql, array $ids): array
+    private function applyAdditionalColumnsFilter(Sql $sql, array &$params): void
     {
-        $isComposite = is_array($this->foreignKey);
-
-        if ($isComposite) {
-            // Wrap all tuple OR-groups in a single AND-nested group, so that
-            // whatever gets appended to the WHERE clause afterward (e.g. the
-            // options['columns'] filter below) is ANDed against the whole
-            // "matches any of these id tuples" block, rather than becoming a
-            // sibling OR at the top level.
-            $tupleGroup = $sql->select()->where->andNest();
-            foreach ($ids as $idTuple) {
-                $group = $tupleGroup->orNest();
-                foreach ($this->foreignKey as $fkColumn) {
-                    $group->equalTo($fkColumn, $sql->getPlaceholder());
-                }
-            }
-            return [true, null, array_merge(...$ids)];
+        if (empty($this->options) || !isset($this->options['columns'])) {
+            return;
         }
 
-        $placeholders = array_fill(0, count($ids), $sql->getPlaceholder());
-        $sql->select()->where->in($this->foreignKey, $placeholders);
+        $additionalColumns = Parser\Expression::parseShorthand($this->options['columns'], $sql->getPlaceholder());
 
-        return [false, $ids, null];
-    }
-
-    /**
-     * Apply the options['columns'] additional WHERE filter (if any) and resolve the final
-     * bound parameter list, keeping the composite tuple params positioned after it
-     *
-     * @param  Sql    $sql
-     * @param  bool   $isComposite
-     * @param  ?array $params
-     * @param  ?array $tupleParams
-     * @return ?array
-     */
-    private function applyAdditionalColumnsFilter(Sql $sql, bool $isComposite, ?array $params, ?array $tupleParams): ?array
-    {
-        if (!empty($this->options) && isset($this->options['columns'])) {
-            $additionalColumns = Parser\Expression::parseShorthand($this->options['columns'], $sql->getPlaceholder());
-            if (!empty($additionalColumns['expressions'])) {
-                foreach ($additionalColumns['expressions'] as $expression) {
-                    $sql->select()->where($expression);
-                }
+        if (!empty($additionalColumns['expressions'])) {
+            foreach ($additionalColumns['expressions'] as $expression) {
+                $sql->select()->where($expression);
             }
-            if ($isComposite) {
-                // PredicateSet::render() always renders top-level $predicates
-                // (this filter) before top-level $predicateSets (the composite
-                // tuple group), regardless of insertion order, so $params must
-                // follow that same order to stay positionally aligned with the
-                // rendered placeholders.
-                return !empty($additionalColumns['params'])
-                    ? array_merge($additionalColumns['params'], $tupleParams)
-                    : $tupleParams;
-            }
-            return !empty($additionalColumns['params']) ? array_merge($params, $additionalColumns['params']) : $params;
         }
 
-        return $isComposite ? $tupleParams : $params;
+        foreach ($additionalColumns['params'] as $key => $value) {
+            if (is_string($key)) {
+                $params[$key] = $value;
+            } else {
+                $params[] = $value;
+            }
+            $sql->incrementParameterCount();
+        }
     }
 
     /**
