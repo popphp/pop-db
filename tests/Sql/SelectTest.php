@@ -525,6 +525,56 @@ class SelectTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testGroupByRendersBeforeHaving()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'total' => 'COUNT(1)'])->from('users')
+            ->groupBy('username')->having('total > 1');
+        $this->assertEquals(
+            'SELECT `username`, COUNT(1) AS `total` FROM `users` GROUP BY `username` HAVING (`total` > 1)',
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testClauseOrderWithWhereGroupByHavingOrderByAndLimit()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'total' => 'COUNT(1)'])->from('users')
+            ->where('id > 0')->groupBy('username')->having('total > 1')->orderBy('username')->limit(10);
+        $this->assertEquals(
+            'SELECT `username`, COUNT(1) AS `total` FROM `users` WHERE (`id` > 0) GROUP BY `username` ' .
+            'HAVING (`total` > 1) ORDER BY `username` ASC LIMIT 10',
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testGroupByWithHavingExecutes()
+    {
+        $this->db->query('DROP TABLE IF EXISTS pop_group_having');
+        $this->db->query(
+            'CREATE TABLE pop_group_having (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(255))'
+        );
+        $this->db->query("INSERT INTO pop_group_having (username) VALUES ('admin')");
+        $this->db->query("INSERT INTO pop_group_having (username) VALUES ('admin')");
+        $this->db->query("INSERT INTO pop_group_having (username) VALUES ('guest')");
+
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'total' => 'COUNT(1)'])->from('pop_group_having')
+            ->groupBy('username')->having('total > 1');
+
+        $this->db->query((string)$sql);
+        $rows = $this->db->fetchAll();
+
+        $this->assertEquals(1, count($rows));
+        $this->assertEquals('admin', $rows[0]['username']);
+        $this->assertEquals(2, $rows[0]['total']);
+
+        $this->db->query('DROP TABLE IF EXISTS pop_group_having');
+        $this->db->disconnect();
+    }
+
     public function testOrderBy()
     {
         $sql = $this->db->createSql();

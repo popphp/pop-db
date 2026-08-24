@@ -452,14 +452,14 @@ class Select extends AbstractPredicateClause
             $sql .= ' WHERE ' . $this->wherePredicate;
         }
 
+        // Build GROUP BY clause (must precede HAVING)
+        if ($this->groupBy !== null) {
+            $sql .= ' GROUP BY ' . $this->groupBy;
+        }
+
         // Build HAVING clause
         if ($this->having !== null) {
             $sql .= ' HAVING ' . $this->having;
-        }
-
-        // Build GROUP BY clause
-        if ($this->groupBy !== null) {
-            $sql .= ' GROUP BY ' . $this->groupBy;
         }
 
         // Build ORDER BY clause
