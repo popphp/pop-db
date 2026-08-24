@@ -482,4 +482,132 @@ class ExpressionTest extends TestCase
         $this->assertEquals('`id` IN (?, ?, ?)', $results[1]['clause']);
     }
 
+
+    public function testParseKeepsFunctionArgumentsContainingSpacesWithTheColumn()
+    {
+        // The column runs to the first space that is not inside parentheses, so a function
+        // call carrying spaces in its argument list stays intact
+        $this->assertEquals(
+            ['column' => 'COUNT(DISTINCT id)', 'operator' => '>', 'value' => '1'],
+            Expression::parse('COUNT(DISTINCT id) > 1')
+        );
+        $this->assertEquals(
+            ['column' => 'ROUND(price, 2)', 'operator' => '>=', 'value' => '3'],
+            Expression::parse('ROUND(price, 2) >= 3')
+        );
+        $this->assertEquals(
+            ['column' => 'MAX(users.id)', 'operator' => '<', 'value' => '9'],
+            Expression::parse('MAX(users.id) < 9')
+        );
+    }
+
+    public function testParseKeepsFunctionArgumentsWithSpacesForEveryOperatorBranch()
+    {
+        $isNull = Expression::parse('COUNT(DISTINCT id) IS NULL');
+        $this->assertEquals('COUNT(DISTINCT id)', $isNull['column']);
+        $this->assertEquals('IS NULL', $isNull['operator']);
+
+        $isNotNull = Expression::parse('COUNT(DISTINCT id) IS NOT NULL');
+        $this->assertEquals('COUNT(DISTINCT id)', $isNotNull['column']);
+        $this->assertEquals('IS NOT NULL', $isNotNull['operator']);
+
+        // The value list has to be found after the column, not at the function's own paren
+        $in = Expression::parse('COUNT(DISTINCT id) IN (1, 2)');
+        $this->assertEquals('COUNT(DISTINCT id)', $in['column']);
+        $this->assertEquals('IN', $in['operator']);
+        $this->assertEquals(['1', '2'], $in['value']);
+
+        $notIn = Expression::parse('COUNT(DISTINCT id) NOT IN (1, 2)');
+        $this->assertEquals('COUNT(DISTINCT id)', $notIn['column']);
+        $this->assertEquals('NOT IN', $notIn['operator']);
+        $this->assertEquals(['1', '2'], $notIn['value']);
+
+        $between = Expression::parse('COUNT(DISTINCT id) BETWEEN 1 AND 5');
+        $this->assertEquals('COUNT(DISTINCT id)', $between['column']);
+        $this->assertEquals('BETWEEN', $between['operator']);
+        $this->assertEquals('(1 AND 5)', $between['value']);
+
+        $like = Expression::parse("MAX(users.id) LIKE '%9'");
+        $this->assertEquals('MAX(users.id)', $like['column']);
+        $this->assertEquals('LIKE', $like['operator']);
+        $this->assertEquals('%9', $like['value']);
+    }
+
+    public function testParsePlainColumnsAreUnaffected()
+    {
+        $this->assertEquals(
+            ['column' => 'id', 'operator' => '>', 'value' => '3'], Expression::parse('id > 3')
+        );
+        $this->assertEquals(
+            ['column' => 'users.id', 'operator' => '!=', 'value' => '3'], Expression::parse('users.id != 3')
+        );
+        // A space inside a quoted value is not a column boundary
+        $this->assertEquals(
+            ['column' => 'username', 'operator' => '=', 'value' => 'a = b'],
+            Expression::parse("username = 'a = b'")
+        );
+    }
+
+    public function testParseUnwrapsAnEnclosedExpression()
+    {
+        // A predicate set renders its predicates wrapped in parentheses
+        $this->assertEquals(
+            ['column' => 'id', 'operator' => '=', 'value' => '1'], Expression::parse('(id = 1)')
+        );
+        $this->assertEquals(
+            ['column' => 'COUNT(DISTINCT id)', 'operator' => '>', 'value' => '1'],
+            Expression::parse('(COUNT(DISTINCT id) > 1)')
+        );
+
+        // Two parenthesised expressions joined by AND are not a single wrapped expression, so
+        // they are left alone and rejected by the operator whitelist
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        Expression::parse('(a = 1) AND (b = 2)');
+    }
+
+    public function testParseRejectsAFunctionCallTheWhitelistDoesNotAccept()
+    {
+        // Arithmetic in the argument list is not accepted by
+        // AbstractSql::isSupportedFunctionCall(), and must be refused rather than handed to
+        // quoteId() to come back as the bogus identifier `SUM(id + 1)`
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $this->expectExceptionMessage("The column 'SUM(id + 1)' is not a valid column name or supported function call");
+        Expression::parse('SUM(id + 1) > 3');
+    }
+
+    public function testParseRejectsAnUnknownFunctionCall()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        Expression::parse('nope(id) > 3');
+    }
+
+    public function testParseDoesNotLetAnInjectionPayloadThroughAsAColumn()
+    {
+        // Regression for the case that drove the strict whole-value regex in
+        // AbstractSql::isSupportedFunctionCall() - this must never parse into a column that
+        // gets rendered verbatim
+        $payloads = [
+            'COUNT(1) OR 1=1 -- > 1',
+            "COUNT(1),(SELECT password FROM admins) > 1",
+            'COUNT(1 -- ) > 1',
+            'COUNT(1 /*) > 1',
+            "COUNT('a') > 1",
+        ];
+
+        foreach ($payloads as $payload) {
+            $threw = false;
+            try {
+                $parsed = Expression::parse($payload);
+                // If it parses at all, the column must not be waved through as a function call
+                $this->assertFalse(
+                    \Pop\Db\Sql\AbstractSql::isSupportedFunctionCall($parsed['column']),
+                    $payload . ' parsed into a column that renders verbatim'
+                );
+            } catch (\Pop\Db\Sql\Parser\Exception $e) {
+                $threw = true;
+            }
+            $this->assertTrue($threw, $payload . ' was expected to be rejected');
+        }
+    }
+
 }
