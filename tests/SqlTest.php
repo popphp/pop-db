@@ -130,6 +130,74 @@ class SqlTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testRenderIsIdempotent()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['id', 'username'])->from('users')->where('logins > :logins');
+
+        $expected = 'SELECT `id`, `username` FROM `users` WHERE (`logins` > ?)';
+
+        // Rendering must not consume the statement - a builder is commonly rendered once for
+        // logging/inspection and then again to be executed
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, (string)$sql);
+        $this->assertTrue($sql->hasSelect());
+
+        $this->db->disconnect();
+    }
+
+    public function testRenderIsIdempotentForInsertUpdateAndDelete()
+    {
+        $insert = $this->db->createSql();
+        $insert->insert('users')->values(['username' => '?']);
+        $this->assertEquals($insert->render(), $insert->render());
+        $this->assertTrue($insert->hasInsert());
+
+        $update = $this->db->createSql();
+        $update->update('users')->values(['username' => '?'])->where('id = ?');
+        $this->assertEquals($update->render(), $update->render());
+        $this->assertTrue($update->hasUpdate());
+
+        $delete = $this->db->createSql();
+        $delete->delete('users')->where('id = ?');
+        $this->assertEquals($delete->render(), $delete->render());
+        $this->assertTrue($delete->hasDelete());
+
+        $this->db->disconnect();
+    }
+
+    public function testRenderedStatementIsStillExecutableAfterBeingRenderedOnce()
+    {
+        $this->db->query('DROP TABLE IF EXISTS pop_sql_render');
+        $this->db->query(
+            'CREATE TABLE pop_sql_render (id INT AUTO_INCREMENT PRIMARY KEY, ' .
+            'username VARCHAR(255), logins INT)'
+        );
+        $this->db->query("INSERT INTO pop_sql_render (username, logins) VALUES ('admin', 5)");
+        $this->db->query("INSERT INTO pop_sql_render (username, logins) VALUES ('guest', 1)");
+
+        $sql = $this->db->createSql();
+        $sql->select(['id', 'username'])->from('pop_sql_render')->where('logins > :logins');
+
+        // First render simulates logging/inspecting the statement
+        $logged = $sql->render();
+
+        // Second render is the one that gets executed
+        $this->db->prepare((string)$sql)
+                 ->bindParams(['logins' => 2])
+                 ->execute();
+
+        $rows = $this->db->fetchAll();
+
+        $this->assertEquals($logged, (string)$sql);
+        $this->assertEquals(1, count($rows));
+        $this->assertEquals('admin', $rows[0]['username']);
+
+        $this->db->query('DROP TABLE IF EXISTS pop_sql_render');
+        $this->db->disconnect();
+    }
+
     public function testGetParameterTranslatesToSqliteNamedPlaceholder()
     {
         touch(__DIR__ . '/tmp/get_parameter.sqlite');

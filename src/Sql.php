@@ -208,6 +208,11 @@ class Sql extends AbstractSql
     /**
      * Render the SQL statement
      *
+     * Rendering is side effect free: the clause object that produced the string is left in
+     * place, so the same object can be rendered again (logged and then executed, inspected
+     * while debugging, echoed by a caller it was returned to). Use reset() to explicitly
+     * clear the object before building an unrelated statement with it.
+     *
      * @return string
      */
     public function render(): string
@@ -223,8 +228,6 @@ class Sql extends AbstractSql
         } else if ($this->delete !== null) {
             $sql = $this->delete->render();
         }
-
-        $this->reset();
 
         return $sql;
     }
