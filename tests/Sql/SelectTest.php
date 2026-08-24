@@ -193,21 +193,90 @@ class SelectTest extends TestCase
         $this->assertStringContainsString('>=', $result);
     }
 
-    /**
-     * KNOWN BUG (not fixed here - needs a design decision, flagged separately): the
-     * no-offset branch of Select::buildSqlSrvLimitAndOffset() does
-     * str_replace('SELECT', 'SELECT TOP N', $sql) against $sql while it is still ''
-     * (nothing has been built into it yet), so the replacement never matches and the
-     * LIMIT is silently dropped - this renders a plain unbounded FROM clause instead
-     * of a TOP-limited one. This test documents the CURRENT (broken) output rather
-     * than asserting the intended behavior.
-     */
-    public function testSqlsrvLimitWithoutOffsetSilentlyDropsTheLimit()
+    public function testSqlsrvLimitWithoutOffsetRendersTopClause()
     {
         $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
         $result = $sql->select()->from('users')->orderBy('id')->limit(10)->render();
 
-        $this->assertEquals('SELECT * FROM [users] ORDER BY [id] ASC', $result);
+        $this->assertEquals('SELECT TOP 10 * FROM [users] ORDER BY [id] ASC', $result);
+    }
+
+    public function testSqlsrvLimitWithoutOffsetRendersTopClauseAfterDistinct()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $result = $sql->select(['username'])->from('users')->orderBy('id')->limit(10)->distinct()->render();
+
+        $this->assertEquals('SELECT DISTINCT TOP 10 [username] FROM [users] ORDER BY [id] ASC', $result);
+    }
+
+    public function testSqlsrvLimitAndOffsetRenderIsIdempotent()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $sql->select()->from('users')->orderBy('id')->offset(5)->limit(10);
+
+        $expected = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY [id] ASC) AS RowNumber ' .
+            'FROM [users]) AS OrderedTable WHERE ([OrderedTable].[RowNumber] BETWEEN 6 AND 15) ' .
+            'ORDER BY [id] ASC';
+
+        // The row number predicate must be derived per render, not appended to the WHERE clause
+        // again every time the statement is rendered
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, (string)$sql);
+    }
+
+    public function testSqlsrvLimitAndOffsetWithWhereRenderIsIdempotent()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $sql->select()->from('users')->orderBy('id')->offset(5)->limit(10)->where('active = 1');
+
+        $expected = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY [id] ASC) AS RowNumber ' .
+            'FROM [users]) AS OrderedTable WHERE ([active] = 1) AND ' .
+            '([OrderedTable].[RowNumber] BETWEEN 6 AND 15) ORDER BY [id] ASC';
+
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, $sql->render());
+    }
+
+    public function testSqlsrvOffsetWithoutLimitRenderIsIdempotent()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $sql->select()->from('users')->orderBy('id')->offset(5);
+
+        $expected = 'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY [id] ASC) AS RowNumber ' .
+            'FROM [users]) AS OrderedTable WHERE ([OrderedTable].[RowNumber] >= 6) ORDER BY [id] ASC';
+
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, $sql->render());
+    }
+
+    public function testSqlsrvRowNumberPredicateAndsWithTheWholeWhereClause()
+    {
+        $sql    = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $select = $sql->select()->from('users')->orderBy('id')->offset(5)->limit(10);
+        $select->where->equalTo('a', 1);
+        $select->where->or()->equalTo('b', 2);
+
+        // The row number predicate has to be ANDed with the whole user predicate. Appending it
+        // to the user's predicate set makes it inherit the preceding OR conjunction, which
+        // drops the limit altogether.
+        $this->assertEquals(
+            'SELECT * FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY [id] ASC) AS RowNumber ' .
+            'FROM [users]) AS OrderedTable WHERE (([a] = 1) OR ([b] = 2)) AND ' .
+            '([OrderedTable].[RowNumber] BETWEEN 6 AND 15) ORDER BY [id] ASC',
+            $sql->render()
+        );
+    }
+
+    public function testSqlsrvWithoutLimitOrOffsetIsUnaffected()
+    {
+        $sql = new \Pop\Db\Sql(new \Pop\Db\Adapter\Sqlsrv());
+        $sql->select()->from('users')->where('active = 1')->orderBy('id');
+
+        $expected = 'SELECT * FROM [users] WHERE ([active] = 1) ORDER BY [id] ASC';
+
+        $this->assertEquals($expected, $sql->render());
+        $this->assertEquals($expected, $sql->render());
     }
 
     public function testJsonExtractUnsupportedDbTypeThrowsException()
