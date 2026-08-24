@@ -52,38 +52,60 @@ class Expression
         $operator = null;
         $value    = null;
 
+        // A predicate set renders its predicates wrapped in parentheses, so an expression can
+        // come back in that form - unwrap it before looking for the column
+        $expression   = self::unwrapExpression($expression);
+        $columnEnd    = self::getColumnEnd($expression);
+        $columnString = ($columnEnd !== false) ? substr($expression, 0, $columnEnd) : $expression;
+
         if (Keyword::indexOf($expression, ' NULL') !== false) {
-            $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
+            $column   = self::stripIdQuotes(trim($columnString));
             $operator = (Keyword::indexOf($expression, ' IS NOT NULL') !== false) ? 'IS NOT NULL' : 'IS NULL';
         } else if (Keyword::indexOf($expression, ' IN ') !== false) {
-            $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
+            $column   = self::stripIdQuotes(trim($columnString));
             $operator = (Keyword::indexOf($expression, ' NOT IN ') !== false) ? 'NOT IN' : 'IN';
-            $values   = substr($expression, (strpos($expression, '(') + 1));
-            $values   = substr($values, 0, strpos($values, ')'));
+            // Look for the value list after the column, so that a function call in the column
+            // does not get mistaken for it
+            $values   = substr($expression, (strpos($expression, '(', strlen($columnString)) + 1));
+            $values   = substr($values, 0, strrpos($values, ')'));
             $values   = array_map(function($value) {
                 return \Pop\Db\Sql\Parser\Expression::stripQuotes(trim($value));
             }, explode(',', $values));
             $value    = $values;
         } else if (Keyword::indexOf($expression, ' BETWEEN ') !== false) {
-            $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
+            $column   = self::stripIdQuotes(trim($columnString));
             $operator = (Keyword::indexOf($expression, ' NOT BETWEEN ') !== false) ? 'NOT BETWEEN' : 'BETWEEN';
-            $value1   = substr($expression, (strpos($expression, 'BETWEEN ') + 8));
-            $value1   = trim(substr($value1, 0, strpos($value1, ' AND ')));
-            $value2   = trim(substr($expression, (stripos($expression, ' AND ') + 5)));
+            $value1   = substr($expression, (stripos($expression, 'BETWEEN ', strlen($columnString)) + 8));
+            $value1   = trim(substr($value1, 0, stripos($value1, ' AND ')));
+            $value2   = trim(substr($expression, (stripos($expression, ' AND ', strlen($columnString)) + 5)));
             $value    = '(' . self::stripQuotes($value1) . ' AND ' .  self::stripQuotes($value2) . ')';
         } else if (Keyword::indexOf($expression, ' LIKE ') !== false) {
-            $column   = self::stripIdQuotes(trim(substr($expression, 0, strpos($expression, ' '))));
+            $column   = self::stripIdQuotes(trim($columnString));
             $operator = (Keyword::indexOf($expression, ' NOT LIKE ') !== false) ? 'NOT LIKE' : 'LIKE';
-            $value    = self::stripQuotes(trim(substr($expression, (stripos($expression, ' LIKE ') + 6))));
+            $value    = self::stripQuotes(trim(substr($expression, (stripos($expression, ' LIKE ', strlen($columnString)) + 6))));
         } else {
-            $column   = substr($expression, 0, strpos($expression, ' '));
-            $operator = substr($expression, (strlen($column) + 1));
-            $operator = substr($operator, 0, strpos($operator, ' '));
-            $value    = self::stripQuotes(trim(substr($expression, (strpos($expression, $operator) + strlen($operator)))));
+            $column   = $columnString;
+            $operator = ltrim(substr($expression, strlen($columnString)));
+            $operatorEnd = strpos($operator, ' ');
+            $operator = ($operatorEnd !== false) ? substr($operator, 0, $operatorEnd) : $operator;
+            $value    = self::stripQuotes(
+                trim(substr($expression, (strpos($expression, $operator, strlen($columnString)) + strlen($operator))))
+            );
         }
 
         if (!in_array($operator, self::$operators)) {
             throw new Exception("Error: The operator '" . $operator . "' is not allowed.");
+        }
+
+        // A column shaped like a function call has to be one the SQL function whitelist accepts.
+        // Anything else would be handed to quoteId() and come back as a bogus identifier such as
+        // `SUM(id + 1)`, which errors on MySQL/PostgreSQL and silently reads as a text literal on
+        // SQLite. AbstractSql::isSupportedFunctionCall() is deliberately strict and is not
+        // loosened here, so an argument list carrying operators or comment markers is refused.
+        if ((str_contains($column, '(')) && (!AbstractSql::isSupportedFunctionCall($column))) {
+            throw new Exception(
+                "Error: The column '" . $column . "' is not a valid column name or supported function call."
+            );
         }
 
         return [
@@ -91,6 +113,97 @@ class Expression
             'operator' => $operator,
             'value'    => $value
         ];
+    }
+
+    /**
+     * Strip one layer of enclosing parentheses from a predicate expression
+     *
+     * Only strips when the opening parenthesis is matched by the very last character, so that
+     * '(id = 1)' is unwrapped while '(a = 1) AND (b = 2)' and 'COUNT(*) > 1' are left alone.
+     *
+     * @param  string $expression
+     * @return string
+     */
+    protected static function unwrapExpression(string $expression): string
+    {
+        $expression = trim($expression);
+
+        if ((!str_starts_with($expression, '(')) || (!str_ends_with($expression, ')'))) {
+            return $expression;
+        }
+
+        $depth   = 0;
+        $inQuote = null;
+        $length  = strlen($expression);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $expression[$i];
+
+            if ($inQuote !== null) {
+                if ($char === $inQuote) {
+                    $inQuote = null;
+                }
+                continue;
+            }
+
+            if (($char === "'") || ($char === '"') || ($char === '`')) {
+                $inQuote = $char;
+            } else if ($char === '(') {
+                $depth++;
+            } else if ($char === ')') {
+                $depth--;
+                // The opening parenthesis closes before the end, so the expression is not
+                // wrapped as a whole
+                if ($depth === 0) {
+                    return ($i === ($length - 1)) ? trim(substr($expression, 1, -1)) : $expression;
+                }
+            }
+        }
+
+        return $expression;
+    }
+
+    /**
+     * Locate the end of the column at the start of a predicate expression
+     *
+     * The column runs up to the first whitespace that is not inside parentheses and not
+     * inside a quoted string, so that the arguments of a function call are kept with the
+     * column instead of being read as the operator - 'COUNT(DISTINCT id) > 1' has to yield
+     * the column 'COUNT(DISTINCT id)', not 'COUNT(DISTINCT' and the operator 'id)'.
+     *
+     * @param  string $expression
+     * @return int|false
+     */
+    protected static function getColumnEnd(string $expression): int|false
+    {
+        $depth   = 0;
+        $inQuote = null;
+        $length  = strlen($expression);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $expression[$i];
+
+            if ($inQuote !== null) {
+                if ($char === $inQuote) {
+                    $inQuote = null;
+                }
+                continue;
+            }
+
+            if (($char === "'") || ($char === '"') || ($char === '`')) {
+                $inQuote = $char;
+            } else if ($char === '(') {
+                $depth++;
+            } else if ($char === ')') {
+                if ($depth > 0) {
+                    $depth--;
+                }
+            } else if (($depth === 0) && (trim($char) === '')) {
+                return $i;
+            }
+        }
+
+        return false;
     }
 
     /**

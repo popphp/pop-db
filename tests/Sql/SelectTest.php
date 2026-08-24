@@ -1021,4 +1021,118 @@ class SelectTest extends TestCase
         $db->disconnect();
     }
 
+
+    public function testHavingWithAggregateContainingSpacesInItsArguments()
+    {
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'c' => 'COUNT(*)'])->from('users')
+            ->groupBy('username')->having('COUNT(DISTINCT dept) > 1');
+        $this->assertEquals(
+            'SELECT `username`, COUNT(*) AS `c` FROM `users` GROUP BY `username` ' .
+            'HAVING (COUNT(DISTINCT dept) > 1)',
+            (string)$sql
+        );
+        $this->db->disconnect();
+    }
+
+    public function testHavingWithAggregateContainingSpacesExecutes()
+    {
+        $this->db->query('DROP TABLE IF EXISTS pop_having_spaces');
+        $this->db->query(
+            'CREATE TABLE pop_having_spaces (id INT AUTO_INCREMENT PRIMARY KEY, ' .
+            'username VARCHAR(255), dept VARCHAR(255))'
+        );
+        $this->db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('admin', 'sales')");
+        $this->db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('admin', 'eng')");
+        $this->db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('guest', 'sales')");
+        $this->db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('guest', 'sales')");
+
+        $sql = $this->db->createSql();
+        $sql->select(['username', 'c' => 'COUNT(DISTINCT dept)'])->from('pop_having_spaces')
+            ->groupBy('username')->having('COUNT(DISTINCT dept) > 1');
+
+        $this->db->query((string)$sql);
+        $rows = $this->db->fetchAll();
+
+        $this->assertEquals(1, count($rows));
+        $this->assertEquals('admin', $rows[0]['username']);
+        $this->assertEquals(2, $rows[0]['c']);
+
+        $this->db->query('DROP TABLE IF EXISTS pop_having_spaces');
+        $this->db->disconnect();
+    }
+
+    public function testHavingWithAggregateContainingSpacesExecutesPgsql()
+    {
+        $db = \Pop\Db\Db::pgsqlConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST']
+        ]);
+
+        $db->query('DROP TABLE IF EXISTS pop_having_spaces');
+        $db->query(
+            'CREATE TABLE pop_having_spaces (id SERIAL PRIMARY KEY, username VARCHAR(255), dept VARCHAR(255))'
+        );
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('admin', 'sales')");
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('admin', 'eng')");
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('guest', 'sales')");
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('guest', 'sales')");
+
+        $sql = $db->createSql();
+        $sql->select(['username', 'c' => 'COUNT(DISTINCT dept)'])->from('pop_having_spaces')
+            ->groupBy('username')->having('COUNT(DISTINCT dept) > 1');
+
+        $this->assertEquals(
+            'SELECT "username", COUNT(DISTINCT dept) AS "c" FROM "pop_having_spaces" ' .
+            'GROUP BY "username" HAVING (COUNT(DISTINCT dept) > 1)',
+            (string)$sql
+        );
+
+        $db->query((string)$sql);
+        $rows = $db->fetchAll();
+
+        $this->assertEquals(1, count($rows));
+        $this->assertEquals('admin', $rows[0]['username']);
+        $this->assertEquals(2, $rows[0]['c']);
+
+        $db->query('DROP TABLE IF EXISTS pop_having_spaces');
+        $db->disconnect();
+    }
+
+    public function testHavingWithAggregateContainingSpacesExecutesSqlite()
+    {
+        touch(__DIR__ . '/../tmp/having_spaces.sqlite');
+        chmod(__DIR__ . '/../tmp/having_spaces.sqlite', 0777);
+
+        $db = \Pop\Db\Db::sqliteConnect(['database' => __DIR__ . '/../tmp/having_spaces.sqlite']);
+
+        $db->query('DROP TABLE IF EXISTS pop_having_spaces');
+        $db->query(
+            'CREATE TABLE pop_having_spaces (id INTEGER PRIMARY KEY AUTOINCREMENT, ' .
+            'username VARCHAR(255), dept VARCHAR(255))'
+        );
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('admin', 'sales')");
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('admin', 'eng')");
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('guest', 'sales')");
+        $db->query("INSERT INTO pop_having_spaces (username, dept) VALUES ('guest', 'sales')");
+
+        $sql = $db->createSql();
+        $sql->select(['username', 'c' => 'COUNT(DISTINCT dept)'])->from('pop_having_spaces')
+            ->groupBy('username')->having('COUNT(DISTINCT dept) > 1');
+
+        $db->query((string)$sql);
+        $rows = $db->fetchAll();
+
+        // SQLite quotes an unknown identifier into a text literal that compares true for every
+        // group, so a broken HAVING shows up here as too many rows rather than an error
+        $this->assertEquals(1, count($rows));
+        $this->assertEquals('admin', $rows[0]['username']);
+        $this->assertEquals(2, $rows[0]['c']);
+
+        $db->disconnect();
+        @unlink(__DIR__ . '/../tmp/having_spaces.sqlite');
+    }
+
 }
