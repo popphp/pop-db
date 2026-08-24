@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Pop\Db\Record\Relationships;
 
 use Pop\Db\Record\Collection;
+use Pop\Db\Sql;
 
 /**
  * Relationship class for "has one" relationships
@@ -173,6 +174,98 @@ abstract class AbstractRelationship implements RelationshipInterface
     {
         $tuple = array_map(fn($col) => $record[$col] ?? null, $columns);
         return (in_array(null, $tuple, true)) ? null : $tuple;
+    }
+
+    /**
+     * Bind a single value as a query parameter and return the placeholder token that must be
+     * rendered in its place.
+     *
+     * A bare placeholder character is NOT a usable placeholder on every dialect: only MySQL/SQL
+     * Server take a bare '?'. PostgreSQL needs a positional '$N' and SQLite/PDO need a named
+     * ':name', so the token has to be generated here rather than repeating whatever
+     * Sql::getPlaceholder() returns. The Sql object's own parameter counter is used to number
+     * (PostgreSQL) and to uniquely name (SQLite/PDO) every parameter in the statement, so
+     * callers can bind several groups of parameters into one query without colliding.
+     *
+     * The generated names deliberately start with the counter, i.e. with a digit, which is
+     * exactly what keeps them from ever colliding with the column-derived names that
+     * Sql\Parser\Expression::parseShorthand() emits for the same statement.
+     *
+     * @param  Sql    $sql
+     * @param  string $column
+     * @param  mixed  $value
+     * @param  array  $params
+     * @return string
+     */
+    protected static function bindPlaceholder(Sql $sql, string $column, mixed $value, array &$params): string
+    {
+        $placeholder = $sql->getPlaceholder();
+
+        $sql->incrementParameterCount();
+
+        if ($placeholder == ':') {
+            $key          = $sql->getParameterCount() . '_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $column);
+            $params[$key] = $value;
+            return ':' . $key;
+        } else if ($placeholder == '$') {
+            $params[] = $value;
+            return '$' . $sql->getParameterCount();
+        } else {
+            $params[] = $value;
+            return '?';
+        }
+    }
+
+    /**
+     * Bind a flat list of values for a single column and return their placeholder tokens
+     *
+     * @param  Sql    $sql
+     * @param  string $column
+     * @param  array  $values
+     * @param  array  $params
+     * @return array
+     */
+    protected static function bindPlaceholders(Sql $sql, string $column, array $values, array &$params): array
+    {
+        $placeholders = [];
+
+        foreach ($values as $value) {
+            $placeholders[] = static::bindPlaceholder($sql, $column, $value, $params);
+        }
+
+        return $placeholders;
+    }
+
+    /**
+     * Apply the eager-load id filter to a SELECT's WHERE clause and collect its bound values.
+     *
+     * A single-column key renders as one "column IN (...)" predicate. A composite key renders
+     * as one AND-nested group of per-tuple OR-nested equality groups, so that whatever gets
+     * appended to the WHERE clause afterward is ANDed against the whole "matches any of these
+     * id tuples" block rather than becoming a sibling OR at the top level. It renders
+     * identically when there is no sibling predicate.
+     *
+     * @param  Sql          $sql
+     * @param  string|array $key
+     * @param  array        $ids
+     * @param  array        $params
+     * @return void
+     */
+    protected function applyEagerIdFilter(Sql $sql, string|array $key, array $ids, array &$params): void
+    {
+        if (is_array($key)) {
+            $columns    = array_values($key);
+            $tupleGroup = $sql->select()->where->andNest();
+            foreach ($ids as $idTuple) {
+                $idTuple = array_values((array)$idTuple);
+                $group   = $tupleGroup->orNest();
+                foreach ($columns as $i => $column) {
+                    $group->equalTo($column, static::bindPlaceholder($sql, $column, $idTuple[$i] ?? null, $params));
+                }
+            }
+        } else {
+            $sql->select()->where->in($key, static::bindPlaceholders($sql, $key, $ids, $params));
+        }
     }
 
     /**
