@@ -386,7 +386,29 @@ abstract class AbstractSql
     }
 
     /**
+     * Check if the value is a single, simple call to a standard SQL supported function,
+     * e.g. 'COUNT(*)', 'SUM(total)' or 'MAX(users.id)'
+     *
+     * The argument list is deliberately restricted to identifier characters, digits, '*',
+     * '.', ',' and whitespace, and the whole value must be nothing but that one call. That
+     * keeps anything that could carry additional SQL (quotes, operators, comment markers,
+     * a nested statement) out of the "render me verbatim" path.
+     *
+     * @param  mixed $value
+     * @return bool
+     */
+    public static function isSupportedFunctionCall(mixed $value): bool
+    {
+        return (is_string($value) && (preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*\s*\([a-zA-Z0-9_.,*\s]*\)$/', $value) == 1)
+            && self::isSupportedFunction($value));
+    }
+
+    /**
      * Quote the identifier
+     *
+     * A supported SQL function call is an expression rather than an identifier, so it is
+     * passed through untouched - quoting it would produce a bogus identifier such as
+     * `COUNT(*)`, which errors on MySQL/PostgreSQL and silently matches nothing on SQLite.
      *
      * @param  string $identifier
      * @return string
@@ -394,6 +416,10 @@ abstract class AbstractSql
     public function quoteId(string $identifier): string
     {
         $quotedId = null;
+
+        if (self::isSupportedFunctionCall($identifier)) {
+            return $identifier;
+        }
 
         if (str_contains($identifier, '.')) {
             $identifierAry = explode('.', $identifier);

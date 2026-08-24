@@ -212,6 +212,40 @@ class SqlTest extends TestCase
         @unlink(__DIR__ . '/tmp/get_parameter.sqlite');
     }
 
+    public function testQuoteIdLeavesSupportedFunctionCallsUnquoted()
+    {
+        $sql = $this->db->createSql();
+
+        // A supported SQL function call is an expression, not an identifier
+        $this->assertEquals('COUNT(*)', $sql->quoteId('COUNT(*)'));
+        $this->assertEquals('COUNT(1)', $sql->quoteId('COUNT(1)'));
+        $this->assertEquals('SUM(total)', $sql->quoteId('SUM(total)'));
+        $this->assertEquals('MAX(users.id)', $sql->quoteId('MAX(users.id)'));
+        $this->assertEquals('COUNT(DISTINCT id)', $sql->quoteId('COUNT(DISTINCT id)'));
+
+        $this->db->disconnect();
+    }
+
+    public function testQuoteIdStillQuotesEverythingThatIsNotAFunctionCall()
+    {
+        $sql = $this->db->createSql();
+
+        $this->assertEquals('`username`', $sql->quoteId('username'));
+        $this->assertEquals('`users`.`id`', $sql->quoteId('users.id'));
+        // A bare function name with no argument list is just a column name
+        $this->assertEquals('`count`', $sql->quoteId('count'));
+        // An unknown function is not a supported expression
+        $this->assertEquals('`nope(id)`', $sql->quoteId('nope(id)'));
+        // Anything beyond a single, simple function call stays quoted, so a hostile column
+        // name cannot escape identifier quoting
+        $this->assertEquals('`COUNT(1) OR 1=1 -- `', $sql->quoteId('COUNT(1) OR 1=1 -- '));
+        $this->assertEquals(
+            "`COUNT(1),(SELECT password FROM admins)`", $sql->quoteId('COUNT(1),(SELECT password FROM admins)')
+        );
+
+        $this->db->disconnect();
+    }
+
     public function testParameterCount()
     {
         $sql = $this->db->createSql();
