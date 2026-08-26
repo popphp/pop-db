@@ -237,6 +237,12 @@ class Alter extends AbstractStructure
         }
 
         // Drop constraints
+        if ((count($this->dropConstraints) > 0) && ($this->isSqlite())) {
+            throw new Exception(
+                'Error: SQLite does not support dropping a FOREIGN KEY constraint via ALTER TABLE. ' .
+                'The table must be recreated without the constraint instead.'
+            );
+        }
         foreach ($this->dropConstraints as $constraint) {
             if ($this->isMysql()) {
                 $schema .= 'ALTER TABLE ' . $this->quoteId($this->table) . ' DROP FOREIGN KEY ' .
@@ -254,6 +260,12 @@ class Alter extends AbstractStructure
 
         // Add constraints
         if (count($this->constraints) > 0) {
+            if ($this->isSqlite()) {
+                throw new Exception(
+                    'Error: SQLite does not support adding a FOREIGN KEY constraint to an existing table via ' .
+                    'ALTER TABLE. The constraint must be declared inline when the table is created instead.'
+                );
+            }
             $schema .= Formatter\Table::createConstraints($this->constraints, $this->table, $this);
         }
 

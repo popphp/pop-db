@@ -163,6 +163,29 @@ class Table extends AbstractFormatter
     }
 
     /**
+     * Format constraints inline within the CREATE TABLE statement (SQLite only - it does not
+     * support adding a FOREIGN KEY constraint to a table via ALTER TABLE)
+     *
+     * @param  array             $constraints
+     * @param  AbstractStructure $schema
+     * @return string
+     */
+    public static function formatConstraintsInline(array $constraints, AbstractStructure $schema): string
+    {
+        $constraintSchema = '';
+
+        foreach ($constraints as $name => $constraint) {
+            $constraintSchema .= ',' . PHP_EOL . '  CONSTRAINT ' . $schema->quoteId($name) .
+                ' FOREIGN KEY (' . $schema->quoteId($constraint['column']) . ')' .
+                ' REFERENCES ' . $schema->quoteId($constraint['references']) .
+                ' (' . $schema->quoteId($constraint['on']) . ')' . ' ON DELETE ' .
+                $constraint['delete'] . ' ON UPDATE CASCADE';
+        }
+
+        return $constraintSchema;
+    }
+
+    /**
      * Create constraints
      *
      * @param  array             $constraints

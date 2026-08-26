@@ -91,4 +91,64 @@ class SchemaStructureSqliteTest extends TestCase
         unlink(__DIR__ . '/../tmp/db.sqlite');
     }
 
+    public function testForeignKeyConstraintIsInlinedOnCreate()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('widgets')
+            ->int('id', 16)->increment()
+            ->varchar('name', 255)
+            ->primary('id');
+        $schema->execute();
+
+        $schema2 = $this->db->createSchema();
+        $schema2->create('widget_notes')
+            ->int('id', 16)->increment()
+            ->int('widget_id', 16)
+            ->text('note')
+            ->primary('id')
+            ->foreignKey('widget_id', 'fk_widget_id')->references('widgets')->on('id')->onDelete('CASCADE');
+
+        // SQLite doesn't support ALTER TABLE ADD CONSTRAINT, so the FOREIGN KEY has to be
+        // declared inline in the CREATE TABLE statement rather than appended as a separate
+        // ALTER TABLE statement
+        $sql = (string)$schema2;
+        $this->assertStringContainsString(
+            'CONSTRAINT "fk_widget_id" FOREIGN KEY ("widget_id") REFERENCES "widgets" ("id")', $sql
+        );
+        $this->assertStringNotContainsString('ALTER TABLE', $sql);
+
+        $schema2->execute();
+
+        $this->assertTrue(in_array('widget_notes', $this->db->getTables()));
+
+        $this->db->disconnect();
+        unlink(__DIR__ . '/../tmp/db.sqlite');
+    }
+
+    public function testForeignKeyConstraintOnAlterThrowsException()
+    {
+        $schema = $this->db->createSchema();
+        $schema->create('gadgets')
+            ->int('id', 16)->increment()
+            ->primary('id');
+        $schema->execute();
+
+        $schema2 = $this->db->createSchema();
+        $schema2->create('gadget_notes')
+            ->int('id', 16)->increment()
+            ->int('gadget_id', 16)
+            ->primary('id');
+        $schema2->execute();
+
+        // SQLite can't add a FOREIGN KEY constraint to an existing table via ALTER TABLE -
+        // that requires recreating the table, so this must fail clearly instead of sending
+        // invalid SQL to the driver
+        $this->expectException('Pop\Db\Sql\Schema\Exception');
+
+        $schema3 = $this->db->createSchema();
+        $schema3->alter('gadget_notes')
+            ->foreignKey('gadget_id', 'fk_gadget_id')->references('gadgets')->on('id')->onDelete('CASCADE');
+        $schema3->execute();
+    }
+
 }

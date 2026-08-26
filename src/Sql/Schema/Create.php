@@ -136,6 +136,12 @@ class Create extends AbstractStructure
             $schema .= Formatter\Table::formatPrimarySchema($this->dbType, $this->getPrimary(true));
         }
 
+        // SQLite doesn't support adding a FOREIGN KEY constraint via ALTER TABLE, so it has
+        // to be declared inline within the CREATE TABLE statement instead
+        if (($this->isSqlite()) && (count($this->constraints) > 0)) {
+            $schema .= Formatter\Table::formatConstraintsInline($this->constraints, $this);
+        }
+
         $schema .= Formatter\Table::formatEndOfTable($this->dbType, $this->engine, $this->charset, $increment);
 
         /*
@@ -154,8 +160,8 @@ class Create extends AbstractStructure
             $schema .= Formatter\Table::createIndices($this->indices, $this->table, $this);
         }
 
-        // Add constraints
-        if (count($this->constraints) > 0) {
+        // Add constraints (already inlined above for SQLite)
+        if ((count($this->constraints) > 0) && (!$this->isSqlite())) {
             $schema .= Formatter\Table::createConstraints($this->constraints, $this->table, $this);
         }
 
