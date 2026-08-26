@@ -216,7 +216,13 @@ class Mysql extends AbstractAdapter
             $sql = (string)$sql;
         }
 
-        if (!($this->result = $this->connection->query($sql))) {
+        try {
+            $this->result = $this->connection->query($sql);
+        } catch (\mysqli_sql_exception) {
+            $this->result = false;
+        }
+
+        if (!$this->result) {
             if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
@@ -251,7 +257,14 @@ class Mysql extends AbstractAdapter
         }
 
         $this->statement = $this->connection->stmt_init();
-        if (!$this->statement->prepare($sql)) {
+
+        try {
+            $prepared = $this->statement->prepare($sql);
+        } catch (\mysqli_sql_exception) {
+            $prepared = false;
+        }
+
+        if (!$prepared) {
             if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
@@ -341,7 +354,11 @@ class Mysql extends AbstractAdapter
             $this->throwError('Error: The database statement resource is not currently set');
         }
 
-        $this->statementResult = $this->statement->execute();
+        try {
+            $this->statementResult = $this->statement->execute();
+        } catch (\mysqli_sql_exception) {
+            $this->statementResult = false;
+        }
 
         if (!empty($this->statement->error)) {
             if ($this->profiler !== null) {

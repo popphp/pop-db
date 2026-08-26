@@ -528,7 +528,9 @@ class MysqlTest extends TestCase
 
     public function testQueryException()
     {
-        $this->expectException('mysqli_sql_exception');
+        // mysqli throws mysqli_sql_exception on error by default since PHP 8.1 - Mysql::query()
+        // must catch it and surface it as the standard adapter exception, like every other driver
+        $this->expectException('Pop\Db\Adapter\Exception');
 
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
@@ -539,9 +541,31 @@ class MysqlTest extends TestCase
         $db->query('SELECT * FROM `bad_table`');
     }
 
+    public function testQueryExceptionRecordsProfilerError()
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+        $db->setProfiler(new Profiler());
+
+        try {
+            $db->query('SELECT * FROM `bad_table`');
+            $this->fail('Exception was not thrown');
+        } catch (\Pop\Db\Adapter\Exception) {
+            // expected
+        }
+
+        $this->assertTrue($db->getProfiler()->current->hasErrors());
+        $db->disconnect();
+    }
+
     public function testExecuteException2()
     {
-        $this->expectException('mysqli_sql_exception');
+        // mysqli_stmt::execute() also throws mysqli_sql_exception by default since PHP 8.1
+        $this->expectException('Pop\Db\Adapter\Exception');
         $db = new Mysql([
             'database' => $_ENV['MYSQL_DB'],
             'username' => $_ENV['MYSQL_USER'],
@@ -551,6 +575,19 @@ class MysqlTest extends TestCase
         $db->prepare('SELECT * FROM `bad_table` WHERE `id` = ?')
             ->bindParams([1])
             ->execute();
+    }
+
+    public function testPrepareException()
+    {
+        // mysqli_stmt::prepare() also throws mysqli_sql_exception on bad syntax since PHP 8.1
+        $this->expectException('Pop\Db\Adapter\Exception');
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+        $db->prepare('SELEKT * FROM `bad syntax`');
     }
 
     public function testDropTable()
