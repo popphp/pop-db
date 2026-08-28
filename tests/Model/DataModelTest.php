@@ -4,7 +4,6 @@ namespace Pop\Db\Test\Model;
 
 use Pop\Db\Db;
 use Pop\Db\Record;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 use Pop\Db\Test\TestAsset\Model\Ghost;
 use Pop\Db\Test\TestAsset\Model\User;
@@ -14,18 +13,6 @@ use Pop\Db\Test\TestAsset\Table\Users;
 
 class DataModelTest extends TestCase
 {
-
-    /**
-     * The AbstractDataModel::filter() string syntax (e.g. 'username LIKE testuser1%') is
-     * converted internally to the legacy shorthand column format, which triggers pop-db's
-     * E_USER_DEPRECATED notice. That's expected, real behavior of the documented filter()
-     * API, not a bug in the model - assert it explicitly via expectUserDeprecationMessage()
-     * rather than letting it show up as unasserted noise, and mark it #[IgnoreDeprecations]
-     * so this known, asserted trigger doesn't get reported in the test run's summary.
-     */
-    protected const LEGACY_FILTER_DEPRECATION = "Deprecated: The shorthand column format used " .
-        "for [username%] is deprecated and will be removed in pop-db v8. Use the structured " .
-        "format instead, e.g. ['column' => ['>=', value]]. See README.md for the new syntax.";
 
     public function setUp(): void
     {
@@ -113,15 +100,29 @@ class DataModelTest extends TestCase
         Record::db()->disconnect();
     }
 
-    #[IgnoreDeprecations('shorthand column format')]
+    /**
+     * AbstractDataModel::parseFilter() builds the structured operator-tuple format directly
+     * (PARSEFILTER-HANDOFF.md §2), so a LIKE expression like 'username LIKE testuser1%' no
+     * longer round-trips through the legacy shorthand column format and no longer triggers
+     * pop-db's E_USER_DEPRECATED notice. Assert that explicitly rather than letting a
+     * regression back to the legacy path show up only as unasserted deprecation noise.
+     */
     public function testCountAndFilters1()
     {
-        $this->expectUserDeprecationMessage(self::LEGACY_FILTER_DEPRECATION);
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
 
         $userModel = new User();
         $count     = $userModel->filter('username LIKE testuser1%', ['id', 'username'])->count();
         $users     = $userModel->getAll()->toArray();
 
+        restore_error_handler();
+
+        $this->assertFalse($deprecationTriggered);
         $this->assertEquals(1, $count);
         $this->assertEquals('testuser1', $users[0]['username']);
         $this->assertFalse(isset($users[0]['email']));
@@ -130,13 +131,20 @@ class DataModelTest extends TestCase
         Record::db()->disconnect();
     }
 
-    #[IgnoreDeprecations('shorthand column format')]
     public function testCountAndFilters2()
     {
-        $this->expectUserDeprecationMessage(self::LEGACY_FILTER_DEPRECATION);
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
 
         $users = User::filterBy('username LIKE testuser1%', ['id', 'username'])->getAll()->toArray();
 
+        restore_error_handler();
+
+        $this->assertFalse($deprecationTriggered);
         $this->assertEquals('testuser1', $users[0]['username']);
         $this->assertFalse(isset($users[0]['email']));
         $this->assertEquals(1, $users[0]['id']);
@@ -397,6 +405,46 @@ class DataModelTest extends TestCase
         $userModel = new User();
         $this->assertEquals('id DESC', $userModel->getOrderBy('-id'));
         $this->assertEquals('id ASC, username ASC', $userModel->getOrderBy('id,username'));
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.2 - two filter expressions on the same column must both
+     * survive as a bounded range (via parseFilter()'s repeated-column 'AND' grouping) rather
+     * than the second silently overwriting the first, end-to-end through a live query.
+     */
+    public function testGetAllWithRepeatedColumnFilterProducesBoundedRangeWithoutDeprecation()
+    {
+        $userModel = new User();
+        $userModel->filter(['id >= 1', 'id <= 100']);
+
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
+
+        $users = $userModel->getAll()->toArray();
+
+        restore_error_handler();
+
+        $this->assertFalse($deprecationTriggered);
+        $this->assertCount(1, $users);
+
+        Record::db()->disconnect();
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.5/§4.1 - a malformed filter expression surfaces the parser's
+     * own exception rather than silently falling back to the legacy (still-deprecated) path.
+     */
+    public function testGetAllWithMalformedFilterThrowsParserException()
+    {
+        $userModel = new User();
+        $userModel->filter('username <> testuser2');
+
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        $userModel->getAll();
     }
 
     public function testDropTable()

@@ -190,6 +190,112 @@ class ExpressionTest extends TestCase
         $this->assertEquals('(50 AND 100)', $columns['logins']);
     }
 
+    /**
+     * PARSEFILTER-HANDOFF.md §3.1 - every operator class must round-trip into the structured
+     * operator-tuple format that Sql\Parser\Condition::parseConditions() accepts natively.
+     */
+    public function testConvertExpressionsToStructuredCoversEveryOperatorClass()
+    {
+        $cases = [
+            "id = 1"                    => ['id' => ['=', '1']],
+            "id != 1"                   => ['id' => ['!=', '1']],
+            "age >= 18"                 => ['age' => ['>=', '18']],
+            "age < 65"                  => ['age' => ['<', '65']],
+            "name LIKE '%smith%'"       => ['name' => ['LIKE', '%smith%']],
+            "name NOT LIKE '%smith'"    => ['name' => ['NOT LIKE', '%smith']],
+            "id IN (1, 2, 3)"           => ['id' => ['IN', ['1', '2', '3']]],
+            "id NOT IN (1, 2)"          => ['id' => ['NOT IN', ['1', '2']]],
+            "age BETWEEN 18 AND 65"     => ['age' => ['BETWEEN', '18', '65']],
+            "age NOT BETWEEN 18 AND 65" => ['age' => ['NOT BETWEEN', '18', '65']],
+            "deleted IS NULL"           => ['deleted' => ['IS NULL']],
+            "deleted IS NOT NULL"       => ['deleted' => ['IS NOT NULL']],
+        ];
+
+        foreach ($cases as $expression => $expected) {
+            $this->assertEquals($expected, Expression::convertExpressionsToStructured([$expression]), $expression);
+        }
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.2 - the critical case: two expressions on the same column must
+     * both survive, routed into a nested 'AND' group, rather than the second silently
+     * overwriting the first the way a naive ['column' => tuple] merge would.
+     */
+    public function testConvertExpressionsToStructuredRepeatedColumnRoutesIntoAndGroup()
+    {
+        // The first occurrence of a repeated column keeps its direct 'column' => tuple slot;
+        // only the second-and-later occurrences are routed into the 'AND' group. Both still
+        // apply - Condition::parseConditions() ANDs every top-level entry together regardless
+        // of which bucket it came from - this only avoids the second occurrence overwriting
+        // the first at the same array key.
+        $result = Expression::convertExpressionsToStructured([
+            'due_date >= 2026-01-01',
+            'due_date <= 2026-12-31',
+        ]);
+
+        $this->assertEquals(['>=', '2026-01-01'], $result['due_date']);
+        $this->assertEquals([
+            ['due_date' => ['<=', '2026-12-31']],
+        ], $result['AND']);
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.2 - three-or-more repeats on the same column.
+     */
+    public function testConvertExpressionsToStructuredThreeRepeatedColumns()
+    {
+        $result = Expression::convertExpressionsToStructured([
+            'logins >= 1',
+            'logins <= 100',
+            'logins != 50',
+        ]);
+
+        $this->assertEquals(['>=', '1'], $result['logins']);
+        $this->assertEquals([
+            ['logins' => ['<=', '100']],
+            ['logins' => ['!=', '50']],
+        ], $result['AND']);
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.3 - a string key is an already-prepared column => value pair
+     * rather than an expression string; mixing one into the same filter array must not
+     * TypeError trying to parse it as an expression.
+     */
+    public function testConvertExpressionsToStructuredMixedKeysDoesNotTypeError()
+    {
+        $result = Expression::convertExpressionsToStructured([
+            'status' => 5,
+            'due_date >= 2026-01-01',
+        ]);
+
+        $this->assertEquals(5, $result['status']);
+        $this->assertEquals(['>=', '2026-01-01'], $result['due_date']);
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.4 - an entry that is already a structured condition array is
+     * merged as-is, with no double-processing.
+     */
+    public function testConvertExpressionsToStructuredPreStructuredEntryPassesThrough()
+    {
+        $result = Expression::convertExpressionsToStructured([
+            ['id' => ['IN', [1, 2, 3]]],
+        ]);
+
+        $this->assertEquals(['id' => ['IN', [1, 2, 3]]], $result);
+    }
+
+    /**
+     * PARSEFILTER-HANDOFF.md §3.5/§4.1 - a malformed expression string surfaces the parser's
+     * own exception rather than silently falling back to the legacy (still-deprecated) path.
+     */
+    public function testConvertExpressionsToStructuredThrowsOnMalformedExpression()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        Expression::convertExpressionsToStructured(['username <> admin']);
+    }
+
     public function testParseShorthand()
     {
         $columns = [

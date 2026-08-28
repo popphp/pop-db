@@ -583,6 +583,94 @@ class CompositeKeyRelationshipTest extends TestCase
         $this->db->disconnect();
     }
 
+    /*
+     * ---------------------------------------------------------------------------------------
+     * RELATIONSHIP-GUARD-HANDOFF.md §3.3/§3.5: composite-key lazy getters on an unloaded
+     * parent - the all-null-tuple degenerate form, which the single-key test file can't
+     * exercise since it only has the empty-array degenerate form.
+     * ---------------------------------------------------------------------------------------
+     */
+
+    /**
+     * An orphan row whose composite FK columns are both NULL is exactly what the pre-fix bug
+     * would silently match - "note_org_id IS NULL AND note_branch_id IS NULL" - for any
+     * unloaded parent, regardless of which parent was actually asked for.
+     */
+    public function testHasManyOnUnloadedCompositeParentReturnsEmptyCollectionNotOrphans()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+
+        $orphan = new CkNote(['note_org_id' => null, 'note_branch_id' => null, 'note' => 'Orphan note']);
+        $orphan->save();
+
+        $missing = CkOrg::findById([999, 999]);
+        $notes   = $missing->notes();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $notes);
+        $this->assertEquals(0, $notes->count());
+        $this->assertEquals([], $notes->toArray());
+
+        $this->db->disconnect();
+    }
+
+    public function testHasOneOnUnloadedCompositeParentReturnsEmptyRecordNotOrphan()
+    {
+        $orgA = new CkOrg(['org_id' => 1, 'branch_id' => 2, 'name' => 'Org A']);
+        $orgA->save();
+
+        $orphan = new CkNote(['note_org_id' => null, 'note_branch_id' => null, 'note' => 'Orphan note']);
+        $orphan->save();
+
+        $missing = CkOrg::findById([999, 999]);
+        $note    = $missing->firstNote();
+
+        $this->assertInstanceOf(CkNote::class, $note);
+        $this->assertFalse(isset($note->id));
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * A loaded parent whose composite key legitimately contains a 0 component must not be
+     * treated as "unloaded" - the composite branch's guard checks each column's value
+     * identity (!== null), not truthiness.
+     */
+    public function testHasManyOnLoadedCompositeParentWithZeroKeyStillQueries()
+    {
+        $zeroOrg = new CkOrg(['org_id' => 0, 'branch_id' => 5, 'name' => 'Zero Org']);
+        $zeroOrg->save();
+
+        $zeroNote = new CkNote(['note_org_id' => 0, 'note_branch_id' => 5, 'note' => 'Zero note']);
+        $zeroNote->save();
+
+        $notes = $zeroOrg->notes();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $notes);
+        $this->assertEquals(1, $notes->count());
+        $this->assertEquals('Zero note', $notes[0]->note);
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * A real, loaded composite-key parent with no children must still query normally and get
+     * back an empty collection - the guard must trigger on an unloaded PARENT, not on empty
+     * results.
+     */
+    public function testHasManyOnLoadedCompositeParentWithNoChildrenReturnsEmptyCollection()
+    {
+        $lonelyOrg = new CkOrg(['org_id' => 3, 'branch_id' => 4, 'name' => 'Lonely Org']);
+        $lonelyOrg->save();
+
+        $notes = $lonelyOrg->notes();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $notes);
+        $this->assertEquals(0, $notes->count());
+
+        $this->db->disconnect();
+    }
+
     public function testFinal()
     {
         $var = 1;

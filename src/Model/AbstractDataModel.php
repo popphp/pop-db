@@ -660,14 +660,20 @@ abstract class AbstractDataModel extends AbstractModel implements DataModelInter
     /**
      * Method to parse filter for select predicates
      *
-     * @param  mixed  $filter
+     * Builds the structured operator-tuple format (e.g. ['column' => ['>=', value]]) directly,
+     * rather than the legacy shorthand format that Sql\Parser\Condition::parseConditions() only
+     * accepts by triggering an E_USER_DEPRECATED notice. A malformed expression string is
+     * surfaced as a Sql\Parser\Exception rather than silently falling back to the legacy path.
+     *
+     * @param  mixed $filter
+     * @throws Parser\Exception
      * @return array
      */
     public function parseFilter(mixed $filter): array
     {
-        return (is_array($filter)) ?
-            Parser\Expression::convertExpressionsToShorthand($filter) :
-            Parser\Expression::convertExpressionToShorthand($filter);
+        $expressions = (is_array($filter)) ? $filter : [$filter];
+
+        return Parser\Expression::convertExpressionsToStructured($expressions);
     }
 
 }

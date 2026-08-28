@@ -2,6 +2,7 @@
 
 namespace Pop\Db\Test;
 
+use Pop\Db\Adapter\Profiler\Profiler;
 use Pop\Db\Db;
 use Pop\Db\Record\Relationships;
 use Pop\Db\Test\TestAsset\People;
@@ -679,6 +680,184 @@ class RelationshipTest extends TestCase
         $user->addWith('peopleContacts');
         $user->addWith('peopleInfo');
         $this->assertEquals(['peopleContacts', 'peopleInfo'], $user->getWiths());
+        $this->db->disconnect();
+    }
+
+    /*
+     * ---------------------------------------------------------------------------------------
+     * RELATIONSHIP-GUARD-HANDOFF.md §3: lazy getters on an unloaded parent
+     * ---------------------------------------------------------------------------------------
+     */
+
+    /**
+     * Direct unit coverage of the guard predicate itself, independent of any DB round-trip.
+     */
+    public function testHasUsableParentKeyPredicate()
+    {
+        $relationship = new Relationships\HasMany(new People(), 'Pop\Db\Test\TestAsset\PeopleContacts', 'people_id');
+        $method       = new \ReflectionMethod($relationship, 'hasUsableParentKey');
+
+        // Single-key branch's degenerate form: array_values(getPrimaryValues()) collapsed
+        $this->assertFalse($method->invoke($relationship, ['people_id' => []]));
+        // Composite branch's degenerate form: every column read back null
+        $this->assertFalse($method->invoke($relationship, ['a_id' => null, 'b_id' => null]));
+        // A legitimate 0 or '' value must not be mistaken for "unloaded"
+        $this->assertTrue($method->invoke($relationship, ['people_id' => 0]));
+        $this->assertTrue($method->invoke($relationship, ['people_id' => '']));
+        // One usable column alongside an unset one is still usable
+        $this->assertTrue($method->invoke($relationship, ['a_id' => 5, 'b_id' => null]));
+        $this->assertTrue($method->invoke($relationship, ['people_id' => 5]));
+    }
+
+    /**
+     * §3.1 - single-key hasMany on a parent that was never loaded must return the same empty
+     * result a real parent with no children would, without issuing a query and without the
+     * self-inflicted deprecation the old `['people_id' => []]` shape triggered.
+     */
+    public function testHasManyOnUnloadedParentReturnsEmptyCollectionWithoutQuery()
+    {
+        $this->db->connect();
+
+        $missing = People::findById(999999);
+
+        $profiler = new Profiler();
+        $this->db->setProfiler($profiler);
+
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
+
+        $contacts = $missing->peopleContacts();
+
+        restore_error_handler();
+
+        $this->assertFalse($deprecationTriggered);
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $contacts);
+        $this->assertEquals(0, $contacts->count());
+        $this->assertEquals([], $contacts->toArray());
+        $this->assertCount(0, $profiler->getSteps());
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.2 - single-key hasOne on an unloaded parent must return an empty Record (matching
+     * findOne()'s no-match contract), not null, without issuing a query.
+     */
+    public function testHasOneOnUnloadedParentReturnsEmptyRecordWithoutQuery()
+    {
+        $this->db->connect();
+
+        $missing = People::findById(999999);
+
+        $profiler = new Profiler();
+        $this->db->setProfiler($profiler);
+
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
+
+        $info = $missing->peopleInfo();
+
+        restore_error_handler();
+
+        $this->assertFalse($deprecationTriggered);
+        $this->assertInstanceOf('Pop\Db\Test\TestAsset\PeopleInfo', $info);
+        $this->assertFalse(isset($info->people_id));
+        $this->assertCount(0, $profiler->getSteps());
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.5 - a loaded parent whose primary key value is legitimately 0 must NOT be treated as
+     * "unloaded" - the guard checks value identity, not truthiness. Constructed locally rather
+     * than via a real INSERT, since MySQL auto-increment columns don't reliably keep an
+     * explicit 0.
+     */
+    public function testHasManyOnLoadedParentWithZeroPrimaryKeyStillQueries()
+    {
+        $this->db->connect();
+
+        // people_contacts.people_id carries a real FK constraint to people.id, and MySQL
+        // auto-increment columns don't reliably keep an explicit 0 on INSERT - disable the FK
+        // check just for this seed so a people_id=0 contact can exist without a matching real
+        // people row, which is all this test needs to prove the guard's 0-value predicate.
+        $this->db->query('SET foreign_key_checks = 0');
+        $zeroContact = new PeopleContacts(['people_id' => 0, 'email' => 'zero@test.com']);
+        $zeroContact->save();
+        $this->db->query('SET foreign_key_checks = 1');
+
+        $zeroParent = new People();
+        $zeroParent->setColumns(['id' => 0, 'username' => 'zero', 'password' => 'pw']);
+
+        $contacts = $zeroParent->peopleContacts();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $contacts);
+        $this->assertEquals(1, $contacts->count());
+        $this->assertEquals('zero@test.com', $contacts[0]->email);
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.6 - a real, loaded parent with no children must still query normally and get back an
+     * empty collection - the guard must trigger on an unloaded PARENT, not on empty results.
+     */
+    public function testHasManyOnLoadedParentWithNoChildrenReturnsEmptyCollection()
+    {
+        $this->db->connect();
+
+        $lonelyUser = new People(['username' => 'lonelyuser', 'password' => 'password1']);
+        $lonelyUser->save();
+
+        $contacts = $lonelyUser->peopleContacts();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $contacts);
+        $this->assertEquals(0, $contacts->count());
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.7 - the eager path is untouched: Record::hasMany() returns the relationship object
+     * early when $eager is true, without ever reaching getChildren(), regardless of whether
+     * the parent is loaded.
+     */
+    public function testHasManyEagerPathUntouchedOnUnloadedParent()
+    {
+        $this->db->connect();
+
+        $missing      = People::findById(999999);
+        $relationship = $missing->peopleContacts(null, true);
+
+        $this->assertInstanceOf('Pop\Db\Record\Relationships\HasMany', $relationship);
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.8 - Record::hasMany() collapses a 1-row result to that single record when latest()/
+     * oldest() is active. With the guard, an unloaded parent's child count is 0, not 1, so the
+     * collapse must not fire - the empty Collection itself must come back.
+     */
+    public function testHasManyLatestOnUnloadedParentReturnsEmptyCollectionNotFirstElement()
+    {
+        $this->db->connect();
+
+        $missing = People::findById(999999);
+        $missing->latest();
+        $contacts = $missing->peopleContacts();
+
+        $this->assertInstanceOf('Pop\Db\Record\Collection', $contacts);
+        $this->assertEquals(0, $contacts->count());
+
         $this->db->disconnect();
     }
 

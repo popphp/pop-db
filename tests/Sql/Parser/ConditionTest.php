@@ -4,6 +4,7 @@ namespace Pop\Db\Test\Sql\Parser;
 
 use Pop\Db\Db;
 use Pop\Db\Sql\Parser\Condition;
+use Pop\Db\Sql\Parser\Expression;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -1075,6 +1076,164 @@ class ConditionTest extends TestCase
         $this->assertEquals('((`role` IS NULL) OR (`logins` >= ?))', $predicateSet->render());
         $this->assertEquals(['1_logins' => 65], $predicateSet->getParameters());
         $this->db->disconnect();
+    }
+
+    /*
+     * ---------------------------------------------------------------------------------------
+     * PARSEFILTER-HANDOFF.md §2/§3: Expression::convertExpressionsToStructured()
+     * ---------------------------------------------------------------------------------------
+     */
+
+    /**
+     * §3.1 - every operator class must render identical SQL and bind identical parameter
+     * values whether the expression is converted via the legacy shorthand path or the new
+     * structured path. The legacy call is deprecation-suppressed (@) since the deprecation
+     * itself is asserted elsewhere (testLegacySyntaxTriggersDeprecation); this test is only
+     * about output equivalence.
+     */
+    public function testStructuredConversionRendersIdenticallyToLegacyForEveryOperatorClass()
+    {
+        $expressions = [
+            "id = 1",
+            "id != 1",
+            "logins >= 18",
+            "logins < 65",
+            "username LIKE '%adm%'",
+            "username NOT LIKE '%host'",
+            "id IN (1, 2, 3)",
+            "id NOT IN (1, 2)",
+            "logins BETWEEN 18 AND 65",
+            "logins NOT BETWEEN 18 AND 65",
+            "role IS NULL",
+            "role IS NOT NULL",
+        ];
+
+        foreach ($expressions as $expression) {
+            $legacyPredicateSet = @Condition::parse(
+                Expression::convertExpressionsToShorthand([$expression]), $this->db->createSql()
+            );
+            $structuredPredicateSet = Condition::parse(
+                Expression::convertExpressionsToStructured([$expression]), $this->db->createSql()
+            );
+
+            $this->assertEquals(
+                $legacyPredicateSet->render(), $structuredPredicateSet->render(), $expression
+            );
+            $this->assertEquals(
+                array_values($legacyPredicateSet->getParameters()),
+                array_values($structuredPredicateSet->getParameters()),
+                $expression
+            );
+        }
+
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.1 - and confirms the new path never fires the deprecation the legacy path does for
+     * the exact same input.
+     */
+    public function testStructuredConversionNeverTriggersDeprecation()
+    {
+        $expressions = [
+            "id = 1", "logins >= 18", "username LIKE '%adm%'", "id IN (1, 2, 3)",
+            "logins BETWEEN 18 AND 65", "role IS NULL",
+        ];
+
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+        }, E_USER_DEPRECATED);
+
+        Condition::parse(Expression::convertExpressionsToStructured($expressions), $this->db->createSql());
+
+        restore_error_handler();
+        $this->assertFalse($deprecationTriggered);
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.2 - the critical case. Two expressions on the same column must both survive as a
+     * bounded range rather than the second overwriting the first, which is what a naive
+     * ['column' => tuple] merge would do.
+     */
+    public function testStructuredConversionRepeatedColumnProducesBoundedRange()
+    {
+        $predicateSet = Condition::parse(Expression::convertExpressionsToStructured([
+            'logins >= 18',
+            'logins <= 65',
+        ]), $this->db->createSql());
+
+        $this->assertEquals('((`logins` >= ?) AND (`logins` <= ?))', $predicateSet->render());
+        $this->assertEquals(['18', '65'], array_values($predicateSet->getParameters()));
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.2 - three-or-more repeats on the same column, and confirms every generated
+     * parameter key is unique (Condition.php's $parameterIndex is threaded by reference for
+     * exactly this reason).
+     */
+    public function testStructuredConversionThreeRepeatedColumnsProduceUniqueParameterKeys()
+    {
+        $predicateSet = Condition::parse(Expression::convertExpressionsToStructured([
+            'logins >= 1',
+            'logins <= 100',
+            'logins != 50',
+        ]), $this->db->createSql());
+
+        // The first occurrence renders as a direct top-level predicate; the second and third
+        // occurrences are combined into the nested 'AND' group's own predicate set - both
+        // still AND together to the same overall meaning.
+        $this->assertEquals(
+            '((`logins` >= ?) AND ((`logins` <= ?) AND (`logins` != ?)))', $predicateSet->render()
+        );
+        $params = $predicateSet->getParameters();
+        $this->assertEquals(3, count($params));
+        $this->assertEquals(3, count(array_unique(array_keys($params))));
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.3 - a string key is an already-prepared column => value pair, not an expression to
+     * parse; mixing one into the same filter array must not TypeError.
+     */
+    public function testStructuredConversionMixedKeysDoesNotTypeError()
+    {
+        $structured = Expression::convertExpressionsToStructured([
+            'status' => 5,
+            'logins >= 18',
+        ]);
+
+        $predicateSet = Condition::parse($structured, $this->db->createSql());
+
+        $this->assertEquals('((`status` = ?) AND (`logins` >= ?))', $predicateSet->render());
+        $this->db->disconnect();
+    }
+
+    /**
+     * §3.4 - an entry that is already a structured condition array is merged as-is, with no
+     * double-processing.
+     */
+    public function testStructuredConversionPreStructuredEntryPassesThrough()
+    {
+        $structured = Expression::convertExpressionsToStructured([
+            ['id' => ['IN', [1, 2, 3]]],
+        ]);
+
+        $this->assertEquals(['id' => ['IN', [1, 2, 3]]], $structured);
+    }
+
+    /**
+     * §3.5/§4.1 - a malformed expression string surfaces the parser's own exception rather
+     * than silently falling back to the legacy (still-deprecated) path.
+     */
+    public function testStructuredConversionThrowsOnMalformedExpression()
+    {
+        $this->expectException('Pop\Db\Sql\Parser\Exception');
+        Expression::convertExpressionsToStructured(['username <> admin']);
     }
 
     /*

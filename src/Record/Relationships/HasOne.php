@@ -89,6 +89,16 @@ class HasOne extends AbstractRelationship
             $columns = [$this->foreignKey => $values];
         }
 
+        // An unloaded parent (e.g. Table::findById($missingId)) has no usable primary key
+        // value to look the child up by - return the same empty record findOne() returns on
+        // no match, without asking the database a degenerate question (RELATIONSHIP-GUARD-
+        // HANDOFF.md §1/§2). getChild(): Record is not nullable, so an empty new $table() is
+        // returned here rather than null, even though getEmptyRelationshipValue() returns null
+        // - that method serves the eager path, which has a different contract.
+        if (!$this->hasUsableParentKey($columns)) {
+            return new $table();
+        }
+
         if (!empty($options) && !empty($options['columns'])) {
             $columns = array_merge($columns, $options['columns']);
         }

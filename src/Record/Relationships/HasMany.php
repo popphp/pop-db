@@ -91,6 +91,14 @@ class HasMany extends AbstractRelationship
             $columns = [$this->foreignKey => $values];
         }
 
+        // An unloaded parent (e.g. Table::findById($missingId)) has no usable primary key
+        // value to look children up by - return the same empty result a real parent with no
+        // children would, without asking the database a degenerate question (RELATIONSHIP-
+        // GUARD-HANDOFF.md §1/§2).
+        if (!$this->hasUsableParentKey($columns)) {
+            return new Record\Collection();
+        }
+
         if (!empty($options) && !empty($options['columns'])) {
             $columns = array_merge($columns, $options['columns']);
         }

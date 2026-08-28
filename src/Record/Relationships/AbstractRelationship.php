@@ -320,6 +320,27 @@ abstract class AbstractRelationship implements RelationshipInterface
     }
 
     /**
+     * Determine whether a lazily-built relationship lookup's column filter carries at least
+     * one usable parent key value, i.e. the parent record was actually loaded.
+     *
+     * An unloaded parent degenerates the lookup two different ways depending on whether the
+     * foreign key is a single column or composite: the single-key branch collapses
+     * getPrimaryValues()'s empty array into a bare `[]` value (legacy empty-IN shorthand,
+     * `IN ('')`), while the composite branch reads each column through the row gateway and
+     * gets `null` for each one (`IS NULL`, which matches any orphan row with a null FK). Both
+     * mean "no parent loaded" and must short-circuit before either shape reaches the query
+     * layer - but a legitimate `0` or `''` key value must NOT be treated the same way, so this
+     * checks value identity, not truthiness.
+     *
+     * @param  array $columns
+     * @return bool
+     */
+    protected function hasUsableParentKey(array $columns): bool
+    {
+        return !empty(array_filter($columns, fn($value) => ($value !== null) && ($value !== [])));
+    }
+
+    /**
      * Hydrate nested child relationships onto a flat list of leaf records, resolving each
      * named child relationship once (accumulated by name) and distributing every one of them
      * onto every leaf record — so multiple differently-named children under this relationship

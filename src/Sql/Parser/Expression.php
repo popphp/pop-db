@@ -334,6 +334,10 @@ class Expression
     /**
      * Convert to expression to shorthand value
      *
+     * @deprecated Produces the legacy shorthand format, which Condition::parseConditions()
+     *             only accepts by triggering an E_USER_DEPRECATED notice. Use
+     *             convertExpressionsToStructured() instead. Kept for callers still pinned to
+     *             the legacy format; will be removed in pop-db v8.
      * @param  string $expression
      * @return array
      */
@@ -376,16 +380,16 @@ class Expression
                 break;
         }
 
-        if (str_contains($expression, ' BETWEEN ') && is_array($value) && count($value) == 2) {
-            $value = $value[0] . ' AND ' . $value[1];
-        }
-
         return [$column => $value];
     }
 
     /**
      * Convert to expression to shorthand value
      *
+     * @deprecated Produces the legacy shorthand format, which Condition::parseConditions()
+     *             only accepts by triggering an E_USER_DEPRECATED notice. Use
+     *             convertExpressionsToStructured() instead. Kept for callers still pinned to
+     *             the legacy format; will be removed in pop-db v8.
      * @param  array $expressions
      * @return array
      */
@@ -398,6 +402,97 @@ class Expression
         }
 
         return $conditions;
+    }
+
+    /**
+     * Convert expressions into the structured operator-tuple format that
+     * Sql\Parser\Condition::parseConditions() accepts natively - the modern counterpart to
+     * convertExpressionsToShorthand(), which produces the legacy format that triggers
+     * Condition::parseLegacy()'s deprecation notice.
+     *
+     * Unlike convertExpressionsToShorthand(), string keys are treated as already-prepared
+     * column => value pairs and passed through untouched, an array entry is treated as an
+     * already-structured condition and merged as-is, and a column produced by more than one
+     * expression is routed into a nested 'AND' group instead of silently overwriting the
+     * earlier condition - the collision legacy shorthand avoided only because the operator
+     * was folded into the key (e.g. 'due_date>=' vs 'due_date<=').
+     *
+     * @param  array $expressions
+     * @throws Exception
+     * @return array
+     */
+    public static function convertExpressionsToStructured(array $expressions): array
+    {
+        $conditions = [];
+        $repeated   = [];
+
+        foreach ($expressions as $key => $expression) {
+            // A string key is an already-prepared column => value pair rather than an
+            // expression string - pass it through untouched.
+            if (!is_int($key)) {
+                $conditions[$key] = $expression;
+                continue;
+            }
+
+            // Anything already in array form is a structured condition - merge it as-is.
+            if (!is_string($expression)) {
+                if (is_array($expression)) {
+                    $conditions = array_merge($conditions, $expression);
+                }
+                continue;
+            }
+
+            ['column' => $column, 'operator' => $operator, 'value' => $value] = self::parse($expression);
+
+            $operator = strtoupper($operator);
+
+            $tuple = match ($operator) {
+                'IS NULL', 'IS NOT NULL' => [$operator],
+                'IN', 'NOT IN'           => [$operator, (array)$value],
+                'BETWEEN', 'NOT BETWEEN' => array_merge([$operator], self::splitBetweenValues($value)),
+                // A bare '=' against null keeps pop-db's documented IS NULL semantics rather
+                // than rendering the never-true 'column = NULL'.
+                '='                      => ($value === null) ? ['IS NULL'] : ['=', $value],
+                default                  => [$operator, $value],
+            };
+
+            if (array_key_exists($column, $conditions)) {
+                $repeated[] = [$column => $tuple];
+            } else {
+                $conditions[$column] = $tuple;
+            }
+        }
+
+        if (!empty($repeated)) {
+            $conditions['AND'] = $repeated;
+        }
+
+        return $conditions;
+    }
+
+    /**
+     * Split a packed BETWEEN/NOT BETWEEN value - '(v1 AND v2)' - into its two operands
+     *
+     * Expression::parse() returns BETWEEN's operands packed into one string, not a pair, so
+     * a straight array cast yields a one-value tuple that Condition::parseTuple() rejects
+     * (BETWEEN has arity 2).
+     *
+     * @param  mixed $value
+     * @return array
+     */
+    private static function splitBetweenValues(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values($value);
+        }
+
+        $value = trim((string)$value);
+
+        while (str_starts_with($value, '(') && str_ends_with($value, ')')) {
+            $value = trim(substr($value, 1, -1));
+        }
+
+        return array_map('trim', preg_split('/\s+AND\s+/i', $value, 2));
     }
 
     /**
