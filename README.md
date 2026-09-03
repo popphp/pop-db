@@ -1024,6 +1024,22 @@ good - even a correct password will keep failing with `ATTEMPTS_EXCEEDED`. This 
 there's no automatic, time-based unlock, so unlocking is left to an application admin explicitly
 calling `resetAttempts()`.
 
+`$attemptsLimit` can be read/set at runtime with `getAttemptsLimit()`/`setAttemptsLimit()` (both
+fluent), or overridden for a single `authenticate()` call via its optional fourth argument:
+
+```php
+// Give this login attempt a stricter limit than the class default
+$user->authenticate($username, $attemptedPassword, false, 1);
+```
+
+Note that passing `$attemptsLimit` to `authenticate()` isn't a one-shot override - it calls
+`setAttemptsLimit()` internally, so the new value sticks on the instance for any subsequent calls
+too, until changed again.
+
+Setting `$attemptsLimit` to `0` (or calling `setAttemptsLimit(0)`) disables attempts enforcement
+entirely - `attemptsExceeded()` always returns `false` and `hasAttemptsLimit()` reports `false`,
+regardless of how high `$attemptsField` climbs.
+
 If a successful login's stored password hash was made under older `$hashOptions` (e.g. a bcrypt
 `cost` that's since been raised), it's transparently rehashed and saved on the way in - see
 [1-Way Hashing](#1-way-hashing) for the `needsRehash()`/`rehash()` mechanics this relies on.

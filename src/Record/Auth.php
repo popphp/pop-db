@@ -57,7 +57,7 @@ class Auth extends Encoded
     protected string $attemptsField = 'attempts';
 
     /**
-     * Attempts limit
+     * Attempts limit - set to zero to skip attempts enforcement
      * @var int
      */
     protected int $attemptsLimit = 3;
@@ -127,25 +127,59 @@ class Auth extends Encoded
     }
 
     /**
+     * Set attempts limit
+     *
+     * @param  int $attemptsLimit
+     * @return static
+     */
+    public function setAttemptsLimit(int $attemptsLimit): static
+    {
+        $this->attemptsLimit = $attemptsLimit;
+        return $this;
+    }
+
+    /**
+     * Get attempts limit
+     *
+     * @return int
+     */
+    public function getAttemptsLimit(): int
+    {
+        return $this->attemptsLimit;
+    }
+
+    /**
+     * Has attempts limit
+     *
+     * @return bool
+     */
+    public function hasAttemptsLimit(): bool
+    {
+        return ($this->attemptsLimit > 0);
+    }
+
+    /**
      * Attempts exceeded
      *
      * @return bool
      */
     public function attemptsExceeded(): bool
     {
-        return (($this->userExists()) && ((int)$this->{$this->attemptsField} >= $this->attemptsLimit));
+        return (($this->userExists()) && ($this->hasAttemptsLimit()) && ((int)$this->{$this->attemptsField} >= $this->attemptsLimit));
     }
 
     /**
      * Reset attempts
      *
-     * @return void
+     * @return static
      */
-    public function resetAttempts(): void
+    public function resetAttempts(): static
     {
         if (($this->userExists()) && ((int)$this->{$this->attemptsField} !== 0)) {
             $this->reset($this->attemptsField, 0);
         }
+
+        return $this;
     }
 
     /**
@@ -176,10 +210,17 @@ class Auth extends Encoded
      * @param  string $attemptedUsername
      * @param  string $attemptedPassword
      * @param  bool   $mfa
+     * @param  ?int   $attemptsLimit
      * @return bool|static
      */
-    public function authenticate(string $attemptedUsername, string $attemptedPassword, bool $mfa = true): bool|static
+    public function authenticate(
+        string $attemptedUsername, string $attemptedPassword, bool $mfa = true, ?int $attemptsLimit = null
+    ): bool|static
     {
+        if ($attemptsLimit !== null) {
+            $this->setAttemptsLimit($attemptsLimit);
+        }
+
         $this->getUser($attemptedUsername);
 
         // If user doesn't exist

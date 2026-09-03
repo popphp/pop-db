@@ -223,6 +223,62 @@ class AuthTest extends TestCase
         $this->assertEquals(0, $user->attempts);
     }
 
+    public function testSetAttemptsLimitIsFluentAndOverridesDefault()
+    {
+        $user = new UsersAuth();
+        $this->assertEquals(3, $user->getAttemptsLimit());
+
+        $result = $user->setAttemptsLimit(5);
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertEquals(5, $user->getAttemptsLimit());
+    }
+
+    public function testHasAttemptsLimitReflectsCurrentValue()
+    {
+        $user = new UsersAuth();
+        $this->assertTrue($user->hasAttemptsLimit());
+
+        $user->setAttemptsLimit(0);
+        $this->assertFalse($user->hasAttemptsLimit());
+    }
+
+    public function testAttemptsExceededNeverTrueWhenLimitDisabled()
+    {
+        $user = UsersAuth::findOne(['username' => 'admin']);
+        $user->setAttemptsLimit(0);
+
+        // Well past the normal default limit of 3
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+
+        $this->assertEquals(5, $user->attempts);
+        $this->assertFalse($user->attemptsExceeded());
+
+        // A correct password still succeeds, since attempts enforcement is disabled
+        $result = $user->authenticate('admin', 'admin', false);
+        $this->assertTrue($result);
+    }
+
+    public function testAuthenticateAttemptsLimitOverrideAppliesAndPersistsOnInstance()
+    {
+        $user = new UsersAuth();
+
+        // Override to a limit of 1 on this call
+        $user->authenticate('admin', 'bad-password', false, 1);
+        $this->assertEquals(1, $user->attempts);
+        $this->assertEquals(1, $user->getAttemptsLimit());
+
+        // The override is not a one-shot: it sticks on the instance, so the very next
+        // call - even with the correct password and no override passed - is locked out
+        $result = $user->authenticate('admin', 'admin', false);
+        $this->assertFalse($result);
+        $this->assertEquals(Auth::ATTEMPTS_EXCEEDED, $user->getAuthFailure());
+        $this->assertEquals(2, $user->attempts);
+    }
+
     public function testAuthenticateSuccessRehashesOutdatedPasswordHash()
     {
         // Seed a user whose password was hashed with a deliberately weak/outdated cost
