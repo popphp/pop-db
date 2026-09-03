@@ -199,6 +199,49 @@ class AuthTest extends TestCase
         $this->assertMatchesRegularExpression('/^[A-Z0-9]{8}$/', $result->getRawValue('mfa_code'));
     }
 
+    public function testGenerateMfaCodeIsFluentAndPersistsCode()
+    {
+        $user = UsersAuth::findOne(['username' => 'admin']);
+        $this->assertNull($user->getRawValue('mfa_code'));
+
+        $result = $user->generateMfaCode();
+
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertNotEmpty($result->getRawValue('mfa_code'));
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $result->getRawValue('mfa_code'));
+        $this->assertGreaterThan(time(), $result->getRawValue('mfa_timestamp'));
+
+        // Confirm it was actually persisted, not just set in-memory
+        $reloaded = UsersAuth::findOne(['username' => 'admin']);
+        $this->assertEquals($result->getRawValue('mfa_code'), $reloaded->getRawValue('mfa_code'));
+    }
+
+    public function testGenerateMfaCodeNoOpsOnUnloadedUser()
+    {
+        $user   = new UsersAuth();
+        $result = $user->generateMfaCode();
+
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertNull($user->getRawValue('mfa_code'));
+    }
+
+    public function testGenerateMfaCodeNoOpsWhenAttemptsExceeded()
+    {
+        $user = new UsersAuth();
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+
+        $this->assertTrue($user->attemptsExceeded());
+
+        // A resend attempt while locked out must not hand out a usable code
+        $result = $user->generateMfaCode();
+
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertNull($user->getRawValue('mfa_code'));
+        $this->assertNull($user->getRawValue('mfa_timestamp'));
+    }
+
     public function testAuthenticateMfaSuccess()
     {
         $user = new UsersAuth();

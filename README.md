@@ -1062,6 +1062,29 @@ if ($user->authenticateMfa($attemptedCode)) {
 Wrong or expired MFA guesses increment and are gated by the same `$attemptsField`/`$attemptsLimit`
 as login attempts, so a locked-out account is also locked out of guessing MFA codes.
 
+#### Resending/regenerating an MFA code
+
+`authenticate()` issues the initial MFA code by calling `generateMfaCode()` internally, but it's
+also public, so a "resend code" affordance can call it directly on an already-loaded user record
+without repeating the password check:
+
+```php
+$user = Users::findOne(['username' => $username]);
+$user->generateMfaCode();
+// send $user->mfa_code to the user again
+```
+
+`generateMfaCode()` is fluent and no-ops (leaving any existing code/timestamp untouched) in two
+cases:
+
+- the record isn't a loaded user (`userExists()` is false)
+- attempts have already been exceeded (`attemptsExceeded()` is true)
+
+The second case is deliberate: a locked-out account can't be handed a fresh, usable code via
+resend, since MFA verification checks `attemptsExceeded()` before it ever looks at the code -
+resetting attempts just to make a resent code work would turn "resend" into an unlimited-guessing
+loophole. The only way out of lockout is an explicit `resetAttempts()` call.
+
 `$mfaConfig` can be read/set at runtime with `getMfaConfig()`/`setMfaConfig()` (both fluent).
 `setMfaConfig()` merges into the existing config, so you only need to pass the keys you want to
 change - anything you omit keeps its current value. Only the five keys already present in

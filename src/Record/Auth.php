@@ -269,13 +269,7 @@ class Auth extends Encoded
             if (!$mfa) {
                 return true;
             } else {
-                $this->{$this->mfaConfig['mfa_timestamp_field']} = time() + $this->mfaConfig['expires'];
-                $this->{$this->mfaConfig['mfa_code_field']}      = ($this->mfaConfig['alphanumeric']) ?
-                    Str::createRandomAlphaNum($this->mfaConfig['length'], Str::UPPERCASE) :
-                    Str::createRandomNumeric($this->mfaConfig['length']);
-
-                $this->save();
-
+                $this->generateMfaCode();
                 return $this;
             }
         }
@@ -314,6 +308,28 @@ class Auth extends Encoded
         }
 
         return (!$this->hasAuthFailure());
+    }
+
+    /**
+     * Generate (or regenerate/resend) an MFA code, expiration timestamp, and persist them
+     *
+     * No-ops on an unloaded user or once attempts have been exceeded - a locked-out account
+     * cannot be handed a fresh, usable code via resend; it must go through resetAttempts() first
+     *
+     * @return static
+     */
+    public function generateMfaCode(): static
+    {
+        if (($this->userExists()) && (!$this->attemptsExceeded())) {
+            $this->{$this->mfaConfig['mfa_timestamp_field']} = time() + $this->mfaConfig['expires'];
+            $this->{$this->mfaConfig['mfa_code_field']}      = ($this->mfaConfig['alphanumeric']) ?
+                Str::createRandomAlphaNum($this->mfaConfig['length'], Str::UPPERCASE) :
+                Str::createRandomNumeric($this->mfaConfig['length']);
+
+            $this->save();
+        }
+
+        return $this;
     }
 
     /**
