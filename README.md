@@ -1085,6 +1085,21 @@ resend, since MFA verification checks `attemptsExceeded()` before it ever looks 
 resetting attempts just to make a resent code work would turn "resend" into an unlimited-guessing
 loophole. The only way out of lockout is an explicit `resetAttempts()` call.
 
+Whichever way it happens, `wasMfaCodeGenerated()` reports whether the *most recent*
+`generateMfaCode()` call - direct, or the one `authenticate()` makes internally - actually issued a
+code, and `getAuthFailure()`/`getAuthFailureMessage()` report why not when it didn't
+(`USER_DOES_NOT_EXIST` or `ATTEMPTS_EXCEEDED`):
+
+```php
+$user->generateMfaCode();
+
+if ($user->wasMfaCodeGenerated()) {
+    // send $user->mfa_code to the user
+} else {
+    echo $user->getAuthFailureMessage();
+}
+```
+
 `$mfaConfig` can be read/set at runtime with `getMfaConfig()`/`setMfaConfig()` (both fluent).
 `setMfaConfig()` merges into the existing config, so you only need to pass the keys you want to
 change - anything you omit keeps its current value. Only the five keys already present in

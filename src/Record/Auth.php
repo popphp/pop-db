@@ -81,6 +81,12 @@ class Auth extends Encoded
     protected ?string $authFailure = null;
 
     /**
+     * Flag if MFA code was generated
+     * @var bool
+     */
+    protected bool $mfaCodeGenerated = false;
+
+    /**
      * Auth failure messages
      * @var array
      */
@@ -320,16 +326,33 @@ class Auth extends Encoded
      */
     public function generateMfaCode(): static
     {
-        if (($this->userExists()) && (!$this->attemptsExceeded())) {
+        $isExceeded = $this->attemptsExceeded();
+        if (($this->userExists()) && (!$isExceeded)) {
             $this->{$this->mfaConfig['mfa_timestamp_field']} = time() + $this->mfaConfig['expires'];
             $this->{$this->mfaConfig['mfa_code_field']}      = ($this->mfaConfig['alphanumeric']) ?
                 Str::createRandomAlphaNum($this->mfaConfig['length'], Str::UPPERCASE) :
                 Str::createRandomNumeric($this->mfaConfig['length']);
 
             $this->save();
+
+            $this->authFailure      = null;
+            $this->mfaCodeGenerated = true;
+        } else {
+            $this->mfaCodeGenerated = false;
+            $this->authFailure      = ($isExceeded) ? self::ATTEMPTS_EXCEEDED : self::USER_DOES_NOT_EXIST;
         }
 
         return $this;
+    }
+
+    /**
+     * Get MFA code generated flag
+     *
+     * @return bool
+     */
+    public function wasMfaCodeGenerated(): bool
+    {
+        return $this->mfaCodeGenerated;
     }
 
     /**

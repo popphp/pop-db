@@ -216,6 +216,21 @@ class AuthTest extends TestCase
         $this->assertEquals($result->getRawValue('mfa_code'), $reloaded->getRawValue('mfa_code'));
     }
 
+    public function testGenerateMfaCodeSetsWasMfaCodeGeneratedAndClearsAuthFailure()
+    {
+        $user = new UsersAuth();
+
+        // Seed a stale failure from an earlier, unrelated operation
+        $user->authenticate('admin', 'bad-password', false);
+        $this->assertEquals(Auth::INVALID_CREDENTIALS, $user->getAuthFailure());
+
+        $result = $user->generateMfaCode();
+
+        $this->assertTrue($result->wasMfaCodeGenerated());
+        $this->assertFalse($result->hasAuthFailure());
+        $this->assertNull($result->getAuthFailure());
+    }
+
     public function testGenerateMfaCodeNoOpsOnUnloadedUser()
     {
         $user   = new UsersAuth();
@@ -223,6 +238,8 @@ class AuthTest extends TestCase
 
         $this->assertInstanceOf(UsersAuth::class, $result);
         $this->assertNull($user->getRawValue('mfa_code'));
+        $this->assertFalse($result->wasMfaCodeGenerated());
+        $this->assertEquals(Auth::USER_DOES_NOT_EXIST, $result->getAuthFailure());
     }
 
     public function testGenerateMfaCodeNoOpsWhenAttemptsExceeded()
@@ -240,6 +257,26 @@ class AuthTest extends TestCase
         $this->assertInstanceOf(UsersAuth::class, $result);
         $this->assertNull($user->getRawValue('mfa_code'));
         $this->assertNull($user->getRawValue('mfa_timestamp'));
+        $this->assertFalse($result->wasMfaCodeGenerated());
+        $this->assertEquals(Auth::ATTEMPTS_EXCEEDED, $result->getAuthFailure());
+    }
+
+    public function testGenerateMfaCodeReportsDistinctFailureReasonsForUnloadedVsLockedOut()
+    {
+        // Regression guard: unloaded user and locked-out user must not be
+        // reported as the same failure reason
+        $unloadedUser = new UsersAuth();
+        $unloadedUser->generateMfaCode();
+
+        $lockedOutUser = new UsersAuth();
+        $lockedOutUser->authenticate('admin', 'bad-password', false);
+        $lockedOutUser->authenticate('admin', 'bad-password', false);
+        $lockedOutUser->authenticate('admin', 'bad-password', false);
+        $lockedOutUser->generateMfaCode();
+
+        $this->assertEquals(Auth::USER_DOES_NOT_EXIST, $unloadedUser->getAuthFailure());
+        $this->assertEquals(Auth::ATTEMPTS_EXCEEDED, $lockedOutUser->getAuthFailure());
+        $this->assertNotEquals($unloadedUser->getAuthFailure(), $lockedOutUser->getAuthFailure());
     }
 
     public function testAuthenticateMfaSuccess()
