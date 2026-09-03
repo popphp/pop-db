@@ -127,6 +127,28 @@ class Auth extends Encoded
     }
 
     /**
+     * Set MFA config
+     *
+     * @param  array $mfaConfig
+     * @return static
+     */
+    public function setMfaConfig(array $mfaConfig): static
+    {
+        $this->mfaConfig = array_merge($this->mfaConfig, array_intersect_key($mfaConfig, $this->mfaConfig));
+        return $this;
+    }
+
+    /**
+     * Get MFA config
+     *
+     * @return array
+     */
+    public function getMfaConfig(): array
+    {
+        return $this->mfaConfig;
+    }
+
+    /**
      * Set attempts limit
      *
      * @param  int $attemptsLimit

@@ -139,6 +139,66 @@ class AuthTest extends TestCase
         $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $result->getRawValue('mfa_code'));
     }
 
+    public function testGetMfaConfigReturnsDefaults()
+    {
+        $user = new UsersAuth();
+        $this->assertEquals([
+            'length'              => 6,
+            'expires'             => 300,
+            'alphanumeric'        => false,
+            'mfa_code_field'      => 'mfa_code',
+            'mfa_timestamp_field' => 'mfa_timestamp',
+        ], $user->getMfaConfig());
+    }
+
+    public function testSetMfaConfigIsFluentAndOverridesOnlyGivenKeys()
+    {
+        $user = new UsersAuth();
+
+        $result = $user->setMfaConfig([
+            'length'       => 8,
+            'alphanumeric' => true,
+        ]);
+
+        $this->assertInstanceOf(UsersAuth::class, $result);
+
+        $mfaConfig = $user->getMfaConfig();
+        $this->assertEquals(8, $mfaConfig['length']);
+        $this->assertTrue($mfaConfig['alphanumeric']);
+
+        // Untouched keys fall back to the defaults
+        $this->assertEquals(300, $mfaConfig['expires']);
+        $this->assertEquals('mfa_code', $mfaConfig['mfa_code_field']);
+        $this->assertEquals('mfa_timestamp', $mfaConfig['mfa_timestamp_field']);
+    }
+
+    public function testSetMfaConfigIgnoresUnknownKeys()
+    {
+        $user = new UsersAuth();
+        $user->setMfaConfig([
+            'length'   => 8,
+            'unknown'  => 'nope',
+            'mfa_code' => 'also-nope',
+        ]);
+
+        $mfaConfig = $user->getMfaConfig();
+        $this->assertEquals(8, $mfaConfig['length']);
+        $this->assertArrayNotHasKey('unknown', $mfaConfig);
+        $this->assertArrayNotHasKey('mfa_code', $mfaConfig);
+        $this->assertCount(5, $mfaConfig);
+    }
+
+    public function testSetMfaConfigOverrideIsAppliedOnAuthenticate()
+    {
+        $user = new UsersAuth();
+        $user->setMfaConfig(['length' => 8, 'alphanumeric' => true]);
+
+        $result = $user->authenticate('admin', 'admin', true);
+
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{8}$/', $result->getRawValue('mfa_code'));
+    }
+
     public function testAuthenticateMfaSuccess()
     {
         $user = new UsersAuth();

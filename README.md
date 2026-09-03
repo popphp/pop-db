@@ -1062,6 +1062,17 @@ if ($user->authenticateMfa($attemptedCode)) {
 Wrong or expired MFA guesses increment and are gated by the same `$attemptsField`/`$attemptsLimit`
 as login attempts, so a locked-out account is also locked out of guessing MFA codes.
 
+`$mfaConfig` can be read/set at runtime with `getMfaConfig()`/`setMfaConfig()` (both fluent).
+`setMfaConfig()` merges into the existing config, so you only need to pass the keys you want to
+change - anything you omit keeps its current value. Only the five keys already present in
+`$mfaConfig` (shown below) are ever honored; any other key passed in is silently ignored, since
+the class only ever reads from those five:
+
+```php
+// Longer, alphanumeric codes, without having to repeat the other mfaConfig keys
+$user->setMfaConfig(['length' => 8, 'alphanumeric' => true]);
+```
+
 #### Configuration
 
 All of the following are plain property overrides on your table class:
