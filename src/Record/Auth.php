@@ -33,8 +33,10 @@ class Auth extends Encoded
      * Auth constants
      */
     const string USER_DOES_NOT_EXIST = 'USER_DOES_NOT_EXIST';
-    const string INVALID_CREDENTIALS = 'INVALID_CREDENTIALS';
+    const string USER_NOT_ACTIVE     = 'USER_NOT_ACTIVE';
+    const string USER_NOT_VERIFIED   = 'USER_NOT_VERIFIED';
     const string ATTEMPTS_EXCEEDED   = 'ATTEMPTS_EXCEEDED';
+    const string INVALID_CREDENTIALS = 'INVALID_CREDENTIALS';
     const string INVALID_MFA_CODE    = 'INVALID_MFA_CODE';
     const string MFA_CODE_EXPIRED    = 'MFA_CODE_EXPIRED';
 
@@ -57,10 +59,34 @@ class Auth extends Encoded
     protected string $attemptsField = 'attempts';
 
     /**
+     * Active field
+     * @var ?string
+     */
+    protected ?string $activeField = 'active';
+
+    /**
+     * Verified field
+     * @var ?string
+     */
+    protected ?string $verifiedField = 'verified';
+
+    /**
+     * Last attempt timestamp field
+     * @var ?string
+     */
+    protected ?string $lastAttemptField = 'last_attempt';
+
+    /**
      * Attempts limit - set to zero to skip attempts enforcement
      * @var int
      */
     protected int $attemptsLimit = 3;
+
+    /**
+     * Lockout expiration (in seconds) - set to zero to never expire (admin would have to manually reset the attempts)
+     * @var int
+     */
+    protected int $lockoutExpiration = 900; // 15 minute default
 
     /**
      * MFA config
@@ -92,8 +118,10 @@ class Auth extends Encoded
      */
     protected array $authFailureMessages = [
         self::USER_DOES_NOT_EXIST => 'The user does not exist',
-        self::INVALID_CREDENTIALS => 'Invalid credentials',
+        self::USER_NOT_ACTIVE     => 'The user is not active',
+        self::USER_NOT_VERIFIED   => 'The user is not verified',
         self::ATTEMPTS_EXCEEDED   => 'The authentication attempts have been exceeded',
+        self::INVALID_CREDENTIALS => 'Invalid credentials',
         self::INVALID_MFA_CODE    => 'Invalid MFA code',
         self::MFA_CODE_EXPIRED    => 'MFA code has expired',
     ];
@@ -187,13 +215,94 @@ class Auth extends Encoded
     }
 
     /**
+     * Set lockout expiration
+     *
+     * @param  int $lockoutExpiration
+     * @return static
+     */
+    public function setLockoutExpiration(int $lockoutExpiration): static
+    {
+        $this->lockoutExpiration = $lockoutExpiration;
+        return $this;
+    }
+
+    /**
+     * Get lockout expiration
+     *
+     * @return int
+     */
+    public function getLockoutExpiration(): int
+    {
+        return $this->lockoutExpiration;
+    }
+
+    /**
+     * Has lockout expiration
+     *
+     * @return bool
+     */
+    public function hasLockoutExpiration(): bool
+    {
+        return ($this->lockoutExpiration > 0);
+    }
+
+    /**
+     * Lockout has expired
+     *
+     * True once $lockoutExpiration seconds have passed since $lastAttemptField was last set -
+     * always false if lockout expiration or $lastAttemptField tracking is disabled, in which
+     * case an exceeded lockout can only be cleared with an explicit resetAttempts() call
+     *
+     * @return bool
+     */
+    public function lockoutExpired(): bool
+    {
+        return (
+            $this->hasLockoutExpiration() && !empty($this->lastAttemptField) && $this->userExists() &&
+            isset($this->{$this->lastAttemptField}) &&
+            (time() >= ((int)$this->{$this->lastAttemptField} + $this->lockoutExpiration))
+        );
+    }
+
+    /**
      * Attempts exceeded
+     *
+     * Auto-clears (resets attempts, returns false) once the lockout has expired
      *
      * @return bool
      */
     public function attemptsExceeded(): bool
     {
-        return (($this->userExists()) && ($this->hasAttemptsLimit()) && ((int)$this->{$this->attemptsField} >= $this->attemptsLimit));
+        if ((!$this->userExists()) || (!$this->hasAttemptsLimit()) || ((int)$this->{$this->attemptsField} < $this->attemptsLimit)) {
+            return false;
+        }
+
+        if ($this->lockoutExpired()) {
+            $this->resetAttempts();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Is user active
+     *
+     * @return bool
+     */
+    public function userActive(): bool
+    {
+        return (empty($this->activeField) || (($this->userExists()) && ($this->{$this->activeField})));
+    }
+
+    /**
+     * Is user verified
+     *
+     * @return bool
+     */
+    public function userVerified(): bool
+    {
+        return (empty($this->verifiedField) || (($this->userExists()) && ($this->{$this->verifiedField})));
     }
 
     /**
@@ -211,6 +320,25 @@ class Auth extends Encoded
     }
 
     /**
+     * Record a failed (guess-type) attempt: increment the attempts field and, if
+     * $lastAttemptField is configured, stamp it with now() to (re)anchor the lockout clock
+     *
+     * Only called for actual credential/code guesses - not for attempts already blocked by
+     * attemptsExceeded(), so repeatedly hitting an already-locked-out account cannot keep
+     * pushing the lockout expiration further into the future
+     *
+     * @return void
+     */
+    protected function recordFailedAttempt(): void
+    {
+        $this->{$this->attemptsField} = (int)$this->{$this->attemptsField} + 1;
+        if (!empty($this->lastAttemptField)) {
+            $this->{$this->lastAttemptField} = time();
+        }
+        $this->save();
+    }
+
+    /**
      * Get user
      *
      * @param  string $attemptedUsername
@@ -225,9 +353,12 @@ class Auth extends Encoded
      * Authenticate user attempt
      *
      *   - If auth is unsuccessful:
-     *       -> If the user was not found, it returns false
-     *       -> If user was found, but auth did not pass or the attempts have been exceeded,
-     *          the attempts field is incremented, then it returns false
+     *       -> If the user was not found, not active, or not verified, it returns false without
+     *          incrementing the attempts field - these are hard blocks, not guess failures
+     *       -> If the attempts have been exceeded, or the credentials themselves were wrong,
+     *          the attempts field is incremented, then it returns false - unless the lockout
+     *          has since expired (see $lockoutExpiration), in which case attempts are reset
+     *          first and the check falls through to the credentials themselves
      *   - Else, if auth is successful:
      *       -> If the stored password hash was made with an outdated algorithm/cost, it is
      *          transparently rehashed and saved using the just-verified plaintext password
@@ -255,6 +386,14 @@ class Auth extends Encoded
         if (!$this->userExists()) {
             $this->authFailure = self::USER_DOES_NOT_EXIST;
             return false;
+        // If user is not active
+        } else if ((!$this->userActive())) {
+            $this->authFailure = self::USER_NOT_ACTIVE;
+            return false;
+        // If user is not verified
+        } else if ((!$this->userVerified())) {
+            $this->authFailure = self::USER_NOT_VERIFIED;
+            return false;
         // If attempts exceeded
         } else if (($this->attemptsExceeded())) {
             $this->authFailure = self::ATTEMPTS_EXCEEDED;
@@ -263,7 +402,7 @@ class Auth extends Encoded
         // If auth fails
         } else if (!$this->verify($this->passwordField, $attemptedPassword)) {
             $this->authFailure = self::INVALID_CREDENTIALS;
-            $this->increment($this->attemptsField);
+            $this->recordFailedAttempt();
             return false;
         } else {
             // Upon success, reset attempts field (the password hash, if outdated, was
@@ -285,8 +424,12 @@ class Auth extends Encoded
      * Authenticate MFA code
      *
      *   - The user records needs to be pre-fetched and loaded into this instance
+     *   - Not active/not verified are rechecked here too, same as authenticate() - a hard
+     *     block, so neither increments the attempts field
      *   - Wrong or expired code guesses count against the same $attemptsField/$attemptsLimit
      *     as login attempts, so a locked-out user is also locked out of MFA guessing
+     *   - A lockout that has since expired (see $lockoutExpiration) is auto-cleared here too,
+     *     the same as in authenticate()
      *   - On success, the stored code and timestamp are cleared so the code cannot be reused
      *
      * @param  string $mfaCode
@@ -296,15 +439,19 @@ class Auth extends Encoded
     {
         if (!$this->userExists()) {
             $this->authFailure = self::USER_DOES_NOT_EXIST;
+        } else if (!$this->userActive()) {
+            $this->authFailure = self::USER_NOT_ACTIVE;
+        } else if (!$this->userVerified()) {
+            $this->authFailure = self::USER_NOT_VERIFIED;
         } else if ($this->attemptsExceeded()) {
             $this->authFailure = self::ATTEMPTS_EXCEEDED;
             $this->increment($this->attemptsField);
         } else if (!$this->verifyMfaCode($mfaCode)) {
             $this->authFailure = self::INVALID_MFA_CODE;
-            $this->increment($this->attemptsField);
+            $this->recordFailedAttempt();
         } else if (time() > (int)$this->{$this->mfaConfig['mfa_timestamp_field']}) {
             $this->authFailure = self::MFA_CODE_EXPIRED;
-            $this->increment($this->attemptsField);
+            $this->recordFailedAttempt();
         } else {
             $this->authFailure = null;
             $this->{$this->attemptsField}                    = 0;
@@ -319,15 +466,27 @@ class Auth extends Encoded
     /**
      * Generate (or regenerate/resend) an MFA code, expiration timestamp, and persist them
      *
-     * No-ops on an unloaded user or once attempts have been exceeded - a locked-out account
-     * cannot be handed a fresh, usable code via resend; it must go through resetAttempts() first
+     * No-ops on an unloaded, not active, or not verified user, or once attempts have been
+     * exceeded - a locked-out account cannot be handed a fresh, usable code via resend; it
+     * must go through resetAttempts() first
      *
      * @return static
      */
     public function generateMfaCode(): static
     {
-        $isExceeded = $this->attemptsExceeded();
-        if (($this->userExists()) && (!$isExceeded)) {
+        if (!$this->userExists()) {
+            $this->mfaCodeGenerated = false;
+            $this->authFailure      = self::USER_DOES_NOT_EXIST;
+        } else if (!$this->userActive()) {
+            $this->mfaCodeGenerated = false;
+            $this->authFailure      = self::USER_NOT_ACTIVE;
+        } else if (!$this->userVerified()) {
+            $this->mfaCodeGenerated = false;
+            $this->authFailure      = self::USER_NOT_VERIFIED;
+        } else if ($this->attemptsExceeded()) {
+            $this->mfaCodeGenerated = false;
+            $this->authFailure      = self::ATTEMPTS_EXCEEDED;
+        } else {
             $this->{$this->mfaConfig['mfa_timestamp_field']} = time() + $this->mfaConfig['expires'];
             $this->{$this->mfaConfig['mfa_code_field']}      = ($this->mfaConfig['alphanumeric']) ?
                 Str::createRandomAlphaNum($this->mfaConfig['length'], Str::UPPERCASE) :
@@ -337,9 +496,6 @@ class Auth extends Encoded
 
             $this->authFailure      = null;
             $this->mfaCodeGenerated = true;
-        } else {
-            $this->mfaCodeGenerated = false;
-            $this->authFailure      = ($isExceeded) ? self::ATTEMPTS_EXCEEDED : self::USER_DOES_NOT_EXIST;
         }
 
         return $this;

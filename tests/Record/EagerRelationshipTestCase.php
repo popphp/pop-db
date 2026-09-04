@@ -30,6 +30,11 @@ abstract class EagerRelationshipTestCase extends TestCase
     protected ?AbstractAdapter $db = null;
 
     /**
+     * SQLite database file to delete in tearDown(), if the concrete adapter under test uses one
+     */
+    protected ?string $sqliteFile = null;
+
+    /**
      * Connect the adapter under test
      */
     abstract protected function createDb(): AbstractAdapter;
@@ -98,6 +103,10 @@ abstract class EagerRelationshipTestCase extends TestCase
     public function tearDown(): void
     {
         $this->db->disconnect();
+
+        if (($this->sqliteFile !== null) && file_exists($this->sqliteFile)) {
+            unlink($this->sqliteFile);
+        }
     }
 
     protected function executeSchema($schema): void

@@ -965,8 +965,9 @@ Or, they can be autoloaded from the application's `.env` file as the following v
 ### Auth Record
 
 The `Pop\Db\Record\Auth` class extends `Pop\Db\Record\Encoded` and provides a ready-made
-username/password authentication flow on top of a user table, including failed-attempt
-lockout and optional MFA (multi-factor authentication) code issuance/verification.
+username/password authentication flow on top of a user table, including failed-attempt lockout
+(with optional time-based auto-expiry), optional active/verified account gating, and optional MFA
+(multi-factor authentication) code issuance/verification.
 
 ```php
 use Pop\Db\Record\Auth;
@@ -979,8 +980,11 @@ class Users extends Auth
 
 The underlying table needs, at minimum, the fields referenced by `$usernameField` (default
 `username`) and `$passwordField` (default `password`), plus `$attemptsField` (default `attempts`,
-should default to `0`). If you plan to use MFA, it also needs the two nullable fields configured
-in `$mfaConfig` (default `mfa_code`/`mfa_timestamp`).
+should default to `0`). `$activeField`/`$verifiedField` (default `active`/`verified`) and
+`$lastAttemptField` (default `last_attempt`) are optional - see
+[Active/verified accounts](#activeverified-accounts) and
+[Lockout expiration](#lockout-expiration) below. If you plan to use MFA, it also needs the two
+nullable fields configured in `$mfaConfig` (default `mfa_code`/`mfa_timestamp`).
 
 #### Authenticating
 
@@ -1008,21 +1012,27 @@ if ($result !== false) {
 }
 ```
 
-On a failed attempt (bad password, or a valid password submitted after the attempts limit has
-been exceeded), `$attemptsField` is incremented and saved automatically. `getAuthFailure()`
-returns the specific reason as a string constant, and `getAuthFailureMessage()` returns a
-human-readable message for it:
+On a failed guess (bad password, or a valid password submitted after the attempts limit has been
+exceeded), `$attemptsField` is incremented and saved automatically. `getAuthFailure()` returns the
+specific reason as a string constant, and `getAuthFailureMessage()` returns a human-readable
+message for it:
 
 - `Auth::USER_DOES_NOT_EXIST`
-- `Auth::INVALID_CREDENTIALS`
+- `Auth::USER_NOT_ACTIVE`
+- `Auth::USER_NOT_VERIFIED`
 - `Auth::ATTEMPTS_EXCEEDED`
+- `Auth::INVALID_CREDENTIALS`
 - `Auth::INVALID_MFA_CODE`
 - `Auth::MFA_CODE_EXPIRED`
 
-Once `$attemptsField` reaches `$attemptsLimit` (default `3`), the account is locked out for
-good - even a correct password will keep failing with `ATTEMPTS_EXCEEDED`. This is deliberate:
-there's no automatic, time-based unlock, so unlocking is left to an application admin explicitly
-calling `resetAttempts()`.
+`USER_NOT_ACTIVE` and `USER_NOT_VERIFIED` are hard blocks, not guess failures - they're checked
+before `ATTEMPTS_EXCEEDED`/`INVALID_CREDENTIALS` and never increment `$attemptsField`, so a
+deactivated or unverified account can't be walked into a guess-based lockout just by being logged
+into repeatedly. See [Active/verified accounts](#activeverified-accounts).
+
+Once `$attemptsField` reaches `$attemptsLimit` (default `3`), the account is locked out - even a
+correct password will keep failing with `ATTEMPTS_EXCEEDED` - until either `resetAttempts()` is
+called explicitly, or the lockout auto-expires; see [Lockout expiration](#lockout-expiration).
 
 `$attemptsLimit` can be read/set at runtime with `getAttemptsLimit()`/`setAttemptsLimit()` (both
 fluent), or overridden for a single `authenticate()` call via its optional fourth argument:
@@ -1043,6 +1053,56 @@ regardless of how high `$attemptsField` climbs.
 If a successful login's stored password hash was made under older `$hashOptions` (e.g. a bcrypt
 `cost` that's since been raised), it's transparently rehashed and saved on the way in - see
 [1-Way Hashing](#1-way-hashing) for the `needsRehash()`/`rehash()` mechanics this relies on.
+
+#### Active/verified accounts
+
+`userActive()`/`userVerified()` are checked at the start of both `authenticate()` and
+`authenticateMfa()` (the latter re-checks, in case the account changed state between issuing the
+MFA code and verifying it), and gate `generateMfaCode()` the same way `attemptsExceeded()` does:
+
+```php
+class Users extends Auth
+{
+    protected ?string $activeField   = 'active';   // integer/boolean database column, e.g. 0/1
+    protected ?string $verifiedField = 'verified';  // integer/boolean database column, e.g. 0/1
+}
+```
+
+Both are opt-in per field: set either to `null` (or `''`) to skip that check entirely for
+applications that don't need it - `userActive()`/`userVerified()` simply return `true` when their
+field is empty, regardless of the record's state. Neither check increments `$attemptsField` on
+failure, since being inactive/unverified isn't a guess failure - it's a fixed account state that's
+true (or false) no matter what password is submitted, so it shouldn't consume the same
+guess-attempts budget as a wrong password would.
+
+#### Lockout expiration
+
+By default, a lockout from `$attemptsLimit` isn't permanent - `attemptsExceeded()` auto-clears it
+(resetting `$attemptsField` back to `0`) once `$lockoutExpiration` seconds have passed since the
+last guess:
+
+```php
+class Users extends Auth
+{
+    protected int $lockoutExpiration = 900; // 15 minutes, in seconds
+}
+```
+
+`$lockoutExpiration` can also be read/set at runtime with `getLockoutExpiration()`/
+`setLockoutExpiration()` (both fluent). Setting it to `0` (or calling `setLockoutExpiration(0)`)
+disables auto-expiry entirely - `hasLockoutExpiration()` reports `false`, and, same as before this
+feature existed, only an explicit `resetAttempts()` call can clear the lockout.
+
+Auto-expiry needs somewhere to read the "last guess" timestamp from - that's `$lastAttemptField`
+(default `last_attempt`, an integer/Unix-timestamp database column). It's stamped with `time()`
+only when a *guess* fails (a wrong password or MFA code) - not on a request that was already
+blocked by `attemptsExceeded()` - so repeatedly hitting an already-locked-out account can't keep
+pushing the expiration further into the future; the lockout clock is always anchored to the last
+actual guess. Like `$activeField`/`$verifiedField`, setting `$lastAttemptField` to `null` disables
+the tracking, which also has the effect of disabling auto-expiry (`lockoutExpired()` requires it).
+
+`lockoutExpired()` is available directly too, if an app wants to check it without triggering the
+auto-clear side effect that reading `attemptsExceeded()` has.
 
 #### MFA verification
 
@@ -1074,21 +1134,24 @@ $user->generateMfaCode();
 // send $user->mfa_code to the user again
 ```
 
-`generateMfaCode()` is fluent and no-ops (leaving any existing code/timestamp untouched) in two
-cases:
+`generateMfaCode()` is fluent and no-ops (leaving any existing code/timestamp untouched) in four
+cases, checked in this order:
 
 - the record isn't a loaded user (`userExists()` is false)
+- the user is not active (`userActive()` is false)
+- the user is not verified (`userVerified()` is false)
 - attempts have already been exceeded (`attemptsExceeded()` is true)
 
-The second case is deliberate: a locked-out account can't be handed a fresh, usable code via
-resend, since MFA verification checks `attemptsExceeded()` before it ever looks at the code -
-resetting attempts just to make a resent code work would turn "resend" into an unlimited-guessing
-loophole. The only way out of lockout is an explicit `resetAttempts()` call.
+The last case is deliberate: a locked-out account can't be handed a fresh, usable code via resend,
+since MFA verification checks `attemptsExceeded()` before it ever looks at the code - resetting
+attempts just to make a resent code work would turn "resend" into an unlimited-guessing loophole.
+The only way out of lockout is an explicit `resetAttempts()` call, or waiting out the lockout
+expiration - see [Lockout expiration](#lockout-expiration).
 
 Whichever way it happens, `wasMfaCodeGenerated()` reports whether the *most recent*
 `generateMfaCode()` call - direct, or the one `authenticate()` makes internally - actually issued a
 code, and `getAuthFailure()`/`getAuthFailureMessage()` report why not when it didn't
-(`USER_DOES_NOT_EXIST` or `ATTEMPTS_EXCEEDED`):
+(`USER_DOES_NOT_EXIST`, `USER_NOT_ACTIVE`, `USER_NOT_VERIFIED`, or `ATTEMPTS_EXCEEDED`):
 
 ```php
 $user->generateMfaCode();
@@ -1118,10 +1181,14 @@ All of the following are plain property overrides on your table class:
 ```php
 class Users extends Auth
 {
-    protected string $usernameField = 'username';
-    protected string $passwordField = 'password';
-    protected string $attemptsField = 'attempts';
-    protected int    $attemptsLimit = 3;
+    protected string  $usernameField     = 'username';
+    protected string  $passwordField     = 'password';
+    protected string  $attemptsField     = 'attempts';
+    protected ?string $activeField       = 'active';       // null to disable this check
+    protected ?string $verifiedField     = 'verified';      // null to disable this check
+    protected ?string $lastAttemptField  = 'last_attempt';  // null to disable lockout auto-expiry
+    protected int     $attemptsLimit     = 3;
+    protected int     $lockoutExpiration = 900;             // seconds; 0 to disable auto-expiry
 
     protected array $mfaConfig = [
         'length'              => 6,               // Code length

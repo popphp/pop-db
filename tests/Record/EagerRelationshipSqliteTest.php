@@ -19,6 +19,8 @@ class EagerRelationshipSqliteTest extends EagerRelationshipTestCase
         touch($file);
         chmod($file, 0777);
 
+        $this->sqliteFile = $file;
+
         return Db::sqliteConnect(['database' => $file]);
     }
 

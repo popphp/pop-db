@@ -23,6 +23,8 @@ class EagerRelationshipPdoSqliteTest extends EagerRelationshipTestCase
         touch($file);
         chmod($file, 0777);
 
+        $this->sqliteFile = $file;
+
         return Db::pdoConnect(['type' => 'sqlite', 'database' => $file]);
     }
 

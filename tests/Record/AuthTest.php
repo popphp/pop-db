@@ -33,6 +33,9 @@ class AuthTest extends TestCase
             ->varchar('username', 255)
             ->varchar('password', 255)
             ->int('attempts', 16)->nullable()->defaultIs(0)
+            ->int('active', 2)->nullable()->defaultIs(1)
+            ->int('verified', 2)->nullable()->defaultIs(1)
+            ->int('last_attempt', 16)->nullable()
             ->varchar('mfa_code', 255)->nullable()
             ->int('mfa_timestamp', 16)->nullable()
             ->primary('id');
@@ -45,6 +48,8 @@ class AuthTest extends TestCase
             'username' => 'admin',
             'password' => 'admin',
             'attempts' => 0,
+            'active'   => 1,
+            'verified' => 1,
         ]);
         $user->save();
     }
@@ -102,8 +107,51 @@ class AuthTest extends TestCase
         $this->assertFalse($result);
         $this->assertEquals(Auth::ATTEMPTS_EXCEEDED, $user->getAuthFailure());
 
-        // Locked-out accounts stay locked out permanently - not time-based
+        // Locked-out accounts stay locked out until either resetAttempts() or the
+        // (default 900s, far longer than this test takes) lockout expiration elapses
         $this->assertEquals(4, $user->attempts);
+    }
+
+    public function testAuthenticateFailsWhenUserNotActiveWithoutIncrementingAttempts()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $seed->active = 0;
+        $seed->save();
+
+        $user   = new UsersAuth();
+        $result = $user->authenticate('admin', 'admin', false);
+
+        $this->assertFalse($result);
+        $this->assertEquals(Auth::USER_NOT_ACTIVE, $user->getAuthFailure());
+        // A hard block, not a guess failure - does not consume the attempts budget
+        $this->assertEquals(0, $user->attempts);
+    }
+
+    public function testAuthenticateFailsWhenUserNotVerifiedWithoutIncrementingAttempts()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $seed->verified = 0;
+        $seed->save();
+
+        $user   = new UsersAuth();
+        $result = $user->authenticate('admin', 'admin', false);
+
+        $this->assertFalse($result);
+        $this->assertEquals(Auth::USER_NOT_VERIFIED, $user->getAuthFailure());
+        $this->assertEquals(0, $user->attempts);
+    }
+
+    public function testAuthenticateUserNotActiveCheckedBeforeUserNotVerified()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $seed->active   = 0;
+        $seed->verified = 0;
+        $seed->save();
+
+        $user = new UsersAuth();
+        $user->authenticate('admin', 'admin', false);
+
+        $this->assertEquals(Auth::USER_NOT_ACTIVE, $user->getAuthFailure());
     }
 
     public function testAuthenticateSuccessNoMfaResetsAttemptsAndReturnsTrue()
@@ -279,6 +327,19 @@ class AuthTest extends TestCase
         $this->assertNotEquals($unloadedUser->getAuthFailure(), $lockedOutUser->getAuthFailure());
     }
 
+    public function testGenerateMfaCodeNoOpsWhenUserNotActive()
+    {
+        $user = UsersAuth::findOne(['username' => 'admin']);
+        $user->active = 0;
+        $user->save();
+
+        $result = $user->generateMfaCode();
+
+        $this->assertFalse($result->wasMfaCodeGenerated());
+        $this->assertEquals(Auth::USER_NOT_ACTIVE, $result->getAuthFailure());
+        $this->assertNull($result->getRawValue('mfa_code'));
+    }
+
     public function testAuthenticateMfaSuccess()
     {
         $user = new UsersAuth();
@@ -355,6 +416,22 @@ class AuthTest extends TestCase
         $this->assertEquals(Auth::USER_DOES_NOT_EXIST, $user->getAuthFailure());
     }
 
+    public function testAuthenticateMfaFailsWhenUserBecomesNotActiveAfterCodeIssued()
+    {
+        $user = new UsersAuth();
+        $user->authenticate('admin', 'admin', true);
+        $code = $user->getRawValue('mfa_code');
+
+        // Deactivated after the code was already issued
+        $user->active = 0;
+        $user->save();
+
+        $this->assertFalse($user->authenticateMfa($code));
+        $this->assertEquals(Auth::USER_NOT_ACTIVE, $user->getAuthFailure());
+        // A hard block, not a guess failure - does not consume the attempts budget
+        $this->assertEquals(0, $user->attempts);
+    }
+
     public function testResetAttemptsIsSafeWhenAlreadyZero()
     {
         $user = UsersAuth::findOne(['username' => 'admin']);
@@ -400,6 +477,104 @@ class AuthTest extends TestCase
         // A correct password still succeeds, since attempts enforcement is disabled
         $result = $user->authenticate('admin', 'admin', false);
         $this->assertTrue($result);
+    }
+
+    public function testSetLockoutExpirationIsFluentAndOverridesDefault()
+    {
+        $user = new UsersAuth();
+        $this->assertEquals(900, $user->getLockoutExpiration());
+
+        $result = $user->setLockoutExpiration(60);
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertEquals(60, $user->getLockoutExpiration());
+    }
+
+    public function testHasLockoutExpirationReflectsCurrentValue()
+    {
+        $user = new UsersAuth();
+        $this->assertTrue($user->hasLockoutExpiration());
+
+        $user->setLockoutExpiration(0);
+        $this->assertFalse($user->hasLockoutExpiration());
+    }
+
+    public function testAttemptsExceededStaysTrueBeforeLockoutExpires()
+    {
+        $user = new UsersAuth();
+        $user->setLockoutExpiration(60);
+
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+
+        // The last guess was just now, well inside the 60s window
+        $this->assertTrue($user->attemptsExceeded());
+        $this->assertEquals(3, $user->attempts);
+    }
+
+    public function testAttemptsExceededAutoClearsOnceLockoutExpires()
+    {
+        $user = new UsersAuth();
+        $user->setLockoutExpiration(60);
+
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+
+        $this->assertTrue($user->attemptsExceeded());
+
+        // Force the last guess further into the past than the lockout window
+        $user->last_attempt = time() - 61;
+        $user->save();
+
+        $this->assertFalse($user->attemptsExceeded());
+        $this->assertEquals(0, $user->attempts);
+
+        // And a correct password now succeeds, since the lockout auto-cleared
+        $result = $user->authenticate('admin', 'admin', false);
+        $this->assertTrue($result);
+    }
+
+    public function testAttemptsExceededNeverAutoClearsWhenLockoutExpirationDisabled()
+    {
+        $user = new UsersAuth();
+        $user->setLockoutExpiration(0);
+
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+
+        // Even with a very stale last_attempt, disabled lockout expiration never auto-clears -
+        // only an explicit resetAttempts() call can clear it
+        $user->last_attempt = time() - 100000;
+        $user->save();
+
+        $this->assertTrue($user->attemptsExceeded());
+    }
+
+    public function testAlreadyExceededAttemptsDoNotExtendTheLockoutClock()
+    {
+        $user = new UsersAuth();
+        $user->setLockoutExpiration(3600);
+
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'bad-password', false);
+
+        $this->assertTrue($user->attemptsExceeded());
+
+        // Pin last_attempt to a known value, still well within the (long) lockout window
+        $pinned = time() - 100;
+        $user->last_attempt = $pinned;
+        $user->save();
+
+        // Further hits while already locked out - even with the correct password - go
+        // through the already-exceeded branch, not a fresh guess, so last_attempt must not
+        // get bumped back to now(); otherwise repeated hits could keep the lockout open forever
+        $user->authenticate('admin', 'bad-password', false);
+        $user->authenticate('admin', 'admin', false);
+
+        $this->assertEquals($pinned, $user->last_attempt);
     }
 
     public function testAuthenticateAttemptsLimitOverrideAppliesAndPersistsOnInstance()
