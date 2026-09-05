@@ -35,6 +35,7 @@ class AuthTest extends TestCase
             ->int('attempts', 16)->nullable()->defaultIs(0)
             ->int('active', 2)->nullable()->defaultIs(1)
             ->int('verified', 2)->nullable()->defaultIs(1)
+            ->int('mfa', 2)->nullable()
             ->int('last_attempt', 16)->nullable()
             ->varchar('mfa_code', 255)->nullable()
             ->int('mfa_timestamp', 16)->nullable()
@@ -185,6 +186,49 @@ class AuthTest extends TestCase
 
         $this->assertInstanceOf(UsersAuthAlphaMfa::class, $result);
         $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $result->getRawValue('mfa_code'));
+    }
+
+    public function testAuthenticateMfaFieldOverridesParameterToSkipMfa()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $seed->mfa = 0;
+        $seed->save();
+
+        $user   = new UsersAuth();
+        $result = $user->authenticate('admin', 'admin', true);
+
+        $this->assertTrue($result);
+        $this->assertNull($user->getRawValue('mfa_code'));
+    }
+
+    public function testAuthenticateMfaFieldOverridesParameterToRequireMfa()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $seed->mfa = 1;
+        $seed->save();
+
+        $user   = new UsersAuth();
+        $result = $user->authenticate('admin', 'admin', false);
+
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertNotEmpty($result->getRawValue('mfa_code'));
+    }
+
+    public function testAuthenticateMfaFieldUnsetDoesNotOverrideParameter()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $this->assertNull($seed->mfa);
+
+        // Untouched mfa column (null) must not force $mfa to false
+        $result = (new UsersAuth())->authenticate('admin', 'admin', true);
+        $this->assertInstanceOf(UsersAuth::class, $result);
+        $this->assertNotEmpty($result->getRawValue('mfa_code'));
+
+        $seed->reset('mfa_code', null);
+        $seed->reset('mfa_timestamp', null);
+
+        $result = (new UsersAuth())->authenticate('admin', 'admin', false);
+        $this->assertTrue($result);
     }
 
     public function testGetMfaConfigReturnsDefaults()

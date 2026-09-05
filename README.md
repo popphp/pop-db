@@ -980,11 +980,11 @@ class Users extends Auth
 
 The underlying table needs, at minimum, the fields referenced by `$usernameField` (default
 `username`) and `$passwordField` (default `password`), plus `$attemptsField` (default `attempts`,
-should default to `0`). `$activeField`/`$verifiedField` (default `active`/`verified`) and
-`$lastAttemptField` (default `last_attempt`) are optional - see
-[Active/verified accounts](#activeverified-accounts) and
-[Lockout expiration](#lockout-expiration) below. If you plan to use MFA, it also needs the two
-nullable fields configured in `$mfaConfig` (default `mfa_code`/`mfa_timestamp`).
+should default to `0`). `$activeField`/`$verifiedField` (default `active`/`verified`),
+`$lastAttemptField` (default `last_attempt`), and `$mfaField` (default `mfa`) are optional - see
+[Active/verified accounts](#activeverified-accounts), [Lockout expiration](#lockout-expiration),
+and [Per-user MFA override](#per-user-mfa-override) below. If you plan to use MFA, it also needs
+the two nullable fields configured in `$mfaConfig` (default `mfa_code`/`mfa_timestamp`).
 
 #### Authenticating
 
@@ -1104,6 +1104,30 @@ the tracking, which also has the effect of disabling auto-expiry (`lockoutExpire
 `lockoutExpired()` is available directly too, if an app wants to check it without triggering the
 auto-clear side effect that reading `attemptsExceeded()` has.
 
+#### Per-user MFA override
+
+`$mfaField` (default `mfa`, an integer/boolean database column, e.g. `0`/`1`) lets a per-user value
+override the `$mfa` argument passed to `authenticate()`, in either direction:
+
+```php
+class Users extends Auth
+{
+    protected ?string $mfaField = 'mfa';
+}
+```
+
+```php
+// Global default is MFA-on, but this particular user has it turned off
+$user->authenticate($username, $attemptedPassword, true); // returns true, no MFA step
+```
+
+The override only applies when the column is actually set (`isset()`, not just falsy) on the user
+record - a `null`/unset value (the default for a row that predates this column, or simply hasn't
+opted in either way) leaves `$mfa` exactly as passed in. This is deliberate: a missing value can
+never *silently disable* MFA the way a bare truthiness check would if the column were absent from
+the table entirely. Set `$mfaField` to `null` to disable the per-user override altogether and rely
+solely on the `$mfa` argument.
+
 #### MFA verification
 
 Once the app has delivered the MFA code, fetch the user record and verify the code the user
@@ -1187,6 +1211,7 @@ class Users extends Auth
     protected ?string $activeField       = 'active';       // null to disable this check
     protected ?string $verifiedField     = 'verified';      // null to disable this check
     protected ?string $lastAttemptField  = 'last_attempt';  // null to disable lockout auto-expiry
+    protected ?string $mfaField          = 'mfa';           // null to disable the per-user MFA override
     protected int     $attemptsLimit     = 3;
     protected int     $lockoutExpiration = 900;             // seconds; 0 to disable auto-expiry
 

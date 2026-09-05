@@ -77,6 +77,12 @@ class Auth extends Encoded
     protected ?string $lastAttemptField = 'last_attempt';
 
     /**
+     * MFA flag field
+     * @var ?string
+     */
+    protected ?string $mfaField = 'mfa';
+
+    /**
      * Attempts limit - set to zero to skip attempts enforcement
      * @var int
      */
@@ -306,6 +312,23 @@ class Auth extends Encoded
     }
 
     /**
+     * Resolve whether MFA should be enforced for this authentication attempt
+     *
+     * If $mfaField is configured and actually set on the user record, it overrides $mfa in
+     * either direction; otherwise (no field configured, or the column is null/unset - e.g. a
+     * not-yet-migrated row) $mfa is returned untouched, so a missing value can never silently
+     * disable MFA
+     *
+     * @param  bool $mfa
+     * @return bool
+     */
+    protected function resolveMfa(bool $mfa): bool
+    {
+        return (!empty($this->mfaField) && isset($this->{$this->mfaField})) ?
+            (bool)$this->{$this->mfaField} : $mfa;
+    }
+
+    /**
      * Reset attempts
      *
      * @return static
@@ -362,13 +385,15 @@ class Auth extends Encoded
      *   - Else, if auth is successful:
      *       -> If the stored password hash was made with an outdated algorithm/cost, it is
      *          transparently rehashed and saved using the just-verified plaintext password
-     *       -> If $mfa = true, the user record is updated with a fresh MFA code and timestamp
+     *       -> If $mfaField is configured and set on the user record, it overrides $mfa in
+     *          either direction (see resolveMfa()) - otherwise $mfa is used as passed in
+     *       -> If MFA applies, the user record is updated with a fresh MFA code and timestamp
      *          from which the calling app can deploy the MFA notification
      *       -> The user record is then returned
      *
      * @param  string $attemptedUsername
      * @param  string $attemptedPassword
-     * @param  bool   $mfa
+     * @param  bool   $mfa               default, overridable per-user via $mfaField
      * @param  ?int   $attemptsLimit
      * @return bool|static
      */
@@ -409,6 +434,7 @@ class Auth extends Encoded
             // already transparently rehashed by verify() above)
             $this->resetAttempts();
             $this->authFailure = null;
+            $mfa               = $this->resolveMfa($mfa);
 
             // If not MFA, return true
             if (!$mfa) {
