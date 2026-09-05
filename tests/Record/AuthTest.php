@@ -231,6 +231,19 @@ class AuthTest extends TestCase
         $this->assertTrue($result);
     }
 
+    public function testAuthenticateMfaCapableFalseSkipsMfaEvenWhenMfaFieldRequiresIt()
+    {
+        $seed = UsersAuth::findOne(['username' => 'admin']);
+        $seed->mfa = 1;
+        $seed->save();
+
+        $user   = new UsersAuth();
+        $result = $user->authenticate('admin', 'admin', true, false);
+
+        $this->assertTrue($result);
+        $this->assertNull($user->getRawValue('mfa_code'));
+    }
+
     public function testGetMfaConfigReturnsDefaults()
     {
         $user = new UsersAuth();
@@ -626,7 +639,7 @@ class AuthTest extends TestCase
         $user = new UsersAuth();
 
         // Override to a limit of 1 on this call
-        $user->authenticate('admin', 'bad-password', false, 1);
+        $user->authenticate('admin', 'bad-password', false, attemptsLimit: 1);
         $this->assertEquals(1, $user->attempts);
         $this->assertEquals(1, $user->getAttemptsLimit());
 

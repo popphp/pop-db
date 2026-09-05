@@ -1035,11 +1035,11 @@ correct password will keep failing with `ATTEMPTS_EXCEEDED` - until either `rese
 called explicitly, or the lockout auto-expires; see [Lockout expiration](#lockout-expiration).
 
 `$attemptsLimit` can be read/set at runtime with `getAttemptsLimit()`/`setAttemptsLimit()` (both
-fluent), or overridden for a single `authenticate()` call via its optional fourth argument:
+fluent), or overridden for a single `authenticate()` call via its optional fifth argument:
 
 ```php
 // Give this login attempt a stricter limit than the class default
-$user->authenticate($username, $attemptedPassword, false, 1);
+$user->authenticate($username, $attemptedPassword, false, attemptsLimit: 1);
 ```
 
 Note that passing `$attemptsLimit` to `authenticate()` isn't a one-shot override - it calls
@@ -1127,6 +1127,17 @@ opted in either way) leaves `$mfa` exactly as passed in. This is deliberate: a m
 never *silently disable* MFA the way a bare truthiness check would if the column were absent from
 the table entirely. Set `$mfaField` to `null` to disable the per-user override altogether and rely
 solely on the `$mfa` argument.
+
+`authenticate()` also takes an `$mfaCapable` argument (default `true`), which is a separate,
+non-overridable concern from the `$mfa`/`$mfaField` policy above: it's for calling contexts that
+cannot perform an MFA challenge at all, such as a console command with no way to prompt for or
+deliver a code. Passing `false` always skips MFA for that call, even for a user whose `$mfaField`
+would otherwise require it:
+
+```php
+// This user has mfa=1 set, but the calling context can't do an MFA step
+$user->authenticate($username, $attemptedPassword, true, false); // returns true, no MFA step
+```
 
 #### MFA verification
 

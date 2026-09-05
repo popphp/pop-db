@@ -314,16 +314,25 @@ class Auth extends Encoded
     /**
      * Resolve whether MFA should be enforced for this authentication attempt
      *
-     * If $mfaField is configured and actually set on the user record, it overrides $mfa in
-     * either direction; otherwise (no field configured, or the column is null/unset - e.g. a
-     * not-yet-migrated row) $mfa is returned untouched, so a missing value can never silently
-     * disable MFA
+     * $mfaCapable is a hard veto: if the calling context cannot perform an MFA challenge at
+     * all (e.g. a console command with no way to prompt for or deliver a code), MFA is always
+     * skipped, regardless of $mfa or $mfaField - there is no per-user override for capability
+     *
+     * Otherwise, $mfa is the enforcement default, and if $mfaField is configured and actually
+     * set on the user record, it overrides $mfa in either direction; if not (no field
+     * configured, or the column is null/unset - e.g. a not-yet-migrated row), $mfa is returned
+     * untouched, so a missing value can never silently disable MFA
      *
      * @param  bool $mfa
+     * @param  bool $mfaCapable
      * @return bool
      */
-    protected function resolveMfa(bool $mfa): bool
+    protected function resolveMfa(bool $mfa, bool $mfaCapable): bool
     {
+        if (!$mfaCapable) {
+            return false;
+        }
+
         return (!empty($this->mfaField) && isset($this->{$this->mfaField})) ?
             (bool)$this->{$this->mfaField} : $mfa;
     }
@@ -385,8 +394,11 @@ class Auth extends Encoded
      *   - Else, if auth is successful:
      *       -> If the stored password hash was made with an outdated algorithm/cost, it is
      *          transparently rehashed and saved using the just-verified plaintext password
-     *       -> If $mfaField is configured and set on the user record, it overrides $mfa in
-     *          either direction (see resolveMfa()) - otherwise $mfa is used as passed in
+     *       -> If $mfaCapable is false, MFA is always skipped - this is a hard veto for
+     *          calling contexts that cannot perform an MFA challenge (e.g. a console command),
+     *          and is not overridable via $mfaField
+     *       -> Otherwise, if $mfaField is configured and set on the user record, it overrides
+     *          $mfa in either direction (see resolveMfa()) - otherwise $mfa is used as passed in
      *       -> If MFA applies, the user record is updated with a fresh MFA code and timestamp
      *          from which the calling app can deploy the MFA notification
      *       -> The user record is then returned
@@ -394,11 +406,14 @@ class Auth extends Encoded
      * @param  string $attemptedUsername
      * @param  string $attemptedPassword
      * @param  bool   $mfa               default, overridable per-user via $mfaField
+     * @param  bool   $mfaCapable        set false when the caller cannot perform an MFA
+     *                                   challenge at all (e.g. console) - not overridable
      * @param  ?int   $attemptsLimit
      * @return bool|static
      */
     public function authenticate(
-        string $attemptedUsername, string $attemptedPassword, bool $mfa = true, ?int $attemptsLimit = null
+        string $attemptedUsername, string $attemptedPassword, bool $mfa = true, bool $mfaCapable = true,
+        ?int $attemptsLimit = null
     ): bool|static
     {
         if ($attemptsLimit !== null) {
@@ -434,7 +449,7 @@ class Auth extends Encoded
             // already transparently rehashed by verify() above)
             $this->resetAttempts();
             $this->authFailure = null;
-            $mfa               = $this->resolveMfa($mfa);
+            $mfa               = $this->resolveMfa($mfa, $mfaCapable);
 
             // If not MFA, return true
             if (!$mfa) {
