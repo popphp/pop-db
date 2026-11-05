@@ -139,7 +139,11 @@ class Sqlsrv extends AbstractAdapter
     public function beginTransaction(): Sqlsrv
     {
         $this->getTransactionManager()->enter(
-            beginFunc: function () { sqlsrv_begin_transaction($this->connection); },
+            beginFunc: function () {
+                if (!sqlsrv_begin_transaction($this->connection)) {
+                    $this->throwError('SQL Server Transaction Error: ' . $this->getSqlSrvErrors());
+                }
+            },
             savepointFunc: function (string $sp) { $this->query('SAVE TRANSACTION ' . $sp); },
         );
 
@@ -154,7 +158,11 @@ class Sqlsrv extends AbstractAdapter
     public function commit(): Sqlsrv
     {
         $this->getTransactionManager()->leave(true,
-            commitFunc: function () { sqlsrv_commit($this->connection); },
+            commitFunc: function () {
+                if (!sqlsrv_commit($this->connection)) {
+                    $this->throwError('SQL Server Transaction Error: ' . $this->getSqlSrvErrors());
+                }
+            },
             savepointReleaseFunc: function (string $sp) { /* Sqlsrv does not manage successful savepoints explicitly */ },
         );
 
@@ -169,7 +177,11 @@ class Sqlsrv extends AbstractAdapter
     public function rollback(): Sqlsrv
     {
         $this->getTransactionManager()->leave(false,
-            rollbackFunc: function () { sqlsrv_rollback($this->connection); },
+            rollbackFunc: function () {
+                if (!sqlsrv_rollback($this->connection)) {
+                    $this->throwError('SQL Server Transaction Error: ' . $this->getSqlSrvErrors());
+                }
+            },
             savepointRollbackFunc: function (string $sp) { $this->query('ROLLBACK TRANSACTION ' . $sp); },
         );
 

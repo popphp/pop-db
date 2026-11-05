@@ -127,12 +127,22 @@ class Mysql extends AbstractAdapter
     {
         $this->getTransactionManager()->enter(
             beginFunc: function () use ($flags, $name) {
-                if (($flags !== null) && ($name !== null)) {
-                    $this->connection->begin_transaction($flags, $name);
-                } else if ($flags !== null) {
-                    $this->connection->begin_transaction($flags);
-                } else {
-                    $this->connection->begin_transaction();
+                try {
+                    if (($flags !== null) && ($name !== null)) {
+                        $result = $this->connection->begin_transaction($flags, $name);
+                    } else if ($flags !== null) {
+                        $result = $this->connection->begin_transaction($flags);
+                    } else {
+                        $result = $this->connection->begin_transaction();
+                    }
+                } catch (\mysqli_sql_exception) {
+                    $result = false;
+                }
+
+                if (!$result) {
+                    $this->throwError(
+                        'MySQL Transaction Error: ' . $this->connection->errno . ' => ' . $this->connection->error
+                    );
                 }
             },
             savepointFunc: function (string $sp) { $this->connection->savepoint($sp); },
@@ -152,12 +162,22 @@ class Mysql extends AbstractAdapter
     {
         $this->getTransactionManager()->leave(true,
             commitFunc: function () use ($flags, $name) {
-                if (($flags !== null) && ($name !== null)) {
-                    $this->connection->commit($flags, $name);
-                } else if ($flags !== null) {
-                    $this->connection->commit($flags);
-                } else {
-                    $this->connection->commit();
+                try {
+                    if (($flags !== null) && ($name !== null)) {
+                        $result = $this->connection->commit($flags, $name);
+                    } else if ($flags !== null) {
+                        $result = $this->connection->commit($flags);
+                    } else {
+                        $result = $this->connection->commit();
+                    }
+                } catch (\mysqli_sql_exception) {
+                    $result = false;
+                }
+
+                if (!$result) {
+                    $this->throwError(
+                        'MySQL Transaction Error: ' . $this->connection->errno . ' => ' . $this->connection->error
+                    );
                 }
             },
             savepointReleaseFunc: function (string $sp) { $this->connection->release_savepoint($sp); },
@@ -177,12 +197,22 @@ class Mysql extends AbstractAdapter
     {
         $this->getTransactionManager()->leave(false,
             rollbackFunc: function () use ($flags, $name) {
-                if (($flags !== null) && ($name !== null)) {
-                    $this->connection->rollback($flags, $name);
-                } else if ($flags !== null) {
-                    $this->connection->rollback($flags);
-                } else {
-                    $this->connection->rollback();
+                try {
+                    if (($flags !== null) && ($name !== null)) {
+                        $result = $this->connection->rollback($flags, $name);
+                    } else if ($flags !== null) {
+                        $result = $this->connection->rollback($flags);
+                    } else {
+                        $result = $this->connection->rollback();
+                    }
+                } catch (\mysqli_sql_exception) {
+                    $result = false;
+                }
+
+                if (!$result) {
+                    $this->throwError(
+                        'MySQL Transaction Error: ' . $this->connection->errno . ' => ' . $this->connection->error
+                    );
                 }
             },
             savepointRollbackFunc: function (string $sp) { $this->query('ROLLBACK TO SAVEPOINT ' . $sp); },
@@ -367,6 +397,14 @@ class Mysql extends AbstractAdapter
             $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
         }
 
+        // Buffer any result set client-side, as mysqli::query() does, so a partial read
+        // (e.g. a single fetch()) can't leave the connection out of sync for the next command
+        if ($this->statementResult && ($this->statement->result_metadata() !== false)) {
+            if (!$this->statement->store_result()) {
+                $this->throwError('MySQL Statement Error: ' . $this->statement->errno . ' (#' . $this->statement->error . ')');
+            }
+        }
+
         if ($this->profiler !== null) {
             $this->profiler->current->finish();
             if ($this->profiler->hasDebugger()) {
@@ -477,7 +515,7 @@ class Mysql extends AbstractAdapter
         $count = 0;
 
         if ($this->statement !== null) {
-            $this->statement->store_result();
+            // The result set is already buffered by execute()
             $count = $this->statement->num_rows;
         } else if ($this->result !== null) {
             $count = $this->result->num_rows;

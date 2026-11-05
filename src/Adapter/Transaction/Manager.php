@@ -105,9 +105,15 @@ class Manager extends AbstractManager
             return false;
 
         if ($this->transactionDepth == 1) {
-            // BEGIN a new transaction
+            // BEGIN a new transaction. If it fails, undo the depth increase so the next
+            // enter() is a fresh BEGIN rather than a nested savepoint on no transaction
             if (is_callable($beginFunc)) {
-                $beginFunc();
+                try {
+                    $beginFunc();
+                } catch (\Throwable $e) {
+                    $this->transactionDepth--;
+                    throw $e;
+                }
             }
             $this->transactionState = self::TS_OPEN;
         } else {
@@ -166,10 +172,22 @@ class Manager extends AbstractManager
         }
 
         if ($this->transactionDepth == 0) {
-            if ($this->transactionState == self::TS_OPEN && is_callable($commitFunc))
-                $commitFunc();
-            elseif ($this->transactionState == self::TS_ROLLED_BACK && is_callable($rollbackFunc))
-                $rollbackFunc();
+            if ($this->transactionState == self::TS_OPEN && is_callable($commitFunc)) {
+                // A failed COMMIT leaves the transaction open, so the caller can still roll it back
+                try {
+                    $commitFunc();
+                } catch (\Throwable $e) {
+                    $this->transactionDepth++;
+                    throw $e;
+                }
+            } elseif ($this->transactionState == self::TS_ROLLED_BACK && is_callable($rollbackFunc)) {
+                // A failed ROLLBACK still closes the transaction; there is nothing left to retry
+                try {
+                    $rollbackFunc();
+                } finally {
+                    $this->transactionState = self::TS_NONE;
+                }
+            }
             $this->transactionState = self::TS_NONE;
         }
 

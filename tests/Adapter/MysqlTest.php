@@ -526,6 +526,89 @@ class MysqlTest extends TestCase
         $db->disconnect();
     }
 
+    public function testTransactionAfterSingleRowReadRollsBack()
+    {
+        $db = $this->createTxnThingsTable();
+
+        $db->prepare('SELECT * FROM txn_things WHERE id = ?')->bindParams(['id' => 1])->execute();
+        $this->assertEquals('orig', $db->fetch()['name']);
+
+        $db->beginTransaction();
+        $db->prepare('UPDATE txn_things SET name = ? WHERE id = ?')
+           ->bindParams(['name' => 'changed', 'id' => 1])
+           ->execute();
+        $db->rollback();
+
+        $db->query('SELECT name FROM txn_things WHERE id = 1');
+        $this->assertEquals('orig', $db->fetch()['name']);
+
+        $db->query('DROP TABLE txn_things');
+        $db->disconnect();
+    }
+
+    public function testCommitAfterSingleRowReadInsideTransaction()
+    {
+        $db = $this->createTxnThingsTable();
+
+        $db->beginTransaction();
+        $db->prepare('UPDATE txn_things SET name = ? WHERE id = ?')
+           ->bindParams(['name' => 'changed', 'id' => 1])
+           ->execute();
+        $db->prepare('SELECT * FROM txn_things WHERE id = ?')->bindParams(['id' => 2])->execute();
+        $this->assertEquals('orig2', $db->fetch()['name']);
+        $db->commit();
+        $this->assertFalse($db->isTransaction());
+
+        $db->query('SELECT name FROM txn_things WHERE id = 1');
+        $this->assertEquals('changed', $db->fetch()['name']);
+
+        $db->query('DROP TABLE txn_things');
+        $db->disconnect();
+    }
+
+    public function testBeginTransactionFailureThrows()
+    {
+        $db = $this->createTxnThingsTable();
+        $db->query('DROP TABLE txn_things');
+        $this->killConnection($db);
+
+        try {
+            $db->beginTransaction();
+            $this->fail('A failed BEGIN did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('Transaction Error', $e->getMessage());
+        }
+
+        $this->assertFalse($db->isTransaction());
+        $this->assertEquals(0, $db->getTransactionDepth());
+    }
+
+    public function testCommitAndRollbackFailureThrow()
+    {
+        $db = $this->createTxnThingsTable();
+        $db->query('DROP TABLE txn_things');
+        $db->beginTransaction();
+        $this->killConnection($db);
+
+        try {
+            $db->commit();
+            $this->fail('A failed COMMIT did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('Transaction Error', $e->getMessage());
+        }
+
+        $this->assertTrue($db->isTransaction());
+
+        try {
+            $db->rollback();
+            $this->fail('A failed ROLLBACK did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('Transaction Error', $e->getMessage());
+        }
+
+        $this->assertFalse($db->isTransaction());
+    }
+
     public function testQueryException()
     {
         // mysqli throws mysqli_sql_exception on error by default since PHP 8.1 - Mysql::query()
@@ -607,6 +690,34 @@ class MysqlTest extends TestCase
         $this->assertFalse($db->hasTable('users'));
 
         $db->disconnect();
+    }
+
+    protected function createTxnThingsTable(): Mysql
+    {
+        $db = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+
+        $db->query('DROP TABLE IF EXISTS txn_things');
+        $db->query('CREATE TABLE txn_things (id INT PRIMARY KEY, name VARCHAR(50)) ENGINE=InnoDB');
+        $db->query("INSERT INTO txn_things VALUES (1, 'orig'), (2, 'orig2')");
+
+        return $db;
+    }
+
+    protected function killConnection(Mysql $db): void
+    {
+        $killer = new Mysql([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST']
+        ]);
+        $killer->query('KILL ' . $db->getConnection()->thread_id);
+        $killer->disconnect();
     }
 
 }
