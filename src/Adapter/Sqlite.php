@@ -421,12 +421,14 @@ class Sqlite extends AbstractAdapter
         $this->statement = null;
 
         try {
-            // fetchArray() returns false at the end, but null when a step fails; on the next call
-            // SQLite would reset the statement and start again from the first row
+            // Stop at the first non-row: past a failed step, SQLite would reset the statement and start
+            // again from the first row. What fetchArray() returns for a failed step differs between PHP
+            // versions (null on 8.4, false on 8.5), so tell the end from a failure by SQLite's own result
+            // code: SQLITE_DONE (101) is the normal end; 0 (SQLITE_OK) and 100 (SQLITE_ROW) are not errors
             while (is_array($row = $result->fetchArray(SQLITE3_ASSOC))) {
                 yield $row;
             }
-            if ($row !== false) {
+            if (!in_array($this->connection->lastErrorCode(), [0, 100, 101], true)) {
                 $this->throwError(
                     'Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
                 );

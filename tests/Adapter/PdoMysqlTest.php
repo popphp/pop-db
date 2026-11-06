@@ -77,14 +77,14 @@ class PdoMysqlTest extends TestCase
         $this->createStreamFixture($db);
 
         iterator_to_array($db->stream('SELECT * FROM stream_items'), false);
-        $this->assertTrue((bool)$db->getConnection()->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY));
+        $this->assertTrue((bool)$db->getConnection()->getAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY));
 
         $stream = $db->stream('SELECT * FROM stream_items');
         foreach ($stream as $row) {
             break;
         }
         unset($stream);
-        $this->assertTrue((bool)$db->getConnection()->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY));
+        $this->assertTrue((bool)$db->getConnection()->getAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY));
 
         $this->dropStreamFixture($db);
     }

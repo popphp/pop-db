@@ -550,8 +550,8 @@ class Pdo extends AbstractAdapter
 
         $buffered = null;
         if ($this->type == 'mysql') {
-            $buffered = $this->connection->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
-            $this->connection->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+            $buffered = $this->connection->getAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY);
+            $this->connection->setAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY, false);
         }
 
         $statement = null;
@@ -580,7 +580,7 @@ class Pdo extends AbstractAdapter
         } finally {
             $statement?->closeCursor();
             if (($buffered !== null) && $this->isConnected()) {
-                $this->connection->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $buffered);
+                $this->connection->setAttribute(\Pdo\Mysql::ATTR_USE_BUFFERED_QUERY, $buffered);
             }
         }
     }
