@@ -246,6 +246,54 @@ class SqlTest extends TestCase
         $this->db->disconnect();
     }
 
+    public function testQuoteForcedQuotesEveryStringAsData()
+    {
+        $sql = $this->db->createSql();
+
+        // Strings that look like numbers, placeholders or identifiers are still data
+        $this->assertSame("'01234'", $sql->quote('01234', true));
+        $this->assertSame("'001'", $sql->quote('001', true));
+        $this->assertSame("'0'", $sql->quote('0', true));
+        $this->assertSame("':) thanks'", $sql->quote(':) thanks', true));
+        $this->assertSame("'?'", $sql->quote('?', true));
+        $this->assertSame("'$1'", $sql->quote('$1', true));
+        $this->assertSame("'`x`'", $sql->quote('`x`', true));
+        $this->assertSame("''", $sql->quote('', true));
+        $this->assertSame("'O\\'Brien'", $sql->quote("O'Brien", true));
+
+        $this->db->disconnect();
+    }
+
+    public function testQuoteForcedRendersNonStringTypes()
+    {
+        $sql = $this->db->createSql();
+
+        $this->assertSame('NULL', $sql->quote(null, true));
+        $this->assertSame(5, $sql->quote(5, true));
+        $this->assertSame(-7, $sql->quote(-7, true));
+        $this->assertSame(1.5, $sql->quote(1.5, true));
+        $this->assertSame(1, $sql->quote(true, true));
+        $this->assertSame(0, $sql->quote(false, true));
+
+        $this->db->disconnect();
+    }
+
+    public function testQuoteUnforcedIsUnchanged()
+    {
+        $sql = $this->db->createSql();
+
+        // The builder interpretation: placeholders, identifiers and digit strings pass through
+        $this->assertSame('01234', $sql->quote('01234'));
+        $this->assertSame('?', $sql->quote('?'));
+        $this->assertSame(':name', $sql->quote(':name'));
+        $this->assertSame('$1', $sql->quote('$1'));
+        $this->assertSame('`x`', $sql->quote('`x`'));
+        $this->assertSame("''", $sql->quote(null));
+        $this->assertSame("'abc'", $sql->quote('abc'));
+
+        $this->db->disconnect();
+    }
+
     public function testParameterCount()
     {
         $sql = $this->db->createSql();

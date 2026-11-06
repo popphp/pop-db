@@ -34,6 +34,12 @@ class Pgsql extends AbstractAdapter
     protected static int $statementIndex = 0;
 
     /**
+     * Stream cursor index, for unique cursor names
+     * @var int
+     */
+    protected static int $streamIndex = 0;
+
+    /**
      * Connection string
      * @var ?string
      */
@@ -349,6 +355,206 @@ class Pgsql extends AbstractAdapter
     }
 
     /**
+     * Stream the rows of a query one at a time, without buffering the whole result client-side
+     *
+     * With libpq 17+ the rows arrive in chunks and the connection cannot run another command until the
+     * stream has finished or been destroyed. Otherwise a server-side cursor is used: it needs a
+     * transaction, so if none is open the stream opens its own and commits it when the stream ends
+     * (rolling it back only if the stream itself hits a database error).
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    public function stream(mixed $sql, ?array $params = null): \Generator
+    {
+        if ($this->supportsChunkedRows()) {
+            yield from $this->streamChunkedRows($sql, $params);
+        } else {
+            yield from $this->streamCursor($sql, $params);
+        }
+    }
+
+    /**
+     * Whether the client library supports chunked rows (libpq 17+)
+     *
+     * @return bool
+     */
+    protected function supportsChunkedRows(): bool
+    {
+        return function_exists('pg_set_chunked_rows_size');
+    }
+
+    /**
+     * Stream a query's rows in chunks of STREAM_FETCH_SIZE (libpq 17+)
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    protected function streamChunkedRows(mixed $sql, ?array $params): \Generator
+    {
+        $this->prepare($sql);
+        if (!empty($params)) {
+            $this->bindParams($params);
+        }
+
+        // Take the statement out of the adapter's state, so no later adapter call touches it
+        $statementName    = $this->statementName;
+        $parameters       = $this->parameters;
+        $this->parameters = [];
+        $this->statement  = null;
+        $this->result     = null;
+
+        if (!pg_send_execute($this->connection, $statementName, $parameters)) {
+            $this->throwError('PostgreSQL Statement Error: ' . pg_last_error($this->connection));
+        }
+
+        $drained = false;
+
+        try {
+            if (!pg_set_chunked_rows_size($this->connection, static::STREAM_FETCH_SIZE)) {
+                $this->throwError('PostgreSQL Statement Error: ' . pg_last_error($this->connection));
+            }
+
+            if ($this->profiler !== null) {
+                $this->profiler->current->finish();
+                if ($this->profiler->hasDebugger()) {
+                    $this->profiler->debugger()->save();
+                }
+            }
+
+            // The rows arrive as PGSQL_TUPLES_CHUNK results, then one final, empty PGSQL_TUPLES_OK
+            $completed = false;
+            while (($result = pg_get_result($this->connection)) !== false) {
+                $status = pg_result_status($result);
+                if ($status == PGSQL_FATAL_ERROR) {
+                    $error = pg_result_error($result);
+                    $this->discardPendingResults();
+                    $drained = true;
+                    $this->throwError('PostgreSQL Statement Error: ' . $error);
+                } else if (($status == PGSQL_TUPLES_OK) || ($status == PGSQL_COMMAND_OK)) {
+                    $completed = true;
+                }
+                while (($row = pg_fetch_assoc($result)) !== false) {
+                    yield $row;
+                }
+                pg_free_result($result);
+            }
+            $drained = true;
+
+            // Running out of results before the final one means another command on this connection
+            // (pg_query() discards pending results before it runs) cut the stream short
+            if (!$completed) {
+                $this->throwError(
+                    'PostgreSQL Stream Error: The stream was interrupted by another command on the same connection.'
+                );
+            }
+        } finally {
+            // Stopped early: discard what is still in flight. Cancelling is faster, but a cancelled
+            // query is an error, which would abort a transaction the caller has open; inside one,
+            // read the rest of the result instead. A closed connection has nothing left in flight
+            if (!$drained && $this->isConnected()) {
+                if (!$this->isTransaction()) {
+                    pg_cancel_query($this->connection);
+                }
+                $this->discardPendingResults();
+            }
+        }
+    }
+
+    /**
+     * Read and discard any results still pending on the connection from an asynchronous query
+     *
+     * @return void
+     */
+    protected function discardPendingResults(): void
+    {
+        while (($result = pg_get_result($this->connection)) !== false) {
+            pg_free_result($result);
+        }
+    }
+
+    /**
+     * Stream a query's rows through a server-side cursor, STREAM_FETCH_SIZE rows per FETCH
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    protected function streamCursor(mixed $sql, ?array $params): \Generator
+    {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
+        $cursor         = 'pop_db_stream_' . ++static::$streamIndex;
+        $ownTransaction = !$this->isTransaction();
+        $failed         = false;
+        $this->result   = null;
+
+        if ($ownTransaction) {
+            $this->beginTransaction();
+        }
+
+        try {
+            if ($this->profiler !== null) {
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                if (!empty($params)) {
+                    $this->profiler->current->addParams($params);
+                }
+            }
+
+            $declared = pg_query_params(
+                $this->connection, 'DECLARE ' . $cursor . ' NO SCROLL CURSOR FOR ' . $sql, array_values($params ?? [])
+            );
+            if ($declared === false) {
+                $failed = true;
+                $this->throwError('PostgreSQL Statement Error: ' . pg_last_error($this->connection));
+            }
+
+            if ($this->profiler !== null) {
+                $this->profiler->current->finish();
+                if ($this->profiler->hasDebugger()) {
+                    $this->profiler->debugger()->save();
+                }
+            }
+
+            do {
+                $batch = pg_query($this->connection, 'FETCH ' . static::STREAM_FETCH_SIZE . ' FROM ' . $cursor);
+                if ($batch === false) {
+                    $failed = true;
+                    $this->throwError('PostgreSQL Statement Error: ' . pg_last_error($this->connection));
+                }
+                $count = pg_num_rows($batch);
+                while (($row = pg_fetch_assoc($batch)) !== false) {
+                    yield $row;
+                }
+                pg_free_result($batch);
+            } while ($count == static::STREAM_FETCH_SIZE);
+        } finally {
+            // After a database error the transaction is aborted and the cursor is gone with it; a
+            // closed connection has already taken both with it
+            if (!$failed && $this->isConnected()) {
+                pg_query($this->connection, 'CLOSE ' . $cursor);
+            }
+            if ($ownTransaction && $this->isConnected()) {
+                if ($failed) {
+                    $this->rollback();
+                } else {
+                    $this->commit();
+                }
+            }
+            // BEGIN/COMMIT/ROLLBACK run through query(), which leaves its result behind
+            $this->result = null;
+        }
+    }
+
+    /**
      * Disconnect from the database
      *
      * @return void
@@ -370,7 +576,7 @@ class Pgsql extends AbstractAdapter
      */
     public function escape(?string $value = null): string
     {
-        return (!empty($value)) ? pg_escape_string($this->connection, $value) : '';
+        return (($value !== null) && ($value !== '')) ? pg_escape_string($this->connection, $value) : '';
     }
 
     /**

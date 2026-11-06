@@ -198,10 +198,15 @@ class Data extends AbstractSql
     /**
      * Serialize the data into INSERT statements
      *
+     * Pass $forceQuote = true when the values are data (e.g. for a data or seed file): every
+     * string is then quoted and escaped, null is written as NULL, an int/float is left bare and
+     * a bool is written as 1/0. Unforced, values are read as query-builder input, so a value that
+     * looks like a placeholder, an identifier or an all-digit string is written bare.
+     *
      * @param  array $data
      * @param  mixed $omit
-     * @param  bool  $nullEmpty
-     * @param  bool  $forceQuote
+     * @param  bool  $nullEmpty  Write any value that would render as '' as NULL
+     * @param  bool  $forceQuote Read values as data rather than query-builder input
      * @return ?string
      */
     public function serialize(array $data, mixed $omit = null, bool $nullEmpty = false, bool $forceQuote = false): ?string
@@ -239,15 +244,12 @@ class Data extends AbstractSql
 
                 $values = [];
                 foreach ($row as $key => $value) {
-                    $values[] = $this->quoteId($key) . ' = ' . $this->quote($value, $forceQuote);
+                    $values[] = $this->quoteId($key) . ' = ' . $this->formatValue($value, $nullEmpty, $forceQuote);
                 }
                 $values = implode(', ', $values);
 
-                if ($nullEmpty) {
-                    $values = str_replace(["('',", " '', ", ", '')"], ["(NULL,", ' NULL, ', ', NULL)'], $values);
-                }
-
-                $update .= $values . " WHERE " . $this->quoteId($this->conflictKey) . ' = ' . $primaryValue . ';';
+                $update .= $values . " WHERE " . $this->quoteId($this->conflictKey) . ' = ' .
+                    $this->quote($primaryValue, $forceQuote) . ';';
                 $this->sql .= $update .  PHP_EOL;
             }
         // Else, INSERT/UPSERT SQL
@@ -264,12 +266,9 @@ class Data extends AbstractSql
                         }
                     }
                 }
-                $value = "(" . implode(', ', array_map(function($value) use ($forceQuote) {
-                        return $this->quote($value, $forceQuote);
+                $value = "(" . implode(', ', array_map(function($value) use ($nullEmpty, $forceQuote) {
+                        return $this->formatValue($value, $nullEmpty, $forceQuote);
                     }, $row)) . ")";
-                if ($nullEmpty) {
-                    $value = str_replace(["('',", " '', ", ", '')", " '', "], ["(NULL,", ' NULL, ', ', NULL)', ' NULL, '], $value);
-                }
 
                 switch ($this->divide) {
                     case 0:
@@ -312,18 +311,22 @@ class Data extends AbstractSql
     }
 
     /**
-     * Serialize the data into INSERT statements
+     * Serialize the data into INSERT statements, appended to a file
+     *
+     * Values are quoted as in serialize(); pass $forceQuote = true when they are data.
      *
      * @param  array   $data
      * @param  ?string $to
      * @param  mixed   $omit
-     * @param  bool    $nullEmpty
+     * @param  bool    $nullEmpty  Write any value that would render as '' as NULL
      * @param  ?string $header
      * @param  ?string $footer
+     * @param  bool    $forceQuote Read values as data rather than query-builder input
      * @return void
      */
     public function streamToFile(
-        array $data, ?string $to, mixed $omit = null, bool $nullEmpty = false, ?string $header = null, ?string $footer = null
+        array $data, ?string $to, mixed $omit = null, bool $nullEmpty = false, ?string $header = null, ?string $footer = null,
+        bool $forceQuote = false
     ): void
     {
         if (!file_exists($to)) {
@@ -363,10 +366,9 @@ class Data extends AbstractSql
                     }
                 }
             }
-            $value = "(" . implode(', ', array_map([$this, 'quote'], $row)) . ")";
-            if ($nullEmpty) {
-                $value = str_replace(["'', ", ", '')"], ['NULL, ', ', NULL)'], $value);
-            }
+            $value = "(" . implode(', ', array_map(function($value) use ($nullEmpty, $forceQuote) {
+                    return $this->formatValue($value, $nullEmpty, $forceQuote);
+                }, $row)) . ")";
 
             switch ($this->divide) {
                 case 0:
@@ -378,7 +380,7 @@ class Data extends AbstractSql
                     fwrite($handle, PHP_EOL);
                     break;
                 case 1:
-                    fwrite($handle, $insert . $value . ';' . PHP_EOL);
+                    fwrite($handle, $insert . $value . $onUpdate . ';' . PHP_EOL);
                     break;
                 default:
                     if (($i % $this->divide) == 0) {
@@ -407,6 +409,20 @@ class Data extends AbstractSql
     public function __toString(): string
     {
         return $this->sql;
+    }
+
+    /**
+     * Quote a single data value, writing it as NULL if $nullEmpty is set and it would render as ''
+     *
+     * @param  mixed $value
+     * @param  bool  $nullEmpty
+     * @param  bool  $forceQuote
+     * @return float|int|string
+     */
+    protected function formatValue(mixed $value, bool $nullEmpty = false, bool $forceQuote = false): float|int|string
+    {
+        $quoted = $this->quote($value, $forceQuote);
+        return ($nullEmpty && ($quoted === "''")) ? 'NULL' : $quoted;
     }
 
     /**

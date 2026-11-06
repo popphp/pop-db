@@ -32,6 +32,12 @@ abstract class AbstractAdapter implements AdapterInterface
 {
 
     /**
+     * Number of rows fetched per round trip when a stream reads in batches
+     * @var int
+     */
+    protected const int STREAM_FETCH_SIZE = 1000;
+
+    /**
      * Database connection options
      * @var array
      */
@@ -322,6 +328,20 @@ abstract class AbstractAdapter implements AdapterInterface
      * @return AbstractAdapter
      */
     abstract public function bindParams(array $params): AbstractAdapter;
+
+    /**
+     * Stream the rows of a query one at a time, without buffering the whole result client-side
+     *
+     * Returns a lazy generator: the query runs on the first iteration and each value is one row as
+     * an associative array. The result is released when the loop ends, breaks or the generator is
+     * destroyed. Until then the connection must not run any other command.
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    abstract public function stream(mixed $sql, ?array $params = null): \Generator;
 
     /**
      * Execute a prepared SQL query

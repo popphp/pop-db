@@ -6,9 +6,53 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
 use Pop\Db\Test\TestAsset\TestQueryListener;
+use Pop\Db\Test\TestAsset\StreamTestTrait;
+use Pop\Db\Test\TestAsset\CursorStreamTestTrait;
+use Pop\Db\Adapter\AbstractAdapter;
 
 class PdoPgsqlTest extends TestCase
 {
+
+    use StreamTestTrait, CursorStreamTestTrait;
+
+    protected function createStreamAdapter(): AbstractAdapter
+    {
+        return Db::pdoConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
+            'type'     => 'pgsql'
+        ]);
+    }
+
+    public function testCursorStreamSilentModeFetchErrorThrows()
+    {
+        $db = Db::pdoConnect([
+            'database' => $_ENV['PGSQL_DB'],
+            'username' => $_ENV['PGSQL_USER'],
+            'password' => $_ENV['PGSQL_PASS'],
+            'host'     => $_ENV['PGSQL_HOST'],
+            'type'     => 'pgsql',
+            'options'  => [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_SILENT]
+        ]);
+
+        try {
+            foreach ($db->stream('SELECT 1 / (g - 3) AS v FROM generate_series(1, 5) g') as $row) {
+            }
+            $this->fail('A runtime error during FETCH did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('division by zero', $e->getMessage());
+        }
+
+        $this->assertFalse($db->isTransaction());
+        $db->disconnect();
+    }
+
+    protected function streamParamQuery(): array
+    {
+        return ['SELECT * FROM stream_items WHERE id > :id ORDER BY id', ['id' => 40]];
+    }
 
     public function testConstructorException()
     {

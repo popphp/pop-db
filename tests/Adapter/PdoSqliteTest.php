@@ -6,9 +6,96 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
 use Pop\Db\Test\TestAsset\TestQueryListener;
+use Pop\Db\Test\TestAsset\StreamTestTrait;
+use Pop\Db\Adapter\AbstractAdapter;
 
 class PdoSqliteTest extends TestCase
 {
+
+    use StreamTestTrait;
+
+    protected function createStreamAdapter(): AbstractAdapter
+    {
+        touch(__DIR__ . '/../tmp/stream.sqlite');
+        return Db::pdoConnect([
+            'database' => __DIR__ . '/../tmp/stream.sqlite',
+            'type'     => 'sqlite'
+        ]);
+    }
+
+    protected function streamParamQuery(): array
+    {
+        return ['SELECT * FROM stream_items WHERE id > :id ORDER BY id', ['id' => 40]];
+    }
+
+    public function testFetchAllAfterQuery()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        $db->query('SELECT * FROM stream_items ORDER BY id');
+        $rows = $db->fetchAll();
+
+        $this->assertCount(50, $rows);
+        $this->assertEquals('item1', $rows[0]['name']);
+        $this->dropStreamFixture($db);
+    }
+
+    public function testQueryErrorThrowsAdapterException()
+    {
+        $db = $this->createStreamAdapter();
+
+        try {
+            $db->query('SELECT * FROM no_such_table');
+            $this->fail('A failed query did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('no such table', $e->getMessage());
+        }
+        $db->disconnect();
+    }
+
+    public function testStreamRuntimeErrorMidStreamThrows()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        // abs() of the minimum integer overflows at row 30, after 29 rows have been stepped
+        $sql  = 'SELECT id, CASE WHEN id = 30 THEN abs(-9223372036854775807 - 1) ELSE id END AS v FROM stream_items';
+        $ids  = [];
+        set_error_handler(fn() => true, E_WARNING);
+        try {
+            foreach ($db->stream($sql) as $row) {
+                $ids[] = $row['id'] ?? null;
+                if (count($ids) > 100) {
+                    $this->fail('The stream kept yielding after a runtime error');
+                }
+            }
+            $this->fail('A runtime error during the stream did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertNotEmpty($e->getMessage());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(range(1, 29), array_map('intval', $ids));
+        $this->dropStreamFixture($db);
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        // setUp() creates db.sqlite for every test, including the stream tests that run after
+        // the test that removes it
+        if (file_exists(__DIR__ . '/../tmp/db.sqlite')) {
+            unlink(__DIR__ . '/../tmp/db.sqlite');
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if (file_exists(__DIR__ . '/../tmp/stream.sqlite')) {
+            unlink(__DIR__ . '/../tmp/stream.sqlite');
+        }
+    }
     public function setUp(): void
     {
         chmod(__DIR__ . '/../tmp', 0777);
@@ -275,13 +362,11 @@ class PdoSqliteTest extends TestCase
 
             $sql->select()->from('bad_table');
             $db->query($sql);
-        } catch (\Exception|\Error|\TypeError $e) {
-            $class = get_class($e);
-            if (strpos($class, 'PDO') !== false) {
-                $this->assertEquals('PDOException', $class);
-            } else {
-                $this->assertEquals('TypeError', $class);
-            }
+            $this->fail('A query on a missing table did not throw');
+        } catch (\Exception|\Error $e) {
+            // query() reports a driver error as the adapter's own exception
+            $this->assertEquals('Pop\Db\Adapter\Exception', get_class($e));
+            $this->assertStringContainsString('no such table', $e->getMessage());
         }
     }
 

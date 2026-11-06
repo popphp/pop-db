@@ -384,6 +384,42 @@ class Sqlsrv extends AbstractAdapter
     }
 
     /**
+     * Stream the rows of a query one at a time, without buffering the whole result client-side
+     *
+     * The driver's default forward-only cursor already reads row by row from the server.
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    public function stream(mixed $sql, ?array $params = null): \Generator
+    {
+        $this->prepare($sql);
+        if (!empty($params)) {
+            $this->bindParams($params);
+        }
+        $this->execute();
+
+        // Take the statement out of the adapter's state, so no later adapter call touches it
+        $statement             = $this->statement;
+        $this->statement       = null;
+        $this->statementResult = false;
+        $this->result          = null;
+
+        try {
+            while (($row = sqlsrv_fetch_array($statement, SQLSRV_FETCH_ASSOC)) !== null) {
+                if ($row === false) {
+                    $this->throwError('Error: ' . $this->getSqlSrvErrors());
+                }
+                yield $row;
+            }
+        } finally {
+            sqlsrv_free_stmt($statement);
+        }
+    }
+
+    /**
      * Disconnect from the database
      *
      * @return void
@@ -421,14 +457,14 @@ class Sqlsrv extends AbstractAdapter
     /**
      * Escape the value
      *
+     * SQL Server string literals have no backslash escapes; a single quote is escaped by doubling it
+     *
      * @param  ?string $value
      * @return string
      */
     public function escape(?string $value = null): string
     {
-        $search  = ['\\', "\n", "\r", "\x00", "\x1a", '\'', '"'];
-        $replace = ['\\\\', "\\n", "\\r", "\\x00", "\\x1a", '\\\'', '\\"'];
-        return str_replace($search, $replace, $value);
+        return ($value !== null) ? str_replace("'", "''", $value) : '';
     }
 
     /**

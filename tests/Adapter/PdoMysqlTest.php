@@ -6,9 +6,88 @@ use Pop\Db\Db;
 use Pop\Db\Adapter\Pdo;
 use PHPUnit\Framework\TestCase;
 use Pop\Db\Test\TestAsset\TestQueryListener;
+use Pop\Db\Test\TestAsset\StreamTestTrait;
+use Pop\Db\Adapter\AbstractAdapter;
 
 class PdoMysqlTest extends TestCase
 {
+
+    use StreamTestTrait;
+
+    protected function createStreamAdapter(): AbstractAdapter
+    {
+        return Db::pdoConnect([
+            'database' => $_ENV['MYSQL_DB'],
+            'username' => $_ENV['MYSQL_USER'],
+            'password' => $_ENV['MYSQL_PASS'],
+            'host'     => $_ENV['MYSQL_HOST'],
+            'type'     => 'mysql'
+        ]);
+    }
+
+    protected function streamParamQuery(): array
+    {
+        return ['SELECT * FROM stream_items WHERE id > :id ORDER BY id', ['id' => 40]];
+    }
+
+    public function testStreamSecondQueryMidLoopThrows()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        $stream = $db->stream('SELECT * FROM stream_items ORDER BY id');
+        try {
+            foreach ($stream as $row) {
+                $db->query('SELECT 1');
+            }
+            $this->fail('A second query during the stream did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('2014', $e->getMessage());
+        }
+        unset($stream);
+
+        $this->assertEquals(50, $this->countStreamItems($db));
+        $this->dropStreamFixture($db);
+    }
+
+    public function testStreamMemoryIsBounded()
+    {
+        $db     = $this->createStreamAdapter();
+        $digits = '(SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 ' .
+            'UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9)';
+        $sql    = "SELECT a.d + 10 * b.d + 100 * c.d + 1000 * e.d + 10000 * f.d AS n, REPEAT('x', 200) AS pad " .
+            "FROM {$digits} a, {$digits} b, {$digits} c, {$digits} e, {$digits} f";
+
+        $before = memory_get_usage();
+        $peak   = $before;
+        $count  = 0;
+        foreach ($db->stream($sql) as $row) {
+            $count++;
+            $peak = max($peak, memory_get_usage());
+        }
+
+        $this->assertEquals(100000, $count);
+        $this->assertLessThan(2 * 1024 * 1024, $peak - $before);
+        $db->disconnect();
+    }
+
+    public function testStreamRestoresBufferedAttribute()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        iterator_to_array($db->stream('SELECT * FROM stream_items'), false);
+        $this->assertTrue((bool)$db->getConnection()->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY));
+
+        $stream = $db->stream('SELECT * FROM stream_items');
+        foreach ($stream as $row) {
+            break;
+        }
+        unset($stream);
+        $this->assertTrue((bool)$db->getConnection()->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY));
+
+        $this->dropStreamFixture($db);
+    }
 
     public function testConstructorException()
     {

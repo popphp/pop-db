@@ -470,6 +470,96 @@ class Mysql extends AbstractAdapter
     }
 
     /**
+     * Stream the rows of a query one at a time, without buffering the whole result client-side
+     *
+     * The statement is read unbuffered, so the connection cannot run another command until the
+     * stream has finished or been destroyed. Freeing a partly-read result reads the remaining
+     * rows off the wire.
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    public function stream(mixed $sql, ?array $params = null): \Generator
+    {
+        $this->prepare($sql);
+        if (!empty($params)) {
+            $this->bindParams($params);
+        }
+
+        // Take the statement out of the adapter's state, so no later adapter call touches it
+        $statement             = $this->statement;
+        $this->statement       = null;
+        $this->statementResult = false;
+        $this->result          = null;
+
+        try {
+            // Executed directly, not through execute(), which buffers the result
+            try {
+                $executed = $statement->execute();
+            } catch (\mysqli_sql_exception) {
+                $executed = false;
+            }
+
+            if (!$executed) {
+                if ($this->profiler !== null) {
+                    $this->profiler->current->addError($statement->error, $statement->errno);
+                }
+                $this->throwError('MySQL Statement Error: ' . $statement->errno . ' (#' . $statement->error . ')');
+            }
+
+            if ($this->profiler !== null) {
+                $this->profiler->current->finish();
+                if ($this->profiler->hasDebugger()) {
+                    $this->profiler->debugger()->save();
+                }
+            }
+
+            $metaData = $statement->result_metadata();
+            if ($metaData === false) {
+                return;
+            }
+
+            $columns = [];
+            $values  = [];
+            foreach ($metaData->fetch_fields() as $i => $field) {
+                $columns[$i] = $field->name;
+                $values[$i]  = null;
+            }
+            $bindValues = [];
+            foreach (array_keys($values) as $i) {
+                $bindValues[] = &$values[$i];
+            }
+            $statement->bind_result(...$bindValues);
+
+            while (true) {
+                try {
+                    $fetched = $statement->fetch();
+                } catch (\mysqli_sql_exception) {
+                    $fetched = false;
+                }
+
+                if ($fetched === null) {
+                    break;
+                } else if ($fetched === false) {
+                    $this->throwError('MySQL Statement Error: ' . $statement->errno . ' (#' . $statement->error . ')');
+                }
+
+                // Copy by value: the bound variables are overwritten by the next fetch()
+                $row = [];
+                foreach ($columns as $i => $column) {
+                    $row[$column] = $values[$i];
+                }
+                yield $row;
+            }
+        } finally {
+            $statement->free_result();
+            $statement->close();
+        }
+    }
+
+    /**
      * Disconnect from the database
      *
      * @return void
@@ -491,7 +581,7 @@ class Mysql extends AbstractAdapter
      */
     public function escape(?string $value = null): string
     {
-        return (!empty($value)) ? $this->connection->real_escape_string($value) : '';
+        return (($value !== null) && ($value !== '')) ? $this->connection->real_escape_string($value) : '';
     }
 
     /**

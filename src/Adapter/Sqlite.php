@@ -207,6 +207,11 @@ class Sqlite extends AbstractAdapter
 
         $this->lastSql = (stripos($sql, 'select') !== false) ? $sql : null;
 
+        // Release the previous result first: a half-read result keeps its statement running, which
+        // makes SQLite refuse statements such as DROP TABLE ("database table is locked"), and
+        // finalizing it during the assignment below would reset the error code before it is checked
+        $this->result = null;
+
         if (!($this->result = $this->connection->query($sql)) && ($this->connection->lastErrorCode() != 0)) {
             if ($this->profiler !== null) {
                 $this->profiler->addStep();
@@ -390,6 +395,48 @@ class Sqlite extends AbstractAdapter
         }
 
         return $rows;
+    }
+
+    /**
+     * Stream the rows of a query one at a time, without buffering the whole result client-side
+     *
+     * SQLite3 already steps through a result row by row, so this reads the executed statement lazily.
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    public function stream(mixed $sql, ?array $params = null): \Generator
+    {
+        $this->prepare($sql);
+        if (!empty($params)) {
+            $this->bindParams($params);
+        }
+        $this->execute();
+
+        // Take the result out of the adapter's state, so no later adapter call touches it
+        $result          = $this->result;
+        $this->result    = null;
+        $this->statement = null;
+
+        try {
+            // fetchArray() returns false at the end, but null when a step fails; on the next call
+            // SQLite would reset the statement and start again from the first row
+            while (is_array($row = $result->fetchArray(SQLITE3_ASSOC))) {
+                yield $row;
+            }
+            if ($row !== false) {
+                $this->throwError(
+                    'Error: ' . $this->connection->lastErrorCode() . ' => ' . $this->connection->lastErrorMsg()
+                );
+            }
+        } finally {
+            // Closing the connection has already released the result
+            if ($this->isConnected()) {
+                $result->finalize();
+            }
+        }
     }
 
     /**

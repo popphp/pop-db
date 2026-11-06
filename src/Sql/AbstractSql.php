@@ -440,28 +440,37 @@ abstract class AbstractSql
     /**
      * Quote the value (if it is not a numeric value)
      *
+     * Unforced, the value is read as query-builder input: a placeholder (?, :name, $1), an
+     * identifier-quoted value or an all-digit string is left bare. Forced, the value is read
+     * as data: every string is quoted and escaped whatever it looks like, null is NULL, an
+     * int/float is left bare and a bool is 1/0.
+     *
      * @param  mixed $value
      * @param  bool  $force
      * @return float|int|string
      */
     public function quote(mixed $value = null, bool $force = false): float|int|string
     {
+        if ($force) {
+            if ($value === null) {
+                return 'NULL';
+            } else if (is_bool($value)) {
+                return (int)$value;
+            } else if (is_int($value) || is_float($value)) {
+                return $value;
+            }
+            return "'" . $this->db->escape((string)$value) . "'";
+        }
+
         $value = ($value !== null) ? (string)$value : null;
 
-        if ($force) {
-            if (($value == '') ||
-                ((preg_match('/^\$\d*\d$/', $value) == 0) && (preg_match('/^\d*$/', $value) == 0))) {
-                $value = "'" . $this->db->escape($value) . "'";
-            }
-        } else {
-            if (($value == '') ||
-                (($value != '?') &&
-                    (!empty($this->openQuote) && !empty($this->closeQuote) &&
-                        !(str_starts_with($value, $this->openQuote) && str_ends_with($value, $this->closeQuote))) &&
-                    (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
-                    (preg_match('/^\d*$/', $value) == 0))) {
-                $value = "'" . $this->db->escape($value) . "'";
-            }
+        if (($value == '') ||
+            (($value != '?') &&
+                (!empty($this->openQuote) && !empty($this->closeQuote) &&
+                    !(str_starts_with($value, $this->openQuote) && str_ends_with($value, $this->closeQuote))) &&
+                (!str_starts_with($value, ':')) && (preg_match('/^\$\d*\d$/', $value) == 0) &&
+                (preg_match('/^\d*$/', $value) == 0))) {
+            $value = "'" . $this->db->escape($value) . "'";
         }
 
         return $value;

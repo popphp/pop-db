@@ -52,6 +52,12 @@ class Pdo extends AbstractAdapter
     protected bool $statementResult = false;
 
     /**
+     * Stream cursor index, for unique cursor names (pgsql)
+     * @var int
+     */
+    protected static int $streamIndex = 0;
+
+    /**
      * Constructor
      *
      * Instantiate the database connection object using PDO
@@ -279,15 +285,31 @@ class Pdo extends AbstractAdapter
         $this->statement       = null;
         $this->statementResult = false;
 
-        $sth = $this->connection->prepare($sql);
-
-        if (!($sth->execute())) {
+        // With PDO's default exception error mode the driver throws instead of returning false
+        $sth      = false;
+        $executed = false;
+        try {
+            $sth      = $this->connection->prepare($sql);
+            $executed = ($sth !== false) && $sth->execute();
+        } catch (\PDOException $e) {
             if ($this->profiler !== null) {
                 $this->profiler->addStep();
                 $this->profiler->current->setQuery($sql);
-                $this->profiler->current->addError($this->getErrorMessage($sth->errorInfo()), $sth->errorCode());
+                $this->profiler->current->addError($this->getErrorMessage($e->errorInfo), (string)$e->getCode());
             }
-            $this->buildError($sth->errorCode(), $sth->errorInfo())
+            $this->buildError((string)$e->getCode(), $e->errorInfo)
+                 ->throwError();
+        }
+
+        if (!$executed) {
+            $errorCode = ($sth !== false) ? $sth->errorCode() : $this->connection->errorCode();
+            $errorInfo = ($sth !== false) ? $sth->errorInfo() : $this->connection->errorInfo();
+            if ($this->profiler !== null) {
+                $this->profiler->addStep();
+                $this->profiler->current->setQuery($sql);
+                $this->profiler->current->addError($this->getErrorMessage($errorInfo), $errorCode);
+            }
+            $this->buildError($errorCode, $errorInfo)
                  ->throwError();
         } else {
             if ($this->profiler !== null) {
@@ -494,7 +516,143 @@ class Pdo extends AbstractAdapter
      */
     public function fetchAll(int $dataType = \PDO::FETCH_ASSOC): array
     {
-        return $this->statement->fetchAll($dataType);
+        if (($this->statement !== null) && ($this->statementResult !== false)) {
+            return $this->statement->fetchAll($dataType);
+        } else {
+            if ($this->result === null) {
+                $this->throwError('Error: The database statement resource is not currently set.');
+            }
+            return $this->result->fetchAll($dataType);
+        }
+    }
+
+    /**
+     * Stream the rows of a query one at a time, without buffering the whole result client-side
+     *
+     * MySQL: buffered queries are switched off on the connection for the life of the stream (the
+     * per-statement option is ignored by pdo_mysql), so the connection cannot run another command
+     * until the stream has finished or been destroyed. PostgreSQL: pdo_pgsql always buffers, so a
+     * server-side cursor is used; it needs a transaction, so if none is open the stream opens its
+     * own and commits it when the stream ends (rolling it back only if the stream itself hits a
+     * database error). Other drivers already read row by row.
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    public function stream(mixed $sql, ?array $params = null): \Generator
+    {
+        if ($this->type == 'pgsql') {
+            yield from $this->streamCursor($sql, $params);
+            return;
+        }
+
+        $buffered = null;
+        if ($this->type == 'mysql') {
+            $buffered = $this->connection->getAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+            $this->connection->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+        }
+
+        $statement = null;
+
+        try {
+            $this->prepare($sql);
+            if (!empty($params)) {
+                $this->bindParams($params);
+            }
+            $this->execute();
+
+            // Take the statement out of the adapter's state, so no later adapter call touches it
+            $statement             = $this->statement;
+            $this->statement       = null;
+            $this->statementResult = false;
+            $this->result          = null;
+
+            while (($row = $statement->fetch(\PDO::FETCH_ASSOC)) !== false) {
+                yield $row;
+            }
+            if ($statement->errorCode() != 0) {
+                $this->buildError($statement->errorCode(), $statement->errorInfo())->throwError();
+            }
+        } catch (\PDOException $e) {
+            $this->buildError((string)$e->getCode(), $e->errorInfo)->throwError();
+        } finally {
+            $statement?->closeCursor();
+            if (($buffered !== null) && $this->isConnected()) {
+                $this->connection->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $buffered);
+            }
+        }
+    }
+
+    /**
+     * Stream a query's rows through a server-side cursor, STREAM_FETCH_SIZE rows per FETCH (pgsql)
+     *
+     * @param  mixed  $sql
+     * @param  ?array $params
+     * @throws Exception
+     * @return \Generator
+     */
+    protected function streamCursor(mixed $sql, ?array $params): \Generator
+    {
+        if ($sql instanceof \Pop\Db\Sql\AbstractSql) {
+            $sql = (string)$sql;
+        }
+
+        $cursor         = 'pop_db_stream_' . ++static::$streamIndex;
+        $ownTransaction = !$this->isTransaction();
+        $failed         = false;
+
+        if ($ownTransaction) {
+            $this->beginTransaction();
+        }
+
+        try {
+            $this->prepare('DECLARE ' . $cursor . ' NO SCROLL CURSOR FOR ' . $sql);
+            // Profile the caller's query, as every other stream path does, not the DECLARE wrapper
+            if ($this->profiler !== null) {
+                $this->profiler->current->setQuery($sql);
+            }
+            if (!empty($params)) {
+                $this->bindParams($params);
+            }
+            $this->execute();
+            $this->statement       = null;
+            $this->statementResult = false;
+            $this->result          = null;
+
+            do {
+                // query() returns false instead of throwing under PDO::ERRMODE_SILENT
+                $batch = $this->connection->query('FETCH ' . static::STREAM_FETCH_SIZE . ' FROM ' . $cursor);
+                if ($batch === false) {
+                    $failed = true;
+                    $this->buildError()->throwError();
+                }
+                $rows = $batch->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($rows as $row) {
+                    yield $row;
+                }
+            } while (count($rows) == static::STREAM_FETCH_SIZE);
+        } catch (\PDOException $e) {
+            $failed = true;
+            $this->buildError((string)$e->getCode(), $e->errorInfo)->throwError();
+        } catch (Exception $e) {
+            $failed = true;
+            throw $e;
+        } finally {
+            // After a database error the transaction is aborted and the cursor is gone with it; a
+            // closed connection has already taken both with it
+            if (!$failed && $this->isConnected()) {
+                $this->connection->exec('CLOSE ' . $cursor);
+            }
+            if ($ownTransaction && $this->isConnected()) {
+                if ($failed) {
+                    $this->rollback();
+                } else {
+                    $this->commit();
+                }
+            }
+        }
     }
 
     /**

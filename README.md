@@ -32,6 +32,7 @@ pop-db
     - [Eager-Loading](#eager-loading)
 * [Querying](#querying)
     - [Prepared Statements](#prepared-statements)
+    - [Streaming Results](#streaming-results)
     - [Transactions](#query-transactions)
 * [Query Builder](#query-builder)
     - [Select](#select)
@@ -2128,6 +2129,65 @@ Array
 
 [Top](#pop-db)
 
+### Streaming Results
+
+`fetchAll()`, and `fetch()` after `query()` or `execute()`, read from a result that has already been loaded into
+PHP memory. That is the default, and it is what lets one connection run query after query without one result
+blocking the next. For a query too large to hold in memory, use `stream()`. It returns a generator that yields
+one row at a time as an associative array, while the client keeps only a small part of the result in memory:
+
+```php
+use Pop\Db\Db;
+
+$db = Db::mysqlConnect([
+    'database' => 'DATABASE',
+    'username' => 'DB_USER',
+    'password' => 'DB_PASS'
+]);
+
+foreach ($db->stream('SELECT * FROM `orders` WHERE `status` = ?', ['active']) as $order) {
+    // one row in memory at a time
+}
+```
+
+`stream()` takes a SQL string or a query builder object, plus optional parameters in the same format that adapter's
+`bindParams()` takes. It is available on every adapter. The query runs on the first iteration of the loop, so an
+error in the SQL is thrown from the `foreach`, as a `Pop\Db\Adapter\Exception`.
+
+While a stream is open, **don't run anything else on the same connection**. On MySQL and PDO MySQL, the other query
+throws an error. On PostgreSQL (libpq 17+), the other query runs but cuts the stream short, and the stream throws
+an error on its next iteration instead of quietly ending early. If the loop needs to look things up, open a second
+connection for it:
+
+```php
+$lookup = Db::mysqlConnect([...]);
+
+foreach ($db->stream('SELECT * FROM `orders`') as $order) {
+    $customer = $lookup->select('SELECT * FROM `customers` WHERE `id` = ?', [$order['customer_id']]);
+}
+```
+
+Things to know:
+
+- The result is released when the loop finishes, when you `break` out of it, or when the generator is destroyed.
+  Don't keep a half-read generator around: the connection stays busy until it is destroyed. On MySQL, releasing a
+  half-read result still reads the remaining rows off the network. On PostgreSQL (libpq 17+), the query is cancelled,
+  unless a transaction is open: a cancelled query would abort that transaction, so the rest of the result is read
+  and discarded instead.
+- On MySQL the query stays open on the server while the loop runs. If the loop stalls for longer than the server's
+  `net_write_timeout` (60 seconds by default), MySQL aborts the query partway through.
+- PostgreSQL with libpq 17 or later reads the rows in chunks. With an older libpq, and always with PDO pgsql, a
+  server-side cursor is used instead, and a cursor only exists inside a transaction. If no transaction is open,
+  `stream()` opens its own and **commits** it when the stream ends. It rolls back only if the stream itself hits a
+  database error. Inside a transaction you already opened, the stream uses yours and leaves it open.
+- SQLite and SQL Server already read results row by row, so `stream()` just reads them lazily.
+- On the MySQL adapter, `stream()` returns integer and float columns as PHP `int`/`float`, the same as
+  `prepare()`/`execute()`/`fetch()`, while `query()`/`fetch()` returns every value as a string. The values
+  themselves are the same. `DECIMAL` and values too large for a PHP integer (such as `BIGINT UNSIGNED` maximums) stay
+  strings, so no precision is lost. The other adapters return the same types from `stream()` as from `fetch()`.
+
+[Top](#pop-db)
+
 ### Query Transactions
 
 When using a database adapter directly, you can utilize transactions with it, like these examples below:
@@ -3210,6 +3270,37 @@ INSERT INTO `users` (`id`, `username`, `password`, `email`) VALUES
 (17, 'testuser17', 'mypassword17', 'testuser17@test.com'),
 (18, 'testuser18', 'mypassword18', 'testuser18@test.com');
 ```
+
+#### Quoting data values
+
+By default, values are quoted the way the query builder quotes them: a value that looks like a placeholder
+(`?`, `:name`, `$1`), an identifier-quoted value or an all-digit string is written bare. When the values are
+data, such as when building a data or seed file, pass `$forceQuote = true`. Every string is then quoted and
+escaped whatever it looks like, `null` is written as `NULL`, an int or float is left bare, and a bool is written
+as `1`/`0`:
+
+```php
+$data = new Data($db, 'addresses');
+
+// serialize(array $data, mixed $omit = null, bool $nullEmpty = false, bool $forceQuote = false)
+$sql = $data->serialize($rows, null, false, true);
+
+// streamToFile(array $data, ?string $to, mixed $omit = null, bool $nullEmpty = false,
+//              ?string $header = null, ?string $footer = null, bool $forceQuote = false)
+$data->streamToFile($rows, __DIR__ . '/data/addresses.sql', forceQuote: true);
+```
+
+| Value         | Default        | `$forceQuote = true` |
+|---------------|----------------|----------------------|
+| `'01234'`     | `01234`        | `'01234'`            |
+| `':) thanks'` | `:) thanks`    | `':) thanks'`        |
+| `'?'`         | `?`            | `'?'`                |
+| `null`        | `''`           | `NULL`               |
+| `false`       | `''`           | `0`                  |
+| `5`           | `5`            | `5`                  |
+
+Set `$nullEmpty = true` to also write empty strings as `NULL`. `streamToFile()` appends to the file, so it can be
+called repeatedly to write a large data set in batches.
 
 [Top](#pop-db)
 

@@ -7,15 +7,109 @@ use Pop\Db\Adapter\Sqlite;
 use PHPUnit\Framework\TestCase;
 use Pop\Utils\CallableObject;
 use Pop\Db\Test\TestAsset\TestQueryListener;
+use Pop\Db\Test\TestAsset\StreamTestTrait;
+use Pop\Db\Adapter\AbstractAdapter;
 
 class SqliteTest extends TestCase
 {
+
+    use StreamTestTrait;
 
     public function setUp(): void
     {
         chmod(__DIR__ . '/../tmp', 0777);
         touch(__DIR__ . '/../tmp/db.sqlite');
         chmod(__DIR__ . '/../tmp/db.sqlite', 0777);
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        // setUp() creates db.sqlite for every test, including the stream tests that run after
+        // testDropTable() has removed it
+        if (file_exists(__DIR__ . '/../tmp/db.sqlite')) {
+            unlink(__DIR__ . '/../tmp/db.sqlite');
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if (file_exists(__DIR__ . '/../tmp/stream.sqlite')) {
+            unlink(__DIR__ . '/../tmp/stream.sqlite');
+        }
+    }
+
+    protected function createStreamAdapter(): AbstractAdapter
+    {
+        touch(__DIR__ . '/../tmp/stream.sqlite');
+        return new Sqlite([
+            'database' => __DIR__ . '/../tmp/stream.sqlite'
+        ]);
+    }
+
+    protected function streamParamQuery(): array
+    {
+        return ['SELECT * FROM stream_items WHERE id > :id ORDER BY id', ['id' => 40]];
+    }
+
+    public function testStreamRuntimeErrorMidStreamThrows()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        // abs() of the minimum integer overflows at row 30, after 29 rows have been stepped
+        $sql  = 'SELECT id, CASE WHEN id = 30 THEN abs(-9223372036854775807 - 1) ELSE id END AS v FROM stream_items';
+        $ids  = [];
+        set_error_handler(fn() => true, E_WARNING);
+        try {
+            foreach ($db->stream($sql) as $row) {
+                $ids[] = $row['id'] ?? null;
+                if (count($ids) > 100) {
+                    $this->fail('The stream kept yielding after a runtime error');
+                }
+            }
+            $this->fail('A runtime error during the stream did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertNotEmpty($e->getMessage());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(range(1, 29), array_map('intval', $ids));
+        $this->dropStreamFixture($db);
+    }
+
+    public function testQueryAfterHalfReadSelectRuns()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        $db->query('SELECT * FROM stream_items');
+        $db->fetch();
+        $db->query('DROP TABLE stream_items');
+
+        $this->assertFalse($db->hasTable('stream_items'));
+        $db->disconnect();
+    }
+
+    public function testQueryErrorAfterHalfReadSelectThrows()
+    {
+        $db = $this->createStreamAdapter();
+        $this->createStreamFixture($db);
+
+        $db->query('SELECT * FROM stream_items');
+        $db->fetch();
+
+        set_error_handler(fn() => true, E_WARNING);
+        try {
+            $db->query('INSERT INTO no_such_table VALUES (1)');
+            $this->fail('A failed query did not throw');
+        } catch (\Pop\Db\Adapter\Exception $e) {
+            $this->assertStringContainsString('no such table', $e->getMessage());
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->dropStreamFixture($db);
     }
 
     public function testConstructorException1()
