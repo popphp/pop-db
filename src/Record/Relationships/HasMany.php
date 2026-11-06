@@ -155,11 +155,10 @@ class HasMany extends AbstractRelationship
 
         $params = [];
 
-        // The options['columns'] filter is applied BEFORE the id filter so that the parameters
-        // are generated (and therefore numbered/named/ordered) in the same order the WHERE
-        // clause renders them: PredicateSet::render() always renders its top-level predicates
-        // (this filter) before its nested predicate sets (the composite tuple group), and for a
-        // single-column key both are top-level predicates rendered in insertion order.
+        // The options['columns'] filter is applied BEFORE the id filter, and $params is collected
+        // in that same order. PredicateSet::render() emits predicates and nested predicate sets
+        // (the composite tuple group) in the order they were added, so the bound values line up
+        // with the placeholders the WHERE clause renders.
         $this->applyAdditionalColumnsFilter($sql, $params);
         $this->applyEagerIdFilter($sql, $this->foreignKey, $ids, $params);
         $this->applyQueryOptions($sql, $db);

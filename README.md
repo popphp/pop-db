@@ -2547,6 +2547,11 @@ The output below shows the predicates for `logins` and `failed` are nested toget
 SELECT * FROM `users` WHERE ((`id` > ?) AND ((`logins` > ?) OR (`failed` <= ?)))
 ```
 
+Predicates and nested predicate sets render in the order they are added, each joined to the one before it by
+its own conjunction, and `getParameters()` returns their bound parameters in that same order. So a nested set
+added before a plain predicate renders first, and positional `?` parameters bind in the order the predicates
+were written.
+
 [Top](#pop-db)
 
 ### Subqueries

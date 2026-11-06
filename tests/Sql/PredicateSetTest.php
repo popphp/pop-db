@@ -536,4 +536,95 @@ class PredicateSetTest extends TestCase
         $db->disconnect();
     }
 
+    public function testRenderNestAddedBeforePredicate()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->nest()->equalTo('county_id', '?')->or()->isNull('county_id');
+        $predicateSet->equalTo('service_id', '?');
+
+        $this->assertEquals(
+            "(((`county_id` = ?) OR (`county_id` IS NULL)) AND (`service_id` = ?))", (string)$predicateSet
+        );
+        $this->db->disconnect();
+    }
+
+    public function testRenderInterleavedPredicatesAndNests()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->equalTo('a', 1);
+        $predicateSet->nest()->equalTo('b', 2)->equalTo('c', 3);
+        $predicateSet->equalTo('d', 4);
+        $predicateSet->nest()->equalTo('e', 5)->or()->equalTo('f', 6);
+
+        $this->assertEquals(
+            "((`a` = 1) AND ((`b` = 2) AND (`c` = 3)) AND (`d` = 4) AND ((`e` = 5) OR (`f` = 6)))",
+            (string)$predicateSet
+        );
+        $this->db->disconnect();
+    }
+
+    public function testRenderOrNestBetweenPredicatesKeepsConjunctions()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->equalTo('a', 1);
+        $predicateSet->orNest()->equalTo('b', 2)->equalTo('c', 3);
+        $predicateSet->equalTo('d', 4);
+
+        $this->assertEquals(
+            "((`a` = 1) OR ((`b` = 2) AND (`c` = 3)) AND (`d` = 4))", (string)$predicateSet
+        );
+        $this->db->disconnect();
+    }
+
+    public function testGetParametersFollowsRenderOrder()
+    {
+        $predicateSet = new PredicateSet($this->db->createSql());
+        $predicateSet->add('region_id = 3', true);
+        $predicateSet->nest()->add('county_id = 5', true)->or()->isNull('county_id');
+        $predicateSet->add('service_id = 7', true);
+
+        $this->assertEquals(
+            "((`region_id` = ?) AND ((`county_id` = ?) OR (`county_id` IS NULL)) AND (`service_id` = ?))",
+            (string)$predicateSet
+        );
+        // add() parses the value out of the expression string, so it arrives as a string
+        $this->assertSame(['region_id' => '3', 'county_id' => '5', 'service_id' => '7'], $predicateSet->getParameters());
+        $this->db->disconnect();
+    }
+
+    public function testOrderedPredicatesReturnTheRightRows()
+    {
+        $this->db->query('DROP TABLE IF EXISTS pred_order_items');
+        $this->db->query(
+            'CREATE TABLE pred_order_items (id INT PRIMARY KEY, county_id INT NULL, service_id INT, ' .
+            'a INT, b INT, c INT, d INT)'
+        );
+        $this->db->query(
+            'INSERT INTO pred_order_items VALUES (1, 5, 7, 0, 0, 0, 0), (2, 7, 5, 0, 0, 0, 0), ' .
+            '(3, NULL, NULL, 1, 0, 0, 0), (4, NULL, NULL, 0, 1, 1, 0)'
+        );
+
+        // Positional '?' parameters, bound in the order the predicates were added
+        $select = $this->db->createSql()->select('id')->from('pred_order_items');
+        $select->where->nest()->equalTo('county_id', '?')->or()->isNull('county_id');
+        $select->where->equalTo('service_id', '?');
+        $this->db->prepare((string)$select)->bindParams(['county_id' => 5, 'service_id' => 7])->execute();
+        $this->assertSame([1], array_map(fn($row) => (int)$row['id'], $this->db->fetchAll()));
+
+        // a OR (b AND c) AND d, as written: row 3 matches; rendered out of order it would be row 4
+        $select = $this->db->createSql()->select('id')->from('pred_order_items');
+        $select->where->equalTo('a', 1);
+        $select->where->orNest()->equalTo('b', 1)->equalTo('c', 1);
+        $select->where->equalTo('d', 1);
+        $this->db->query((string)$select);
+        $ids = [];
+        while (($row = $this->db->fetch())) {
+            $ids[] = (int)$row['id'];
+        }
+        $this->assertSame([3], $ids);
+
+        $this->db->query('DROP TABLE pred_order_items');
+        $this->db->disconnect();
+    }
+
 }

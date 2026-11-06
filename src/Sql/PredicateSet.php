@@ -48,6 +48,15 @@ class PredicateSet
     protected array $predicateSets = [];
 
     /**
+     * The order the predicates and nested predicate sets were added in, which is the order they
+     * render (and their parameters bind) in. Each entry points into $predicates or $predicateSets;
+     * a nested set's entry also records how many of this set's own parameters existed when it was
+     * added, so getParameters() can interleave them in the same order
+     * @var array
+     */
+    protected array $order = [];
+
+    /**
      * Conjunction
      * @var ?string
      */
@@ -138,13 +147,28 @@ class PredicateSet
      */
     public function getParameters(): array
     {
-        $parameters = $this->parameters;
-
-        foreach ($this->predicateSets as $predicateSet) {
-            $parameters = array_merge($parameters, $predicateSet->getParameters());
+        if (empty($this->predicateSets)) {
+            return $this->parameters;
         }
 
-        return $parameters;
+        // Merge this set's own parameters and each nested set's in the order they were added,
+        // which is the order render() emits their placeholders in
+        $parameters = [];
+        $taken      = 0;
+
+        foreach ($this->order as $entry) {
+            if ($entry['type'] === 'set') {
+                $upTo       = min($entry['parameters'], count($this->parameters));
+                $parameters = array_merge(
+                    $parameters,
+                    array_slice($this->parameters, $taken, max(0, $upTo - $taken), true),
+                    $this->predicateSets[$entry['index']]->getParameters()
+                );
+                $taken = max($taken, $upTo);
+            }
+        }
+
+        return array_merge($parameters, array_slice($this->parameters, $taken, null, true));
     }
 
     /**
@@ -685,6 +709,7 @@ class PredicateSet
         }
 
         $this->predicates[] = $predicate;
+        $this->order[]      = ['type' => 'predicate', 'index' => array_key_last($this->predicates)];
         return $this;
     }
 
@@ -712,6 +737,11 @@ class PredicateSet
     public function addPredicateSet(PredicateSet $predicateSet): PredicateSet
     {
         $this->predicateSets[] = $predicateSet;
+        $this->order[]         = [
+            'type'       => 'set',
+            'index'      => array_key_last($this->predicateSets),
+            'parameters' => count($this->parameters)
+        ];
         return $this;
     }
 
@@ -869,17 +899,23 @@ class PredicateSet
     {
         $predicateString = '';
 
-        foreach ($this->predicates as $i => $predicate) {
-            $predicateString .= ($predicateString === '') ?
-                $predicate->render($this->sql) : ' ' . $predicate->getConjunction() . ' ' . $predicate->render($this->sql);
-        }
-
-        foreach ($this->predicateSets as $i => $predicateSet) {
-            if (empty($predicateSet->getConjunction())) {
-                throw new Exception('Error: The combination conjunction was not set for this predicate set.');
+        // Render predicates and nested sets in the order they were added, each joined to what
+        // precedes it by its own conjunction
+        foreach ($this->order as $entry) {
+            if ($entry['type'] === 'set') {
+                $predicateSet = $this->predicateSets[$entry['index']];
+                if (empty($predicateSet->getConjunction())) {
+                    throw new Exception('Error: The combination conjunction was not set for this predicate set.');
+                }
+                $conjunction = $predicateSet->getConjunction();
+                $rendered    = $predicateSet->render();
+            } else {
+                $predicate   = $this->predicates[$entry['index']];
+                $conjunction = $predicate->getConjunction();
+                $rendered    = $predicate->render($this->sql);
             }
-            $predicateString .= ($predicateString === '') ?
-                $predicateSet->render() : ' ' . $predicateSet->getConjunction() . ' ' . $predicateSet->render();
+
+            $predicateString .= ($predicateString === '') ? $rendered : ' ' . $conjunction . ' ' . $rendered;
         }
 
         if (((count($this->predicateSets) > 0) && (count($this->predicates) > 0)) ||
