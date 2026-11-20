@@ -6,6 +6,9 @@ use Pop\Db\Db;
 use Pop\Db\Test\TestAsset\UsersEncoded;
 use Pop\Db\Test\TestAsset\UsersEncoded2;
 use Pop\Db\Test\TestAsset\UsersEncodedWeakHash;
+use Pop\Db\Test\TestAsset\UsersEncodedJsonKeys;
+use Pop\Db\Test\TestAsset\UsersEncodedJsonKeysNotJson;
+use Pop\Crypt\Encryption\Encrypter;
 use PHPUnit\Framework\TestCase;
 
 class EncodedTest extends TestCase
@@ -41,6 +44,7 @@ class EncodedTest extends TestCase
         $schema->execute();
 
         \Pop\Db\Test\TestAsset\UsersEncoded::setDb($this->db);
+        UsersEncodedJsonKeys::setDb($this->db);
     }
 
     public function testEncodeException()
@@ -240,6 +244,125 @@ class EncodedTest extends TestCase
 
         $this->db->disconnect();
 
+    }
+
+    public function testEncryptedJsonKeysGetter()
+    {
+        $this->assertEquals(['info' => ['secret', 'pin']], (new UsersEncodedJsonKeys())->getEncryptedJsonKeys());
+    }
+
+    public function testEncryptedJsonKeysSetterEncryptsOnlyListedKeys()
+    {
+        $user       = new UsersEncodedJsonKeys();
+        $user->info = ['secret' => 's3cret', 'name' => 'bob'];
+
+        $raw = json_decode($user->getRawValue('info'), true);
+        $this->assertEquals('bob', $raw['name']);
+        $this->assertNotEquals('s3cret', $raw['secret']);
+        $this->assertEquals('s3cret', $user->info['secret']);
+        $this->assertEquals('bob', $user->info['name']);
+    }
+
+    public function testEncryptedJsonKeysJsonStringInput()
+    {
+        $user       = new UsersEncodedJsonKeys();
+        $user->info = '{"secret":"s3cret"}';
+
+        $raw = json_decode($user->getRawValue('info'), true);
+        $this->assertNotEquals('s3cret', $raw['secret']);
+        $this->assertEquals('s3cret', $user->info['secret']);
+    }
+
+    public function testEncryptedJsonKeysSaveFindAndToArray()
+    {
+        $user = new UsersEncodedJsonKeys([
+            'username' => 'jk',
+            'info'     => ['secret' => 's3cret', 'name' => 'bob']
+        ]);
+        $user->save();
+
+        $found = UsersEncodedJsonKeys::findById($user->id);
+        $this->assertEquals('s3cret', $found->info['secret']);
+        $this->assertEquals('bob', $found->info['name']);
+        $this->assertEquals('s3cret', $found->toArray()['info']['secret']);
+
+        $this->db->query('SELECT `info` FROM `users_encoded` WHERE `id` = ' . (int)$user->id);
+        $row = $this->db->fetch();
+        $this->assertStringNotContainsString('s3cret', $row['info']);
+        $this->assertStringContainsString('bob', $row['info']);
+
+        $schema = $this->db->createSchema();
+        $schema->dropIfExists('users_encoded');
+        $schema->execute();
+
+        $this->db->disconnect();
+    }
+
+    public function testEncryptedJsonKeysNoDoubleEncryption()
+    {
+        $user       = new UsersEncodedJsonKeys();
+        $user->info = ['secret' => 's3cret'];
+        $stored     = $user->getRawValue('info');
+        $cipher     = json_decode($stored, true)['secret'];
+
+        $user->info = $stored;
+        $this->assertEquals($cipher, json_decode($user->getRawValue('info'), true)['secret']);
+        $this->assertEquals('s3cret', $user->info['secret']);
+
+        $encoded = $user->encodeValue('info', json_decode($stored, true));
+        $this->assertEquals($cipher, json_decode($encoded, true)['secret']);
+    }
+
+    public function testEncryptedJsonKeysJsonStringKeptAsIsWhenNothingToEncrypt()
+    {
+        $user   = new UsersEncodedJsonKeys();
+        $user->info = ['secret' => 's3cret'];
+        $cipher = json_decode($user->getRawValue('info'), true)['secret'];
+
+        // As stored in (and loaded from) the database: an empty object, an unescaped slash and an
+        // already-encrypted secret must all come back byte-identical
+        $stored     = '{"opts": {}, "url": "http://a/b", "secret": "' . $cipher . '"}';
+        $user->info = $stored;
+        $this->assertSame($stored, $user->getRawValue('info'));
+
+        $user->setColumns(['info' => '{"opts": {}}']);
+        $this->assertSame('{"opts": {}}', $user->getRawValue('info'));
+    }
+
+    public function testEncryptedJsonKeysSkipNonStringAndEmpty()
+    {
+        $user       = new UsersEncodedJsonKeys();
+        $user->info = ['secret' => '', 'pin' => 1234];
+        $this->assertSame(['secret' => '', 'pin' => 1234], json_decode($user->getRawValue('info'), true));
+        $this->assertSame(['secret' => '', 'pin' => 1234], $user->info);
+
+        $user->info = ['name' => 'bob'];
+        $this->assertSame(['name' => 'bob'], json_decode($user->getRawValue('info'), true));
+        $this->assertSame(['name' => 'bob'], $user->info);
+    }
+
+    public function testEncryptedJsonKeysPreviousKey()
+    {
+        $oldKey = '3ODbtHLqzlnAiB0yZR7E0w6wdnIiB35Mj6An+SHwIwg=';
+        $old    = (new Encrypter($oldKey, 'aes-256-cbc', false))->encrypt('s3cret');
+        $user   = new class([], $oldKey) extends UsersEncodedJsonKeys {
+            public function __construct(array $columns, string $previousKey)
+            {
+                $this->previousKeys = [$previousKey];
+                parent::__construct($columns);
+            }
+        };
+
+        $this->assertEquals('s3cret', $user->decodeValue('info', json_encode(['secret' => $old]))['secret']);
+    }
+
+    public function testEncryptedJsonKeysColumnNotJsonThrows()
+    {
+        UsersEncodedJsonKeysNotJson::setDb($this->db);
+
+        $this->expectException('Pop\Db\Record\Exception');
+        $user = new UsersEncodedJsonKeysNotJson();
+        $user->notes = ['secret' => 'x'];
     }
 
 }

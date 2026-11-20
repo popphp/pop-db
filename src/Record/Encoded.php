@@ -61,6 +61,12 @@ class Encoded extends \Pop\Db\Record
     protected array $encryptedFields = [];
 
     /**
+     * JSON-encoded fields and the keys inside each that are encrypted
+     * @var array
+     */
+    protected array $encryptedJsonKeys = [];
+
+    /**
      * Hash algorithm
      * @var string
      */
@@ -141,7 +147,24 @@ class Encoded extends \Pop\Db\Record
      */
     public function encodeValue(string $key, mixed $value): string
     {
+        $this->checkEncryptedJsonField($key);
+
         if (in_array($key, $this->jsonFields)) {
+            if (!empty($this->encryptedJsonKeys[$key])) {
+                if (is_string($value)) {
+                    // Only re-encode a JSON string if a key in it gets encrypted, so JSON that is
+                    // already stored (e.g. loaded from the database) is kept byte-for-byte
+                    $jsonValue = json_decode($value, true);
+                    if (is_array($jsonValue)) {
+                        $encryptedValue = $this->encryptJsonKeys($key, $jsonValue);
+                        if ($encryptedValue !== $jsonValue) {
+                            $value = $encryptedValue;
+                        }
+                    }
+                } else if (is_array($value)) {
+                    $value = $this->encryptJsonKeys($key, $value);
+                }
+            }
             if (!((is_string($value) && (json_decode($value) !== false)) && (json_last_error() == JSON_ERROR_NONE))) {
                 $value = json_encode($value);
             }
@@ -160,20 +183,7 @@ class Encoded extends \Pop\Db\Record
                 $value = $hasher->make($value);
             }
         } else if (in_array($key, $this->encryptedFields)) {
-            // Attempt to load encryption properties from $_ENV
-            if (empty($this->cipherMethod) || empty($this->key)) {
-                $this->loadEncryptionProperties();
-            }
-            if (empty($this->cipherMethod) || empty($this->key)) {
-                throw new Exception('Error: The encryption properties have not been set.');
-            }
-
-            $encrypter = new Encrypter($this->key, $this->cipherMethod, false);
-
-            // Load any previous encryption keys
-            if (!empty($this->previousKeys)) {
-                $encrypter->setPreviousKeys($this->previousKeys, false);
-            }
+            $encrypter = $this->encrypter();
 
             $decodedValue = $this->decodeValue($key, $value);
             if (!(is_string($value) && ($decodedValue !== false) && ($decodedValue != $value))) {
@@ -194,10 +204,15 @@ class Encoded extends \Pop\Db\Record
      */
     public function decodeValue(string $key, string $value): mixed
     {
+        $this->checkEncryptedJsonField($key);
+
         if (in_array($key, $this->jsonFields)) {
             $jsonValue = @json_decode($value, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $value = $jsonValue;
+            }
+            if (is_array($value) && !empty($this->encryptedJsonKeys[$key])) {
+                $value = $this->decryptJsonKeys($key, $value);
             }
         } else if (in_array($key, $this->phpFields)) {
             $phpValue = @unserialize($value);
@@ -210,32 +225,24 @@ class Encoded extends \Pop\Db\Record
                 $value = $base64Value;
             }
         } else if (in_array($key, $this->encryptedFields)) {
-            // Attempt to load encryption properties from $_ENV
-            if (empty($this->cipherMethod) || empty($this->key)) {
-                $this->loadEncryptionProperties();
-            }
-            if (empty($this->cipherMethod) || empty($this->key)) {
-                throw new Exception('Error: The encryption properties have not been set.');
-            }
+            $encrypter = $this->encrypter();
 
-            $encrypter = new Encrypter($this->key, $this->cipherMethod, false);
-
-            // Load any previous encryption keys
-            if (!empty($this->previousKeys)) {
-                $encrypter->setPreviousKeys($this->previousKeys, false);
-            }
-
-            $base64Value = @base64_decode($value, true);
-            if ($base64Value !== false) {
-                // Test if payload is valid
-                $payload = json_decode(base64_decode($value), true);
-                if (is_array($payload) && isset($payload['iv']) && isset($payload['value'])) {
-                    $value = $encrypter->decrypt($value);
-                }
+            if ($this->isEncrypted($value)) {
+                $value = $encrypter->decrypt($value);
             }
         }
 
         return $value;
+    }
+
+    /**
+     * Get the JSON-encoded fields and the keys inside each that are encrypted
+     *
+     * @return array
+     */
+    public function getEncryptedJsonKeys(): array
+    {
+        return $this->encryptedJsonKeys;
     }
 
     /**
@@ -333,7 +340,109 @@ class Encoded extends \Pop\Db\Record
     public function isEncodedColumn(string $key): bool
     {
         return (in_array($key, $this->jsonFields) || in_array($key, $this->phpFields) ||
-            in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields));
+            in_array($key, $this->base64Fields) || in_array($key, $this->hashFields) || in_array($key, $this->encryptedFields) ||
+            array_key_exists($key, $this->encryptedJsonKeys));
+    }
+
+    /**
+     * Get the encrypter, loading the encryption properties from $_ENV vars if they are not set
+     *
+     * @throws Exception
+     * @return Encrypter
+     */
+    protected function encrypter(): Encrypter
+    {
+        // Attempt to load encryption properties from $_ENV
+        if (empty($this->cipherMethod) || empty($this->key)) {
+            $this->loadEncryptionProperties();
+        }
+        if (empty($this->cipherMethod) || empty($this->key)) {
+            throw new Exception('Error: The encryption properties have not been set.');
+        }
+
+        $encrypter = new Encrypter($this->key, $this->cipherMethod, false);
+
+        // Load any previous encryption keys
+        if (!empty($this->previousKeys)) {
+            $encrypter->setPreviousKeys($this->previousKeys, false);
+        }
+
+        return $encrypter;
+    }
+
+    /**
+     * Determine if a value is a valid encrypted payload
+     *
+     * @param  string $value
+     * @return bool
+     */
+    protected function isEncrypted(string $value): bool
+    {
+        if (@base64_decode($value, true) === false) {
+            return false;
+        }
+
+        $payload = json_decode(base64_decode($value), true);
+
+        return (is_array($payload) && isset($payload['iv']) && isset($payload['value']));
+    }
+
+    /**
+     * Encrypt the encrypted keys of a JSON field's value that are non-empty strings and not already encrypted
+     *
+     * @param  string $key
+     * @param  array  $value
+     * @throws Exception
+     * @return array
+     */
+    protected function encryptJsonKeys(string $key, array $value): array
+    {
+        $encrypter = null;
+
+        foreach ($this->encryptedJsonKeys[$key] as $name) {
+            if (!empty($value[$name]) && is_string($value[$name]) && !$this->isEncrypted($value[$name])) {
+                $encrypter    = $encrypter ?? $this->encrypter();
+                $value[$name] = $encrypter->encrypt($value[$name]);
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * Decrypt the encrypted keys of a JSON field's decoded value
+     *
+     * @param  string $key
+     * @param  array  $value
+     * @throws Exception
+     * @return array
+     */
+    protected function decryptJsonKeys(string $key, array $value): array
+    {
+        $encrypter = null;
+
+        foreach ($this->encryptedJsonKeys[$key] as $name) {
+            if (!empty($value[$name]) && is_string($value[$name]) && $this->isEncrypted($value[$name])) {
+                $encrypter    = $encrypter ?? $this->encrypter();
+                $value[$name] = $encrypter->decrypt($value[$name]);
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * Check that a field with encrypted JSON keys is also a JSON-encoded field
+     *
+     * @param  string $key
+     * @throws Exception
+     * @return void
+     */
+    protected function checkEncryptedJsonField(string $key): void
+    {
+        if (array_key_exists($key, $this->encryptedJsonKeys) && !in_array($key, $this->jsonFields)) {
+            throw new Exception("Error: The encrypted JSON field '" . $key . "' is not a JSON-encoded field.");
+        }
     }
 
     /**

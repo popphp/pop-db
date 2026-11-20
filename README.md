@@ -961,6 +961,42 @@ Or, they can be autoloaded from the application's `.env` file as the following v
 - `APP_KEY` - a base-64 encoded string of the current active key
 - `APP_PREVIOUS_KEYS` - a comma-separated list of base-64 encoded strings of the previous keys
 
+#### Encrypted JSON Keys
+
+Instead of encrypting a whole field, specific top-level keys inside a JSON-encoded field can be
+encrypted with `$encryptedJsonKeys`, a map of JSON field to the keys inside it to encrypt. The rest
+of the JSON value is stored as plain JSON. Each field listed must also be in `$jsonFields`
+(otherwise an exception is thrown), and the keys use the same encryption properties as above
+(set on the class or loaded from the `.env` file):
+
+```php
+use Pop\Db\Record\Encoded;
+
+class Integrations extends Encoded
+{
+    protected array   $jsonFields        = ['testing', 'production'];
+    protected array   $encryptedJsonKeys = ['testing' => ['password'], 'production' => ['password']];
+    protected ?string $cipherMethod      = 'aes-256-cbc';
+    protected ?string $key               = 'BASE64_ENCODED_KEY';
+}
+```
+
+```php
+$integration = new Integrations();
+$integration->testing = ['username' => 'api_user', 'password' => 'secret'];
+// Stored as {"username":"api_user","password":"<encrypted payload>"}
+
+echo $integration->testing['password']; // secret
+```
+
+A few things to note:
+
+- Only top-level keys are supported, and only non-empty string values are encrypted. Other values
+  (integers, booleans, arrays, empty strings) are stored as-is.
+- The value can be set as an array or as a JSON string; either way the listed keys are encrypted,
+  and an already-encrypted value is not encrypted again.
+- The encryption is non-deterministic, so an encrypted key cannot be searched on in a query.
+
 [Top](#pop-db)
 
 ### Auth Record
